@@ -1,0 +1,37 @@
+{
+  "lang": "en",
+  "generatedAt": "2026-03-10T13:17:50.734Z",
+  "docs": [
+    {
+      "id": "getting-started-introduction",
+      "slug": "getting-started/introduction",
+      "title": "Introduction",
+      "description": "A GitBook-style docs editor for the AI era.",
+      "tags": [
+        "GUIDE",
+        "CORE"
+      ],
+      "status": "published",
+      "updatedAt": "2026-03-07T00:00:00.000Z",
+      "breadcrumbs": [
+        "GETTING STARTED"
+      ],
+      "text": "Introduction Welcome to a GitBook-style documentation editor for the AI era. Core Philosophy Content First Git-managed collaboration LLM-friendly outputs via llms.txt and WebMCP"
+    },
+    {
+      "id": "reference-changelog",
+      "slug": "reference/changelog",
+      "title": "Changelog",
+      "description": "Release notes.",
+      "tags": [
+        "REFERENCE"
+      ],
+      "status": "published",
+      "updatedAt": "2026-03-07T00:00:00.000Z",
+      "breadcrumbs": [
+        "REFERENCE"
+      ],
+      "text": "Changelog 2026-03-07 Initialize project skeleton."
+    }
+  ]
+}

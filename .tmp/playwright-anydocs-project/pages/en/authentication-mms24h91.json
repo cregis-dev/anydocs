@@ -1,0 +1,35 @@
+{
+  "id": "authentication-mms24h91",
+  "lang": "en",
+  "slug": "api/authentication-mms24h91",
+  "title": "Authentication API mms24h91",
+  "description": "Token and session flows for mms24h91.",
+  "status": "published",
+  "updatedAt": "2026-03-16T02:40:55.958Z",
+  "content": {
+    "721960a9-5389-420c-96c3-d5284c75a63c": {
+      "id": "721960a9-5389-420c-96c3-d5284c75a63c",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "075b95c4-7006-425d-a745-5b7657cd9f8c",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "Authentication flow mms24h91"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "align": "left",
+        "depth": 0,
+        "order": 0
+      }
+    }
+  },
+  "render": {
+    "markdown": "Authentication flow mms24h91\n",
+    "plainText": "Authentication flow mms24h91"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "lang": "zh",
+  "generatedAt": "2026-03-10T13:17:50.730Z",
+  "pages": [
+    {
+      "id": "getting-started-introduction",
+      "slug": "getting-started/introduction",
+      "title": "Introduction",
+      "description": "面向 AI 时代的文档站点编辑器：快速上手。",
+      "tags": [
+        "GUIDE",
+        "CORE"
+      ],
+      "updatedAt": "2026-03-08T09:09:04.071Z"
+    },
+    {
+      "id": "reference-changelog",
+      "slug": "reference/changelog",
+      "title": "Changelog",
+      "description": "版本更新记录。",
+      "tags": [
+        "REFERENCE"
+      ],
+      "updatedAt": "2026-03-08T09:09:07.170Z"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "lang": "en",
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "GETTING STARTED",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "getting-started-introduction"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "REFERENCE",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "reference-changelog"
+        }
+      ]
+    }
+  ]
+}

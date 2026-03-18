@@ -1,0 +1,24 @@
+{
+  "name": "@anydocs/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "anydocs": "./src/index.ts"
+  },
+  "scripts": {
+    "cli": "node --experimental-strip-types src/index.ts",
+    "dev": "tsx src/index.ts",
+    "preview": "node --experimental-strip-types src/index.ts preview",
+    "build": "tsc",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anydocs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

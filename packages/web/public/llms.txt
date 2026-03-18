@@ -1,0 +1,14 @@
+# Docs (LLM-friendly index)
+
+- Languages: zh, en
+- Base routes: /zh, /en
+
+## zh
+
+- Introduction — /zh/getting-started/introduction — 面向 AI 时代的文档站点编辑器：快速上手。
+- Changelog — /zh/reference/changelog — 版本更新记录。
+
+## en
+
+- Introduction — /en/getting-started/introduction — A GitBook-style docs editor for the AI era.
+- Changelog — /en/reference/changelog — Release notes.

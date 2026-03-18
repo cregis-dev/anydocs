@@ -1,0 +1,27 @@
+{
+  "lang": "en",
+  "generatedAt": "2026-03-10T13:17:50.736Z",
+  "pages": [
+    {
+      "id": "getting-started-introduction",
+      "slug": "getting-started/introduction",
+      "title": "Introduction",
+      "description": "A GitBook-style docs editor for the AI era.",
+      "tags": [
+        "GUIDE",
+        "CORE"
+      ],
+      "updatedAt": "2026-03-07T00:00:00.000Z"
+    },
+    {
+      "id": "reference-changelog",
+      "slug": "reference/changelog",
+      "title": "Changelog",
+      "description": "Release notes.",
+      "tags": [
+        "REFERENCE"
+      ],
+      "updatedAt": "2026-03-07T00:00:00.000Z"
+    }
+  ]
+}

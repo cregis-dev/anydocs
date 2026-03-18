@@ -1,0 +1,18 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "欢迎",
+  "description": "Anydocs 的 root-level canonical demo project。",
+  "tags": [
+    "demo",
+    "welcome"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-11T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# 欢迎\n\n这是 Anydocs 的 canonical demo project，用来驱动 build、preview 和 reader 路由。",
+    "plainText": "欢迎 这是 Anydocs 的 canonical demo project，用来驱动 build、preview 和 reader 路由。"
+  }
+}

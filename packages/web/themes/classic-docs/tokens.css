@@ -1,0 +1,64 @@
+.theme-classic-docs {
+  --classic-background: #ffffff;
+  --classic-foreground: #111827;
+  --classic-panel: #ffffff;
+  --classic-panel-elevated: #ffffff;
+  --classic-border: #e5e7eb;
+  --classic-muted: #f9fafb;
+  --classic-muted-foreground: #6b7280;
+  --classic-copy: #374151;
+  --classic-copy-subtle: #9ca3af;
+  --classic-primary: #111827;
+  --classic-primary-foreground: #ffffff;
+  --classic-accent: #f3f4f6;
+  --classic-accent-foreground: #111827;
+  --classic-sidebar-active: #111827;
+  --classic-sidebar-active-foreground: #111827;
+  --classic-sidebar-active-background: color-mix(in srgb, var(--classic-sidebar-active) 6%, white);
+  --classic-sidebar-hover: color-mix(in srgb, var(--classic-sidebar-active) 4%, white);
+  --classic-ring: color-mix(in srgb, var(--classic-primary) 45%, white);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  --background: var(--classic-background);
+  --foreground: var(--classic-foreground);
+
+  --fd-background: var(--classic-background);
+  --fd-foreground: var(--classic-foreground);
+  --fd-muted: var(--classic-muted);
+  --fd-muted-foreground: var(--classic-muted-foreground);
+  --fd-popover: var(--classic-panel-elevated);
+  --fd-popover-foreground: var(--classic-foreground);
+  --fd-card: var(--classic-panel);
+  --fd-card-foreground: var(--classic-foreground);
+  --fd-border: var(--classic-border);
+  --fd-primary: var(--classic-primary);
+  --fd-primary-foreground: var(--classic-primary-foreground);
+  --fd-secondary: var(--classic-panel-elevated);
+  --fd-secondary-foreground: var(--classic-foreground);
+  --fd-accent: var(--classic-accent);
+  --fd-accent-foreground: var(--classic-accent-foreground);
+  --fd-ring: var(--classic-ring);
+  --fd-overlay: color-mix(in srgb, black 45%, transparent);
+  --fd-info: var(--classic-primary);
+  --fd-warning: #a65d00;
+  --fd-error: #b42318;
+  --fd-success: #1f6f43;
+  --fd-idea: #5f4ae0;
+
+  --docs-sidebar-active: var(--classic-sidebar-active);
+  --docs-sidebar-active-foreground: var(--classic-sidebar-active-foreground);
+  --docs-sidebar-active-background: var(--classic-sidebar-active-background);
+  --docs-sidebar-active-border: var(--classic-sidebar-active);
+  --docs-sidebar-hover: var(--classic-sidebar-hover);
+  --docs-sidebar-brand-surface: var(--classic-panel-elevated);
+  --docs-sidebar-section: var(--classic-copy-subtle);
+  --docs-sidebar-link: var(--classic-copy);
+  --docs-sidebar-link-subtle: var(--classic-muted-foreground);
+  --docs-body-copy: var(--classic-copy);
+  --docs-body-copy-subtle: var(--classic-muted-foreground);
+}

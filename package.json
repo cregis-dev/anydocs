@@ -1,26 +1,27 @@
 {
-  "name": "docs-site",
-  "version": "0.1.0",
+  "name": "anydocs",
+  "version": "1.0.0",
   "private": true,
+  "description": "Anydocs - AI-Era Documentation Platform",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "dev": "pnpm --filter @anydocs/web dev",
+    "dev:desktop": "node scripts/dev-desktop.mjs",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @anydocs/web build",
+    "build:desktop": "pnpm --filter @anydocs/desktop build",
+    "build:cli": "pnpm --filter @anydocs/cli build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/cli test",
+    "test:web": "pnpm --filter @anydocs/web test",
+    "test:full": "pnpm test && pnpm test:web"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
 }

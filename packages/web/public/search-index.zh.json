@@ -1,0 +1,37 @@
+{
+  "lang": "zh",
+  "generatedAt": "2026-03-10T13:17:50.727Z",
+  "docs": [
+    {
+      "id": "getting-started-introduction",
+      "slug": "getting-started/introduction",
+      "title": "Introduction",
+      "description": "面向 AI 时代的文档站点编辑器：快速上手。",
+      "tags": [
+        "GUIDE",
+        "CORE"
+      ],
+      "status": "published",
+      "updatedAt": "2026-03-08T09:09:04.071Z",
+      "breadcrumbs": [
+        "GETTING STARTED"
+      ],
+      "text": "Welcome to Yoopta EditorThis is a full-featured example showcasing every plugin, mark, and UI component that Yoopta Editor offers. Type / anywhere to open the slash command menu, or use the floating toolbar to format text/Text FormattingYoopta supports rich text marks: bold, italic, underline, strikethrough, inline code, and highlighted text. You can combine them: bold + italic or all at once.Block TypesBlockquoteThe best way to predict the future is to invent it.CalloutCallout blocks are great for highlighting important information, tips, or warnings in your content.ListsBulleted, numbered, and to-do lists with nesting support:Drag and drop blocks to reorder content20+ block plugins available out of the boxFully extensible plugin architectureInstall with npm install @yoopta/editorAdd plugins you needRender the editor and start building[x] Try the slash command menu[ ] Drag blocks to reorder them[ ] Export to HTML or MarkdownCode BlocksSyntax-highlighted code blocks with language selection:import { createYooptaEditor } from '@yoopta/editor';\nimport Paragraph from '@yoopta/paragraph';\n\nconst plugins = [Paragraph];\nconst editor = createYooptaEditor({ plugins });\n\n// Ready to build amazing editing experiences!Advanced BlocksTablesTables support adding/removing rows and columns, resizing, and rich text inside cells.ImageUpload images or paste a URL. Supports resizing, captions, and alignment.\n        \n        EmbedEmbed content from YouTube, Figma, CodeSandbox, Twitter, and more:Nested & Structured BlocksThese blocks have nested elements — multiple editable sections inside a single block.AccordionTabsStepsCode GroupTabbed code blocks — perfect for showing the same example in multiple languages:\n            \n              npmyarnpnpm\n              npm install @yoopta/editor slate slate-react slate-domyarn add @yoopta/editor slate slate-react slate-dompnpm add @yoopta/editor slate slate-react slate-dom\n            Try It YourselfThis editor is fully interactive. Try these:Type / to open the slash command menu and insert any block typeSelect text to see the floating toolbar with formatting optionsHover on the left of any block to drag it or open block actionsUse keyboard shortcuts like Cmd+B for bold, Cmd+I for italic, Cmd+Z to undoCheck out the other examples in the sidebar to see Yoopta Editor in different use cases: email builder, Slack-like chat, collaborative editing, and more."
+    },
+    {
+      "id": "reference-changelog",
+      "slug": "reference/changelog",
+      "title": "Changelog",
+      "description": "版本更新记录。",
+      "tags": [
+        "REFERENCE"
+      ],
+      "status": "published",
+      "updatedAt": "2026-03-08T09:09:07.170Z",
+      "breadcrumbs": [
+        "REFERENCE"
+      ],
+      "text": "更新内容解决部分BUG优化UI体验"
+    }
+  ]
+}

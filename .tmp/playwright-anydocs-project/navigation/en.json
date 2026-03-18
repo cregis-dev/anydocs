@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "API Guides mms1e0gh",
+      "children": []
+    },
+    {
+      "type": "section",
+      "title": "API Guides mms24h91",
+      "children": []
+    },
+    {
+      "type": "page",
+      "pageId": "authentication-mms24h91"
+    }
+  ]
+}

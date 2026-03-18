@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "projectId": "default",
+  "name": "Anydocs Project",
+  "defaultLanguage": "en",
+  "languages": [
+    "en"
+  ],
+  "site": {
+    "theme": {
+      "id": "classic-docs",
+      "codeTheme": "github-dark"
+    }
+  }
+}

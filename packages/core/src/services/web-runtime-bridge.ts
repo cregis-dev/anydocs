@@ -1,0 +1,359 @@
+import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { ValidationError } from '../errors/validation-error.ts';
+import type { ProjectPathContract } from '../types/project.ts';
+
+const CORE_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../index.ts', import.meta.url)));
+let webRuntimeQueue: Promise<void> = Promise.resolve();
+
+function resolveWebPackageRoot() {
+  const cwd = process.cwd();
+  const candidates = [
+    cwd,
+    path.join(cwd, 'packages', 'web'),
+    path.join(path.resolve(CORE_PACKAGE_ROOT, '../../..'), 'packages', 'web'),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(path.join(candidate, 'scripts', 'gen-public-assets.mjs'))) {
+      return candidate;
+    }
+  }
+
+  return path.join(path.resolve(CORE_PACKAGE_ROOT, '../../..'), 'packages', 'web');
+}
+
+const BRIDGE_ENV_ALLOWLIST = new Set([
+  'CI',
+  'COLORTERM',
+  'FORCE_COLOR',
+  'HOME',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'LOGNAME',
+  'PATH',
+  'PNPM_HOME',
+  'SHELL',
+  'TERM',
+  'TMPDIR',
+  'USER',
+  'XDG_CACHE_HOME',
+  'XDG_CONFIG_HOME',
+]);
+
+export type DocsRuntimeMode = 'export' | 'preview';
+
+type BaseBridgeOptions = {
+  projectRoot: string;
+  outputRoot?: string;
+  stdio?: 'pipe' | 'inherit';
+};
+
+export type ExportDocsSiteOptions = BaseBridgeOptions & {
+  outputRoot: string;
+};
+
+export type StartDocsPreviewServerOptions = BaseBridgeOptions & {
+  host?: string;
+  port?: number;
+  readyPath?: string;
+  startTimeoutMs?: number;
+};
+
+export type DocsPreviewServerProcess = {
+  child: ChildProcess;
+  host: string;
+  port: number;
+  url: string;
+  stop: () => Promise<void>;
+  waitUntilExit: () => Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>;
+};
+
+function createRuntimeEnv(mode: DocsRuntimeMode, options: BaseBridgeOptions): NodeJS.ProcessEnv {
+  const baseEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => BRIDGE_ENV_ALLOWLIST.has(key)),
+  );
+
+  return {
+    ...baseEnv,
+    NODE_ENV: mode === 'export' ? 'production' : 'development',
+    ANYDOCS_DOCS_RUNTIME: mode,
+    ANYDOCS_DOCS_PROJECT_ROOT: options.projectRoot,
+    ...(options.outputRoot ? { ANYDOCS_DOCS_OUTPUT_ROOT: options.outputRoot } : {}),
+    ANYDOCS_DISABLE_STUDIO: '1',
+  };
+}
+
+function formatBridgeFailure(command: string, exitCode: number | null, signal: NodeJS.Signals | null, stderr: string) {
+  const details = stderr.trim();
+  const suffix = details ? `\n${details}` : '';
+  return new Error(`${command} failed (exit=${exitCode ?? 'null'}, signal=${signal ?? 'null'}).${suffix}`);
+}
+
+async function resolveNodeExecutable(): Promise<string> {
+  const override = process.env.ANYDOCS_NODE_BINARY?.trim();
+  if (override) {
+    if (!path.isAbsolute(override)) {
+      return override;
+    }
+
+    await access(override);
+    return override;
+  }
+
+  return 'node';
+}
+
+function appendOutputTail(current: string, chunk: string, maxChars: number) {
+  const next = current + chunk;
+  return next.length > maxChars ? next.slice(-maxChars) : next;
+}
+
+function collectChildOutput(child: ChildProcess, maxChars = 32_000) {
+  let stdout = '';
+  let stderr = '';
+
+  child.stdout?.on('data', (chunk) => {
+    stdout = appendOutputTail(stdout, chunk.toString(), maxChars);
+  });
+  child.stderr?.on('data', (chunk) => {
+    stderr = appendOutputTail(stderr, chunk.toString(), maxChars);
+  });
+
+  return {
+    stdout: () => stdout,
+    stderr: () => stderr,
+  };
+}
+
+function shellEscapeArg(value: string) {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+async function createBridgeChild(
+  mode: DocsRuntimeMode,
+  args: string[],
+  options: BaseBridgeOptions,
+): Promise<ChildProcess> {
+  const nodeExecutable = await resolveNodeExecutable();
+  const shell = process.env.SHELL || '/bin/zsh';
+  const webPackageRoot = resolveWebPackageRoot();
+  const webBridgeScript = path.join(webPackageRoot, 'scripts', 'gen-public-assets.mjs');
+  const command = ['exec', nodeExecutable, webBridgeScript, mode, ...args].map(shellEscapeArg).join(' ');
+
+  return spawn(shell, ['-lc', command], {
+    cwd: webPackageRoot,
+    env: createRuntimeEnv(mode, options),
+    stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
+  });
+}
+
+function waitForChildExit(child: ChildProcess): Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }> {
+  return new Promise((resolve) => {
+    child.once('exit', (exitCode, signal) => {
+      resolve({ exitCode, signal });
+    });
+  });
+}
+
+async function acquireWebRuntimeLock(): Promise<() => void> {
+  const previous = webRuntimeQueue;
+  let releaseLock!: () => void;
+  webRuntimeQueue = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  await previous;
+
+  let released = false;
+  return () => {
+    if (released) {
+      return;
+    }
+
+    released = true;
+    releaseLock();
+  };
+}
+
+export async function exportDocsSite(options: ExportDocsSiteOptions): Promise<void> {
+  const releaseLock = await acquireWebRuntimeLock();
+
+  try {
+    const child = await createBridgeChild('export', [], options);
+    const output = collectChildOutput(child);
+
+    if (!child.stdout || !child.stderr) {
+      const result = await waitForChildExit(child);
+      if (result.exitCode !== 0) {
+        throw formatBridgeFailure('Docs site export', result.exitCode, result.signal, '');
+      }
+      return;
+    }
+
+    const result = await waitForChildExit(child);
+    if (result.exitCode !== 0) {
+      const stderr = [output.stderr().trim(), output.stdout().trim()].filter(Boolean).join('\n');
+      throw formatBridgeFailure('Docs site export', result.exitCode, result.signal, stderr);
+    }
+  } finally {
+    releaseLock();
+  }
+}
+
+async function pickAvailablePort(host: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, host, () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close(() => reject(new Error('Failed to resolve an available preview port.')));
+        return;
+      }
+
+      const { port } = address;
+      server.close((closeError) => {
+        if (closeError) {
+          reject(closeError);
+          return;
+        }
+
+        resolve(port);
+      });
+    });
+  });
+}
+
+async function waitForPreviewServerReady(
+  child: ChildProcess,
+  url: string,
+  timeoutMs: number,
+): Promise<void> {
+  const startedAt = Date.now();
+  const output = collectChildOutput(child);
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (child.exitCode !== null) {
+      const stderr = [output.stderr().trim(), output.stdout().trim()].filter(Boolean).join('\n');
+      throw formatBridgeFailure('Docs preview server', child.exitCode, null, stderr);
+    }
+
+    try {
+      const response = await fetch(url, { redirect: 'manual' });
+      if (response.status >= 200 && response.status < 400) {
+        return;
+      }
+    } catch {
+      // Keep polling until timeout or process exit.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  child.kill('SIGTERM');
+  await waitForChildExit(child);
+  throw new Error(`Timed out waiting for docs preview server to become ready at ${url}.`);
+}
+
+export async function startDocsPreviewServer(
+  options: StartDocsPreviewServerOptions,
+): Promise<DocsPreviewServerProcess> {
+  const releaseLock = await acquireWebRuntimeLock();
+
+  try {
+    const host = options.host ?? '127.0.0.1';
+    const port = options.port ?? (await pickAvailablePort(host));
+    const readyPath = options.readyPath ?? '/';
+    const startTimeoutMs = options.startTimeoutMs ?? 30_000;
+    const child = await createBridgeChild(
+      'preview',
+      ['--hostname', host, '--port', String(port)],
+      options,
+    );
+    const url = `http://${host}:${port}`;
+    const readyUrl = new URL(readyPath, `${url}/`).toString();
+    const exitPromise = waitForChildExit(child).finally(() => {
+      releaseLock();
+    });
+
+    await waitForPreviewServerReady(child, readyUrl, startTimeoutMs);
+
+    return {
+      child,
+      host,
+      port,
+      url,
+      stop: async () => {
+        if (child.exitCode !== null) {
+          await exitPromise;
+          return;
+        }
+
+        child.kill('SIGTERM');
+        await exitPromise;
+      },
+      waitUntilExit: () => exitPromise,
+    };
+  } catch (error) {
+    releaseLock();
+    throw error;
+  }
+}
+
+function isSameOrDescendantPath(candidatePath: string, parentPath: string): boolean {
+  const relativePath = path.relative(parentPath, candidatePath);
+  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+}
+
+export function assertSafeArtifactRoot(paths: ProjectPathContract): void {
+  const normalizedArtifactRoot = path.resolve(paths.artifactRoot);
+  const normalizedRepoRoot = path.resolve(paths.repoRoot);
+  const normalizedProjectRoot = path.resolve(paths.projectRoot);
+
+  if (normalizedArtifactRoot === normalizedRepoRoot || normalizedArtifactRoot === normalizedProjectRoot) {
+    throw new ValidationError(
+      `Refusing to export the docs site into "${normalizedArtifactRoot}" because that would overwrite the project workspace.`,
+      {
+        entity: 'artifact-root',
+        rule: 'artifact-root-must-not-overwrite-project-workspace',
+        remediation: 'Use the default dist directory or pass --output to a dedicated build output directory.',
+        metadata: { artifactRoot: normalizedArtifactRoot, repoRoot: normalizedRepoRoot, projectRoot: normalizedProjectRoot },
+      },
+    );
+  }
+
+  const protectedRoots = [
+    path.resolve(paths.pagesRoot),
+    path.resolve(paths.navigationRoot),
+    path.resolve(paths.importsRoot),
+  ];
+
+  const conflictingRoot = protectedRoots.find((protectedRoot) =>
+    isSameOrDescendantPath(normalizedArtifactRoot, protectedRoot),
+  );
+
+  if (!conflictingRoot) {
+    return;
+  }
+
+  throw new ValidationError(
+    `Refusing to export the docs site into "${normalizedArtifactRoot}" because it overlaps source content at "${conflictingRoot}".`,
+    {
+      entity: 'artifact-root',
+      rule: 'artifact-root-must-not-overlap-source-content',
+      remediation: 'Write build output to a dedicated directory such as dist/ or another folder outside pages/, navigation/, and imports/.',
+      metadata: {
+        artifactRoot: normalizedArtifactRoot,
+        conflictingRoot,
+        repoRoot: normalizedRepoRoot,
+        projectRoot: normalizedProjectRoot,
+      },
+    },
+  );
+}

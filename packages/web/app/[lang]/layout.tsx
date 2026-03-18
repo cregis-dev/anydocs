@@ -1,0 +1,54 @@
+import type { ReactNode } from 'react';
+import { notFound } from 'next/navigation';
+
+import {
+  getPublishedContext,
+  getPublishedLanguages,
+  getPublishedSiteNavigation,
+  getPublishedSiteTheme,
+  isDocsReaderAvailable,
+  resolveRequestDocsSource,
+} from '@/lib/docs/data';
+import type { DocsLang } from '@/lib/docs/types';
+import { resolveDocsTheme } from '@/lib/themes/resolve-theme';
+
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
+  if (!isDocsReaderAvailable()) {
+    return notFound();
+  }
+
+  const { lang } = await params;
+  const source = await resolveRequestDocsSource();
+  const availableLanguages = await getPublishedLanguages(source.projectId, source.customPath);
+  if (!availableLanguages.includes(lang as DocsLang)) {
+    notFound();
+  }
+  const docsLang = lang as DocsLang;
+
+  const { nav, pages } = await getPublishedContext(docsLang, source.projectId, source.customPath);
+  const [siteTheme, siteNavigation] = await Promise.all([
+    getPublishedSiteTheme(source.projectId, source.customPath),
+    getPublishedSiteNavigation(source.projectId, source.customPath),
+  ]);
+  const theme = resolveDocsTheme(siteTheme.id);
+  const ReaderLayout = theme.ReaderLayout;
+
+  return (
+    <ReaderLayout
+      lang={docsLang}
+      availableLanguages={availableLanguages}
+      nav={nav}
+      pages={pages}
+      siteTheme={siteTheme}
+      siteNavigation={siteNavigation}
+    >
+      {children}
+    </ReaderLayout>
+  );
+}

@@ -1,0 +1,61 @@
+.theme-atlas-docs {
+  --atlas-background: #ffffff;
+  --atlas-foreground: #111827;
+  --atlas-panel: #ffffff;
+  --atlas-panel-subtle: #f9fafb;
+  --atlas-header: rgba(255, 255, 255, 0.96);
+  --atlas-border: #e5e7eb;
+  --atlas-muted: #f3f4f6;
+  --atlas-muted-foreground: #6b7280;
+  --atlas-copy: #374151;
+  --atlas-copy-subtle: #9ca3af;
+  --atlas-primary: #111827;
+  --atlas-primary-foreground: #ffffff;
+  --atlas-accent: #f3f4f6;
+  --atlas-accent-foreground: #111827;
+  --atlas-sidebar-active: #111827;
+  --atlas-sidebar-active-foreground: #111827;
+  --atlas-sidebar-active-background: color-mix(in srgb, var(--atlas-sidebar-active) 6%, white);
+  --atlas-sidebar-hover: color-mix(in srgb, var(--atlas-sidebar-active) 4%, white);
+  --atlas-top-nav-active-background: color-mix(in srgb, var(--atlas-primary) 7%, white);
+  --atlas-ring: color-mix(in srgb, var(--atlas-primary) 45%, white);
+
+  --background: var(--atlas-background);
+  --foreground: var(--atlas-foreground);
+
+  --fd-background: var(--atlas-background);
+  --fd-foreground: var(--atlas-foreground);
+  --fd-muted: var(--atlas-muted);
+  --fd-muted-foreground: var(--atlas-muted-foreground);
+  --fd-popover: var(--atlas-panel);
+  --fd-popover-foreground: var(--atlas-foreground);
+  --fd-card: var(--atlas-panel);
+  --fd-card-foreground: var(--atlas-foreground);
+  --fd-border: var(--atlas-border);
+  --fd-primary: var(--atlas-primary);
+  --fd-primary-foreground: var(--atlas-primary-foreground);
+  --fd-secondary: var(--atlas-panel-subtle);
+  --fd-secondary-foreground: var(--atlas-foreground);
+  --fd-accent: var(--atlas-accent);
+  --fd-accent-foreground: var(--atlas-accent-foreground);
+  --fd-ring: var(--atlas-ring);
+  --fd-overlay: color-mix(in srgb, black 45%, transparent);
+  --fd-info: var(--atlas-primary);
+  --fd-warning: #a65d00;
+  --fd-error: #b42318;
+  --fd-success: #1f6f43;
+  --fd-idea: #5f4ae0;
+
+  --docs-sidebar-active: var(--atlas-sidebar-active);
+  --docs-sidebar-active-foreground: var(--atlas-sidebar-active-foreground);
+  --docs-sidebar-active-background: var(--atlas-sidebar-active-background);
+  --docs-sidebar-active-border: var(--atlas-sidebar-active);
+  --docs-sidebar-hover: var(--atlas-sidebar-hover);
+  --docs-sidebar-brand-surface: var(--atlas-panel);
+  --docs-sidebar-section: var(--atlas-copy-subtle);
+  --docs-sidebar-group-title: var(--atlas-foreground);
+  --docs-sidebar-link: var(--atlas-copy);
+  --docs-sidebar-link-subtle: var(--atlas-muted-foreground);
+  --docs-body-copy: var(--atlas-copy);
+  --docs-body-copy-subtle: var(--atlas-muted-foreground);
+}

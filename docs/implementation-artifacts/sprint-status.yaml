@@ -1,0 +1,79 @@
+# generated: 2026-03-12 16:56:00 +0800
+# project: anydocs
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach "done" status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Statuses below were reconciled against repository code, automated tests, and a CLI smoke run.
+# - Story files do not exist for every completed item, so completion is inferred from implementation evidence.
+# - Story 4.4 is done after final review cleared the remaining watch-loop, logging, and default-gate issues.
+# - 2026-03-15: Story 2.3 received follow-up Studio refinements that keep it within the same scope: current-language page deletion with navigation cleanup, expanded project settings editing, richer navigation authoring, and recent-project history removal.
+
+generated: 2026-03-12 16:56:00 +0800
+project: anydocs
+project_key: NOKEY
+tracking_system: file-system
+story_location: /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts
+
+development_status:
+  epic-1: done
+  1-1-canonical-project-configuration-and-workspace-contract: done
+  1-2-shared-schemas-and-domain-types-in-anydocs-core: done
+  1-3-core-file-system-repositories-and-validation-boundaries: done
+  1-4-anydocs-init-on-top-of-core-services: done
+  1-5-reusable-workflow-standard-for-external-ai-and-future-phases: done
+  epic-1-retrospective: optional
+
+  epic-2: done
+  2-1-load-projects-and-content-in-studio-through-core-adapters: done
+  2-2-edit-and-save-page-content-with-shared-validation: done
+  2-3-manage-navigation-publication-state-and-project-settings-in-studio: done
+  2-4-trigger-build-and-preview-actions-from-studio: done
+  epic-2-retrospective: optional
+
+  epic-3: done
+  3-1-published-only-content-pipeline-in-core: done
+  3-2-render-reader-facing-documentation-site-from-the-shared-content-model: done
+  3-3-shared-preview-workflow-for-local-verification: done
+  3-4-generate-search-and-language-aware-reader-navigation: done
+  3-5-generate-published-ai-friendly-artifacts-from-the-same-build-model: done
+  epic-3-retrospective: optional
+
+  epic-4: done
+  4-1-rebuild-the-cli-as-a-thin-adapter-over-core-services: done
+  4-2-support-interactive-and-non-interactive-command-execution: done
+  4-3-standardize-cli-output-error-messages-and-exit-codes: done
+  4-4-support-repeatable-iteration-and-watch-friendly-workflow-execution: done
+  epic-4-retrospective: optional
+
+  epic-5: done
+  5-1-import-legacy-documentation-into-the-standard-workflow: done
+  5-2-convert-imported-content-into-the-standardized-content-model: done
+  5-3-review-and-correct-external-or-ai-generated-content-before-publication: done
+  5-4-expose-published-machine-readable-artifacts-for-external-ai-consumers: done
+  5-5-preserve-forward-compatibility-for-workflow-reuse-and-future-ai-native-capabilities: done
+  epic-5-retrospective: optional

@@ -1,0 +1,119 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../components";
+@source "../lib";
+@source "../themes";
+@source "../utils";
+@import "@yoopta/themes-shadcn/variables.css";
+@import "../themes/classic-docs/tokens.css";
+@import "../themes/atlas-docs/tokens.css";
+@import "../themes/paper-docs/tokens.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-fd-background: var(--fd-background);
+  --color-fd-foreground: var(--fd-foreground);
+  --color-fd-muted: var(--fd-muted);
+  --color-fd-muted-foreground: var(--fd-muted-foreground);
+  --color-fd-popover: var(--fd-popover);
+  --color-fd-popover-foreground: var(--fd-popover-foreground);
+  --color-fd-card: var(--fd-card);
+  --color-fd-card-foreground: var(--fd-card-foreground);
+  --color-fd-border: var(--fd-border);
+  --color-fd-primary: var(--fd-primary);
+  --color-fd-primary-foreground: var(--fd-primary-foreground);
+  --color-fd-secondary: var(--fd-secondary);
+  --color-fd-secondary-foreground: var(--fd-secondary-foreground);
+  --color-fd-accent: var(--fd-accent);
+  --color-fd-accent-foreground: var(--fd-accent-foreground);
+  --color-fd-ring: var(--fd-ring);
+  --color-fd-overlay: var(--fd-overlay);
+  --color-fd-info: var(--fd-info);
+  --color-fd-warning: var(--fd-warning);
+  --color-fd-error: var(--fd-error);
+  --color-fd-success: var(--fd-success);
+  --color-fd-idea: var(--fd-idea);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  color-scheme: light;
+  --font-inter: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.cregis-theme {
+  --cregis-brand-primary: 31, 195, 90;
+  --cregis-brand-deep: 2, 45, 13;
+  --cregis-bg-offset: 249, 248, 245;
+  --cregis-bg: 255, 255, 255;
+
+  --cregis-text-secondary: 74, 85, 104;
+  --cregis-text-muted: 113, 128, 150;
+
+  --cregis-neutral-50: 249, 248, 245;
+  --cregis-neutral-100: 241, 245, 249;
+  --cregis-neutral-200: 226, 232, 240;
+  --cregis-neutral-300: 203, 213, 224;
+  --cregis-neutral-400: 148, 163, 184;
+  --cregis-neutral-500: 100, 116, 139;
+  --cregis-neutral-600: 71, 85, 105;
+  --cregis-neutral-700: 51, 65, 85;
+  --cregis-neutral-800: 30, 41, 59;
+  --cregis-neutral-900: 15, 23, 42;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+
+  --background: rgb(var(--cregis-bg));
+  --foreground: rgb(var(--cregis-brand-deep));
+
+  --fd-background: rgb(var(--cregis-bg));
+  --fd-foreground: rgb(var(--cregis-brand-deep));
+  --fd-muted: rgb(var(--cregis-neutral-100));
+  --fd-muted-foreground: rgb(var(--cregis-text-muted));
+  --fd-popover: rgb(var(--cregis-bg));
+  --fd-popover-foreground: rgb(var(--cregis-brand-deep));
+  --fd-card: rgb(var(--cregis-bg));
+  --fd-card-foreground: rgb(var(--cregis-brand-deep));
+  --fd-border: rgb(var(--cregis-neutral-200));
+  --fd-primary: rgb(var(--cregis-brand-primary));
+  --fd-primary-foreground: rgb(var(--cregis-bg));
+  --fd-secondary: rgb(var(--cregis-bg));
+  --fd-secondary-foreground: rgb(var(--cregis-brand-deep));
+  --fd-accent: rgb(233, 249, 239);
+  --fd-accent-foreground: rgb(var(--cregis-brand-deep));
+  --fd-ring: rgb(var(--cregis-brand-primary));
+  --fd-overlay: rgba(2, 45, 13, 0.18);
+  --fd-info: rgb(var(--cregis-brand-primary));
+  --fd-warning: rgb(235, 145, 20);
+  --fd-error: rgb(215, 70, 45);
+  --fd-success: rgb(var(--cregis-brand-primary));
+  --fd-idea: rgb(135, 70, 235);
+
+  --cregis-accent: rgb(var(--cregis-brand-primary));
+  --cregis-surface: rgb(var(--cregis-bg));
+  --cregis-muted: rgba(2, 45, 13, 0.05);
+  --cregis-hover: rgba(2, 45, 13, 0.07);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+:where([data-card]) {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+:where([data-card]:hover) {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
