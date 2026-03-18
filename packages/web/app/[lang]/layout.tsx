@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import {
   getPublishedContext,
   getPublishedLanguages,
+  getPublishedProjectName,
   getPublishedSiteNavigation,
   getPublishedSiteTheme,
   isDocsReaderAvailable,
@@ -32,7 +33,8 @@ export default async function Layout({
   const docsLang = lang as DocsLang;
 
   const { nav, pages } = await getPublishedContext(docsLang, source.projectId, source.customPath);
-  const [siteTheme, siteNavigation] = await Promise.all([
+  const [projectName, siteTheme, siteNavigation] = await Promise.all([
+    getPublishedProjectName(source.projectId, source.customPath),
     getPublishedSiteTheme(source.projectId, source.customPath),
     getPublishedSiteNavigation(source.projectId, source.customPath),
   ]);
@@ -45,6 +47,7 @@ export default async function Layout({
       availableLanguages={availableLanguages}
       nav={nav}
       pages={pages}
+      projectName={projectName}
       siteTheme={siteTheme}
       siteNavigation={siteNavigation}
     >

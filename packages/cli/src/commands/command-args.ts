@@ -12,6 +12,7 @@ export type ImportCommandArgs = {
   sourceDir?: string;
   targetDir?: string;
   lang?: string;
+  convert: boolean;
 };
 
 export type ConvertImportCommandArgs = {
@@ -78,9 +79,15 @@ export function parseImportCommandArgs(args: string[]): ImportCommandArgs {
   let sourceDir: string | undefined;
   let targetDir: string | undefined;
   let lang: string | undefined;
+  let convert = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
+
+    if (arg === '--convert') {
+      convert = true;
+      continue;
+    }
 
     if (arg === '--source') {
       sourceDir = readRequiredOptionValue(args, i, arg);
@@ -126,7 +133,7 @@ export function parseImportCommandArgs(args: string[]): ImportCommandArgs {
     throw new Error('Too many positional arguments provided.');
   }
 
-  return { sourceDir, targetDir, lang };
+  return { sourceDir, targetDir, lang, convert };
 }
 
 export function parseConvertImportCommandArgs(args: string[]): ConvertImportCommandArgs {

@@ -52,18 +52,28 @@ test('parseImportCommandArgs accepts positional and named arguments', () => {
     sourceDir: 'legacy-source',
     targetDir: undefined,
     lang: undefined,
+    convert: false,
   });
 
   assert.deepEqual(parseImportCommandArgs(['--source', 'legacy-source', '--target', 'project-root', '--lang', 'zh']), {
     sourceDir: 'legacy-source',
     targetDir: 'project-root',
     lang: 'zh',
+    convert: false,
   });
 
   assert.deepEqual(parseImportCommandArgs(['--target', 'project-root', 'legacy-source']), {
     sourceDir: 'legacy-source',
     targetDir: 'project-root',
     lang: undefined,
+    convert: false,
+  });
+
+  assert.deepEqual(parseImportCommandArgs(['legacy-source', 'project-root', 'en', '--convert']), {
+    sourceDir: 'legacy-source',
+    targetDir: 'project-root',
+    lang: 'en',
+    convert: true,
   });
 });
 

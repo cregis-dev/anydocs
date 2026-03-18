@@ -18,6 +18,10 @@ import {
 } from '@/lib/themes/atlas-nav';
 import { ATLAS_DOCS_THEME_CLASS_NAME } from '@/themes/atlas-docs/manifest';
 
+function looksLikePrimaryActionLabel(label: string) {
+  return /start|build|get started|launch|try|开始|构建|立即|体验/i.test(label);
+}
+
 function getAtlasDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteTheme']) {
   const colors = siteTheme.colors ?? {};
   const style: CSSProperties & Record<string, string> = {};
@@ -40,6 +44,7 @@ export function AtlasDocsReaderLayout({
   availableLanguages,
   nav,
   pages,
+  projectName,
   siteTheme,
   siteNavigation,
 }: DocsThemeReaderLayoutProps) {
@@ -50,7 +55,7 @@ export function AtlasDocsReaderLayout({
   const configuredSiteTitle = siteTheme.branding?.siteTitle?.trim();
   const logoSrc = siteTheme.branding?.logoSrc;
   const logoAlt = siteTheme.branding?.logoAlt;
-  const siteTitle = configuredSiteTitle ?? (!logoSrc ? 'Atlas Docs' : '');
+  const siteTitle = configuredSiteTitle ?? projectName?.trim() ?? (!logoSrc ? 'Atlas Docs' : '');
   const themeStyle = getAtlasDocsThemeStyle(siteTheme);
 
   const activePageId = useMemo(() => {
@@ -86,28 +91,31 @@ export function AtlasDocsReaderLayout({
   return (
     <div className={`${ATLAS_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`} style={themeStyle}>
       <header className="sticky top-0 z-40 border-b border-fd-border bg-[color:var(--atlas-header)] backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-[60px] max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
           <Link href={`/${lang}`} className="flex min-w-0 shrink-0 items-center gap-3">
             {logoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoSrc}
                 alt={logoAlt ?? (siteTitle ? `${siteTitle} logo` : 'Project logo')}
-                className="h-9 w-9 rounded-xl object-contain"
+                className="h-7 w-auto object-contain"
               />
             ) : null}
-            {siteTitle ? <span className="truncate text-sm font-semibold text-fd-foreground sm:text-base">{siteTitle}</span> : null}
+            {siteTitle ? <span className="truncate text-[15px] font-semibold text-fd-foreground sm:text-base">{siteTitle}</span> : null}
           </Link>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto lg:flex">
             {topNav.map((item) => {
               const label = resolveTopNavLabel(item.label, lang);
               const active = item.type === 'nav-group' && item.groupId === activeGroupId;
+              const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
               const className =
-                'inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm transition ' +
-                (active
-                  ? 'bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground'
-                  : 'text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-fd-muted hover:text-fd-foreground');
+                'inline-flex h-9 shrink-0 items-center rounded-md border px-3 text-[13px] transition ' +
+                (cta
+                  ? 'border-transparent bg-[color:var(--atlas-primary)] font-semibold text-[color:var(--atlas-primary-foreground)] hover:opacity-95'
+                  : active
+                    ? 'border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] font-semibold text-fd-foreground'
+                    : 'border-transparent text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground');
 
               if (item.type === 'external') {
                 return (
@@ -133,7 +141,7 @@ export function AtlasDocsReaderLayout({
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="secondary" size="icon" className="ml-auto rounded-xl lg:hidden">
+              <Button variant="secondary" size="icon" className="ml-auto rounded-lg lg:hidden">
                 <Menu className="h-4 w-4" />
                 <span className="sr-only">Open navigation</span>
               </Button>
@@ -147,6 +155,7 @@ export function AtlasDocsReaderLayout({
                 <div className="flex flex-wrap gap-2">
                   {topNav.map((item) => {
                     const label = resolveTopNavLabel(item.label, lang);
+                    const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
                     if (item.type === 'external') {
                       return (
                         <a
@@ -154,7 +163,11 @@ export function AtlasDocsReaderLayout({
                           href={item.href}
                           target={item.openInNewTab ? '_blank' : undefined}
                           rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                          className="rounded-full border border-fd-border px-3 py-1.5 text-xs text-fd-muted-foreground"
+                          className={
+                            cta
+                              ? 'rounded-full bg-[color:var(--atlas-primary)] px-3 py-1.5 text-xs font-semibold text-[color:var(--atlas-primary-foreground)]'
+                              : 'rounded-lg border border-fd-border px-3 py-1.5 text-xs text-fd-muted-foreground'
+                          }
                         >
                           {label}
                         </a>
@@ -166,10 +179,10 @@ export function AtlasDocsReaderLayout({
                         key={item.id}
                         href={buildTopNavHref(item, lang, nav, pages)}
                         className={
-                          'rounded-full px-3 py-1.5 text-xs transition ' +
+                          'rounded-lg border px-3 py-1.5 text-xs transition ' +
                           (item.groupId === activeGroupId
-                            ? 'bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground'
-                            : 'bg-fd-muted text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground')
+                            ? 'border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground'
+                            : 'border-transparent bg-fd-muted text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground')
                         }
                       >
                         {label}
@@ -194,11 +207,11 @@ export function AtlasDocsReaderLayout({
         </div>
       </header>
 
-      <div className="mx-auto lg:grid lg:min-h-[calc(100dvh-4rem)] lg:max-w-[1600px] lg:grid-cols-[256px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-fd-border bg-fd-card lg:block">
-          <div className="sticky top-16 h-[calc(100dvh-4rem)] overflow-hidden">{desktopSidebar}</div>
+      <div className="mx-auto lg:grid lg:min-h-[calc(100dvh-60px)] lg:max-w-[1600px] lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:block">
+          <div className="sticky top-[60px] h-[calc(100dvh-60px)] overflow-hidden">{desktopSidebar}</div>
         </aside>
-        <main className="min-w-0">{children}</main>
+        <main className="min-w-0 bg-[color:var(--atlas-body-background)]">{children}</main>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { access, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { access, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -167,6 +167,48 @@ test('init prints next-step commands after creating a project', async () => {
     await access(path.join(repoRoot, 'skill.md'));
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('import --convert stages legacy content and converts it into draft pages', async () => {
+  const repoRoot = await createTempRepoRoot();
+  const legacySourceRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-cli-import-source-'));
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    await writeFile(
+      path.join(legacySourceRoot, 'guide.md'),
+      '# Imported Guide\n\nLegacy content body.\n',
+      'utf8',
+    );
+
+    const spawned = spawnCli(['import', legacySourceRoot, repoRoot, 'en', '--convert']);
+    const result = await spawned.waitForExit();
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.signal, null);
+    assert.match(spawned.getStdout(), /Imported 1 legacy documents into staged conversion path\./);
+    assert.match(spawned.getStdout(), /Converting staged import immediately because --convert was provided\./);
+    assert.match(spawned.getStdout(), /Converted 1 staged documents into canonical draft pages\./);
+    assert.match(spawned.getStdout(), /Review the generated draft pages and publish the ones you want to ship\./);
+    assert.equal(spawned.getStderr(), '');
+
+    const pageRaw = await readFile(path.join(repoRoot, 'pages', 'en', 'guide.json'), 'utf8');
+    const page = JSON.parse(pageRaw) as { status: string; slug: string; title: string };
+    assert.equal(page.status, 'draft');
+    assert.equal(page.slug, 'guide');
+    assert.equal(page.title, 'Imported Guide');
+
+    const importsRoot = path.join(repoRoot, 'imports');
+    const importIds = await readdir(importsRoot);
+    assert.equal(importIds.length, 1);
+    const manifestRaw = await readFile(path.join(importsRoot, importIds[0], 'manifest.json'), 'utf8');
+    const manifest = JSON.parse(manifestRaw) as { status: string };
+    assert.equal(manifest.status, 'converted');
+    await access(path.join(importsRoot, importIds[0], 'conversion-report.json'));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+    await rm(legacySourceRoot, { recursive: true, force: true });
   }
 });
 

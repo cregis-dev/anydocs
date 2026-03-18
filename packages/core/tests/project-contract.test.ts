@@ -499,12 +499,12 @@ test('updateProjectConfig persists docs theme changes', async () => {
     const result = await updateProjectConfig(repoRoot, {
       site: {
         theme: {
-          id: 'paper-docs',
+          id: 'classic-docs',
           branding: {
-            siteTitle: 'Paper Knowledge Base',
+            siteTitle: 'Classic Knowledge Base',
             homeLabel: 'Knowledge Home',
-            logoSrc: '/paper-logo.svg',
-            logoAlt: 'Paper logo',
+            logoSrc: '/classic-logo.svg',
+            logoAlt: 'Classic logo',
           },
           chrome: {
             showSearch: false,
@@ -527,11 +527,11 @@ test('updateProjectConfig persists docs theme changes', async () => {
       return;
     }
 
-    assert.equal(result.value.site.theme.id, 'paper-docs');
-    assert.equal(result.value.site.theme.branding?.siteTitle, 'Paper Knowledge Base');
+    assert.equal(result.value.site.theme.id, 'classic-docs');
+    assert.equal(result.value.site.theme.branding?.siteTitle, 'Classic Knowledge Base');
     assert.equal(result.value.site.theme.branding?.homeLabel, 'Knowledge Home');
-    assert.equal(result.value.site.theme.branding?.logoSrc, '/paper-logo.svg');
-    assert.equal(result.value.site.theme.branding?.logoAlt, 'Paper logo');
+    assert.equal(result.value.site.theme.branding?.logoSrc, '/classic-logo.svg');
+    assert.equal(result.value.site.theme.branding?.logoAlt, 'Classic logo');
     assert.equal(result.value.site.theme.chrome?.showSearch, false);
     assert.equal(result.value.site.theme.colors?.primary, '#101010');
     assert.equal(result.value.site.theme.colors?.sidebarActiveForeground, '#ffffff');
@@ -564,11 +564,11 @@ test('updateProjectConfig persists docs theme changes', async () => {
         };
       };
     };
-    assert.equal(persistedConfig.site?.theme?.id, 'paper-docs');
-    assert.equal(persistedConfig.site?.theme?.branding?.siteTitle, 'Paper Knowledge Base');
+    assert.equal(persistedConfig.site?.theme?.id, 'classic-docs');
+    assert.equal(persistedConfig.site?.theme?.branding?.siteTitle, 'Classic Knowledge Base');
     assert.equal(persistedConfig.site?.theme?.branding?.homeLabel, 'Knowledge Home');
-    assert.equal(persistedConfig.site?.theme?.branding?.logoSrc, '/paper-logo.svg');
-    assert.equal(persistedConfig.site?.theme?.branding?.logoAlt, 'Paper logo');
+    assert.equal(persistedConfig.site?.theme?.branding?.logoSrc, '/classic-logo.svg');
+    assert.equal(persistedConfig.site?.theme?.branding?.logoAlt, 'Classic logo');
     assert.equal(persistedConfig.site?.theme?.chrome?.showSearch, false);
     assert.equal(persistedConfig.site?.theme?.colors?.primary, '#101010');
     assert.equal(persistedConfig.site?.theme?.colors?.sidebarActiveForeground, '#ffffff');

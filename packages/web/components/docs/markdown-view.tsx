@@ -2,6 +2,8 @@ import { isValidElement, type ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { cn } from '@/lib/utils';
+
 function toText(node: unknown): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(toText).join('');
@@ -31,9 +33,14 @@ function withHeadingId(tag: 'h2' | 'h3' | 'h4') {
   };
 }
 
-export function MarkdownView({ markdown }: { markdown: string }) {
+export function MarkdownView({ markdown, className }: { markdown: string; className?: string }) {
   return (
-    <div className="prose prose-neutral max-w-none prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-[-0.025em] prose-headings:text-fd-foreground prose-h2:mb-4 prose-h2:mt-10 prose-h2:text-[30px] prose-h2:leading-[1.5] prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-[20px] prose-h3:leading-[1.5] prose-h4:mb-3 prose-h4:mt-6 prose-h4:text-[16px] prose-h4:leading-7 prose-p:my-4 prose-p:text-[16px] prose-p:leading-7 prose-p:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-li:text-[16px] prose-li:leading-7 prose-li:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-strong:text-[color:var(--docs-body-copy,var(--fd-foreground))] prose-a:text-fd-foreground prose-a:underline-offset-4 hover:prose-a:text-fd-primary prose-code:rounded-md prose-code:bg-fd-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.875em] prose-code:text-fd-foreground prose-pre:rounded-2xl prose-pre:border prose-pre:border-fd-border prose-pre:bg-[#0f172a] prose-pre:shadow-sm prose-blockquote:border-l-[3px] prose-blockquote:border-fd-border prose-blockquote:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-hr:border-fd-border">
+    <div
+      className={cn(
+        'prose prose-neutral max-w-none prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-[-0.025em] prose-headings:text-fd-foreground prose-h2:mb-4 prose-h2:mt-10 prose-h2:text-[30px] prose-h2:leading-[1.5] prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-[20px] prose-h3:leading-[1.5] prose-h4:mb-3 prose-h4:mt-6 prose-h4:text-[16px] prose-h4:leading-7 prose-p:my-4 prose-p:text-[16px] prose-p:leading-7 prose-p:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-li:text-[16px] prose-li:leading-7 prose-li:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-strong:text-[color:var(--docs-body-copy,var(--fd-foreground))] prose-a:text-fd-foreground prose-a:underline-offset-4 hover:prose-a:text-fd-primary prose-code:rounded-md prose-code:bg-fd-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.875em] prose-code:text-fd-foreground prose-pre:rounded-2xl prose-pre:border prose-pre:border-fd-border prose-pre:bg-[#0f172a] prose-pre:shadow-sm prose-blockquote:border-l-[3px] prose-blockquote:border-fd-border prose-blockquote:text-[color:var(--docs-body-copy,var(--fd-muted-foreground))] prose-hr:border-fd-border',
+        className,
+      )}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

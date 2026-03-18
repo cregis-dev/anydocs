@@ -30,13 +30,14 @@ export function ClassicDocsReaderLayout({
   availableLanguages,
   nav,
   pages,
+  projectName,
   siteTheme,
 }: DocsThemeReaderLayoutProps) {
   const configuredSiteTitle = siteTheme.branding?.siteTitle?.trim();
   const homeLabel = siteTheme.branding?.homeLabel ?? 'Docs Home';
   const logoSrc = siteTheme.branding?.logoSrc;
   const logoAlt = siteTheme.branding?.logoAlt;
-  const siteTitle = configuredSiteTitle ?? (!logoSrc ? 'Anydocs Docs' : '');
+  const siteTitle = configuredSiteTitle ?? projectName?.trim() ?? (!logoSrc ? 'Anydocs Docs' : '');
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const themeStyle = getClassicDocsThemeStyle(siteTheme);
 

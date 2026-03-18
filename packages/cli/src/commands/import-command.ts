@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import { importLegacyDocumentation, ValidationError } from '@anydocs/core';
 
+import { runConvertImportCommand } from './convert-import-command.ts';
 import { formatCliCommand } from '../help.ts';
 import { error, info } from '../output/logger.ts';
 
@@ -9,6 +10,7 @@ type ImportCommandOptions = {
   sourceDir?: string;
   targetDir?: string;
   lang?: string;
+  convert?: boolean;
 };
 
 export async function runImportCommand(options: ImportCommandOptions): Promise<number> {
@@ -41,6 +43,16 @@ export async function runImportCommand(options: ImportCommandOptions): Promise<n
     for (const item of result.items) {
       info(`- ${item.lang}:${item.slug} <- ${item.sourcePath}`);
     }
+
+    if (options.convert) {
+      info('Next:');
+      info(`- Converting staged import immediately because --convert was provided.`);
+      return runConvertImportCommand({
+        importId: result.importId,
+        targetDir: options.targetDir,
+      });
+    }
+
     info('Next:');
     info(
       `- Convert the staged import: ${formatCliCommand([

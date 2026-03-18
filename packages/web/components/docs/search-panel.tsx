@@ -82,14 +82,14 @@ export function SearchPanel({
         onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'h-10 rounded-lg border-fd-border bg-fd-muted px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] shadow-none placeholder:text-fd-muted-foreground',
+          'h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] shadow-none placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
           inputClassName,
         )}
       />
       {q.trim() ? (
         <div
           className={cn(
-            'max-h-[50dvh] overflow-y-auto rounded-xl border border-fd-border bg-fd-card p-2 shadow-lg shadow-slate-900/5',
+            'max-h-[50dvh] overflow-y-auto rounded-xl border border-fd-border bg-[color:var(--docs-search-results-background,var(--fd-card))] p-2 shadow-lg shadow-slate-900/5',
             resultsClassName,
           )}
         >
@@ -99,7 +99,7 @@ export function SearchPanel({
                 <Link
                   key={r.id}
                   href={`/${lang}/${r.slug}`}
-                  className="block rounded-lg px-3 py-2 text-sm transition hover:bg-fd-muted"
+                  className="block rounded-lg px-3 py-2 text-sm transition hover:bg-[color:var(--docs-search-hover,var(--fd-muted))]"
                 >
                   <div className="truncate font-medium text-fd-foreground">{r.title}</div>
                   {r.breadcrumbs?.length ? (

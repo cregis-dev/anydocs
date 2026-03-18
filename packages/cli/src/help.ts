@@ -28,7 +28,7 @@ export function printGeneralHelp(): void {
     '  init [targetDir]                       Initialize a new docs project',
     '  build [targetDir] [options]            Build a deployable static docs site',
     '  preview [targetDir] [options]          Start a live local docs preview server',
-    '  import <sourceDir> [targetDir] [lang]  Import legacy Markdown/MDX',
+    '  import <sourceDir> [targetDir] [lang]  Stage legacy Markdown/MDX for conversion',
     '  convert-import <importId> [targetDir]  Convert imported content',
     '  help [command]                         Show general or command-specific help',
     '  version                                Print the CLI version',
@@ -39,6 +39,7 @@ export function printGeneralHelp(): void {
     `  ${formatCliCommand(['build', './workspace/my-docs', '--output', './dist-public'])}`,
     `  ${formatCliCommand(['preview', './workspace/my-docs'])}`,
     `  ${formatCliCommand(['import', './legacy-docs', './workspace/my-docs', 'zh'])}`,
+    `  ${formatCliCommand(['import', './legacy-docs', './workspace/my-docs', 'zh', '--convert'])}`,
   ]);
 }
 
@@ -75,8 +76,11 @@ export function printCommandHelp(command: string): boolean {
     case 'import':
       printLines([
         'Usage:',
-        `  ${formatCliCommand(['import', '<sourceDir>', '[targetDir]', '[lang]'])}`,
-        `  ${formatCliCommand(['import', '--source', '<sourceDir>', '--target', '<targetDir>', '--lang', '<lang>'])}`,
+        `  ${formatCliCommand(['import', '<sourceDir>', '[targetDir]', '[lang]', '[options]'])}`,
+        `  ${formatCliCommand(['import', '--source', '<sourceDir>', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --convert            Immediately convert the staged import into draft pages',
         '',
         'Notes:',
         '  lang currently supports only "zh" or "en".',

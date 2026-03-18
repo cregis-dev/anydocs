@@ -9,6 +9,7 @@ import {
   getPublishedDocStaticParams,
   getPublishedLanguages,
   getPublishedPageBySlug,
+  getPublishedSiteTheme,
   isDocsReaderAvailable,
   resolveRequestDocsSource,
 } from '@/lib/docs/data';
@@ -16,6 +17,8 @@ import { normalizeSlug } from '@/lib/docs/fs';
 import type { DocsLang } from '@/lib/docs/types';
 import { buildBreadcrumbsByPageId, findNextPrevPageIds } from '@/lib/docs/nav';
 import { extractTocFromMarkdown, normalizeMarkdownForRendering } from '@/lib/docs/markdown';
+import { cn } from '@/lib/utils';
+import { ATLAS_DOCS_THEME_ID } from '@/themes/atlas-docs/manifest';
 
 export const dynamicParams = false;
 const EMPTY_EXPORT_PLACEHOLDER = '__anydocs-empty__';
@@ -74,48 +77,87 @@ export default async function Page({
     notFound();
   }
 
+  const siteTheme = await getPublishedSiteTheme(source.projectId, source.customPath);
+  const isAtlasTheme = siteTheme.id === ATLAS_DOCS_THEME_ID;
   const markdown = normalizeMarkdownForRendering(stripLeadingTitleHeading(page.render?.markdown ?? '', page.title));
   const toc = extractTocFromMarkdown(markdown);
-  const crumbs = buildBreadcrumbsByPageId(nav).get(page.id) ?? [];
+  const showBreadcrumbs = !isAtlasTheme;
+  const crumbs = showBreadcrumbs ? buildBreadcrumbsByPageId(nav).get(page.id) ?? [] : [];
   const { prev, next } = findNextPrevPageIds(nav.items, page.id);
   const prevPage = prev ? pages.find((p) => p.id === prev) ?? null : null;
   const nextPage = next ? pages.find((p) => p.id === next) ?? null : null;
 
   return (
-    <div className="flex min-w-0">
-      <div className="min-w-0 flex-1 px-6 py-8 sm:px-8 lg:px-10 lg:py-0">
-        <div className="mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20">
-          <div className="mb-8 text-[14px] leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
-            <span className="inline-flex max-w-full items-center gap-2">
-              <Link href={`/${lang}`} className="hover:underline">
-                Documentation
-              </Link>
-              {crumbs.length ? <span>›</span> : null}
-              {crumbs.map((c, i) => (
-                <span key={`${c}-${i}`} className="inline-flex items-center gap-2">
-                  <span className="truncate">{c}</span>
-                  {i < crumbs.length - 1 ? <span>›</span> : null}
-                </span>
-              ))}
-            </span>
-          </div>
+    <div className={cn('flex min-w-0', isAtlasTheme && 'bg-[color:var(--atlas-body-background)]')}>
+      <div
+        className={cn(
+          'min-w-0 flex-1 px-6 py-8 sm:px-8 lg:px-10 lg:py-0',
+          isAtlasTheme && 'px-4 py-5 sm:px-6 lg:px-8 lg:py-8',
+        )}
+      >
+        <div
+          className={cn(
+            'mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20',
+            isAtlasTheme &&
+              'max-w-none rounded-[10px] border border-[color:var(--atlas-content-border)] bg-white px-6 py-7 shadow-[0_1px_0_var(--atlas-content-shadow)] sm:px-8 lg:px-11 lg:py-8',
+          )}
+        >
+          {showBreadcrumbs ? (
+            <div className="mb-8 text-[14px] leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+              <span className="inline-flex max-w-full items-center gap-2">
+                <Link href={`/${lang}`} className="hover:underline">
+                  Documentation
+                </Link>
+                {crumbs.length ? <span>›</span> : null}
+                {crumbs.map((c, i) => (
+                  <span key={`${c}-${i}`} className="inline-flex items-center gap-2">
+                    <span className="truncate">{c}</span>
+                    {i < crumbs.length - 1 ? <span>›</span> : null}
+                  </span>
+                ))}
+              </span>
+            </div>
+          ) : null}
 
-          <header className="mb-10 space-y-4">
-            <h1 className="text-[36px] font-bold leading-[1.12] tracking-[-0.03em] text-fd-foreground">{page.title}</h1>
+          <header className={cn('mb-10 space-y-4', isAtlasTheme && 'mb-8 space-y-3')}>
+            <h1
+              className={cn(
+                'text-[36px] font-bold leading-[1.12] tracking-[-0.03em] text-fd-foreground',
+                isAtlasTheme && 'text-[34px] font-semibold tracking-[-0.03em]',
+              )}
+            >
+              {page.title}
+            </h1>
             {page.description ? (
-              <p className="max-w-[590px] text-[18px] font-light leading-[1.75] text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+              <p
+                className={cn(
+                  'max-w-[590px] text-[18px] font-light leading-[1.75] text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]',
+                  isAtlasTheme && 'max-w-[760px] text-[13px] font-normal leading-6',
+                )}
+              >
                 {page.description}
               </p>
             ) : null}
           </header>
 
-          <MarkdownView markdown={markdown} />
+          {isAtlasTheme ? <div className="mb-6 h-px w-full bg-[color:var(--atlas-border)]" /> : null}
 
-          <div className="mt-14 flex items-center justify-between border-t border-fd-border pt-6">
+          <MarkdownView
+            markdown={markdown}
+            className={cn(
+              isAtlasTheme &&
+                'prose-p:my-2.5 prose-p:text-[13px] prose-p:leading-6 prose-li:text-[13px] prose-li:leading-6 prose-h2:mb-2 prose-h2:mt-6 prose-h3:mb-1.5 prose-h3:mt-3 prose-table:mt-4',
+            )}
+          />
+
+          <div className={cn('mt-14 flex items-center justify-between border-t border-fd-border pt-6', isAtlasTheme && 'mt-12')}>
             {prevPage ? (
               <Link
                 href={`/${lang}/${prevPage.slug}`}
-                className="rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted"
+                className={cn(
+                  'rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted',
+                  isAtlasTheme && 'rounded-lg bg-white hover:bg-[color:var(--atlas-sidebar-hover)]',
+                )}
               >
                 ← {prevPage.title}
               </Link>
@@ -125,7 +167,10 @@ export default async function Page({
             {nextPage ? (
               <Link
                 href={`/${lang}/${nextPage.slug}`}
-                className="rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted"
+                className={cn(
+                  'rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted',
+                  isAtlasTheme && 'rounded-lg bg-white hover:bg-[color:var(--atlas-sidebar-hover)]',
+                )}
               >
                 {nextPage.title} →
               </Link>
@@ -136,7 +181,14 @@ export default async function Page({
         </div>
       </div>
 
-      <DocsToc toc={toc} />
+      <DocsToc
+        toc={toc}
+        className={cn(isAtlasTheme && 'w-[240px] border-l-0 bg-transparent px-4 py-6')}
+        contentClassName={cn(
+          isAtlasTheme &&
+            'rounded-xl border border-[color:var(--docs-toc-border)] bg-[color:var(--docs-toc-background)] px-4 py-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]',
+        )}
+      />
     </div>
   );
 }

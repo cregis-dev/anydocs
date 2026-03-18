@@ -61,7 +61,7 @@ function NavNode({
   if (item.type === 'section') {
     return (
       <div className="mt-6 first:mt-0">
-        <div className="px-0 pb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--docs-sidebar-section,var(--fd-muted-foreground))]">
+        <div className="px-1 pb-3 text-[11px] font-semibold tracking-[0.01em] text-[color:var(--docs-sidebar-section,var(--fd-muted-foreground))]">
           {item.title}
         </div>
         <div className="space-y-1">
@@ -85,10 +85,10 @@ function NavNode({
     if (rootFolderDisplay === 'section' && depth === 0) {
       return (
         <div className="mt-8 first:mt-0">
-          <div className="px-1 pb-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]">
+          <div className="px-2 pb-3 text-[15px] font-semibold tracking-[-0.02em] text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]">
             {item.title}
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {item.children.map((c, idx) => (
               <NavNode
                 key={`${item.title}-${idx}`}
@@ -149,14 +149,14 @@ function NavNode({
       href={`/${lang}/${page.slug}`}
       className={
         (rootFolderDisplay === 'section'
-          ? 'block rounded-2xl px-4 py-3 text-[15px] leading-6 transition '
+          ? 'block rounded-md border border-transparent px-3 py-2 text-[13px] leading-5 transition '
           : 'block rounded-r-md rounded-l-none px-3 py-2 text-[14px] leading-5 transition ') +
         (active
           ? rootFolderDisplay === 'section'
-            ? 'bg-[color:var(--docs-sidebar-active-background,var(--fd-muted))] font-semibold text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
+            ? 'border-l-2 border-l-[color:var(--docs-sidebar-active-border,var(--fd-foreground))] bg-[color:var(--docs-sidebar-active-background,var(--fd-muted))] font-medium text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
             : 'border-l-4 border-[color:var(--docs-sidebar-active-border,var(--fd-foreground))] bg-[color:var(--docs-sidebar-active-background,var(--fd-muted))] font-medium text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
           : rootFolderDisplay === 'section'
-            ? 'text-[color:var(--docs-sidebar-link,var(--fd-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]'
+            ? 'text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]'
             : 'border-l-4 border-transparent text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]')
       }
       aria-current={active ? 'page' : undefined}
@@ -182,6 +182,8 @@ type DocsSidebarProps = {
   showLanguageSwitcher?: boolean;
   className?: string;
   rootFolderDisplay?: 'collapsible' | 'section';
+  insetClassName?: string;
+  fillHeight?: boolean;
 };
 
 export function DocsSidebar({
@@ -196,6 +198,8 @@ export function DocsSidebar({
   showLanguageSwitcher = false,
   className,
   rootFolderDisplay = 'collapsible',
+  insetClassName,
+  fillHeight = true,
 }: DocsSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -215,12 +219,13 @@ export function DocsSidebar({
   const activeLanguageMeta = getLanguageMeta(lang);
 
   return (
-    <aside className={cn('flex h-full flex-col border-r border-fd-border bg-fd-card', className)}>
+    <aside className={cn('flex flex-col border-r border-fd-border bg-fd-card', fillHeight && 'h-full', className)}>
       {showBranding ? (
         <Link
           href={`/${lang}`}
           className={cn(
             'px-6 pt-6 transition hover:opacity-85',
+            insetClassName,
             hasLogo && hasTitle && 'flex items-center gap-3',
             hasLogo && !hasTitle && 'inline-flex items-center',
             !hasLogo && hasTitle && 'block',
@@ -253,16 +258,22 @@ export function DocsSidebar({
       ) : null}
 
       {showSearch ? (
-        <div className="px-6 pt-4">
+        <div className={cn('px-6 pt-4', insetClassName)}>
           <SearchPanel
             lang={lang}
-            inputClassName="h-10 rounded-lg border-fd-border bg-fd-muted px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-fd-muted-foreground"
+            inputClassName="h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]"
             resultsClassName="rounded-xl border-fd-border bg-fd-background shadow-lg"
           />
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5">
+      <div
+        className={cn(
+          'px-6 pb-6 pt-5',
+          fillHeight ? 'flex-1 overflow-y-auto' : 'overflow-visible',
+          insetClassName,
+        )}
+      >
         <div>
           {nav.items.map((item, idx) => (
             <NavNode
@@ -278,7 +289,7 @@ export function DocsSidebar({
         </div>
       </div>
 
-      <div className="space-y-4 border-t border-fd-border px-6 py-6 text-xs text-fd-muted-foreground">
+      <div className={cn('space-y-4 border-t border-fd-border px-6 py-6 text-xs text-fd-muted-foreground', insetClassName)}>
         {showHomeLink ? (
           <div className="flex items-center justify-between gap-3">
             <Link href={`/${lang}`} className="font-medium text-fd-foreground transition hover:text-fd-primary">
@@ -299,7 +310,7 @@ export function DocsSidebar({
                 router.push(buildLanguageHref(pathname, lang, nextLang));
               }}
             >
-              <SelectTrigger className="inline-flex h-10 w-full min-w-0 rounded-full border-fd-border bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none">
+              <SelectTrigger className="inline-flex h-10 w-full min-w-0 rounded-xl border-fd-border bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none">
                 <span className="truncate pr-2">{activeLanguageMeta.label}</span>
               </SelectTrigger>
               <SelectContent className="min-w-[12rem] rounded-[1.25rem] border-fd-border bg-fd-popover p-2 shadow-lg">

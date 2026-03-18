@@ -197,7 +197,6 @@ capabilities: {
 
 Initial expectations:
 - `classic-docs`: `false`, `false`
-- `paper-docs`: `false`, `false`
 - `atlas-docs`: `true`, `true`
 
 ## Reader Behavior
