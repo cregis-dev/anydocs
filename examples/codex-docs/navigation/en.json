@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        },
+        {
+          "type": "page",
+          "pageId": "codex-overview"
+        },
+        {
+          "type": "page",
+          "pageId": "connect-anydocs-mcp"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Hands-On",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "create-your-first-docs-site"
+        },
+        {
+          "type": "page",
+          "pageId": "daily-authoring-workflow"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Reference",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "codex-guardrails-and-troubleshooting"
+        }
+      ]
+    }
+  ]
+}

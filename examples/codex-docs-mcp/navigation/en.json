@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        },
+        {
+          "type": "page",
+          "pageId": "connect-mcp-in-codex"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Workflow",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "developer-simulation"
+        },
+        {
+          "type": "page",
+          "pageId": "codex-workflow"
+        }
+      ]
+    }
+  ]
+}

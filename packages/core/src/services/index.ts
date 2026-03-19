@@ -1,3 +1,4 @@
+export * from './authoring-service.ts';
 export * from './build-service.ts';
 export * from './init-service.ts';
 export * from './legacy-conversion-service.ts';

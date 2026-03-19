@@ -7,10 +7,12 @@ import {
 } from '@anydocs/core';
 
 import { error, info } from '../output/logger.ts';
+import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
 
 type PreviewCommandOptions = {
   targetDir?: string;
   watch?: boolean;
+  json?: boolean;
 };
 
 type PreviewFailureKind = 'startup' | 'shutdown';
@@ -38,7 +40,7 @@ function logPreviewFailure(caughtError: unknown, kind: PreviewFailureKind = 'sta
 }
 
 export async function runPreviewCommand(options: PreviewCommandOptions = {}): Promise<number> {
-  const { targetDir, watch = false } = options;
+  const { targetDir, watch = false, json = false } = options;
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
@@ -46,8 +48,28 @@ export async function runPreviewCommand(options: PreviewCommandOptions = {}): Pr
       info('Preview runs in live mode by default; --watch is kept as a compatibility flag.');
     }
 
-    const result = await runPreviewWorkflow({ repoRoot, stdio: 'inherit' });
-    logPreviewSuccess(result);
+    const result = await runPreviewWorkflow({ repoRoot, stdio: json ? 'pipe' : 'inherit' });
+    if (json) {
+      writeJsonSuccess(
+        'preview',
+        {
+          projectId: result.projectId,
+          host: result.host,
+          port: result.port,
+          url: result.url,
+          docsPath: result.docsPath,
+          previewUrl: `${result.url}${result.docsPath}`,
+          publishedPages: result.publishedPages,
+          pid: result.pid,
+        },
+        {
+          projectId: result.projectId,
+          repoRoot,
+        },
+      );
+    } else {
+      logPreviewSuccess(result);
+    }
 
     let stopping = false;
     const stop = async () => {
@@ -77,6 +99,10 @@ export async function runPreviewCommand(options: PreviewCommandOptions = {}): Pr
       process.off('SIGTERM', handleSignal);
     }
   } catch (caughtError: unknown) {
+    if (json) {
+      writeJsonError('preview', caughtError, { repoRoot });
+      return 1;
+    }
     logPreviewFailure(caughtError);
     return 1;
   }

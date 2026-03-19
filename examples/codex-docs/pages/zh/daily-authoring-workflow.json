@@ -1,0 +1,18 @@
+{
+  "id": "daily-authoring-workflow",
+  "lang": "zh",
+  "slug": "daily-authoring-workflow",
+  "title": "日常写作工作流",
+  "description": "让 Codex 参与真实文档维护时的推荐节奏。",
+  "tags": [
+    "workflow",
+    "authoring"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# 日常写作工作流\n\n当站点已经存在时，推荐这样让 Codex 参与工作：\n\n1. 先读，不要一上来就写\n2. 先找目标页面，再决定是创建还是更新\n3. 对已有页面做局部、明确、可解释的改动\n4. 需要发布时单独调用 `page_set_status`\n\n一个好的开发者提示通常会包含：\n\n- 明确的 `projectRoot`\n- 目标语言，例如 `zh` 或 `en`\n- 想改哪一页：`pageId` 或 `slug`\n- 预期结果：新增页面、改写内容、还是只调整状态\n\n这样 Codex 更容易稳定地把工作落在正确的工具上。\n",
+    "plainText": "日常写作时，应该让 Codex 先读取项目和页面状态，再决定创建还是更新；页面内容和状态变更应分开处理，并始终提供明确的 projectRoot、语言和目标页面。"
+  }
+}

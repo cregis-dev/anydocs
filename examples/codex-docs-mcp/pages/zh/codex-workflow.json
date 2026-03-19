@@ -1,0 +1,18 @@
+{
+  "id": "codex-workflow",
+  "lang": "zh",
+  "slug": "codex-workflow",
+  "title": "Codex 与 Anydocs 的协作方式",
+  "description": "把 Codex 放在 MCP 驱动的文档工作流里。",
+  "tags": [
+    "codex",
+    "workflow"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-18T17:26:48.716Z",
+  "content": {},
+  "render": {
+    "markdown": "# Codex 与 Anydocs 的协作方式\n\n在 Anydocs 里，Codex 最适合做的是：\n\n- 先读取项目 contract\n- 再读取页面现状\n- 之后通过 `page_create` 或 `page_update` 做可解释的变更\n- 最后再用 `page_set_status` 推进页面状态\n\n关键点不是让 Codex 直接改 `pages/*.json`，而是让它始终通过 MCP 工具操作。",
+    "plainText": "Codex 与 Anydocs 的协作方式 在 Anydocs 里，Codex 最适合做的是： - 先读取项目 contract - 再读取页面现状 - 之后通过 page_create 或 page_update 做可解释的变更 - 最后再用 page_set_status 推进页面状态 关键点不是让 Codex 直接改 pages/ .json ，而是让它始终通过 MCP 工具操作。"
+  }
+}

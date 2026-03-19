@@ -59,6 +59,7 @@ next-env.d.ts
 
 # Playwright
 .playwright/
+.tmp/
 
 # Misc
 *.pem

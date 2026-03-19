@@ -2,11 +2,25 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  parseCreateProjectCommandArgs,
+  parseGlobalCommandArgs,
   parseConvertImportCommandArgs,
   parseImportCommandArgs,
+  parseNavigationGetCommandArgs,
   parseOptionalTargetDirCommandArgs,
+  parsePageFindCommandArgs,
+  parsePageGetCommandArgs,
+  parsePageListCommandArgs,
+  parseProjectReadCommandArgs,
   parseWorkflowCommandArgs,
 } from '../src/commands/command-args.ts';
+
+test('parseGlobalCommandArgs strips the --json flag', () => {
+  assert.deepEqual(parseGlobalCommandArgs(['foo', '--json', 'bar']), {
+    args: ['foo', 'bar'],
+    json: true,
+  });
+});
 
 test('parseWorkflowCommandArgs accepts one-shot workflow arguments', () => {
   assert.deepEqual(parseWorkflowCommandArgs([]), {
@@ -45,6 +59,39 @@ test('parseOptionalTargetDirCommandArgs accepts zero or one positional argument'
   assert.deepEqual(parseOptionalTargetDirCommandArgs([]), { targetDir: undefined });
   assert.deepEqual(parseOptionalTargetDirCommandArgs(['fixtures/docs']), { targetDir: 'fixtures/docs' });
   assert.throws(() => parseOptionalTargetDirCommandArgs(['first', 'second']), /Too many positional arguments/);
+});
+
+test('parseCreateProjectCommandArgs accepts positional and named init arguments', () => {
+  assert.deepEqual(
+    parseCreateProjectCommandArgs([
+      'fixtures/docs',
+      '--project-id',
+      'acme-docs',
+      '--name',
+      'Acme Docs',
+      '--default-language',
+      'en',
+      '--languages',
+      'en,zh',
+      '--agent',
+      'codex',
+    ]),
+    {
+      targetDir: 'fixtures/docs',
+      projectId: 'acme-docs',
+      projectName: 'Acme Docs',
+      defaultLanguage: 'en',
+      languages: ['en', 'zh'],
+      agent: 'codex',
+    },
+  );
+});
+
+test('parseCreateProjectCommandArgs rejects unsupported agent values', () => {
+  assert.throws(
+    () => parseCreateProjectCommandArgs(['fixtures/docs', '--agent', 'unknown-agent']),
+    /Unknown agent/,
+  );
 });
 
 test('parseImportCommandArgs accepts positional and named arguments', () => {
@@ -103,4 +150,51 @@ test('parseConvertImportCommandArgs accepts positional and named arguments', () 
 test('parseConvertImportCommandArgs rejects invalid usage', () => {
   assert.throws(() => parseConvertImportCommandArgs(['--target']), /requires a value/);
   assert.throws(() => parseConvertImportCommandArgs(['first', 'second', 'third']), /Too many positional arguments/);
+});
+
+test('parseProjectReadCommandArgs accepts positional or named target directories', () => {
+  assert.deepEqual(parseProjectReadCommandArgs([]), { targetDir: undefined });
+  assert.deepEqual(parseProjectReadCommandArgs(['fixtures/docs']), { targetDir: 'fixtures/docs' });
+  assert.deepEqual(parseProjectReadCommandArgs(['--target', 'fixtures/docs']), { targetDir: 'fixtures/docs' });
+});
+
+test('parsePageListCommandArgs accepts language filters and target directory', () => {
+  assert.deepEqual(parsePageListCommandArgs(['fixtures/docs', '--lang', 'en', '--status', 'draft', '--tag', 'GUIDE']), {
+    targetDir: 'fixtures/docs',
+    lang: 'en',
+    status: 'draft',
+    tag: 'GUIDE',
+  });
+});
+
+test('parsePageGetCommandArgs accepts positional and named arguments', () => {
+  assert.deepEqual(parsePageGetCommandArgs(['welcome', 'fixtures/docs', '--lang', 'en']), {
+    pageId: 'welcome',
+    targetDir: 'fixtures/docs',
+    lang: 'en',
+  });
+
+  assert.deepEqual(parsePageGetCommandArgs(['--page-id', 'welcome', '--target', 'fixtures/docs', '--lang', 'en']), {
+    pageId: 'welcome',
+    targetDir: 'fixtures/docs',
+    lang: 'en',
+  });
+});
+
+test('parsePageFindCommandArgs accepts slug and page filters', () => {
+  assert.deepEqual(parsePageFindCommandArgs(['fixtures/docs', '--lang', 'en', '--slug', 'welcome', '--status', 'published']), {
+    pageId: undefined,
+    slug: 'welcome',
+    targetDir: 'fixtures/docs',
+    lang: 'en',
+    status: 'published',
+    tag: undefined,
+  });
+});
+
+test('parseNavigationGetCommandArgs accepts language and target directory', () => {
+  assert.deepEqual(parseNavigationGetCommandArgs(['fixtures/docs', '--lang', 'zh']), {
+    targetDir: 'fixtures/docs',
+    lang: 'zh',
+  });
 });

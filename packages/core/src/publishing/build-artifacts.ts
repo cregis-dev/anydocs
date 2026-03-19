@@ -28,6 +28,24 @@ type MachineReadablePageDoc = {
   breadcrumbs: string[];
 };
 
+type MachineReadableChunkDoc = {
+  id: string;
+  pageId: string;
+  lang: string;
+  slug: string;
+  href: string;
+  title: string;
+  description: string;
+  headingPath: string[];
+  breadcrumbs: string[];
+  order: number;
+  tags: string[];
+  updatedAt: string | null;
+  text: string;
+  summary?: string;
+  tokenEstimate: number;
+};
+
 type MachineReadableArtifactIndex = {
   version: 1;
   generatedAt: string;
@@ -54,6 +72,7 @@ type MachineReadableArtifactIndex = {
       searchIndex: string;
       navigation: string;
       pages: string;
+      chunks: string;
     };
   }>;
 };
@@ -137,6 +156,9 @@ type SerializedSiteNavigationMetadata = {
   topNav?: ProjectSiteNavigation['topNav'];
 };
 
+const CHUNK_MAX_CHARS = 2000;
+const CHUNK_OVERLAP_CHARS = 200;
+
 function stripMarkdown(markdown: string): string {
   return markdown
     .replace(/```[\s\S]*?```/g, ' ')
@@ -146,6 +168,51 @@ function stripMarkdown(markdown: string): string {
     .replace(/[#>*_~]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function stripLeadingTitleHeading(markdown: string, title: string): string {
+  const lines = markdown.split('\n');
+  let index = 0;
+
+  while (index < lines.length && lines[index]?.trim() === '') {
+    index += 1;
+  }
+
+  const firstLine = lines[index]?.trim();
+  if (!firstLine) {
+    return markdown;
+  }
+
+  const expectedHeading = `# ${title.trim()}`;
+  if (firstLine !== expectedHeading) {
+    return markdown;
+  }
+
+  index += 1;
+  while (index < lines.length && lines[index]?.trim() === '') {
+    index += 1;
+  }
+
+  return lines.slice(index).join('\n');
+}
+
+function stripLeadingTitleText(plainText: string, title: string): string {
+  const normalizedText = plainText.trim();
+  const normalizedTitle = title.trim();
+
+  if (!normalizedText || !normalizedTitle) {
+    return normalizedText;
+  }
+
+  if (normalizedText === normalizedTitle) {
+    return '';
+  }
+
+  if (normalizedText.startsWith(`${normalizedTitle} `)) {
+    return normalizedText.slice(normalizedTitle.length).trimStart();
+  }
+
+  return normalizedText;
 }
 
 function walkNavItems(items: NavItem[], trail: string[], callback: (item: NavItem, trail: string[]) => void): void {
@@ -184,9 +251,18 @@ function countNavigationItems(items: NavItem[]): number {
   return count;
 }
 
-function toSearchDoc(page: PageDoc, breadcrumbs: string[]): SearchIndexDoc {
+function getPageText(page: PageDoc) {
   const markdown = page.render?.markdown ?? '';
   const plainText = page.render?.plainText ?? stripMarkdown(markdown);
+
+  return {
+    markdown,
+    plainText,
+  };
+}
+
+function toSearchDoc(page: PageDoc, breadcrumbs: string[]): SearchIndexDoc {
+  const { plainText } = getPageText(page);
 
   return {
     id: page.id,
@@ -227,6 +303,188 @@ function buildLlmsTxt(siteArtifacts: BuildWorkflowPublishedSiteResult[]): string
   }
 
   return lines.join('\n').trimEnd();
+}
+
+function buildLlmsFullTxt(
+  contract: ProjectContract,
+  siteArtifacts: BuildWorkflowPublishedSiteResult[],
+  generatedAt: string,
+): string {
+  const lines: string[] = [];
+  lines.push('# Docs Full Export');
+  lines.push(`- Project: ${contract.config.projectId}`);
+  lines.push(`- Languages: ${siteArtifacts.map((entry) => entry.lang).join(', ')}`);
+  lines.push('- Publication Rule: published-only');
+  lines.push(`- Generated At: ${generatedAt}`);
+  lines.push('');
+
+  for (const site of siteArtifacts) {
+    lines.push(`## Language: ${site.lang}`);
+    lines.push('');
+
+    for (const page of site.content.pages) {
+      const { plainText } = getPageText(page);
+      const body = stripLeadingTitleText(plainText, page.title) || plainText.trim() || page.title.trim();
+      const breadcrumbs = buildPageBreadcrumbs(site.content.navigation.items).get(page.id) ?? [];
+
+      lines.push('### Page');
+      lines.push(`- Page ID: ${page.id}`);
+      lines.push(`- URL: /${site.lang}/${page.slug}`);
+      lines.push(`- Title: ${page.title}`);
+      lines.push(`- Breadcrumbs: ${breadcrumbs.length ? breadcrumbs.join(' > ') : '(none)'}`);
+      lines.push(`- Tags: ${page.tags?.length ? page.tags.join(', ') : '(none)'}`);
+      lines.push(`- Updated At: ${page.updatedAt ?? 'null'}`);
+      lines.push('');
+      lines.push(body);
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n').trimEnd();
+}
+
+function extractMarkdownSections(markdown: string, title: string): Array<{ headingPath: string[]; text: string }> {
+  const normalized = stripLeadingTitleHeading(markdown, title).replace(/\r\n/g, '\n').trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const sections: Array<{ headingPath: string[]; text: string }> = [];
+  const headingStack: Array<{ depth: number; title: string }> = [];
+  const lines = normalized.split('\n');
+  let currentHeadingPath: string[] = [];
+  let currentLines: string[] = [];
+
+  const flushCurrent = () => {
+    const text = stripMarkdown(currentLines.join('\n'));
+    if (!text) {
+      return;
+    }
+
+    sections.push({
+      headingPath: [...currentHeadingPath],
+      text,
+    });
+  };
+
+  for (const line of lines) {
+    const headingMatch = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
+    if (!headingMatch) {
+      currentLines.push(line);
+      continue;
+    }
+
+    flushCurrent();
+    currentLines = [];
+
+    const depth = headingMatch[1].length;
+    const headingTitle = headingMatch[2].replace(/`/g, '').trim();
+    while (headingStack.length > 0 && headingStack[headingStack.length - 1]!.depth >= depth) {
+      headingStack.pop();
+    }
+    headingStack.push({ depth, title: headingTitle });
+    currentHeadingPath = headingStack.map((entry) => entry.title);
+  }
+
+  flushCurrent();
+  return sections;
+}
+
+function splitChunkText(text: string, maxChars = CHUNK_MAX_CHARS, overlapChars = CHUNK_OVERLAP_CHARS): string[] {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return [];
+  }
+
+  if (normalized.length <= maxChars) {
+    return [normalized];
+  }
+
+  const chunks: string[] = [];
+  let start = 0;
+
+  while (start < normalized.length) {
+    let end = Math.min(normalized.length, start + maxChars);
+    if (end < normalized.length) {
+      const lastSpace = normalized.lastIndexOf(' ', end);
+      if (lastSpace > start + Math.floor(maxChars * 0.6)) {
+        end = lastSpace;
+      }
+    }
+
+    const chunk = normalized.slice(start, end).trim();
+    if (chunk) {
+      chunks.push(chunk);
+    }
+
+    if (end >= normalized.length) {
+      break;
+    }
+
+    start = Math.max(start + 1, end - overlapChars);
+  }
+
+  return chunks;
+}
+
+function toChunkDocs(site: BuildWorkflowPublishedSiteResult, page: PageDoc, breadcrumbs: string[]): MachineReadableChunkDoc[] {
+  const { markdown, plainText } = getPageText(page);
+  const sectionCandidates = extractMarkdownSections(markdown, page.title);
+  const fallbackText = stripLeadingTitleText(plainText, page.title) || plainText.trim() || page.title.trim();
+  const sections =
+    sectionCandidates.length > 0
+      ? sectionCandidates
+      : fallbackText
+        ? [{ headingPath: [] as string[], text: fallbackText }]
+        : [];
+
+  const chunks: MachineReadableChunkDoc[] = [];
+  let order = 1;
+
+  for (const section of sections) {
+    for (const chunkText of splitChunkText(section.text)) {
+      chunks.push({
+        id: `${page.id}#${String(order).padStart(4, '0')}`,
+        pageId: page.id,
+        lang: site.lang,
+        slug: page.slug,
+        href: `/${site.lang}/${page.slug}`,
+        title: page.title,
+        description: page.description ?? '',
+        headingPath: section.headingPath,
+        breadcrumbs,
+        order,
+        tags: page.tags ?? [],
+        updatedAt: page.updatedAt ?? null,
+        text: chunkText,
+        tokenEstimate: Math.max(1, Math.ceil(chunkText.length / 4)),
+      });
+      order += 1;
+    }
+  }
+
+  if (chunks.length > 0) {
+    return chunks;
+  }
+
+  return [
+    {
+      id: `${page.id}#0001`,
+      pageId: page.id,
+      lang: site.lang,
+      slug: page.slug,
+      href: `/${site.lang}/${page.slug}`,
+      title: page.title,
+      description: page.description ?? '',
+      headingPath: [],
+      breadcrumbs,
+      order: 1,
+      tags: page.tags ?? [],
+      updatedAt: page.updatedAt ?? null,
+      text: page.title.trim(),
+      tokenEstimate: Math.max(1, Math.ceil(page.title.trim().length / 4)),
+    },
+  ];
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
@@ -282,7 +540,7 @@ async function cleanupLegacyLanguageArtifacts(
   try {
     const machineReadableFiles = await readdir(machineReadableRoot);
     for (const fileName of machineReadableFiles) {
-      const artifactMatch = /^(navigation|pages)\.(.+)\.json$/.exec(fileName);
+      const artifactMatch = /^(navigation|pages|chunks)\.(.+)\.json$/.exec(fileName);
       if (!artifactMatch) {
         continue;
       }
@@ -326,6 +584,16 @@ export async function writePublishedArtifacts(
       version: site.content.navigation.version,
       items: site.content.navigation.items,
     };
+    const chunkArtifact = {
+      lang: site.lang,
+      generatedAt,
+      chunking: {
+        strategy: 'heading-aware',
+        maxChars: CHUNK_MAX_CHARS,
+        overlapChars: CHUNK_OVERLAP_CHARS,
+      },
+      chunks: site.content.pages.flatMap((page) => toChunkDocs(site, page, breadcrumbsById.get(page.id) ?? [])),
+    };
     const pagesArtifact = {
       lang: site.lang,
       generatedAt,
@@ -344,6 +612,7 @@ export async function writePublishedArtifacts(
     await writeJson(languagePaths.searchIndexFile, searchIndex);
     await writeJson(path.join(contract.paths.machineReadableRoot, `navigation.${site.lang}.json`), navigationArtifact);
     await writeJson(path.join(contract.paths.machineReadableRoot, `pages.${site.lang}.json`), pagesArtifact);
+    await writeJson(path.join(contract.paths.machineReadableRoot, `chunks.${site.lang}.json`), chunkArtifact);
   }
 
   const machineReadableIndex: MachineReadableArtifactIndex = {
@@ -363,6 +632,7 @@ export async function writePublishedArtifacts(
         searchIndex: `../search-index.${site.lang}.json`,
         navigation: `navigation.${site.lang}.json`,
         pages: `pages.${site.lang}.json`,
+        chunks: `chunks.${site.lang}.json`,
       },
     })),
   };
@@ -370,6 +640,8 @@ export async function writePublishedArtifacts(
 
   const llms = buildLlmsTxt(siteArtifacts);
   await writeText(contract.paths.llmsFile, llms);
+  const llmsFull = buildLlmsFullTxt(contract, siteArtifacts, generatedAt);
+  await writeText(path.join(outputRoot, 'llms-full.txt'), llmsFull);
 
   // Generate build manifest
   const publishedPagesByLang: Record<string, number> = {};

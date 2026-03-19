@@ -1,0 +1,18 @@
+{
+  "id": "create-your-first-docs-site",
+  "lang": "zh",
+  "slug": "create-your-first-docs-site",
+  "title": "模拟：开发者如何让 Codex 创建文档站",
+  "description": "从初始化项目到写入内容的一个最小流程。",
+  "tags": [
+    "workflow",
+    "simulation"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# 模拟：开发者如何让 Codex 创建文档站\n\n下面是一条典型流程：\n\n## 第一步：初始化项目\n\n开发者先创建一个空项目：\n\n```bash\npnpm --filter @anydocs/cli cli init ./workspace/codex-docs --agent codex\n```\n\n这一步会生成：\n\n- `anydocs.config.json`\n- `anydocs.workflow.json`\n- `AGENTS.md`\n- 初始欢迎页和导航文件\n\n## 第二步：让 Codex 读取项目状态\n\n开发者会要求 Codex：\n\n- 先调用 `project_open`\n- 确认默认语言和启用语言\n- 用 `page_list` 看看现有页面\n\n## 第三步：开始写内容\n\n接着，Codex 可以：\n\n- 用 `page_create` 新建页面\n- 用 `page_update` 补充标题、描述、Markdown 内容\n- 用 `page_set_status` 把页面推进到合适状态\n\n## 第四步：检查导航\n\n如果当前版本只需要读取导航，Codex 会调用 `nav_get`，确保页面结构和内容方向一致。\n",
+    "plainText": "模拟流程是：开发者先用 anydocs init --agent codex 初始化项目，然后让 Codex 用 project_open 和 page_list 理解项目状态，再用 page_create、page_update、page_set_status 写内容，最后用 nav_get 检查导航。"
+  }
+}

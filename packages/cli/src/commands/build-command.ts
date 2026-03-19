@@ -10,11 +10,13 @@ import {
 
 import { formatCliCommand } from '../help.ts';
 import { error, info } from '../output/logger.ts';
+import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
 
 type BuildCommandOptions = {
   targetDir?: string;
   watch?: boolean;
   output?: string;
+  json?: boolean;
 };
 
 type BuildFailureKind = 'startup' | 'rerun';
@@ -55,12 +57,30 @@ function logBuildFailure(caughtError: unknown, kind: BuildFailureKind = 'startup
 }
 
 export async function runBuildCommand(options: BuildCommandOptions = {}): Promise<number> {
-  const { targetDir, watch = false, output } = options;
+  const { targetDir, watch = false, output, json = false } = options;
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
     if (!watch) {
       const result = await runBuildWorkflow({ repoRoot, outputDir: output });
+      if (json) {
+        writeJsonSuccess(
+          'build',
+          {
+            projectId: result.projectId,
+            artifactRoot: result.artifactRoot,
+            machineReadableRoot: result.machineReadableRoot,
+            entryHtmlFile: result.entryHtmlFile,
+            defaultDocsPath: result.defaultDocsPath,
+            languages: result.languages,
+          },
+          {
+            projectId: result.projectId,
+            repoRoot,
+          },
+        );
+        return 0;
+      }
       logBuildSuccess(result);
       info(`Next: preview locally with ${formatCliCommand(['preview', targetDir ?? '.'])}`);
       return 0;
@@ -95,6 +115,10 @@ export async function runBuildCommand(options: BuildCommandOptions = {}): Promis
 
     return 0;
   } catch (caughtError: unknown) {
+    if (json) {
+      writeJsonError('build', caughtError, { repoRoot });
+      return 1;
+    }
     logBuildFailure(caughtError);
     return 1;
   }

@@ -8,9 +8,11 @@ export type WorkflowStandardFile = {
     | 'navigation'
     | 'page'
     | 'llms'
+    | 'llmsFull'
     | 'machineReadableRoot'
     | 'machineReadableIndex'
-    | 'searchIndex';
+    | 'searchIndex'
+    | 'chunkIndex';
   path: string;
   format: 'json' | 'text' | 'directory';
   required: boolean;

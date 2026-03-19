@@ -108,6 +108,43 @@ body {
   line-height: 1.6;
 }
 
+.docs-yoopta-view,
+.docs-yoopta-view .yoopta-editor,
+.docs-yoopta-view .yoopta-slate,
+.docs-yoopta-view .yoopta-block,
+.docs-yoopta-view [data-slate-editor="true"],
+.docs-yoopta-view [data-slate-node="element"] {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.docs-yoopta-view [data-slate-editor="true"] {
+  display: block;
+}
+
+.docs-yoopta-view [data-slate-node="text"],
+.docs-yoopta-view [data-slate-leaf],
+.docs-yoopta-view [data-slate-string],
+.docs-yoopta-view [data-slate-zero-width] {
+  display: inline;
+  white-space: inherit;
+}
+
+.docs-yoopta-view h1,
+.docs-yoopta-view h2,
+.docs-yoopta-view h3,
+.docs-yoopta-view h4,
+.docs-yoopta-view p,
+.docs-yoopta-view blockquote,
+.docs-yoopta-view ul,
+.docs-yoopta-view ol,
+.docs-yoopta-view pre,
+.docs-yoopta-view table {
+  width: 100%;
+  max-width: none;
+}
+
 :where([data-card]) {
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);

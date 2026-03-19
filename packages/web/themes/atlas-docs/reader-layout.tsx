@@ -1,9 +1,9 @@
 'use client';
 
-import type { CSSProperties } from 'react';
-import { useMemo } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 
 import { DocsSidebar } from '@/components/docs/sidebar';
@@ -12,11 +12,16 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 import type { DocsThemeReaderLayoutProps } from '@/lib/themes/types';
 import {
   buildTopNavHref,
+  filterNavigationToGroup,
   normalizeRoutePath,
   resolveFilteredNavigation,
   resolveTopNavLabel,
 } from '@/lib/themes/atlas-nav';
 import { ATLAS_DOCS_THEME_CLASS_NAME } from '@/themes/atlas-docs/manifest';
+
+function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
+  return !event.defaultPrevented && event.button === 0 && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+}
 
 function looksLikePrimaryActionLabel(label: string) {
   return /start|build|get started|launch|try|开始|构建|立即|体验/i.test(label);
@@ -48,9 +53,12 @@ export function AtlasDocsReaderLayout({
   siteTheme,
   siteNavigation,
 }: DocsThemeReaderLayoutProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const normalizedPathname = normalizeRoutePath(pathname);
-  const topNav = siteNavigation?.topNav ?? [];
+  const topNav = useMemo(() => siteNavigation?.topNav ?? [], [siteNavigation]);
+  const [optimisticNavState, setOptimisticNavState] = useState<{ groupId: string; sourcePath: string } | null>(null);
+  const [, startTransition] = useTransition();
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const configuredSiteTitle = siteTheme.branding?.siteTitle?.trim();
   const logoSrc = siteTheme.branding?.logoSrc;
@@ -74,10 +82,51 @@ export function AtlasDocsReaderLayout({
     [activePageId, nav, topNav],
   );
 
+  const topNavLinks = useMemo(
+    () =>
+      topNav.map((item) => ({
+        item,
+        label: resolveTopNavLabel(item.label, lang),
+        href: buildTopNavHref(item, lang, nav, pages),
+      })),
+    [lang, nav, pages, topNav],
+  );
+
+  useEffect(() => {
+    for (const entry of topNavLinks) {
+      if (entry.item.type === 'nav-group') {
+        router.prefetch(entry.href);
+      }
+    }
+  }, [router, topNavLinks]);
+
+  const effectiveActiveGroupId =
+    optimisticNavState && optimisticNavState.sourcePath === pathname ? optimisticNavState.groupId : activeGroupId;
+  const effectiveFilteredNav = useMemo(() => {
+    if (!effectiveActiveGroupId) {
+      return filteredNav;
+    }
+
+    return filterNavigationToGroup(nav, effectiveActiveGroupId);
+  }, [effectiveActiveGroupId, filteredNav, nav]);
+
+  const handleTopNavGroupNavigate = (event: MouseEvent<HTMLAnchorElement>, groupId: string, href: string) => {
+    if (!isPlainLeftClick(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    setOptimisticNavState({ groupId, sourcePath: pathname });
+    router.prefetch(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
   const desktopSidebar = (
     <DocsSidebar
       lang={lang}
-      nav={filteredNav}
+      nav={effectiveFilteredNav}
       pages={pages}
       showHomeLink={false}
       showSearch={showSearch}
@@ -105,9 +154,8 @@ export function AtlasDocsReaderLayout({
           </Link>
 
           <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto lg:flex">
-            {topNav.map((item) => {
-              const label = resolveTopNavLabel(item.label, lang);
-              const active = item.type === 'nav-group' && item.groupId === activeGroupId;
+            {topNavLinks.map(({ item, label, href }) => {
+              const active = item.type === 'nav-group' && item.groupId === effectiveActiveGroupId;
               const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
               const className =
                 'inline-flex h-9 shrink-0 items-center rounded-md border px-3 text-[13px] transition ' +
@@ -132,7 +180,12 @@ export function AtlasDocsReaderLayout({
               }
 
               return (
-                <Link key={item.id} href={buildTopNavHref(item, lang, nav, pages)} className={className}>
+                <Link
+                  key={item.id}
+                  href={href}
+                  className={className}
+                  onClick={(event) => handleTopNavGroupNavigate(event, item.groupId, href)}
+                >
                   {label}
                 </Link>
               );
@@ -153,8 +206,7 @@ export function AtlasDocsReaderLayout({
               </DialogDescription>
               <div className="border-b border-fd-border px-4 py-4">
                 <div className="flex flex-wrap gap-2">
-                  {topNav.map((item) => {
-                    const label = resolveTopNavLabel(item.label, lang);
+                  {topNavLinks.map(({ item, label, href }) => {
                     const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
                     if (item.type === 'external') {
                       return (
@@ -177,13 +229,14 @@ export function AtlasDocsReaderLayout({
                     return (
                       <Link
                         key={item.id}
-                        href={buildTopNavHref(item, lang, nav, pages)}
+                        href={href}
                         className={
                           'rounded-lg border px-3 py-1.5 text-xs transition ' +
-                          (item.groupId === activeGroupId
+                          (item.groupId === effectiveActiveGroupId
                             ? 'border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground'
                             : 'border-transparent bg-fd-muted text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground')
                         }
+                        onClick={(event) => handleTopNavGroupNavigate(event, item.groupId, href)}
                       >
                         {label}
                       </Link>
@@ -193,7 +246,7 @@ export function AtlasDocsReaderLayout({
               </div>
               <DocsSidebar
                 lang={lang}
-                nav={filteredNav}
+                nav={effectiveFilteredNav}
                 pages={pages}
                 showHomeLink={false}
                 showSearch={showSearch}

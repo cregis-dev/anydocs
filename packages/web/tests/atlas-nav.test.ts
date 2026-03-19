@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 
-import { buildTopNavHref, pageBelongsToGroup, resolveFilteredNavigation } from '../lib/themes/atlas-nav.ts';
+import { buildTopNavHref, filterNavigationToGroup, pageBelongsToGroup, resolveFilteredNavigation } from '../lib/themes/atlas-nav.ts';
 import type { NavigationDoc, PageDoc } from '../lib/docs/types.ts';
 
 const pages: PageDoc[] = [
@@ -92,4 +92,10 @@ test('resolveFilteredNavigation scopes sidebar items to the inferred active grou
 
   assert.equal(result.activeGroupId, 'guides');
   assert.deepEqual(result.filteredNav.items, navigation.items[0]?.children);
+});
+
+test('filterNavigationToGroup scopes navigation to the selected top-level group', () => {
+  const filtered = filterNavigationToGroup(navigation, 'api');
+
+  assert.deepEqual(filtered.items, navigation.items[1]?.children);
 });

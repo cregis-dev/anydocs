@@ -1,0 +1,19 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "通过 Anydocs MCP 使用 Codex",
+  "description": "一个真实通过 MCP 工具写入的示例文档项目。",
+  "tags": [
+    "codex",
+    "mcp",
+    "demo"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-18T17:26:48.712Z",
+  "content": {},
+  "render": {
+    "markdown": "# 通过 Anydocs MCP 使用 Codex\n\n这个项目不是手工改 JSON 生成的。它是通过本地 `@anydocs/mcp` server，由 MCP client 依次调用 `project_open`、`project_validate`、`page_update` 和 `page_create` 写入的。\n\n推荐阅读：\n\n- [Codex 与 Anydocs 的协作方式](/zh/codex-workflow)\n- [在 Codex 中接入 Anydocs MCP](/zh/connect-mcp-in-codex)\n- [开发者的一次真实建站流程](/zh/developer-simulation)\n",
+    "plainText": "通过 Anydocs MCP 使用 Codex。这个项目是通过本地 @anydocs/mcp server 由 MCP client 调用 project_open、project_validate、page_update 和 page_create 写入的。"
+  }
+}

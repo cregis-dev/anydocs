@@ -23,7 +23,7 @@ type SearchIndex = {
 
 export function SearchPanel({
   lang,
-  placeholder = 'Search docs...',
+  placeholder = 'Find pages...',
   className,
   inputClassName,
   resultsClassName,
@@ -109,7 +109,7 @@ export function SearchPanel({
               ))}
             </div>
           ) : (
-            <div className="px-2 py-3 text-sm text-fd-muted-foreground">No results</div>
+            <div className="px-2 py-3 text-sm text-fd-muted-foreground">No matching pages</div>
           )}
         </div>
       ) : null}

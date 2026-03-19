@@ -121,6 +121,9 @@ node --experimental-strip-types packages/cli/src/index.ts build examples/demo-do
 # 查看构建产物
 ls -la examples/demo-docs/dist/
 cat examples/demo-docs/dist/build-manifest.json
+cat examples/demo-docs/dist/llms-full.txt
+cat examples/demo-docs/dist/mcp/index.json
+cat examples/demo-docs/dist/mcp/chunks.en.json
 ```
 
 **构建产物说明：**
@@ -132,11 +135,14 @@ dist/
 ├── en/docs/.../index.html
 ├── _next/                           # Next 导出的静态资源
 ├── build-manifest.json              # 构建元信息
-├── llms.txt                         # LLM 友好索引
-├── mcp/                             # WebMCP 产物
+├── llms.txt                         # 轻量 AI 索引入口
+├── llms-full.txt                    # 全站 AI fallback 文本导出
+├── mcp/                             # 机器可读产物
 │   ├── index.json
 │   ├── navigation.zh.json
 │   ├── navigation.en.json
+│   ├── chunks.zh.json
+│   ├── chunks.en.json
 │   ├── pages.zh.json
 │   └── pages.en.json
 ├── search-index.zh.json             # 搜索索引
@@ -146,7 +152,12 @@ dist/
 补充约束：
 - 最终 `dist/` 只保留 deployable docs-site 内容，不应出现 `studio/`、`admin/`、`projects/`。
 - Next export 的内部辅助产物会被清理，例如 `_not-found/` 和调试用 `.txt` 文件。
-- `llms.txt` 是唯一预期保留的 `.txt` 产物。
+- `llms.txt` 和 `llms-full.txt` 是预期保留的 `.txt` 产物。
+
+**Reader Search 与 AI 产物分工：**
+- `search-index.<lang>.json` 只服务阅读站里的 `Find` 场景，目标是帮助人快速找到页面或章节。
+- 外部 agent 推荐优先读取 `mcp/index.json`、`pages.<lang>.json`、`navigation.<lang>.json` 和 `chunks.<lang>.json`。
+- `llms-full.txt` 只作为全站粗粒度 fallback，不应替代结构化 JSON artifact。
 
 ### 3.4 自定义输出目录
 
@@ -171,7 +182,7 @@ node --experimental-strip-types packages/cli/src/index.ts build examples/demo-do
 适用场景：
 - 内容编辑时持续验证构建产物
 - 调试搜索索引生成
-- 验证 llms.txt 输出
+- 验证 `llms.txt`、`llms-full.txt` 与 `mcp/chunks.<lang>.json` 输出
 
 ### 3.6 启动本地动态阅读站
 
@@ -260,7 +271,7 @@ pnpm dev
   ```bash
   node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
   ```
-- 生成产物后，可检查 `dist/index.html`、`dist/<lang>/docs/.../index.html`、`dist/search-index.*.json`、`dist/llms.txt` 与 `dist/mcp/*.json`
+- 生成产物后，可检查 `dist/index.html`、`dist/<lang>/docs/.../index.html`、`dist/search-index.*.json`、`dist/llms.txt`、`dist/llms-full.txt` 与 `dist/mcp/*.json`
 
 ### 4.2.1 新增并注册一个阅读站主题
 
@@ -316,6 +327,9 @@ node --experimental-strip-types packages/cli/src/index.ts build examples/demo-do
 # 验证构建产物
 cat examples/demo-docs/dist/search-index.zh.json
 cat examples/demo-docs/dist/llms.txt
+cat examples/demo-docs/dist/llms-full.txt
+cat examples/demo-docs/dist/mcp/index.json
+cat examples/demo-docs/dist/mcp/chunks.zh.json
 ls examples/demo-docs/dist/en/docs
 ```
 

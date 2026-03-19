@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
-import { MarkdownView } from '@/components/docs/markdown-view';
+import { DocContentView } from '@/components/docs/doc-content-view';
 import { DocsToc } from '@/components/docs/toc';
 import {
   getPublishedContext,
@@ -17,6 +17,7 @@ import { normalizeSlug } from '@/lib/docs/fs';
 import type { DocsLang } from '@/lib/docs/types';
 import { buildBreadcrumbsByPageId, findNextPrevPageIds } from '@/lib/docs/nav';
 import { extractTocFromMarkdown, normalizeMarkdownForRendering } from '@/lib/docs/markdown';
+import { extractTocFromYooptaContent, getRenderableYooptaContent } from '@/lib/docs/yoopta-reader';
 import { cn } from '@/lib/utils';
 import { ATLAS_DOCS_THEME_ID } from '@/themes/atlas-docs/manifest';
 
@@ -80,7 +81,9 @@ export default async function Page({
   const siteTheme = await getPublishedSiteTheme(source.projectId, source.customPath);
   const isAtlasTheme = siteTheme.id === ATLAS_DOCS_THEME_ID;
   const markdown = normalizeMarkdownForRendering(stripLeadingTitleHeading(page.render?.markdown ?? '', page.title));
+  const yooptaContent = getRenderableYooptaContent(page.content, page.title);
   const toc = extractTocFromMarkdown(markdown);
+  const effectiveToc = toc.length > 0 ? toc : extractTocFromYooptaContent(yooptaContent);
   const showBreadcrumbs = !isAtlasTheme;
   const crumbs = showBreadcrumbs ? buildBreadcrumbsByPageId(nav).get(page.id) ?? [] : [];
   const { prev, next } = findNextPrevPageIds(nav.items, page.id);
@@ -142,11 +145,16 @@ export default async function Page({
 
           {isAtlasTheme ? <div className="mb-6 h-px w-full bg-[color:var(--atlas-border)]" /> : null}
 
-          <MarkdownView
+          <DocContentView
             markdown={markdown}
-            className={cn(
+            yooptaContent={yooptaContent}
+            markdownClassName={cn(
               isAtlasTheme &&
                 'prose-p:my-2.5 prose-p:text-[13px] prose-p:leading-6 prose-li:text-[13px] prose-li:leading-6 prose-h2:mb-2 prose-h2:mt-6 prose-h3:mb-1.5 prose-h3:mt-3 prose-table:mt-4',
+            )}
+            yooptaClassName={cn(
+              isAtlasTheme &&
+                '[&_h2]:mb-2 [&_h2]:mt-6 [&_h3]:mb-1.5 [&_h3]:mt-3 [&_li]:text-[13px] [&_li]:leading-6 [&_p]:my-2.5 [&_p]:text-[13px] [&_p]:leading-6 [&_table]:mt-4',
             )}
           />
 
@@ -182,7 +190,7 @@ export default async function Page({
       </div>
 
       <DocsToc
-        toc={toc}
+        toc={effectiveToc}
         className={cn(isAtlasTheme && 'w-[240px] border-l-0 bg-transparent px-4 py-6')}
         contentClassName={cn(
           isAtlasTheme &&

@@ -47,7 +47,7 @@ export function ClassicDocsReaderLayout({
       style={themeStyle}
     >
       <div className="lg:grid lg:min-h-dvh lg:grid-cols-[256px_minmax(0,1fr)]">
-        <div className="hidden lg:block">
+        <div className="hidden lg:col-start-1 lg:!block">
           <DocsSidebar
             lang={lang}
             nav={nav}
@@ -66,7 +66,7 @@ export function ClassicDocsReaderLayout({
           />
         </div>
 
-        <div className="min-w-0 bg-fd-background">
+        <div className="min-w-0 bg-fd-background lg:col-start-2">
           <div className="sticky top-0 z-30 border-b border-fd-border bg-fd-background/90 backdrop-blur lg:hidden">
             <div className="flex items-center justify-between px-4 py-3">
               <Link href={`/${lang}`} className="min-w-0">

@@ -6,15 +6,12 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronRight,
-  Eye,
-  EyeOff,
   MoreVertical,
   FileText,
   Folder,
   Link2,
   Pencil,
   Plus,
-  Trash2,
 } from 'lucide-react';
 
 import type { NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
@@ -83,14 +80,17 @@ const MenuItem = ({
   onClick,
   children,
   destructive,
+  testId,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   destructive?: boolean;
+  testId?: string;
 }) => (
   <button
     type="button"
     role="menuitem"
+    data-testid={testId}
     className={cn(
       'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition',
       destructive ? 'text-fd-error hover:bg-fd-muted' : 'hover:bg-fd-muted',
@@ -102,18 +102,6 @@ const MenuItem = ({
 );
 
 const MenuSep = () => <div className="my-1 h-px bg-fd-border" role="separator" />;
-
-function promptGroupId(currentId: string | undefined, title: string) {
-  const next = window.prompt('Group ID (empty to clear)', currentId ?? title.toLowerCase().replace(/\s+/g, '-')) ?? '';
-  const normalized = next
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-
-  return normalized || undefined;
-}
 
 const Row = ({
   depth,
@@ -163,30 +151,29 @@ export function NavigationTree({
   pages,
   activePageId,
   onSelectPage,
-  updateAt,
-  removeAt,
+  onOpenPageSettings,
   moveUp,
   moveDown,
-  addRootItem,
   addChild,
+  onRequestRenameGroup,
+  onRequestEditLink,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
   activePageId: string | null;
   onSelectPage: (pageId: string) => void;
-  updateAt: (path: IndexPath, updater: (node: NavItem) => NavItem) => void;
-  removeAt: (path: IndexPath) => void;
+  onOpenPageSettings: (pageId: string) => void;
   moveUp: (path: IndexPath) => void;
   moveDown: (path: IndexPath) => void;
-  addRootItem: (kind: 'section' | 'page' | 'link') => void;
-  addChild: (parentPath: IndexPath, kind: 'folder' | 'page' | 'link') => void;
+  addChild: (parentPath: IndexPath, kind: 'group' | 'page' | 'link') => Promise<void> | void;
+  onRequestRenameGroup: (path: IndexPath, title: string) => void;
+  onRequestEditLink: (path: IndexPath, title: string, href: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const [lastSelection, setLastSelection] = useState<{ pathKey: string; pageId: string } | null>(null);
 
   const pagesById = useMemo(() => new Map(pages.map((p) => [p.id, p])), [pages]);
-  const pagesBySlug = useMemo(() => new Map(pages.map((p) => [p.slug, p])), [pages]);
   
   const pagePaths = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -234,16 +221,7 @@ export function NavigationTree({
     const setMenuOpen = (next: boolean) => setOpenMenuKey(next ? k : null);
 
     if (item.type === 'section') {
-      const rename = () => {
-        const next = (window.prompt('Group title', item.title) ?? '').trim();
-        if (!next) return;
-        updateAt(path, (n) => (n.type === 'section' ? { ...n, title: next } : n));
-      };
-      const editGroupId = () => {
-        const nextId = promptGroupId(item.id, item.title);
-        updateAt(path, (n) => (n.type === 'section' ? { ...n, id: nextId } : n));
-      };
-      const isTopLevel = path.length === 1;
+      const rename = () => onRequestRenameGroup(path, item.title);
 
       return (
         <div key={k} className="pt-3">
@@ -252,12 +230,7 @@ export function NavigationTree({
               <span className="inline-flex size-8 items-center justify-center">
                 {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </span>
-              <div>
-                <div className="text-xs font-semibold tracking-wider text-fd-muted-foreground">{item.title}</div>
-                {isTopLevel && item.id ? (
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-fd-muted-foreground/80">ID: {item.id}</div>
-                ) : null}
-              </div>
+              <div className="text-xs font-semibold tracking-wider text-fd-muted-foreground">{item.title}</div>
             </button>
             <div className={cn('flex items-center', 'opacity-0 transition group-hover:opacity-100')}>
               <Menu
@@ -280,47 +253,36 @@ export function NavigationTree({
               >
                 <MenuItem
                   onClick={() => {
-                    addChild(path, 'page');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Plus className="size-4" /> Add page
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    addChild(path, 'folder');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Plus className="size-4" /> Add group
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    addChild(path, 'link');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Link2 className="size-4" /> Add link
-                </MenuItem>
-                <MenuSep />
-                <MenuItem
-                  onClick={() => {
                     rename();
                     setMenuOpen(false);
                   }}
                 >
                   <Pencil className="size-4" /> Rename
                 </MenuItem>
-                {isTopLevel ? (
-                  <MenuItem
-                    onClick={() => {
-                      editGroupId();
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Pencil className="size-4" /> Edit group ID
-                  </MenuItem>
-                ) : null}
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'page');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Plus className="size-4" /> Add Page
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'link');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Link2 className="size-4" /> Add Link
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'group');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Plus className="size-4" /> Add Group
+                </MenuItem>
                 <MenuSep />
                 <MenuItem
                   onClick={() => {
@@ -328,7 +290,7 @@ export function NavigationTree({
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowUp className="size-4" /> Move up
+                  <ArrowUp className="size-4" /> Move Up
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -336,17 +298,7 @@ export function NavigationTree({
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowDown className="size-4" /> Move down
-                </MenuItem>
-                <MenuSep />
-                <MenuItem
-                  destructive
-                  onClick={() => {
-                    removeAt(path);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Trash2 className="size-4" /> Delete
+                  <ArrowDown className="size-4" /> Move Down
                 </MenuItem>
               </Menu>
             </div>
@@ -359,16 +311,7 @@ export function NavigationTree({
     }
 
     if (item.type === 'folder') {
-      const rename = () => {
-        const next = (window.prompt('Group title', item.title) ?? '').trim();
-        if (!next) return;
-        updateAt(path, (n) => (n.type === 'folder' ? { ...n, title: next } : n));
-      };
-      const editGroupId = () => {
-        const nextId = promptGroupId(item.id, item.title);
-        updateAt(path, (n) => (n.type === 'folder' ? { ...n, id: nextId } : n));
-      };
-      const isTopLevel = path.length === 1;
+      const rename = () => onRequestRenameGroup(path, item.title);
 
       return (
         <div key={k} className={cn(depth ? 'border-l border-fd-border' : '')}>
@@ -383,7 +326,6 @@ export function NavigationTree({
               </>
             }
             title={item.title}
-            subtitle={isTopLevel && item.id ? `ID: ${item.id}` : undefined}
             onClick={() => toggleCollapsed(path)}
             actions={
               <Menu
@@ -406,47 +348,36 @@ export function NavigationTree({
               >
                 <MenuItem
                   onClick={() => {
-                    addChild(path, 'page');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Plus className="size-4" /> Add page
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    addChild(path, 'folder');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Plus className="size-4" /> Add group
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    addChild(path, 'link');
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Link2 className="size-4" /> Add link
-                </MenuItem>
-                <MenuSep />
-                <MenuItem
-                  onClick={() => {
                     rename();
                     setMenuOpen(false);
                   }}
                 >
                   <Pencil className="size-4" /> Rename
                 </MenuItem>
-                {isTopLevel ? (
-                  <MenuItem
-                    onClick={() => {
-                      editGroupId();
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Pencil className="size-4" /> Edit group ID
-                  </MenuItem>
-                ) : null}
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'page');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Plus className="size-4" /> Add Page
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'link');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Link2 className="size-4" /> Add Link
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    void addChild(path, 'group');
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Plus className="size-4" /> Add Group
+                </MenuItem>
                 <MenuSep />
                 <MenuItem
                   onClick={() => {
@@ -454,7 +385,7 @@ export function NavigationTree({
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowUp className="size-4" /> Move up
+                  <ArrowUp className="size-4" /> Move Up
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -462,17 +393,7 @@ export function NavigationTree({
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowDown className="size-4" /> Move down
-                </MenuItem>
-                <MenuSep />
-                <MenuItem
-                  destructive
-                  onClick={() => {
-                    removeAt(path);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Trash2 className="size-4" /> Delete
+                  <ArrowDown className="size-4" /> Move Down
                 </MenuItem>
               </Menu>
             }
@@ -483,13 +404,7 @@ export function NavigationTree({
     }
 
     if (item.type === 'link') {
-      const edit = () => {
-        const nextTitle = (window.prompt('Link title', item.title) ?? '').trim();
-        if (!nextTitle) return;
-        const nextHref = (window.prompt('Link href', item.href) ?? '').trim();
-        if (!nextHref) return;
-        updateAt(path, (n) => (n.type === 'link' ? { ...n, title: nextTitle, href: nextHref } : n));
-      };
+      const edit = () => onRequestEditLink(path, item.title, item.href);
 
       return (
         <div key={k}>
@@ -526,14 +441,13 @@ export function NavigationTree({
                 >
                   <Pencil className="size-4" /> Edit
                 </MenuItem>
-                <MenuSep />
                 <MenuItem
                   onClick={() => {
                     moveUp(path);
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowUp className="size-4" /> Move up
+                  <ArrowUp className="size-4" /> Move Up
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -541,17 +455,7 @@ export function NavigationTree({
                     setMenuOpen(false);
                   }}
                 >
-                  <ArrowDown className="size-4" /> Move down
-                </MenuItem>
-                <MenuSep />
-                <MenuItem
-                  destructive
-                  onClick={() => {
-                    removeAt(path);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Trash2 className="size-4" /> Delete
+                  <ArrowDown className="size-4" /> Move Down
                 </MenuItem>
               </Menu>
             }
@@ -577,21 +481,14 @@ export function NavigationTree({
     
     const hidden = !!item.hidden;
 
-    const edit = () => {
+    const select = () => {
       onSelectPage(item.pageId);
       setLastSelection({ pathKey: k, pageId: item.pageId });
     };
-    const setTitleOverride = () => {
-      const next = window.prompt('Title override (empty to clear)', item.titleOverride ?? '') ?? '';
-      updateAt(path, (n) => (n.type === 'page' ? { ...n, titleOverride: next.trim() ? next.trim() : undefined } : n));
-    };
-    const changePage = () => {
-      const hint = p?.slug || item.pageId;
-      const raw = (window.prompt('Change to page slug or pageId', hint) ?? '').trim();
-      if (!raw) return;
-      const found = pagesById.get(raw) ?? pagesBySlug.get(raw);
-      if (!found) return;
-      updateAt(path, (n) => (n.type === 'page' ? { ...n, pageId: found.id } : n));
+
+    const edit = () => {
+      onOpenPageSettings(item.pageId);
+      setLastSelection({ pathKey: k, pageId: item.pageId });
     };
 
     return (
@@ -602,7 +499,7 @@ export function NavigationTree({
           hidden={hidden}
           leading={<FileText className="size-4 text-fd-muted-foreground" />}
           title={title}
-          onClick={edit}
+          onClick={select}
           actions={
             <Menu
               open={isMenuOpen}
@@ -613,6 +510,7 @@ export function NavigationTree({
                   variant="ghost"
                   size="icon"
                   className="size-8"
+                  data-testid={`studio-nav-page-menu-trigger-${item.pageId}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onClick();
@@ -627,32 +525,9 @@ export function NavigationTree({
                   edit();
                   setMenuOpen(false);
                 }}
+                testId={`studio-nav-page-edit-button-${item.pageId}`}
               >
-                <Pencil className="size-4" /> Edit
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  changePage();
-                  setMenuOpen(false);
-                }}
-              >
-                <Link2 className="size-4" /> Change linked page
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setTitleOverride();
-                  setMenuOpen(false);
-                }}
-              >
-                <Pencil className="size-4" /> Title override
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  updateAt(path, (n) => (n.type === 'page' ? { ...n, hidden: !n.hidden } : n));
-                  setMenuOpen(false);
-                }}
-              >
-                {hidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />} {hidden ? 'Show' : 'Hide'}
+                  <Pencil className="size-4" /> Edit
               </MenuItem>
               <MenuSep />
               <MenuItem
@@ -661,7 +536,7 @@ export function NavigationTree({
                   setMenuOpen(false);
                 }}
               >
-                <ArrowUp className="size-4" /> Move up
+                <ArrowUp className="size-4" /> Move Up
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -669,17 +544,7 @@ export function NavigationTree({
                   setMenuOpen(false);
                 }}
               >
-                <ArrowDown className="size-4" /> Move down
-              </MenuItem>
-              <MenuSep />
-              <MenuItem
-                destructive
-                onClick={() => {
-                  removeAt(path);
-                  setMenuOpen(false);
-                }}
-              >
-                <Trash2 className="size-4" /> Delete
+                <ArrowDown className="size-4" /> Move Down
               </MenuItem>
             </Menu>
           }
@@ -690,20 +555,6 @@ export function NavigationTree({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2 px-2 pb-2">
-        <Button type="button" variant="ghost" size="sm" onClick={() => addRootItem('section')}>
-          <Plus className="size-4" />
-          Group
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => addRootItem('page')}>
-          <FileText className="size-4" />
-          Existing Page
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => addRootItem('link')}>
-          <Link2 className="size-4" />
-          Link
-        </Button>
-      </div>
       {nav.items.length ? (
         nav.items.map((it, idx) => renderNode(it, [idx]))
       ) : (

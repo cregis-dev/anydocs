@@ -1,9 +1,10 @@
 {
   "version": 1,
-  "projectId": "default",
-  "name": "Anydocs Project",
-  "defaultLanguage": "en",
+  "projectId": "codex-docs-mcp",
+  "name": "Codex MCP Docs",
+  "defaultLanguage": "zh",
   "languages": [
+    "zh",
     "en"
   ],
   "site": {

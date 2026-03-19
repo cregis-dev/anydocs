@@ -11,7 +11,7 @@ Anydocs 当前提供三类使用方式：
 - CLI：围绕 Docs Site 构建链路工作的命令行工具，核心职责是 `build`
 
 如果你要本地编辑内容，优先启动 Studio。  
-如果你要生成 Docs Site、搜索索引、`llms.txt` 或 WebMCP 产物，请用 CLI。
+如果你要生成 Docs Site、搜索索引、`llms.txt`、`llms-full.txt` 或机器可读产物，请用 CLI。
 
 ## 2. 环境要求
 
@@ -82,7 +82,9 @@ anydocs/                     # 工具仓库
 │       │   ├── _next/
 │       │   ├── build-manifest.json
 │       │   ├── llms.txt
+│       │   ├── llms-full.txt
 │       │   ├── mcp/
+│       │   │   ├── chunks.<lang>.json
 │       │   ├── search-index.zh.json
 │       │   └── search-index.en.json
 │       └── .gitignore
@@ -96,7 +98,7 @@ anydocs/                     # 工具仓库
 - **文档项目**：独立存在（如 `examples/demo-docs/`），可以在任何位置
 - **构建产物**：默认输出到项目的 `dist/` 目录（可通过 `--output` 自定义）
 - **项目结构**：当前 canonical 结构是单工程目录，项目根目录直接包含 `anydocs.config.json`
-- 只有 `status = "published"` 的页面会出现在 Docs Site、搜索索引、`llms.txt` 和 WebMCP 产物中
+- 只有 `status = "published"` 的页面会出现在 Docs Site、搜索索引、`llms.txt`、`llms-full.txt` 和机器可读产物中
 
 ## 5. Web 与 Studio 的使用方式
 
@@ -214,10 +216,12 @@ dist/
 ├── en/docs/.../index.html       # 英文阅读页
 ├── _next/                       # Next 导出的静态资源
 ├── build-manifest.json          # 构建元信息
-├── llms.txt                     # LLM 友好索引
-├── mcp/                         # WebMCP 机器可读产物
+├── llms.txt                     # 轻量 AI 索引入口
+├── llms-full.txt                # 全站 AI fallback 文本导出
+├── mcp/                         # 机器可读产物
 │   ├── index.json
 │   ├── navigation.<lang>.json
+│   ├── chunks.<lang>.json
 │   └── pages.<lang>.json
 ├── search-index.zh.json         # 中文搜索索引
 └── search-index.en.json         # 英文搜索索引
@@ -228,7 +232,14 @@ dist/
 - `dist/` 中只保留 Docs Site 部署真正需要的内容。
 - `studio/`、`admin/`、`projects/` 这类非阅读站目录不会保留在最终构建产物中。
 - Next export 产生的内部辅助文件也会被清理，例如 `_not-found/` 和调试用 `.txt` 文件。
-- `llms.txt` 是构建输出中唯一预期保留的 `.txt` 文件。
+- `llms.txt` 与 `llms-full.txt` 是构建输出中预期保留的 `.txt` 文件。
+
+搜索与 AI 产物的分工：
+
+- `search-index.<lang>.json` 服务阅读站中的查找体验，目标是帮助读者快速找到页面或章节入口。
+- `llms.txt` 提供轻量目录式入口，方便外部 agent 先发现站点内容。
+- `llms-full.txt` 提供全站顺序文本导出，适合作为粗粒度 fallback。
+- `mcp/pages.<lang>.json`、`mcp/navigation.<lang>.json`、`mcp/chunks.<lang>.json` 提供结构化机器可读接口，适合外部 agent 按需读取。
 
 **输出位置优先级：**
 1. `--output` 参数
@@ -385,7 +396,9 @@ my-docs-project/
     ├── _next/
     ├── build-manifest.json
     ├── llms.txt
+    ├── llms-full.txt
     ├── mcp/
+    │   ├── chunks.<lang>.json
     └── search-index.<lang>.json
 ```
 
@@ -464,6 +477,12 @@ vercel --prod
 ### 9.1 为什么阅读站里看不到刚写的页面
 
 先检查页面 JSON 的 `status`。只有 `published` 会进入阅读站和构建产物。
+
+### 9.1a 搜索和 AI 产物分别是干什么的
+
+- 阅读站搜索是 `Find`，用于快速找到页面、章节和导航路径，不负责给出 AI 答案。
+- `llms.txt` 和 `llms-full.txt` 是给外部 agent 的文本型输入。
+- `mcp/*.json` 是给外部 agent 的结构化输入，其中 `chunks.<lang>.json` 最适合做按需内容读取。
 
 ### 9.2 为什么 `preview` 没有打开浏览器
 

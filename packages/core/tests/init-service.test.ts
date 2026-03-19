@@ -80,6 +80,46 @@ test('initializeProject creates the canonical project structure and starter cont
   }
 });
 
+test('initializeProject can generate a Codex-specific AGENTS.md guide instead of skill.md', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const result = await initializeProject({ repoRoot, agent: 'codex' });
+
+    await access(path.join(repoRoot, 'AGENTS.md'));
+    await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
+
+    const agentGuide = await readFile(path.join(repoRoot, 'AGENTS.md'), 'utf8');
+    const sourceSkillGuide = await readFile(REPO_SKILL_GUIDE, 'utf8');
+
+    assert.equal(agentGuide, sourceSkillGuide);
+    assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('AGENTS.md')));
+    assert.ok(!result.createdFiles.some((filePath) => filePath.endsWith('skill.md')));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('initializeProject can generate a Claude.md guide for Claude Code', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const result = await initializeProject({ repoRoot, agent: 'claude-code' });
+
+    await access(path.join(repoRoot, 'Claude.md'));
+    await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
+
+    const agentGuide = await readFile(path.join(repoRoot, 'Claude.md'), 'utf8');
+    const sourceSkillGuide = await readFile(REPO_SKILL_GUIDE, 'utf8');
+
+    assert.equal(agentGuide, sourceSkillGuide);
+    assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('Claude.md')));
+    assert.ok(!result.createdFiles.some((filePath) => filePath.endsWith('skill.md')));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('initializeProject fails clearly when canonical config already exists and preserves file contents', async () => {
   const repoRoot = await createTempRepoRoot();
   const projectRoot = repoRoot;

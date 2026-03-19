@@ -49,7 +49,7 @@ export function DocsToc({
   return (
     <aside
       className={cn(
-        'hidden h-full w-[288px] shrink-0 border-l border-[color:var(--docs-toc-border,var(--fd-border))] bg-[color:var(--docs-toc-background,var(--fd-background))] px-8 py-8 lg:block',
+        'hidden h-full w-[288px] shrink-0 border-l border-[color:var(--docs-toc-border,var(--fd-border))] bg-[color:var(--docs-toc-background,var(--fd-background))] px-8 py-8 lg:!block',
         className,
       )}
     >

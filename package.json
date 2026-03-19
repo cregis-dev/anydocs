@@ -10,9 +10,10 @@
     "build:web": "pnpm --filter @anydocs/web build",
     "build:desktop": "pnpm --filter @anydocs/desktop build",
     "build:cli": "pnpm --filter @anydocs/cli build",
+    "build:mcp": "pnpm --filter @anydocs/mcp build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/cli test",
+    "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/cli test && pnpm --filter @anydocs/mcp test",
     "test:web": "pnpm --filter @anydocs/web test",
     "test:full": "pnpm test && pnpm test:web"
   },

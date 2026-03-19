@@ -1,0 +1,18 @@
+{
+  "id": "connect-anydocs-mcp",
+  "lang": "zh",
+  "slug": "connect-anydocs-mcp",
+  "title": "把 Anydocs MCP 接入 Codex",
+  "description": "让 Codex 能够安全地读取和写入 Anydocs 项目。",
+  "tags": [
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# 把 Anydocs MCP 接入 Codex\n\n典型配置思路：\n\n1. 在 Codex 中注册 `@anydocs/mcp` 为一个 `stdio` MCP server\n2. 让 Codex 在进入项目时读取项目根目录里的 `AGENTS.md`\n3. 引导 Codex 默认按下面顺序工作：\n   - `project_open`\n   - `project_validate`（当项目状态不确定时）\n   - `page_list` / `page_find` / `page_get`\n   - `page_create` / `page_update` / `page_set_status`\n   - `nav_get`\n\n这样做的好处是：\n\n- 页面写入会经过 Anydocs 的 domain validation\n- `page_update` 只允许更新白名单字段\n- 页面发布仍然遵守发布审批规则\n- agent 行为更稳定，也更容易复现\n",
+    "plainText": "把 Anydocs MCP 接入 Codex时，应该注册 @anydocs/mcp 为 stdio MCP server，并让 Codex 读取项目根目录中的 AGENTS.md。默认工作顺序是 project_open、必要时 project_validate、再读页面、再执行 page_create 或 page_update，最后用 nav_get 确认状态。"
+  }
+}

@@ -108,7 +108,13 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
 
   await expect(page.getByText('Anydocs Project')).toBeVisible();
   await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
+  await expect(page.getByTestId('studio-settings-sidebar')).toHaveCount(0);
+
+  await page.getByTestId('studio-open-project-settings-button').click();
   await expect(page.getByTestId('studio-settings-sidebar')).toBeVisible();
+  await expect(page.getByTestId('studio-project-name-input')).toBeVisible();
+  await page.getByTestId('studio-close-settings-sidebar').click();
+  await expect(page.getByTestId('studio-settings-sidebar')).toHaveCount(0);
 
   const createGroupDialog = acceptDialog(page, '请输入分组名称', groupName);
   await page.getByTestId('studio-create-menu-trigger').click();
@@ -124,6 +130,8 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
   await page.getByTestId('studio-create-page-button').click();
   await createPageDialogs;
 
+  await page.getByTestId(`studio-nav-page-menu-trigger-${pageId}`).click();
+  await page.getByTestId(`studio-nav-page-edit-button-${pageId}`).click();
   await expect(page.getByTestId('studio-page-title-input')).toHaveValue(pageTitle);
 
   await page.getByTestId('studio-page-title-input').fill(pageTitle);
@@ -172,11 +180,11 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
   expect(savedPage.render?.plainText ?? '').toContain(pageBody);
 
   const previewPagePromise = page.context().waitForEvent('page');
-  await page.getByTestId('studio-preview-button').click();
+  await page.getByTestId('studio-workflow-action-button').click();
   const previewPage = await previewPagePromise;
   await previewPage.waitForLoadState('domcontentloaded');
   await expect(page.getByTestId('studio-workflow-message')).toContainText('Preview ready:', { timeout: 30000 });
-  await expect(previewPage).toHaveURL(/\/en\/welcome\/$/, { timeout: 30000 });
+  await expect(previewPage).toHaveURL(/\/en\/welcome\/?$/, { timeout: 30000 });
   await previewPage.goto(new URL(`/en/${pageSlug}/`, previewPage.url()).toString());
   await expect(previewPage.getByRole('heading', { name: pageTitle })).toBeVisible({ timeout: 30000 });
   await previewPage.close();
@@ -184,6 +192,7 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
   const builtIndex = path.join(projectRoot, 'dist', 'index.html');
   const builtLlms = path.join(projectRoot, 'dist', 'llms.txt');
 
+  await page.getByTestId('studio-workflow-menu-trigger').click();
   await page.getByTestId('studio-build-button').click();
   await expect
     .poll(
@@ -227,6 +236,9 @@ test('deleting a page removes the file and clears its navigation references @p0'
   await page.getByTestId('studio-create-menu-trigger').click();
   await page.getByTestId('studio-create-page-button').click();
   await createPageDialogs;
+
+  await page.getByTestId(`studio-nav-page-menu-trigger-${pageId}`).click();
+  await page.getByTestId(`studio-nav-page-edit-button-${pageId}`).click();
   await expect(page.getByTestId('studio-page-title-input')).toHaveValue(pageTitle);
 
   await expect

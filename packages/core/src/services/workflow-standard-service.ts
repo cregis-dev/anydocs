@@ -74,6 +74,15 @@ function createGeneratedArtifacts(contract: ProjectContract): WorkflowStandardFi
       description: 'AI-friendly published artifact generated from published content only.',
     },
     {
+      id: 'llmsFull',
+      path: relativeToRepo(contract, path.join(contract.paths.artifactRoot, 'llms-full.txt')),
+      format: 'text',
+      required: false,
+      writable: false,
+      generated: true,
+      description: 'Full-site AI-readable fallback export generated from published content only.',
+    },
+    {
       id: 'machineReadableRoot',
       path: relativeToRepo(contract, contract.paths.machineReadableRoot),
       format: 'directory',
@@ -102,6 +111,15 @@ function createGeneratedArtifacts(contract: ProjectContract): WorkflowStandardFi
       writable: false,
       generated: true,
       description: `Static search index for ${language}.`,
+    });
+    artifacts.push({
+      id: 'chunkIndex',
+      path: relativeToRepo(contract, path.join(contract.paths.machineReadableRoot, `chunks.${language}.json`)),
+      format: 'json',
+      required: false,
+      writable: false,
+      generated: true,
+      description: `Machine-readable chunk artifact for ${language}.`,
     });
   }
 

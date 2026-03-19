@@ -28,16 +28,26 @@ export function printGeneralHelp(): void {
     '  init [targetDir]                       Initialize a new docs project',
     '  build [targetDir] [options]            Build a deployable static docs site',
     '  preview [targetDir] [options]          Start a live local docs preview server',
+    '  project <subcommand> [options]         Create or inspect project contract state',
+    '  workflow inspect [targetDir]           Inspect the workflow standard definition',
+    '  page <subcommand> [options]            Inspect pages by language, id, or slug',
+    '  nav get [targetDir] --lang <lang>      Inspect a navigation document',
     '  import <sourceDir> [targetDir] [lang]  Stage legacy Markdown/MDX for conversion',
     '  convert-import <importId> [targetDir]  Convert imported content',
     '  help [command]                         Show general or command-specific help',
     '  version                                Print the CLI version',
     '',
+    'Global options:',
+    '  --json                                Print structured JSON results',
+    '',
     'Examples:',
-    `  ${formatCliCommand(['init', './workspace/my-docs'])}`,
+    `  ${formatCliCommand(['project', 'create', './workspace/my-docs', '--project-id', 'acme-docs'])}`,
+    `  ${formatCliCommand(['init', './workspace/my-docs', '--agent', 'codex'])}`,
     `  ${formatCliCommand(['build', './workspace/my-docs'])}`,
     `  ${formatCliCommand(['build', './workspace/my-docs', '--output', './dist-public'])}`,
     `  ${formatCliCommand(['preview', './workspace/my-docs'])}`,
+    `  ${formatCliCommand(['project', 'inspect', './workspace/my-docs', '--json'])}`,
+    `  ${formatCliCommand(['page', 'get', 'welcome', './workspace/my-docs', '--lang', 'en'])}`,
     `  ${formatCliCommand(['import', './legacy-docs', './workspace/my-docs', 'zh'])}`,
     `  ${formatCliCommand(['import', './legacy-docs', './workspace/my-docs', 'zh', '--convert'])}`,
   ]);
@@ -48,10 +58,18 @@ export function printCommandHelp(command: string): boolean {
     case 'init':
       printLines([
         'Usage:',
-        `  ${formatCliCommand(['init', '[targetDir]'])}`,
+        `  ${formatCliCommand(['init', '[targetDir]', '[options]'])}`,
         '',
         'Description:',
         '  Initialize a new Anydocs project in the target directory.',
+        '',
+        'Options:',
+        '  --project-id <id>     Custom project id',
+        '  --name <name>         Custom project name',
+        '  --default-language    Default language ("en" or "zh")',
+        '  --languages <list>    Comma-separated enabled languages, e.g. en,zh',
+        '  --agent <agent>       Generate an agent guide file ("codex" or "claude-code")',
+        '  --json               Print structured JSON output',
       ]);
       return true;
     case 'build':
@@ -62,6 +80,7 @@ export function printCommandHelp(command: string): boolean {
         'Options:',
         '  --output, -o <dir>   Custom output directory (default: {targetDir}/dist)',
         '  --watch              Watch for changes and rebuild',
+        '  --json               Print structured JSON output',
       ]);
       return true;
     case 'preview':
@@ -71,6 +90,122 @@ export function printCommandHelp(command: string): boolean {
         '',
         'Options:',
         '  --watch              Compatibility flag; preview already runs live',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'project':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['project', '<create|inspect|validate|paths>', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['project', '<create|inspect|validate|paths>', '--target', '<targetDir>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'project create':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['project', 'create', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['project', 'create', '--target', '<targetDir>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --project-id <id>     Custom project id',
+        '  --name <name>         Custom project name',
+        '  --default-language    Default language ("en" or "zh")',
+        '  --languages <list>    Comma-separated enabled languages, e.g. en,zh',
+        '  --agent <agent>       Generate an agent guide file ("codex" or "claude-code")',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'project inspect':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['project', 'inspect', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['project', 'inspect', '--target', '<targetDir>', '[options]'])}`,
+      ]);
+      return true;
+    case 'project validate':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['project', 'validate', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['project', 'validate', '--target', '<targetDir>', '[options]'])}`,
+      ]);
+      return true;
+    case 'project paths':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['project', 'paths', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['project', 'paths', '--target', '<targetDir>', '[options]'])}`,
+      ]);
+      return true;
+    case 'workflow':
+    case 'workflow inspect':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['workflow', 'inspect', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['workflow', 'inspect', '--target', '<targetDir>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'page':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['page', '<list|get|find>', '[options]'])}`,
+        '',
+        'Subcommands:',
+        '  list                 List pages for a language',
+        '  get                  Load one page by page id',
+        '  find                 Find pages by id, slug, status, or tag',
+      ]);
+      return true;
+    case 'page list':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['page', 'list', '[targetDir]', '--lang', '<lang>', '[options]'])}`,
+        `  ${formatCliCommand(['page', 'list', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --status <status>    Filter by page status',
+        '  --tag <tag>          Filter by tag',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'page get':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['page', 'get', '<pageId>', '[targetDir]', '--lang', '<lang>', '[options]'])}`,
+        `  ${formatCliCommand(['page', 'get', '--page-id', '<pageId>', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'page find':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['page', 'find', '[targetDir]', '--lang', '<lang>', '[options]'])}`,
+        `  ${formatCliCommand(['page', 'find', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --page-id <pageId>   Find a page by id',
+        '  --slug <slug>        Find a page by slug',
+        '  --status <status>    Filter by page status',
+        '  --tag <tag>          Filter by tag',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'nav':
+    case 'nav get':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['nav', 'get', '[targetDir]', '--lang', '<lang>', '[options]'])}`,
+        `  ${formatCliCommand(['nav', 'get', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
+        '',
+        'Options:',
+        '  --json               Print structured JSON output',
       ]);
       return true;
     case 'import':
@@ -81,6 +216,7 @@ export function printCommandHelp(command: string): boolean {
         '',
         'Options:',
         '  --convert            Immediately convert the staged import into draft pages',
+        '  --json               Print structured JSON output',
         '',
         'Notes:',
         '  lang currently supports only "zh" or "en".',
@@ -91,6 +227,9 @@ export function printCommandHelp(command: string): boolean {
         'Usage:',
         `  ${formatCliCommand(['convert-import', '<importId>', '[targetDir]'])}`,
         `  ${formatCliCommand(['convert-import', '--import-id', '<importId>', '--target', '<targetDir>'])}`,
+        '',
+        'Options:',
+        '  --json               Print structured JSON output',
       ]);
       return true;
     case 'help':
@@ -102,7 +241,7 @@ export function printCommandHelp(command: string): boolean {
     case 'version':
       printLines([
         'Usage:',
-        `  ${formatCliCommand(['version'])}`,
+        `  ${formatCliCommand(['version', '[--json]'])}`,
       ]);
       return true;
     default:

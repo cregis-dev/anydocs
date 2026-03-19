@@ -52,7 +52,7 @@ async function listFilesRecursively(rootDir: string): Promise<string[]> {
   return files;
 }
 
-test('runBuildWorkflow emits a deployable docs site at the output root', { timeout: 120_000 }, async () => {
+test('runBuildWorkflow emits a deployable docs site at the output root', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -76,7 +76,9 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     await assert.rejects(() => access(path.join(result.artifactRoot, '_not-found')));
 
     const exportedFiles = await listFilesRecursively(result.artifactRoot);
-    const leakedTxtFiles = exportedFiles.filter((filePath) => filePath.endsWith('.txt') && !filePath.endsWith('llms.txt'));
+    const leakedTxtFiles = exportedFiles.filter(
+      (filePath) => filePath.endsWith('.txt') && !filePath.endsWith('llms.txt') && !filePath.endsWith('llms-full.txt'),
+    );
     assert.deepEqual(leakedTxtFiles, []);
 
     const rootIndex = await readFile(path.join(result.artifactRoot, 'index.html'), 'utf8');
@@ -85,10 +87,18 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
       await readFile(path.join(result.artifactRoot, 'search-index.en.json'), 'utf8'),
     ) as { lang: string; docs: Array<{ slug: string }> };
     const llms = await readFile(path.join(result.artifactRoot, 'llms.txt'), 'utf8');
+    const llmsFull = await readFile(path.join(result.artifactRoot, 'llms-full.txt'), 'utf8');
+    const chunks = JSON.parse(
+      await readFile(path.join(result.machineReadableRoot, 'chunks.en.json'), 'utf8'),
+    ) as {
+      lang: string;
+      chunking: { strategy: string; maxChars: number; overlapChars: number };
+      chunks: Array<{ pageId: string; href: string; text: string; order: number }>;
+    };
     const mcpIndex = JSON.parse(await readFile(path.join(result.machineReadableRoot, 'index.json'), 'utf8')) as {
       version: number;
       site: { theme: { id: string; codeTheme?: string } };
-      languages: Array<{ lang: string; files: { searchIndex: string } }>;
+      languages: Array<{ lang: string; files: { searchIndex: string; chunks: string } }>;
     };
     const manifest = JSON.parse(await readFile(path.join(result.artifactRoot, 'build-manifest.json'), 'utf8')) as {
       source: { site: { theme: { id: string; codeTheme?: string } } };
@@ -100,10 +110,20 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.equal(searchIndex.lang, 'en');
     assert.deepEqual(searchIndex.docs.map((entry) => entry.slug), ['welcome']);
     assert.match(llms, /\/en\/welcome/);
+    assert.match(llmsFull, /# Docs Full Export/);
+    assert.match(llmsFull, /Page ID: welcome/);
+    assert.match(llmsFull, /URL: \/en\/welcome/);
+    assert.equal(chunks.lang, 'en');
+    assert.equal(chunks.chunking.strategy, 'heading-aware');
+    assert.equal(chunks.chunks[0]?.pageId, 'welcome');
+    assert.equal(chunks.chunks[0]?.href, '/en/welcome');
+    assert.ok((chunks.chunks[0]?.text ?? '').length > 0);
+    assert.equal(chunks.chunks[0]?.order, 1);
     assert.equal(mcpIndex.version, 1);
     assert.equal(mcpIndex.site.theme.id, 'classic-docs');
     assert.equal(mcpIndex.site.theme.codeTheme, 'github-dark');
     assert.equal(mcpIndex.languages[0]?.files.searchIndex, '../search-index.en.json');
+    assert.equal(mcpIndex.languages[0]?.files.chunks, 'chunks.en.json');
     assert.equal(manifest.source.site.theme.id, 'classic-docs');
     assert.equal(manifest.source.site.theme.codeTheme, 'github-dark');
     assert.equal(manifest.projects[0]?.site.theme.id, 'classic-docs');
@@ -115,7 +135,43 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
   }
 });
 
-test('runBuildWorkflow keeps an empty-state docs shell when there are no published pages', { timeout: 120_000 }, async () => {
+test('runBuildWorkflow emits a fallback chunk for published pages without headings', { timeout: 120_000, concurrency: false }, async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+    await savePage(repository, 'en', {
+      id: 'welcome',
+      lang: 'en',
+      slug: 'welcome',
+      title: 'Welcome',
+      status: 'published',
+      content: {},
+      render: {
+        plainText: 'Body content without headings for chunk fallback.',
+      },
+    });
+
+    const result = await runBuildWorkflow({ repoRoot });
+    const chunks = JSON.parse(
+      await readFile(path.join(result.machineReadableRoot, 'chunks.en.json'), 'utf8'),
+    ) as {
+      chunks: Array<{ id: string; pageId: string; headingPath: string[]; text: string; order: number }>;
+    };
+
+    assert.equal(chunks.chunks.length, 1);
+    assert.equal(chunks.chunks[0]?.id, 'welcome#0001');
+    assert.equal(chunks.chunks[0]?.pageId, 'welcome');
+    assert.deepEqual(chunks.chunks[0]?.headingPath, []);
+    assert.equal(chunks.chunks[0]?.order, 1);
+    assert.equal(chunks.chunks[0]?.text, 'Body content without headings for chunk fallback.');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('runBuildWorkflow keeps an empty-state docs shell when there are no published pages', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -147,7 +203,7 @@ test('runBuildWorkflow keeps an empty-state docs shell when there are no publish
   }
 });
 
-test('runBuildWorkflow serializes expanded classic-docs theme metadata into build artifacts', { timeout: 120_000 }, async () => {
+test('runBuildWorkflow serializes expanded classic-docs theme metadata into build artifacts', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -229,7 +285,7 @@ test('runBuildWorkflow serializes expanded classic-docs theme metadata into buil
   }
 });
 
-test('runBuildWorkflow serializes atlas-docs top navigation metadata into build artifacts', { timeout: 120_000 }, async () => {
+test('runBuildWorkflow serializes atlas-docs top navigation metadata into build artifacts', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -319,7 +375,7 @@ test('runBuildWorkflow serializes atlas-docs top navigation metadata into build 
   }
 });
 
-test('runPreviewWorkflow starts a live preview server and reflects published content changes', { timeout: 120_000 }, async () => {
+test('runPreviewWorkflow starts a live preview server and reflects published content changes', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -358,13 +414,13 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
   }
 });
 
-test('runBuildWorkflow fails fast for an invalid docs project root', async () => {
+test('runBuildWorkflow fails fast for an invalid docs project root', { concurrency: false }, async () => {
   const missingRepoRoot = path.join(os.tmpdir(), 'anydocs-build-preview-missing-project');
 
   await assert.rejects(() => runBuildWorkflow({ repoRoot: missingRepoRoot }), /Missing required project-config-file/);
 });
 
-test('runBuildWorkflow rejects artifact roots that overlap source content directories', async () => {
+test('runBuildWorkflow rejects artifact roots that overlap source content directories', { concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {

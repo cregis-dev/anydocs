@@ -3,6 +3,7 @@
 import type { ProjectContract, ProjectSiteTopNavItem } from '@anydocs/core';
 
 import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import { createLocalApiUrl } from '@/components/studio/local-api-url';
 
 export type StudioProjectResponse = ProjectContract;
 
@@ -112,19 +113,6 @@ function getDesktopStudioApi(): DesktopStudioApi | null {
   }
 
   return ((window as DesktopWindow).api?.studio as DesktopStudioApi | undefined) ?? null;
-}
-
-function createLocalApiUrl(pathname: string, params: Record<string, string | undefined>) {
-  const search = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value) {
-      search.set(key, value);
-    }
-  }
-
-  const query = search.toString();
-  return `/api/local/${pathname}/${query ? `?${query}` : ''}`;
 }
 
 async function jsonFetch<T>(url: string, init?: RequestInit) {

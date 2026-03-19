@@ -1,0 +1,18 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Build Your First Anydocs Site with Codex",
+  "description": "A sample docs project that simulates a developer using Codex with the Anydocs MCP server.",
+  "tags": [
+    "codex",
+    "getting-started"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# Build Your First Anydocs Site with Codex\n\nThis sample project simulates a developer using Codex to:\n\n- connect to `@anydocs/mcp`\n- initialize an Anydocs docs project\n- create and update pages through the MCP workflow\n- organize navigation and build a previewable docs site\n\nIf you already installed the Anydocs MCP server in Codex, treat this site as a compact end-to-end reference.\n",
+    "plainText": "Build Your First Anydocs Site with Codex. This sample project simulates a developer using Codex with @anydocs/mcp to initialize a docs project, edit pages, organize navigation, and build a previewable site."
+  }
+}

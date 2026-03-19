@@ -70,10 +70,11 @@ development_status:
   4-4-support-repeatable-iteration-and-watch-friendly-workflow-execution: done
   epic-4-retrospective: optional
 
-  epic-5: done
+  epic-5: in-progress
   5-1-import-legacy-documentation-into-the-standard-workflow: done
   5-2-convert-imported-content-into-the-standardized-content-model: done
   5-3-review-and-correct-external-or-ai-generated-content-before-publication: done
   5-4-expose-published-machine-readable-artifacts-for-external-ai-consumers: done
   5-5-preserve-forward-compatibility-for-workflow-reuse-and-future-ai-native-capabilities: done
+  5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find: review
   epic-5-retrospective: optional

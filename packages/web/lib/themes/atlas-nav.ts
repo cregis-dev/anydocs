@@ -22,6 +22,18 @@ function findTopLevelGroup(items: NavigationDoc['items'], groupId: string) {
   return items.find((item) => (item.type === 'section' || item.type === 'folder') && item.id === groupId) ?? null;
 }
 
+export function filterNavigationToGroup(nav: NavigationDoc, groupId: string): NavigationDoc {
+  const matchedGroup = findTopLevelGroup(nav.items, groupId);
+  if (!matchedGroup || (matchedGroup.type !== 'section' && matchedGroup.type !== 'folder')) {
+    return nav;
+  }
+
+  return {
+    version: nav.version,
+    items: matchedGroup.children,
+  };
+}
+
 function walkForPageId(items: NavItem[], predicate: (item: Extract<NavItem, { type: 'page' }>) => boolean): string | null {
   for (const item of items) {
     if (item.type === 'page' && predicate(item)) {
@@ -82,20 +94,9 @@ export function resolveFilteredNavigation(
     };
   }
 
-  const matchedGroup = findTopLevelGroup(nav.items, activeGroupId);
-  if (!matchedGroup || (matchedGroup.type !== 'section' && matchedGroup.type !== 'folder')) {
-    return {
-      activeGroupId,
-      filteredNav: nav,
-    };
-  }
-
   return {
     activeGroupId,
-    filteredNav: {
-      version: nav.version,
-      items: matchedGroup.children,
-    },
+    filteredNav: filterNavigationToGroup(nav, activeGroupId),
   };
 }
 

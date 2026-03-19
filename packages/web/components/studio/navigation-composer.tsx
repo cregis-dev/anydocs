@@ -1,9 +1,19 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+
 import type { NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import { NavigationItemDialog, type NavigationItemDialogValues } from '@/components/studio/navigation-item-dialog';
 import { NavigationTree } from '@/components/studio/navigation-tree';
 
 type IndexPath = number[];
+type CreatePageInput = { slug: string; title: string };
+type NavigationDialogState =
+  | { type: 'create-page'; parentPath: IndexPath }
+  | { type: 'create-group'; parentPath: IndexPath }
+  | { type: 'create-link'; parentPath: IndexPath }
+  | { type: 'rename-group'; path: IndexPath; title: string }
+  | { type: 'edit-link'; path: IndexPath; title: string; href: string };
 
 function cloneNav(nav: NavigationDoc): NavigationDoc {
   return JSON.parse(JSON.stringify(nav)) as NavigationDoc;
@@ -40,49 +50,25 @@ function moveInArray<T>(arr: T[], from: number, to: number) {
   arr.splice(to, 0, it);
 }
 
-function promptPageReference(pages: PageDoc[]) {
-  const input = window.prompt('Enter page Slug or ID');
-  if (!input) return null;
-  const page = pages.find((p) => p.slug === input || p.id === input);
-  if (!page) {
-    window.alert('Page not found');
-    return null;
-  }
-  return page.id;
-}
-
-function promptLinkItem() {
-  const title = (window.prompt('Link title', 'Link') ?? '').trim();
-  if (!title) return null;
-  const href = (window.prompt('Link href', 'https://') ?? '').trim();
-  if (!href) return null;
-  return { type: 'link' as const, title, href };
-}
-
-function slugifyGroupId(value: string) {
-  return (
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .replace(/-{2,}/g, '-') || `group-${Date.now().toString(36)}`
-  );
-}
-
 export function NavigationComposer({
   nav,
   pages,
   activePageId,
   onSelectPage,
+  onOpenPageSettings,
+  onCreatePage,
   onChange,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
   activePageId: string | null;
   onSelectPage: (pageId: string) => void;
+  onOpenPageSettings: (pageId: string) => void;
+  onCreatePage: (input: CreatePageInput) => Promise<PageDoc | null>;
   onChange: (next: NavigationDoc) => void;
 }) {
+  const [dialog, setDialog] = useState<NavigationDialogState | null>(null);
+
   const apply = (fn: (draft: NavigationDoc) => void) => {
     const next = cloneNav(nav);
     fn(next);
@@ -97,14 +83,6 @@ export function NavigationComposer({
       const node = siblings[idx];
       if (!node) return;
       siblings[idx] = updater(node);
-    });
-  };
-
-  const removeAt = (path: IndexPath) => {
-    apply((draft) => {
-      const siblings = getSiblingsRef(draft, path);
-      if (!siblings) return;
-      siblings.splice(path[path.length - 1], 1);
     });
   };
 
@@ -126,44 +104,128 @@ export function NavigationComposer({
     });
   };
 
-  const addRootItem = (kind: 'section' | 'page' | 'link') => {
-    apply((draft) => {
-      if (kind === 'section') {
-        const title = (window.prompt('Group title', 'GROUP') ?? '').trim();
-        if (!title) return;
-        draft.items.push({ type: 'section', id: slugifyGroupId(title), title, children: [] });
-        return;
-      }
-
-      if (kind === 'link') {
-        const link = promptLinkItem();
-        if (!link) return;
-        draft.items.push(link);
-        return;
-      }
-
-      const pageId = promptPageReference(pages);
-      if (!pageId) return;
-      draft.items.push({ type: 'page', pageId });
-    });
+  const addChild = async (parentPath: IndexPath, kind: 'group' | 'page' | 'link') => {
+    setDialog(
+      kind === 'group'
+        ? { type: 'create-group', parentPath }
+        : kind === 'link'
+          ? { type: 'create-link', parentPath }
+          : { type: 'create-page', parentPath },
+    );
   };
 
-  const addChild = (parentPath: IndexPath, kind: 'folder' | 'page' | 'link') => {
-    apply((draft) => {
-      const parent = getNode(draft, parentPath);
-      if (!parent || parent.type === 'page' || parent.type === 'link') return;
-      if (kind === 'folder') parent.children.push({ type: 'folder', title: 'Folder', children: [] });
-      if (kind === 'link') {
-        const link = promptLinkItem();
-        if (!link) return;
-        parent.children.push(link);
+  const dialogConfig = useMemo(() => {
+    if (!dialog) {
+      return null;
+    }
+
+    if (dialog.type === 'create-page') {
+      return {
+        kind: 'page' as const,
+        title: 'Add Page',
+        description: 'Create a new page and insert it into this group.',
+        submitLabel: 'Create Page',
+        initialValues: {
+          title: 'Untitled',
+          slug: 'getting-started/new-page',
+        },
+      };
+    }
+
+    if (dialog.type === 'create-group') {
+      return {
+        kind: 'group' as const,
+        title: 'Add Group',
+        description: 'Create a nested group inside the current navigation section.',
+        submitLabel: 'Create Group',
+        initialValues: {
+          title: 'Group',
+        },
+      };
+    }
+
+    if (dialog.type === 'create-link') {
+      return {
+        kind: 'link' as const,
+        title: 'Add Link',
+        description: 'Add an external link to this group.',
+        submitLabel: 'Create Link',
+        initialValues: {
+          title: 'Link',
+          href: 'https://',
+        },
+      };
+    }
+
+    if (dialog.type === 'rename-group') {
+      return {
+        kind: 'group' as const,
+        title: 'Rename Group',
+        description: 'Update the display title for this navigation group.',
+        submitLabel: 'Save',
+        initialValues: {
+          title: dialog.title,
+        },
+      };
+    }
+
+    return {
+      kind: 'link' as const,
+      title: 'Edit Link',
+      description: 'Update the external link label and destination.',
+      submitLabel: 'Save',
+      initialValues: {
+        title: dialog.title,
+        href: dialog.href,
+      },
+    };
+  }, [dialog]);
+
+  const handleDialogSubmit = async (values: NavigationItemDialogValues) => {
+    if (!dialog) {
+      return;
+    }
+
+    if (dialog.type === 'create-page') {
+      const created = await onCreatePage({ slug: values.slug, title: values.title || 'Untitled' });
+      if (!created) {
+        throw new Error('Failed to create page');
       }
-      if (kind === 'page') {
-        const pageId = promptPageReference(pages);
-        if (!pageId) return;
-        parent.children.push({ type: 'page', pageId });
-      }
-    });
+
+      apply((draft) => {
+        const parent = getNode(draft, dialog.parentPath);
+        if (!parent || parent.type === 'page' || parent.type === 'link') return;
+        parent.children.push({ type: 'page', pageId: created.id });
+      });
+      return;
+    }
+
+    if (dialog.type === 'create-group') {
+      apply((draft) => {
+        const parent = getNode(draft, dialog.parentPath);
+        if (!parent || parent.type === 'page' || parent.type === 'link') return;
+        parent.children.push({ type: 'folder', title: values.title, children: [] });
+      });
+      return;
+    }
+
+    if (dialog.type === 'create-link') {
+      apply((draft) => {
+        const parent = getNode(draft, dialog.parentPath);
+        if (!parent || parent.type === 'page' || parent.type === 'link') return;
+        parent.children.push({ type: 'link', title: values.title, href: values.href });
+      });
+      return;
+    }
+
+    if (dialog.type === 'rename-group') {
+      updateAt(dialog.path, (node) =>
+        node.type === 'section' || node.type === 'folder' ? { ...node, title: values.title } : node,
+      );
+      return;
+    }
+
+    updateAt(dialog.path, (node) => (node.type === 'link' ? { ...node, title: values.title, href: values.href } : node));
   };
 
   return (
@@ -173,12 +235,22 @@ export function NavigationComposer({
         pages={pages}
         activePageId={activePageId}
         onSelectPage={onSelectPage}
-        updateAt={updateAt}
-        removeAt={removeAt}
+        onOpenPageSettings={onOpenPageSettings}
         moveUp={moveUp}
         moveDown={moveDown}
-        addRootItem={addRootItem}
         addChild={addChild}
+        onRequestRenameGroup={(path, title) => setDialog({ type: 'rename-group', path, title })}
+        onRequestEditLink={(path, title, href) => setDialog({ type: 'edit-link', path, title, href })}
+      />
+      <NavigationItemDialog
+        open={dialog !== null}
+        config={dialogConfig}
+        onOpenChange={(next) => {
+          if (!next) {
+            setDialog(null);
+          }
+        }}
+        onSubmit={handleDialogSubmit}
       />
     </div>
   );

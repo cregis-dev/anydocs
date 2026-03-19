@@ -1,13 +1,31 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Globe, Loader2, Plus, SidebarClose, SidebarOpen, Eye, Circle, Save, WifiOff, PanelRightClose, PanelRightOpen, X, Link2 } from 'lucide-react';
+import {
+  FileText,
+  Globe,
+  Loader2,
+  Plus,
+  SidebarClose,
+  SidebarOpen,
+  Eye,
+  Circle,
+  Save,
+  WifiOff,
+  X,
+  Link2,
+  Settings,
+  ChevronDown,
+  Box,
+  Sparkles,
+} from 'lucide-react';
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 
 import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LocalStudioSettings } from '@/components/studio/local-studio-settings';
+import { NavigationItemDialog, type NavigationItemDialogValues } from '@/components/studio/navigation-item-dialog';
 import { YooptaDocEditor } from '@/components/studio/yoopta-doc-editor';
 import { NavigationComposer } from '@/components/studio/navigation-composer';
 import { formatLanguageLabel } from '@/components/studio/language-label';
@@ -31,10 +49,8 @@ import {
   runStudioPreview,
   saveStudioNavigation,
   saveStudioPage,
-  type DeletePageResponse,
   type StudioBuildResponse,
   type StudioPreviewResponse,
-  type StudioProjectResponse,
   updateStudioProject,
 } from '@/components/studio/backend';
 import {
@@ -67,6 +83,10 @@ type ProjectState = {
   topNavItems: ProjectSiteTopNavItem[];
   outputDir: string;
 } | null;
+
+type RightSidebarMode = 'page' | 'project' | null;
+type WorkflowAction = 'preview' | 'build';
+type SidebarCreateDialog = { type: 'page' | 'group' | 'link' } | null;
 
 function collectNavPageRefs(items: NavItem[], out: { pageId: string; hidden: boolean }[]) {
   for (const item of items) {
@@ -150,6 +170,17 @@ function sortPagesBySlug(pages: PageDoc[]) {
   return [...pages].sort((left, right) => left.slug.localeCompare(right.slug));
 }
 
+function slugifyGroupId(value: string) {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-') || `group-${Date.now().toString(36)}`
+  );
+}
+
 function removePageRefsFromNav(items: NavItem[], pageId: string): { items: NavItem[]; removed: number } {
   let removed = 0;
   const nextItems: NavItem[] = [];
@@ -204,12 +235,14 @@ export function LocalStudioApp() {
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [navDirtyTick, setNavDirtyTick] = useState(0);
   
-  // Sidebar visibility states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [rightSidebarMode, setRightSidebarMode] = useState<RightSidebarMode>(null);
+  const [workflowAction, setWorkflowAction] = useState<WorkflowAction>('preview');
+  const [workflowMenuOpen, setWorkflowMenuOpen] = useState(false);
   
   // Dropdown states
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [sidebarCreateDialog, setSidebarCreateDialog] = useState<SidebarCreateDialog>(null);
   
   // Folder opening state
   const [isOpeningFolder, setIsOpeningFolder] = useState(false);
@@ -247,6 +280,38 @@ export function LocalStudioApp() {
   savingNavRef.current = savingNav;
   const navDirtyTickRef = useRef(0);
   navDirtyTickRef.current = navDirtyTick;
+  const workflowMenuRef = useRef<HTMLDivElement | null>(null);
+  const previewWindowRef = useRef<Window | null>(null);
+
+  useEffect(() => {
+    if (!workflowMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+      if (workflowMenuRef.current?.contains(target)) {
+        return;
+      }
+      setWorkflowMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setWorkflowMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [workflowMenuOpen]);
 
   const handleOpenFolder = useCallback(async () => {
     setIsOpeningFolder(true);
@@ -286,6 +351,9 @@ export function LocalStudioApp() {
     setRecentProjects(nextProjects);
   }, [recentProjects]);
 
+  const activeIdRef = useRef<string | null>(null);
+  activeIdRef.current = activeId;
+
   const reload = useCallback(async () => {
     if (!projectId) {
       setLoad({ nav: null, pages: [], loading: false, error: null });
@@ -293,10 +361,12 @@ export function LocalStudioApp() {
       setProjectState(null);
       setWorkflowMessage(null);
       setWorkflowError(null);
+      setRightSidebarMode(null);
       return;
     }
     if (!selectedProject?.path) {
       setProjectState(null);
+      setRightSidebarMode(null);
       setLoad({ nav: null, pages: [], loading: false, error: '请重新打开外部项目根目录。' });
       return;
     }
@@ -348,20 +418,23 @@ export function LocalStudioApp() {
       setProjectDirty(false);
       setProjectSaveError(null);
       // Only reset activeId if it's not valid for the new project
-      if (!activeId || !pages.pages.find(p => p.id === activeId)) {
+      const currentActiveId = activeIdRef.current;
+      if (!currentActiveId || !pages.pages.find((p) => p.id === currentActiveId)) {
         const first = pages.pages[0]?.id ?? null;
         setActiveId(first);
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '加载失败';
       setProjectState(null);
+      setRightSidebarMode(null);
       setLoad({ nav: null, pages: [], loading: false, error: msg });
     }
-  }, [lang, activeId, projectId, selectedProject]);
+  }, [lang, projectId, selectedProject]);
 
   // When projectId changes, reset activeId
   useEffect(() => {
     setActiveId(null);
+    setRightSidebarMode(null);
   }, [projectId]);
 
   useEffect(() => {
@@ -377,6 +450,7 @@ export function LocalStudioApp() {
   // When lang changes, reset activeId to force reload with new language
   useEffect(() => {
     setActiveId(null);
+    setRightSidebarMode((current) => (current === 'page' ? null : current));
   }, [lang]);
 
   useEffect(() => {
@@ -387,6 +461,7 @@ export function LocalStudioApp() {
     if (!activeId) {
       setActive(null);
       setActiveLoading(false);
+      setRightSidebarMode((current) => (current === 'page' ? null : current));
       return;
     }
     if (!lang) {
@@ -642,85 +717,149 @@ export function LocalStudioApp() {
     return () => clearTimeout(timer);
   }, [projectDirty, projectDirtyTick, onSaveProject]);
 
-  const onCreate = useCallback(async (type: 'document' | 'group' | 'nav-page' | 'link') => {
-    if (!lang) {
-      return;
-    }
+  const onCreate = useCallback((type: 'page' | 'group' | 'link') => {
     setCreateMenuOpen(false);
-    if (type === 'group') {
-      const title = window.prompt('请输入分组名称');
-      if (!title?.trim()) return;
-      if (!navDraft) return;
-      const newGroup = {
-        type: 'section' as const,
-        title: title.trim(),
-        children: [],
+    setSidebarCreateDialog({ type });
+  }, []);
+
+  const sidebarCreateDialogConfig = useMemo(() => {
+    if (!sidebarCreateDialog) {
+      return null;
+    }
+
+    if (sidebarCreateDialog.type === 'page') {
+      return {
+        kind: 'page' as const,
+        title: 'Add Page',
+        description: 'Create a new page and add it to the root of the left navigation.',
+        submitLabel: 'Create Page',
+        initialValues: {
+          title: 'Untitled',
+          slug: 'getting-started/new-page',
+        },
       };
-      setNavDraft({
-        ...navDraft,
-        items: [...navDraft.items, newGroup],
-      });
-      setNavDirty(true);
-      setNavDirtyTick((tick) => tick + 1);
-      return;
     }
-    if (type === 'link') {
-      const title = (window.prompt('请输入链接标题', 'Link') ?? '').trim();
-      if (!title) return;
-      const href = (window.prompt('请输入链接地址', 'https://') ?? '').trim();
-      if (!href) return;
-      if (!navDraft) return;
-      setNavDraft({
-        ...navDraft,
-        items: [...navDraft.items, { type: 'link', title, href }],
-      });
-      setNavDirty(true);
-      setNavDirtyTick((tick) => tick + 1);
-      return;
+
+    if (sidebarCreateDialog.type === 'group') {
+      return {
+        kind: 'group' as const,
+        title: 'Add Group',
+        description: 'Create a new top-level group in the left navigation.',
+        submitLabel: 'Create Group',
+        initialValues: {
+          title: 'Group',
+        },
+      };
     }
-    if (type === 'nav-page') {
-      const input = (window.prompt('请输入已有页面的 slug 或 pageId') ?? '').trim();
-      if (!input) return;
-      const page = load.pages.find((item) => item.slug === input || item.id === input);
-      if (!page) {
-        window.alert('未找到对应页面');
+
+    return {
+      kind: 'link' as const,
+      title: 'Add Link',
+      description: 'Add an external link to the root of the left navigation.',
+      submitLabel: 'Create Link',
+      initialValues: {
+        title: 'Link',
+        href: 'https://',
+      },
+    };
+  }, [sidebarCreateDialog]);
+
+  const handleSidebarCreateSubmit = useCallback(
+    async (values: NavigationItemDialogValues) => {
+      if (!lang) {
+        throw new Error('请选择语言');
+      }
+      if (!navDraft) {
+        throw new Error('导航尚未加载完成');
+      }
+
+      if (sidebarCreateDialog?.type === 'group') {
+        const newGroup = {
+          type: 'section' as const,
+          id: slugifyGroupId(values.title),
+          title: values.title,
+          children: [],
+        };
+        setNavDraft({
+          ...navDraft,
+          items: [...navDraft.items, newGroup],
+        });
+        setNavDirty(true);
+        setNavDirtyTick((tick) => tick + 1);
         return;
       }
-      if (!navDraft) return;
-      setNavDraft({
-        ...navDraft,
-        items: [...navDraft.items, { type: 'page', pageId: page.id }],
-      });
-      setNavDirty(true);
-      setNavDirtyTick((tick) => tick + 1);
-      return;
-    }
-    // document
-    const slug = window.prompt('请输入 slug（例如 getting-started/new-page）');
-    if (!slug?.trim()) return;
-    const title = window.prompt('请输入标题（Display Title）') ?? 'Untitled';
 
-    if (!selectedProject?.path) {
-      return;
-    }
+      if (sidebarCreateDialog?.type === 'link') {
+        setNavDraft({
+          ...navDraft,
+          items: [...navDraft.items, { type: 'link', title: values.title, href: values.href }],
+        });
+        setNavDirty(true);
+        setNavDirtyTick((tick) => tick + 1);
+        return;
+      }
 
-    const created = await createStudioPage(lang, { slug: slug.trim(), title: title.trim() }, projectId, selectedProject.path);
-    setActiveId(created.id);
-    setLoad((current) => ({
-      ...current,
-      pages: upsertPageInList(current.pages, created),
-    }));
+      if (!selectedProject?.path) {
+        throw new Error('请重新打开外部项目根目录。');
+      }
 
-    // Add to navigation root
-    if (navDraft) {
+      const created = await createStudioPage(
+        lang,
+        { slug: values.slug, title: values.title || 'Untitled' },
+        projectId,
+        selectedProject.path,
+      );
+      setActiveId(created.id);
+      setLoad((current) => ({
+        ...current,
+        pages: upsertPageInList(current.pages, created),
+      }));
       setNavDraft({
         ...navDraft,
         items: [...navDraft.items, { type: 'page', pageId: created.id }],
       });
       setNavDirty(true);
       setNavDirtyTick((tick) => tick + 1);
-    }
-  }, [lang, load.pages, navDraft, projectId, selectedProject]);
+    },
+    [lang, navDraft, projectId, selectedProject, sidebarCreateDialog],
+  );
+
+  const createPageForNavigation = useCallback(
+    async (input: { slug: string; title: string }) => {
+      if (!lang || !selectedProject?.path) {
+        return null;
+      }
+
+      const created = await createStudioPage(
+        lang,
+        { slug: input.slug.trim(), title: input.title.trim() },
+        projectId,
+        selectedProject.path,
+      );
+
+      setActiveId(created.id);
+      setLoad((current) => ({
+        ...current,
+        pages: upsertPageInList(current.pages, created),
+      }));
+
+      return created;
+    },
+    [lang, projectId, selectedProject],
+  );
+
+  const openPageSettings = useCallback((pageId: string) => {
+    setActiveId(pageId);
+    setRightSidebarMode('page');
+  }, []);
+
+  const toggleProjectSettings = useCallback(() => {
+    setRightSidebarMode((current) => (current === 'project' ? null : 'project'));
+  }, []);
+
+  const closeRightSidebar = useCallback(() => {
+    setRightSidebarMode(null);
+  }, []);
 
   const runPreview = useCallback(async () => {
     if (!selectedProject?.path) {
@@ -734,7 +873,15 @@ export function LocalStudioApp() {
     try {
       const result: StudioPreviewResponse = await runStudioPreview(projectId, selectedProject.path);
       setWorkflowMessage(`Preview ready: ${result.docsPath}`);
-      window.open(result.previewUrl ?? result.docsPath, '_blank', 'noopener,noreferrer');
+      const targetUrl = new URL(result.previewUrl ?? result.docsPath, window.location.href).toString();
+      const existingPreviewWindow = previewWindowRef.current;
+
+      if (existingPreviewWindow && !existingPreviewWindow.closed) {
+        existingPreviewWindow.location.href = targetUrl;
+        existingPreviewWindow.focus();
+      } else {
+        previewWindowRef.current = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      }
     } catch (e: unknown) {
       setWorkflowMessage(null);
       setWorkflowError(e instanceof Error ? e.message : 'Preview workflow failed');
@@ -781,6 +928,7 @@ export function LocalStudioApp() {
       setActiveId(nextActive?.id ?? null);
       setActive(nextActive);
       setActiveLoading(false);
+      setRightSidebarMode(null);
       setDirty(false);
       setSaveError(null);
       setWorkflowMessage(null);
@@ -811,6 +959,32 @@ export function LocalStudioApp() {
     }
   }, [projectId, selectedProject]);
 
+  const triggerWorkflowAction = useCallback(
+    async (action: WorkflowAction) => {
+      if (action === 'build') {
+        await runBuild();
+        return;
+      }
+
+      await runPreview();
+    },
+    [runBuild, runPreview],
+  );
+
+  const executeCurrentWorkflowAction = useCallback(async () => {
+    setWorkflowMenuOpen(false);
+    await triggerWorkflowAction(workflowAction);
+  }, [triggerWorkflowAction, workflowAction]);
+
+  const selectWorkflowAction = useCallback(
+    async (action: WorkflowAction) => {
+      setWorkflowAction(action);
+      setWorkflowMenuOpen(false);
+      await triggerWorkflowAction(action);
+    },
+    [triggerWorkflowAction],
+  );
+
   if (!projectId) {
     return (
       <WelcomeScreen
@@ -826,7 +1000,7 @@ export function LocalStudioApp() {
   return (
     <div className="min-h-dvh bg-fd-background text-fd-foreground flex flex-col">
       {/* Top Navigation Bar */}
-      <header className="flex h-14 items-center justify-between border-b border-fd-border px-4 shrink-0">
+      <header className="flex h-12 items-center justify-between border-b border-fd-border px-4 shrink-0">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold truncate">{projectState?.name || selectedProject?.name || 'No Project'}</span>
@@ -844,65 +1018,99 @@ export function LocalStudioApp() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Language Switcher Dropdown */}
-          <Select value={lang ?? ''} onValueChange={(v) => setLang(v as DocsLang)}>
-            <SelectTrigger className="w-[75px] h-8 px-2 gap-1.5 text-xs whitespace-nowrap" disabled={!projectState}>
-              <Globe className="size-3.5 shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(projectState?.languages ?? []).map((language) => (
-                <SelectItem key={language} value={language}>
-                  {formatLanguageLabel(language)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Toggle Left Sidebar */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center overflow-hidden rounded-lg border border-fd-border bg-fd-card shadow-sm">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-none border-0"
+              onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+              title={leftSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+              data-testid="studio-toggle-left-sidebar"
+            >
+              {leftSidebarOpen ? <SidebarClose className="size-4 text-slate-500" /> : <SidebarOpen className="size-4 text-slate-500" />}
+            </Button>
+            <div className="h-9 w-px bg-fd-border" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-none border-0"
+              title="Workspace tools"
+              data-testid="studio-tools-button"
+            >
+              <Sparkles className="size-4 text-slate-500" />
+            </Button>
+          </div>
+
+          <div ref={workflowMenuRef} className="relative">
+            <div className="flex items-center overflow-hidden rounded-lg bg-black text-white shadow-sm">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 rounded-none border-0 bg-transparent px-4 text-sm font-semibold text-white hover:bg-white/10 hover:text-white"
+                onClick={() => void executeCurrentWorkflowAction()}
+                disabled={workflowBusy !== null}
+                data-testid="studio-workflow-action-button"
+              >
+                {workflowBusy === workflowAction ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : workflowAction === 'build' ? (
+                  <Box className="mr-2 size-4" />
+                ) : (
+                  <Eye className="mr-2 size-4" />
+                )}
+                {workflowAction === 'build' ? 'Build' : 'Preview'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-none border-0 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                onClick={() => setWorkflowMenuOpen((open) => !open)}
+                disabled={workflowBusy !== null}
+                data-testid="studio-workflow-menu-trigger"
+              >
+                <ChevronDown className="size-4" />
+              </Button>
+            </div>
+            {workflowMenuOpen ? (
+              <div className="absolute left-0 top-full z-50 mt-3 w-56 rounded-2xl border border-fd-border bg-fd-card p-2 shadow-lg">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base text-slate-500 transition hover:bg-fd-muted"
+                  onClick={() => void selectWorkflowAction('preview')}
+                  data-testid="studio-preview-button"
+                >
+                  <Eye className="size-5" />
+                  <span className="font-medium text-fd-foreground">Preview</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base text-slate-500 transition hover:bg-fd-muted"
+                  onClick={() => void selectWorkflowAction('build')}
+                  data-testid="studio-build-button"
+                >
+                  <Box className="size-5" />
+                  <span className="font-medium text-fd-foreground">Build</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="h-7 w-px bg-fd-border" />
+
           <Button
             type="button"
-            variant="ghost"
+            variant={rightSidebarMode === 'project' ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            title={leftSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
-            data-testid="studio-toggle-left-sidebar"
+            className="h-9 w-9 rounded-lg border border-transparent text-slate-500 shadow-none hover:bg-fd-card"
+            onClick={toggleProjectSettings}
+            title={rightSidebarMode === 'project' ? 'Hide Project Settings' : 'Show Project Settings'}
+            data-testid="studio-open-project-settings-button"
           >
-            {leftSidebarOpen ? <SidebarClose className="size-5" /> : <SidebarOpen className="size-5" />}
-          </Button>
-          
-          {/* Toggle Right Sidebar */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            title={rightSidebarOpen ? 'Hide Meta Panel' : 'Show Meta Panel'}
-            data-testid="studio-toggle-right-sidebar"
-          >
-            {rightSidebarOpen ? <PanelRightClose className="size-5" /> : <PanelRightOpen className="size-5" />}
-          </Button>
-          
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => void runBuild()}
-            disabled={workflowBusy !== null}
-            data-testid="studio-build-button"
-          >
-            {workflowBusy === 'build' ? <Loader2 className="size-4 animate-spin" /> : null}
-            Build
-          </Button>
-          <Button
-            type="button"
-            className="bg-black text-white hover:bg-slate-800"
-            onClick={() => void runPreview()}
-            disabled={workflowBusy !== null}
-            data-testid="studio-preview-button"
-          >
-            {workflowBusy === 'preview' ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
-            Preview
+            <Settings className="size-4" />
           </Button>
         </div>
       </header>
@@ -927,11 +1135,11 @@ export function LocalStudioApp() {
                   <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-fd-border bg-fd-popover p-1 shadow-md z-50">
                     <button
                       className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-fd-muted"
-                      onClick={() => onCreate('document')}
+                      onClick={() => onCreate('page')}
                       data-testid="studio-create-page-button"
                     >
                       <FileText className="size-4" />
-                      New Page
+                      Add Page
                     </button>
                     <button
                       className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-fd-muted"
@@ -939,15 +1147,7 @@ export function LocalStudioApp() {
                       data-testid="studio-create-group-button"
                     >
                       <Plus className="size-4" />
-                      New Group
-                    </button>
-                    <button
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-fd-muted"
-                      onClick={() => onCreate('nav-page')}
-                      data-testid="studio-create-nav-page-button"
-                    >
-                      <FileText className="size-4" />
-                      Add Existing Page
+                      Add Group
                     </button>
                     <button
                       className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-fd-muted"
@@ -955,7 +1155,7 @@ export function LocalStudioApp() {
                       data-testid="studio-create-link-button"
                     >
                       <Link2 className="size-4" />
-                      New Link
+                      Add Link
                     </button>
                   </div>
                 )}
@@ -989,7 +1189,12 @@ export function LocalStudioApp() {
                     nav={navDraft}
                     pages={filteredPages}
                     activePageId={activeId}
-                    onSelectPage={(id) => setActiveId(id)}
+                    onSelectPage={(id) => {
+                      setActiveId(id);
+                      setRightSidebarMode(null);
+                    }}
+                    onOpenPageSettings={openPageSettings}
+                    onCreatePage={createPageForNavigation}
                     onChange={(next) => {
                       setNavDraft(next);
                       setNavDirty(true);
@@ -1000,6 +1205,27 @@ export function LocalStudioApp() {
               ) : (
                 <div className="px-2 py-3 text-sm text-fd-muted-foreground">暂无数据</div>
               )}
+            </div>
+            <div className="border-t border-fd-border p-4 shrink-0">
+              <Select value={lang ?? ''} onValueChange={(v) => setLang(v as DocsLang)}>
+                <SelectTrigger
+                  className="h-11 w-full rounded-xl px-3 text-sm"
+                  disabled={!projectState}
+                  data-testid="studio-language-switcher"
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <Globe className="size-4 shrink-0" />
+                    <SelectValue placeholder="Select language" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {(projectState?.languages ?? []).map((language) => (
+                    <SelectItem key={language} value={language}>
+                      {formatLanguageLabel(language)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </aside>
         )}
@@ -1088,10 +1314,27 @@ export function LocalStudioApp() {
           </div>
         </section>
 
-        {/* Right Column: Meta Panel */}
-        {rightSidebarOpen && (
-          <aside className="w-80 border-l border-fd-border bg-fd-card overflow-y-auto shrink-0" data-testid="studio-settings-sidebar">
+        {/* Right Column: Contextual Settings */}
+        {rightSidebarMode ? (
+          <aside className="w-80 border-l border-fd-border bg-fd-card shrink-0 flex flex-col" data-testid="studio-settings-sidebar">
+            <div className="flex h-10 items-center justify-between border-b border-fd-border px-4 shrink-0">
+              <div className="text-xs font-semibold tracking-wider text-fd-muted-foreground">
+                {rightSidebarMode === 'project' ? 'PROJECT SETTINGS' : 'PAGE SETTINGS'}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={closeRightSidebar}
+                title="Close Settings"
+                data-testid="studio-close-settings-sidebar"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
             <LocalStudioSettings
+              mode={rightSidebarMode}
               page={active}
               project={projectState}
               navGroupOptions={topLevelNavGroups}
@@ -1135,8 +1378,19 @@ export function LocalStudioApp() {
               }}
             />
           </aside>
-        )}
+        ) : null}
       </main>
+
+      <NavigationItemDialog
+        open={sidebarCreateDialog !== null}
+        config={sidebarCreateDialogConfig}
+        onOpenChange={(next) => {
+          if (!next) {
+            setSidebarCreateDialog(null);
+          }
+        }}
+        onSubmit={handleSidebarCreateSubmit}
+      />
 
       {/* Footer Status Bar */}
       <footer className="h-8 border-t border-fd-border bg-fd-card px-4 flex items-center justify-between text-[10px] font-medium text-fd-muted-foreground shrink-0">

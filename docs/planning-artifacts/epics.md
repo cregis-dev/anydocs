@@ -655,9 +655,27 @@ So that later capabilities can extend the platform without replacing its core st
 **Then** it uses the same core project model introduced in Phase 1
 **And** compatibility tests confirm that full project reinitialization is not required
 
-**Given** {{precondition}}
-**When** {{action}}
-**Then** {{expected_outcome}}
-**And** {{additional_criteria}}
+### Story 5.6: Expand AI-Readable Published Artifacts and Reposition Reader Search as Find
+
+As a documentation maintainer,
+I want richer AI-readable published artifacts alongside a Find-oriented reader search experience,
+So that external agents can consume grounded published content while human readers still discover pages quickly without depending on in-product AI Ask.
+
+**Acceptance Criteria:**
+
+**Given** a successful published build
+**When** AI-readable artifacts are generated
+**Then** the output includes `llms.txt`, `llms-full.txt`, machine-readable page and navigation indexes, and per-language chunk artifacts
+**And** all of them are derived from the same canonical published-only content set as the reader-facing site
+
+**Given** an external consumer reading the generated artifacts
+**When** it inspects the machine-readable output
+**Then** it can discover chunk-level content through stable artifact metadata
+**And** it does not require Studio internals, private APIs, or reader HTML state to use the published corpus
+
+**Given** a human reader using the docs site
+**When** they use site search
+**Then** the experience remains focused on quickly finding pages and sections
+**And** the UI does not imply in-product AI answer generation
 
 <!-- End story repeat -->

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "projectId": "codex-docs",
+  "name": "Codex Docs",
+  "defaultLanguage": "zh",
+  "languages": [
+    "zh",
+    "en"
+  ],
+  "site": {
+    "theme": {
+      "id": "classic-docs",
+      "branding": {
+        "siteTitle": "Codex Docs",
+        "homeLabel": "Codex Docs"
+      },
+      "codeTheme": "github-dark"
+    }
+  }
+}

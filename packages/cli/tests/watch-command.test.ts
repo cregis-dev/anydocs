@@ -139,6 +139,24 @@ test('cli prints command-specific help and version', async () => {
   assert.equal(versionSpawned.getStderr(), '');
 });
 
+test('version supports structured json output', async () => {
+  const spawned = spawnCli(['version', '--json']);
+  const result = await spawned.waitForExit();
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.signal, null);
+  assert.equal(spawned.getStderr(), '');
+  assert.deepEqual(JSON.parse(spawned.getStdout()), {
+    ok: true,
+    data: {
+      version: '1.0.0',
+    },
+    meta: {
+      command: 'version',
+    },
+  });
+});
+
 test('cli rejects unknown commands with a clear error', async () => {
   const spawned = spawnCli(['unknown-command']);
   const result = await spawned.waitForExit();
@@ -165,6 +183,186 @@ test('init prints next-step commands after creating a project', async () => {
     assert.match(spawned.getStdout(), /pnpm --filter @anydocs\/cli cli preview/);
     assert.equal(spawned.getStderr(), '');
     await access(path.join(repoRoot, 'skill.md'));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('init can generate a Codex-specific AGENTS.md guide', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const spawned = spawnCli(['init', repoRoot, '--agent', 'codex']);
+    const result = await spawned.waitForExit();
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.signal, null);
+    assert.match(spawned.getStdout(), /AGENTS\.md/);
+    assert.equal(spawned.getStderr(), '');
+    await access(path.join(repoRoot, 'AGENTS.md'));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('project create supports richer initialization options', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const spawned = spawnCli([
+      'project',
+      'create',
+      repoRoot,
+      '--project-id',
+      'acme-docs',
+      '--name',
+      'Acme Docs',
+      '--default-language',
+      'zh',
+      '--languages',
+      'zh,en',
+      '--agent',
+      'claude-code',
+      '--json',
+    ]);
+    const result = await spawned.waitForExit();
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.signal, null);
+    assert.equal(spawned.getStderr(), '');
+
+    const output = JSON.parse(spawned.getStdout()) as {
+      ok: boolean;
+      data: {
+        projectId: string;
+        projectRoot: string;
+        languages: string[];
+        createdFiles: string[];
+      };
+    };
+    assert.equal(output.ok, true);
+    assert.equal(output.data.projectId, 'acme-docs');
+    assert.equal(output.data.projectRoot, repoRoot);
+    assert.deepEqual(output.data.languages, ['zh', 'en']);
+    assert.match(output.data.createdFiles.join('\n'), /anydocs\.workflow\.json/);
+    assert.match(output.data.createdFiles.join('\n'), /Claude\.md/);
+
+    const configRaw = await readFile(path.join(repoRoot, 'anydocs.config.json'), 'utf8');
+    const config = JSON.parse(configRaw) as {
+      projectId: string;
+      name: string;
+      defaultLanguage: string;
+      languages: string[];
+    };
+    assert.equal(config.projectId, 'acme-docs');
+    assert.equal(config.name, 'Acme Docs');
+    assert.equal(config.defaultLanguage, 'zh');
+    assert.deepEqual(config.languages, ['zh', 'en']);
+    await access(path.join(repoRoot, 'Claude.md'));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('project inspect and validate expose structured project data', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const inspectSpawned = spawnCli(['project', 'inspect', repoRoot, '--json']);
+    const inspectResult = await inspectSpawned.waitForExit();
+
+    assert.equal(inspectResult.exitCode, 0);
+    assert.equal(inspectSpawned.getStderr(), '');
+    const inspectJson = JSON.parse(inspectSpawned.getStdout()) as {
+      ok: boolean;
+      data: { config: { projectId: string; languages: string[] }; paths: { projectRoot: string; workflowFile: string } };
+    };
+    assert.equal(inspectJson.ok, true);
+    assert.equal(inspectJson.data.config.projectId, 'default');
+    assert.deepEqual(inspectJson.data.config.languages, ['en']);
+    assert.equal(inspectJson.data.paths.projectRoot, repoRoot);
+    assert.match(inspectJson.data.paths.workflowFile, /anydocs\.workflow\.json$/);
+
+    const validateSpawned = spawnCli(['project', 'validate', repoRoot, '--json']);
+    const validateResult = await validateSpawned.waitForExit();
+
+    assert.equal(validateResult.exitCode, 0);
+    assert.equal(validateSpawned.getStderr(), '');
+    const validateJson = JSON.parse(validateSpawned.getStdout()) as {
+      ok: boolean;
+      data: { valid: boolean; workflowCompatibility: { compatible: boolean } };
+    };
+    assert.equal(validateJson.ok, true);
+    assert.equal(validateJson.data.valid, true);
+    assert.equal(validateJson.data.workflowCompatibility.compatible, true);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('page and nav commands expose structured read models', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const pageListSpawned = spawnCli(['page', 'list', repoRoot, '--lang', 'en', '--json']);
+    const pageListResult = await pageListSpawned.waitForExit();
+
+    assert.equal(pageListResult.exitCode, 0);
+    assert.equal(pageListSpawned.getStderr(), '');
+    const pageListJson = JSON.parse(pageListSpawned.getStdout()) as {
+      ok: boolean;
+      data: { count: number; pages: Array<{ id: string; slug: string; status: string; file: string }> };
+    };
+    assert.equal(pageListJson.ok, true);
+    assert.equal(pageListJson.data.count, 1);
+    assert.equal(pageListJson.data.pages[0]?.id, 'welcome');
+    assert.equal(pageListJson.data.pages[0]?.slug, 'welcome');
+    assert.equal(pageListJson.data.pages[0]?.status, 'published');
+    assert.match(pageListJson.data.pages[0]?.file ?? '', /pages\/en\/welcome\.json$/);
+
+    const pageGetSpawned = spawnCli(['page', 'get', 'welcome', repoRoot, '--lang', 'en', '--json']);
+    const pageGetResult = await pageGetSpawned.waitForExit();
+
+    assert.equal(pageGetResult.exitCode, 0);
+    assert.equal(pageGetSpawned.getStderr(), '');
+    const pageGetJson = JSON.parse(pageGetSpawned.getStdout()) as {
+      ok: boolean;
+      data: { page: { id: string; title: string; status: string } };
+    };
+    assert.equal(pageGetJson.ok, true);
+    assert.equal(pageGetJson.data.page.id, 'welcome');
+    assert.equal(pageGetJson.data.page.title, 'Welcome');
+    assert.equal(pageGetJson.data.page.status, 'published');
+
+    const pageFindSpawned = spawnCli(['page', 'find', repoRoot, '--lang', 'en', '--slug', 'welcome', '--json']);
+    const pageFindResult = await pageFindSpawned.waitForExit();
+
+    assert.equal(pageFindResult.exitCode, 0);
+    assert.equal(pageFindSpawned.getStderr(), '');
+    const pageFindJson = JSON.parse(pageFindSpawned.getStdout()) as {
+      ok: boolean;
+      data: { matches: Array<{ id: string }> };
+    };
+    assert.equal(pageFindJson.ok, true);
+    assert.equal(pageFindJson.data.matches.length, 1);
+    assert.equal(pageFindJson.data.matches[0]?.id, 'welcome');
+
+    const navGetSpawned = spawnCli(['nav', 'get', repoRoot, '--lang', 'en', '--json']);
+    const navGetResult = await navGetSpawned.waitForExit();
+
+    assert.equal(navGetResult.exitCode, 0);
+    assert.equal(navGetSpawned.getStderr(), '');
+    const navGetJson = JSON.parse(navGetSpawned.getStdout()) as {
+      ok: boolean;
+      data: { navigation: { version: number; items: Array<{ type: string }> } };
+    };
+    assert.equal(navGetJson.ok, true);
+    assert.equal(navGetJson.data.navigation.version, 1);
+    assert.equal(navGetJson.data.navigation.items[0]?.type, 'section');
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }

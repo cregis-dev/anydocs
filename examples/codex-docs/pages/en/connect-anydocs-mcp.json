@@ -1,0 +1,18 @@
+{
+  "id": "connect-anydocs-mcp",
+  "lang": "en",
+  "slug": "connect-anydocs-mcp",
+  "title": "Connect the Anydocs MCP Server to Codex",
+  "description": "Give Codex a safe way to read and write Anydocs projects.",
+  "tags": [
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {},
+  "render": {
+    "markdown": "# Connect the Anydocs MCP Server to Codex\n\nA practical setup looks like this:\n\n1. Register `@anydocs/mcp` in Codex as a `stdio` MCP server\n2. Make sure Codex reads the project's `AGENTS.md`\n3. Default to this workflow:\n   - `project_open`\n   - `project_validate` when project state is uncertain\n   - `page_list` / `page_find` / `page_get`\n   - `page_create` / `page_update` / `page_set_status`\n   - `nav_get`\n\nThis keeps page mutations inside Anydocs domain validation, preserves publish rules, and makes agent behavior much more predictable.\n",
+    "plainText": "Connect the Anydocs MCP server to Codex by registering @anydocs/mcp as a stdio server and letting Codex read the project's AGENTS.md. Then use project_open, validation, page reads, page writes, and nav_get as the default workflow."
+  }
+}

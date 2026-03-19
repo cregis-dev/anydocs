@@ -25,6 +25,7 @@ export type InitProjectOptions = {
   projectName?: string;
   defaultLanguage?: DocsLanguage;
   languages?: DocsLanguage[];
+  agent?: 'codex' | 'claude-code';
 };
 
 export type InitProjectResult = {
@@ -33,6 +34,10 @@ export type InitProjectResult = {
 };
 
 const PROJECT_SKILL_GUIDE_FILE = 'skill.md';
+const PROJECT_AGENT_GUIDE_FILES = {
+  codex: 'AGENTS.md',
+  'claude-code': 'Claude.md',
+} as const;
 const INIT_SERVICE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_SKILL_GUIDE_PATH = path.resolve(INIT_SERVICE_DIR, '../../../../docs/skill.md');
 
@@ -57,8 +62,15 @@ async function writeJson(filePath: string, value: unknown): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
 }
 
-async function copyProjectSkillGuide(projectRoot: string): Promise<string | null> {
-  const targetPath = path.join(projectRoot, PROJECT_SKILL_GUIDE_FILE);
+function resolveAgentGuideFileName(agent: InitProjectOptions['agent']): string {
+  return agent ? PROJECT_AGENT_GUIDE_FILES[agent] : PROJECT_SKILL_GUIDE_FILE;
+}
+
+async function copyProjectSkillGuide(
+  projectRoot: string,
+  agent?: InitProjectOptions['agent'],
+): Promise<string | null> {
+  const targetPath = path.join(projectRoot, resolveAgentGuideFileName(agent));
 
   try {
     await fs.access(targetPath);
@@ -137,7 +149,7 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
   );
 
   const createdFiles = [paths.configFile, paths.workflowFile];
-  const skillGuideFile = await copyProjectSkillGuide(paths.projectRoot);
+  const skillGuideFile = await copyProjectSkillGuide(paths.projectRoot, options.agent);
   if (skillGuideFile) {
     createdFiles.push(skillGuideFile);
   }

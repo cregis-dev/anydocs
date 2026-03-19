@@ -9,6 +9,7 @@
     "en"
   ],
   "enabledLanguages": [
+    "zh",
     "en"
   ],
   "publicationStatuses": [
@@ -40,6 +41,24 @@
     },
     {
       "id": "navigation",
+      "path": "navigation/zh.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Navigation tree for zh."
+    },
+    {
+      "id": "page",
+      "path": "pages/zh/{pageId}.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Page document pattern for zh."
+    },
+    {
+      "id": "navigation",
       "path": "navigation/en.json",
       "format": "json",
       "required": true,
@@ -68,6 +87,15 @@
       "description": "AI-friendly published artifact generated from published content only."
     },
     {
+      "id": "llmsFull",
+      "path": "dist/llms-full.txt",
+      "format": "text",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Full-site AI-readable fallback export generated from published content only."
+    },
+    {
       "id": "machineReadableRoot",
       "path": "dist/mcp",
       "format": "directory",
@@ -87,12 +115,39 @@
     },
     {
       "id": "searchIndex",
+      "path": "dist/search-index.zh.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Static search index for zh."
+    },
+    {
+      "id": "chunkIndex",
+      "path": "dist/mcp/chunks.zh.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Machine-readable chunk artifact for zh."
+    },
+    {
+      "id": "searchIndex",
       "path": "dist/search-index.en.json",
       "format": "json",
       "required": false,
       "writable": false,
       "generated": true,
       "description": "Static search index for en."
+    },
+    {
+      "id": "chunkIndex",
+      "path": "dist/mcp/chunks.en.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Machine-readable chunk artifact for en."
     }
   ],
   "contentModel": {

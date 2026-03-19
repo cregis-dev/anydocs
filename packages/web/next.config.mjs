@@ -10,8 +10,9 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  // Ensure trailing slashes for static export
-  trailingSlash: true,
+  // Only force trailing slashes for static export. In dev, this breaks local API routes by redirecting
+  // `/api/local/*` to slash-suffixed URLs that do not resolve.
+  trailingSlash: shouldStaticExport,
 };
 
 export default nextConfig;

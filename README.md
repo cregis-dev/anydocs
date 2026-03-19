@@ -7,6 +7,7 @@ Anydocs 当前包含三部分能力：
 - `Studio`：本地编辑台，使用 Yoopta 编辑页面内容、导航与项目设置
 - `CLI`：初始化、构建、预览、导入文档项目
 - `Docs Reader`：面向发布内容的静态阅读站
+- `MCP Server`：面向本地 agent authoring 的 `stdio` MCP 服务器
 
 ## 当前事实
 
@@ -60,10 +61,11 @@ pnpm dev:desktop    # 启动 Electron 桌面端
 pnpm build          # 构建整个 workspace
 pnpm build:web      # 构建 web 包
 pnpm build:cli      # 构建 CLI 包
+pnpm build:mcp      # 构建 MCP server 包
 pnpm build:desktop  # 构建桌面端
 pnpm typecheck      # 全仓 TypeScript 检查
 pnpm lint           # 全仓 ESLint
-pnpm test           # core + cli 测试
+pnpm test           # core + cli + mcp 测试
 pnpm test:web       # web Playwright 测试
 pnpm test:full      # 全量测试
 ```
@@ -107,7 +109,7 @@ pnpm --filter @anydocs/cli cli version
 my-docs/
 ├── anydocs.config.json
 ├── anydocs.workflow.json
-├── skill.md                 # 可选；当前 init 会生成
+├── skill.md                 # 默认 agent guide；也可改为 AGENTS.md / Claude.md
 ├── pages/
 │   ├── en/
 │   └── zh/
@@ -122,9 +124,59 @@ my-docs/
 
 - `anydocs.config.json` 是项目配置
 - `anydocs.workflow.json` 是工作流契约
-- `skill.md` 是可选的项目辅助文档；当前 `init` 会一并生成
+- 项目内 agent guide 默认是 `skill.md`；使用 `--agent codex` 时会生成 `AGENTS.md`，使用 `--agent claude-code` 时会生成 `Claude.md`
 - `pages/` 与 `navigation/` 是 Studio 和 CLI 的 canonical source
 - `imports/` 用于承接 legacy import 中间产物
+
+## MCP Server
+
+Anydocs 现在提供一个可安装/可连接的本地 `stdio` MCP server，包名为 `@anydocs/mcp`。它面向 agent authoring 场景，当前暴露以下工具：
+
+- `project_open`
+- `project_validate`
+- `page_list`
+- `page_get`
+- `page_find`
+- `page_create`
+- `page_update`
+- `page_set_status`
+- `nav_get`
+- `nav_set`
+- `nav_replace_items`
+
+启动方式：
+
+```bash
+pnpm --filter @anydocs/mcp dev
+```
+
+也可以直接运行入口：
+
+```bash
+node --experimental-strip-types packages/mcp/src/index.ts
+```
+
+一个可直接用于 Codex 的 `stdio` 配置示例：
+
+```json
+{
+  "mcpServers": {
+    "anydocs": {
+      "command": "pnpm",
+      "args": ["--filter", "@anydocs/mcp", "dev"],
+      "cwd": "/Users/shawn/workspace/code/anydocs"
+    }
+  }
+}
+```
+
+说明：
+
+- 该 MCP server 直接调用 `@anydocs/core` 的 canonical domain logic，不通过 CLI 转发
+- 所有工具都要求显式传入 `projectRoot`，当前不维护多项目会话状态
+- `page_update` 只允许浅合并白名单字段：`slug`、`title`、`description`、`tags`、`content`、`render`、`review`
+- 导航可通过 `nav_set` 整体替换，或通过 `nav_replace_items` 仅替换 `navigation.items`
+- 新项目可通过 `--agent codex` 或 `--agent claude-code` 生成对应的 guide 文件，让 agent 默认优先使用 MCP
 
 ## 构建产物结构
 
@@ -152,6 +204,7 @@ dist/
 - `en/`、`zh/` 是规范阅读站路由
 - `docs/` 是默认语言兼容入口
 - `llms.txt` 与 `mcp/` 只包含 `published` 内容
+- `dist/mcp/*.json` 是构建出的机器可读产物，不是运行时 MCP server
 
 ## 架构概览
 

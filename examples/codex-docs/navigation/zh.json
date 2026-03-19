@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "快速开始",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        },
+        {
+          "type": "page",
+          "pageId": "codex-overview"
+        },
+        {
+          "type": "page",
+          "pageId": "connect-anydocs-mcp"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "实战流程",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "create-your-first-docs-site"
+        },
+        {
+          "type": "page",
+          "pageId": "daily-authoring-workflow"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "参考",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "codex-guardrails-and-troubleshooting"
+        }
+      ]
+    }
+  ]
+}
