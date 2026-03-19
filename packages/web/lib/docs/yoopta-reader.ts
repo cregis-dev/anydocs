@@ -51,9 +51,51 @@ function getHeadingDepth(type: unknown): number | null {
   return null;
 }
 
+function containsLegacyMarkupText(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return /<\/?(?:p|img|CardGroup|Card|Info|Accordion|Tabs|Steps|Embed)\b/i.test(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(containsLegacyMarkupText);
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (typeof value.text === 'string') {
+    return containsLegacyMarkupText(value.text);
+  }
+
+  if (Array.isArray(value.children)) {
+    return value.children.some(containsLegacyMarkupText);
+  }
+
+  return Object.values(value).some(containsLegacyMarkupText);
+}
+
+function hasLegacyMarkupInRenderableBlocks(content: Record<string, unknown>): boolean {
+  return Object.values(content).some((block) => {
+    if (!isRecord(block) || typeof block.type !== 'string') {
+      return false;
+    }
+
+    if (block.type === 'Code' || block.type === 'CodeGroup') {
+      return false;
+    }
+
+    return containsLegacyMarkupText(block.value);
+  });
+}
+
 export function getRenderableYooptaContent(content: unknown, title: string): YooptaContentValue | null {
   const validation = validateYooptaContentValue(content);
   if (!validation.ok || !isRecord(content)) {
+    return null;
+  }
+
+  if (hasLegacyMarkupInRenderableBlocks(content)) {
     return null;
   }
 

@@ -153,7 +153,7 @@ export function AtlasDocsReaderLayout({
             {siteTitle ? <span className="truncate text-[15px] font-semibold text-fd-foreground sm:text-base">{siteTitle}</span> : null}
           </Link>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto lg:!flex">
             {topNavLinks.map(({ item, label, href }) => {
               const active = item.type === 'nav-group' && item.groupId === effectiveActiveGroupId;
               const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
@@ -194,7 +194,7 @@ export function AtlasDocsReaderLayout({
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="secondary" size="icon" className="ml-auto rounded-lg lg:hidden">
+              <Button variant="secondary" size="icon" className="ml-auto rounded-lg lg:!hidden">
                 <Menu className="h-4 w-4" />
                 <span className="sr-only">Open navigation</span>
               </Button>
@@ -261,10 +261,10 @@ export function AtlasDocsReaderLayout({
       </header>
 
       <div className="mx-auto lg:grid lg:min-h-[calc(100dvh-60px)] lg:max-w-[1600px] lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:block">
+        <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
           <div className="sticky top-[60px] h-[calc(100dvh-60px)] overflow-hidden">{desktopSidebar}</div>
         </aside>
-        <main className="min-w-0 bg-[color:var(--atlas-body-background)]">{children}</main>
+        <main className="min-w-0 bg-[color:var(--atlas-body-background)] lg:col-start-2">{children}</main>
       </div>
     </div>
   );

@@ -95,14 +95,14 @@ export default async function Page({
       <div
         className={cn(
           'min-w-0 flex-1 px-6 py-8 sm:px-8 lg:px-10 lg:py-0',
-          isAtlasTheme && 'px-4 py-5 sm:px-6 lg:px-8 lg:py-8',
+          isAtlasTheme && 'px-4 py-4 sm:px-6 lg:px-8 lg:py-6',
         )}
       >
         <div
           className={cn(
             'mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20',
             isAtlasTheme &&
-              'max-w-none rounded-[10px] border border-[color:var(--atlas-content-border)] bg-white px-6 py-7 shadow-[0_1px_0_var(--atlas-content-shadow)] sm:px-8 lg:px-11 lg:py-8',
+              'max-w-none rounded-[10px] border border-[color:var(--atlas-content-border)] bg-white px-6 py-6 shadow-[0_1px_0_var(--atlas-content-shadow)] sm:px-8 lg:px-11 lg:py-6',
           )}
         >
           {showBreadcrumbs ? (
@@ -191,7 +191,7 @@ export default async function Page({
 
       <DocsToc
         toc={effectiveToc}
-        className={cn(isAtlasTheme && 'w-[240px] border-l-0 bg-transparent px-4 py-6')}
+        className={cn(isAtlasTheme && 'w-[240px] border-l-0 bg-transparent px-4 py-4')}
         contentClassName={cn(
           isAtlasTheme &&
             'rounded-xl border border-[color:var(--docs-toc-border)] bg-[color:var(--docs-toc-background)] px-4 py-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]',

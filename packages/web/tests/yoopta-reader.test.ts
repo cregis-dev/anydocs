@@ -90,3 +90,36 @@ test('extractTocFromYooptaContent returns ordered toc items from heading blocks'
     { depth: 3, title: 'Details', id: 'details' },
   ]);
 });
+
+test('getRenderableYooptaContent returns null for legacy-import blocks that contain raw html or mdx text', () => {
+  const content = {
+    heading: {
+      id: 'heading',
+      type: 'HeadingTwo',
+      value: [
+        {
+          id: 'element-1',
+          type: 'h2',
+          children: [{ text: 'What is Cregis\n<p align="center"><img src="/images/overview01.png" /></p>' }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order: 0, depth: 0 },
+    },
+    body: {
+      id: 'body',
+      type: 'Paragraph',
+      value: [
+        {
+          id: 'element-2',
+          type: 'paragraph',
+          children: [{ text: '<CardGroup cols={2}><Card title="Demo">Example</Card></CardGroup>' }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order: 1, depth: 0 },
+    },
+  };
+
+  assert.equal(getRenderableYooptaContent(content, 'Introduction'), null);
+});
