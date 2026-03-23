@@ -7,7 +7,176 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "ffbf042f": {
+      "id": "ffbf042f",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "5994d01c",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "调试工具与测试代币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "a79773cb": {
+      "id": "a79773cb",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "146b3b45",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "测试代币只能在开发环境使用。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "f77d2e7d": {
+      "id": "f77d2e7d",
+      "type": "Table",
+      "value": [
+        {
+          "id": "f758340a",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "6c8317ef",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "网络"
+                }
+              ]
+            },
+            {
+              "id": "860ce418",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "领取地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fb6279a4",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "00753c54",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Ripple (XRP)"
+                }
+              ]
+            },
+            {
+              "id": "2cc484d1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "https://test.bithomp.com/en/faucet"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d991d563",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "0b5d03c8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "BNB Smart Chain"
+                }
+              ]
+            },
+            {
+              "id": "e65e58a3",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "https://www.bnbchain.org/en/testnet-faucet"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "23221173",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "9fad1c10",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "TRON (TRX)"
+                }
+              ]
+            },
+            {
+              "id": "c8f4dc08",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "通过 Discord 社区领取"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9cf9973f",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "ad295c20",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Solana (SOL)"
+                }
+              ]
+            },
+            {
+              "id": "68fe0b9f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "https://faucet.solana.com"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 调试工具与测试代币\n\n测试代币只能在开发环境使用。\n\n| 网络 | 领取地址 |\n|------|----------|\n| Ripple (XRP) | https://test.bithomp.com/en/faucet |\n| BNB Smart Chain | https://www.bnbchain.org/en/testnet-faucet |\n| TRON (TRX) | 通过 Discord 社区领取 |\n| Solana (SOL) | https://faucet.solana.com |",
     "plainText": "调试工具与测试代币 测试代币只能在开发环境使用。  网络  领取地址   Ripple XRP  https://test.bithomp.com/en/faucet   BNB Smart Chain  https://www.bnbchain.org/en/testnetfaucet   TRON TRX  通过 Discord 社区领取   Solana SOL  https://faucet.solana.com"

@@ -7,7 +7,209 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "abf187ed": {
+      "id": "abf187ed",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "4037aa10",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "结算说明"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "95f20e63": {
+      "id": "95f20e63",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "2ad6e4fb",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "Cregis 支付引擎提供 T+0 高效结算。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "46c575f5": {
+      "id": "46c575f5",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "6caed061",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "结算状态"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "69803d38": {
+      "id": "69803d38",
+      "type": "Table",
+      "value": [
+        {
+          "id": "29823ade",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "7f5a5769",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "状态"
+                }
+              ]
+            },
+            {
+              "id": "f9c526c0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "999b2b50",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "f3992412",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "unsettled"
+                }
+              ]
+            },
+            {
+              "id": "d0672f8a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "尚未结算"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "207df4bb",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "41e4e996",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "settling"
+                }
+              ]
+            },
+            {
+              "id": "de74f7a8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "正在结算"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "73a7e378",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "85302b23",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "settled"
+                }
+              ]
+            },
+            {
+              "id": "9c7fc0c7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "结算完成"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "52b6af0a": {
+      "id": "52b6af0a",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "fbaf7b09",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "结算类型：system（自动）/ manual（手动）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "d13c83ba": {
+      "id": "d13c83ba",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "aefaff3a",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "请在 Cregis 客户端的项目设置中配置结算币种和钱包地址。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 结算说明\n\nCregis 支付引擎提供 T+0 高效结算。\n\n## 结算状态\n\n| 状态 | 说明 |\n|------|------|\n| unsettled | 尚未结算 |\n| settling | 正在结算 |\n| settled | 结算完成 |\n\n## 结算类型：system（自动）/ manual（手动）\n\n请在 Cregis 客户端的项目设置中配置结算币种和钱包地址。",
     "plainText": "结算说明 Cregis 支付引擎提供 T+0 高效结算。  结算状态  状态  说明   unsettled  尚未结算   settling  正在结算   settled  结算完成   结算类型：system（自动）/ manual（手动） 请在 Cregis 客户端的项目设置中配置结算币种和钱包地址。"

@@ -7,7 +7,264 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "2f3dc9ea": {
+      "id": "2f3dc9ea",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "d0abb6aa",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "简介"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "824d6479": {
+      "id": "824d6479",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "d70d5cff",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "Cregis 致力于为企业提供创新的金融工具，帮助企业轻松且安全地管理数字资产。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "5ed78276": {
+      "id": "5ed78276",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "9c33fcde",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "产品能力"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "20e3596c": {
+      "id": "20e3596c",
+      "type": "HeadingThree",
+      "value": [
+        {
+          "id": "cb8f1eb9",
+          "type": "heading-three",
+          "children": [
+            {
+              "text": "WaaS（Wallet as a Service）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "acd5905c": {
+      "id": "acd5905c",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "a4b67b2c",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "Cregis 钱包基础设施为企业提供即时部署的加密钱包解决方案，支持通过 WaaS API、桌面客户端和移动应用实现高效可扩展的数字资产管理。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "fbd02a9f": {
+      "id": "fbd02a9f",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "aa4a22ff",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "核心功能：",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    },
+    "13fce506": {
+      "id": "13fce506",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "f043ccab",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "支持种类丰富的加密数字资产的充值、提币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 6,
+        "depth": 0
+      }
+    },
+    "27e42376": {
+      "id": "27e42376",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "4e74713e",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "配套的查询与通知服务"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 7,
+        "depth": 0
+      }
+    },
+    "a2fda2a4": {
+      "id": "a2fda2a4",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "c16fe236",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "结合 AML 对资金进行合规筛查"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 8,
+        "depth": 0
+      }
+    },
+    "173509e6": {
+      "id": "173509e6",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "04067d90",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "应用场景：",
+              "bold": true
+            },
+            {
+              "text": " 交易所、电商"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 9,
+        "depth": 0
+      }
+    },
+    "eee85c87": {
+      "id": "eee85c87",
+      "type": "HeadingThree",
+      "value": [
+        {
+          "id": "20738519",
+          "type": "heading-three",
+          "children": [
+            {
+              "text": "支付引擎"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 10,
+        "depth": 0
+      }
+    },
+    "6663c891": {
+      "id": "6663c891",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "d3947f74",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "完整的加密货币支付综合解决方案，为支付服务商、电商平台、游戏平台等提供一体化收单服务。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 11,
+        "depth": 0
+      }
+    },
+    "fe1e3c13": {
+      "id": "fe1e3c13",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "94fb1cd0",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "核心流程：",
+              "bold": true
+            },
+            {
+              "text": " 收单 → 资金处理（归集/KYT/退款） → T+0 结算"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 12,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 简介\n\nCregis 致力于为企业提供创新的金融工具，帮助企业轻松且安全地管理数字资产。\n\n## 产品能力\n\n### WaaS（Wallet as a Service）\n\nCregis 钱包基础设施为企业提供即时部署的加密钱包解决方案，支持通过 WaaS API、桌面客户端和移动应用实现高效可扩展的数字资产管理。\n\n**核心功能：**\n- 支持种类丰富的加密数字资产的充值、提币\n- 配套的查询与通知服务\n- 结合 AML 对资金进行合规筛查\n\n**应用场景：** 交易所、电商\n\n### 支付引擎\n\n完整的加密货币支付综合解决方案，为支付服务商、电商平台、游戏平台等提供一体化收单服务。\n\n**核心流程：** 收单 → 资金处理（归集/KYT/退款） → T+0 结算",
     "plainText": "简介 Cregis 致力于为企业提供创新的金融工具，帮助企业轻松且安全地管理数字资产。  产品能力  WaaS（Wallet as a Service） Cregis 钱包基础设施为企业提供即时部署的加密钱包解决方案，支持通过 WaaS API、桌面客户端和移动应用实现高效可扩展的数字资产管理。 核心功能：  支持种类丰富的加密数字资产的充值、提币  配套的查询与通知服务  结合 AML 对资金进行合规筛查 应用场景： 交易所、电商  支付引擎 完整的加密货币支付综合解决方案，为支付服务商、电商平台、游戏平台等提供一体化收单服务。 核心流程： 收单 → 资金处理（归集/KYT/退款） → T+0 结算"

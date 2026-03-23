@@ -7,7 +7,263 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "c2de48af": {
+      "id": "c2de48af",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "7c30fe22",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "校验地址合法性"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "66c2ecf9": {
+      "id": "66c2ecf9",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "087857fb",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/address/legal",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "894abff5": {
+      "id": "894abff5",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "a4f73d2e",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "检查目标地址是否为指定区块链的合法地址。建议在提币前先校验。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "4496d812": {
+      "id": "4496d812",
+      "type": "Table",
+      "value": [
+        {
+          "id": "5b94b395",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "7a2a4484",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "4f9b7ee9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "d5c5b8d9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "03c6f194",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a3267cc3",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d2311725",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "ce5acb6c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "6874a512",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "d0801595",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f8797d36",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "5c462410",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "address"
+                }
+              ]
+            },
+            {
+              "id": "2ab02d27",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "dee712b9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "01072de0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "要校验的地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "e2320aed",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "9b0b7aef",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "chain_id"
+                }
+              ]
+            },
+            {
+              "id": "855e5828",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "3dbefc7c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "974c5107",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "区块链 ID"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "8f623acf": {
+      "id": "8f623acf",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "139d0080",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回：result (true/false)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 校验地址合法性\n\n`POST /api/v1/address/legal`\n\n检查目标地址是否为指定区块链的合法地址。建议在提币前先校验。\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n| address | string | 是 | 要校验的地址 |\n| chain_id | string | 是 | 区块链 ID |\n\n## 返回：result (true/false)",
     "plainText": "校验地址合法性 POST /api/v1/address/legal 检查目标地址是否为指定区块链的合法地址。建议在提币前先校验。  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   address  string  是  要校验的地址   chain_id  string  是  区块链 ID   返回：result true/false"

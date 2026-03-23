@@ -7,7 +7,281 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "0a993b92": {
+      "id": "0a993b92",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "f1d0d551",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "订单支付通知"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "a1fd788b": {
+      "id": "a1fd788b",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "3a48f68e",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "订单状态变化时，支付引擎通过 callback_url 发起回调。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "3dc70785": {
+      "id": "3dc70785",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "e4270067",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "回调事件类型 (event_type)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "d0b80fc0": {
+      "id": "d0b80fc0",
+      "type": "Table",
+      "value": [
+        {
+          "id": "0f967596",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "8c141601",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "3038889d",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8356a3b8",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "dcf72b3e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "expired"
+                }
+              ]
+            },
+            {
+              "id": "75c316a0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "订单超时"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8a5d67e9",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "120f4196",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "paid"
+                }
+              ]
+            },
+            {
+              "id": "9e898e1b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "支付完成"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6c79cfa0",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "329f6f4c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "partial_paid"
+                }
+              ]
+            },
+            {
+              "id": "841a56a1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "部分支付"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d3bf26cd",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "c6b01d2e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "overpaid"
+                }
+              ]
+            },
+            {
+              "id": "b4a87917",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "超额支付"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4aade6f7",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "378ead21",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "refunded"
+                }
+              ]
+            },
+            {
+              "id": "b57c5af9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "退款"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6d250931",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "5b8f5cf7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "paid_remain"
+                }
+              ]
+            },
+            {
+              "id": "535076e6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "补款"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "de8699ae": {
+      "id": "de8699ae",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "061cf6fa",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "订单状态：new / paid / expired / paid_over / paid_partial"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "0dc6c9e3": {
+      "id": "0dc6c9e3",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "3fbb2a98",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "回调响应：返回字符串 success"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 订单支付通知\n\n订单状态变化时，支付引擎通过 callback_url 发起回调。\n\n## 回调事件类型 (event_type)\n\n| 类型 | 说明 |\n|------|------|\n| expired | 订单超时 |\n| paid | 支付完成 |\n| partial_paid | 部分支付 |\n| overpaid | 超额支付 |\n| refunded | 退款 |\n| paid_remain | 补款 |\n\n## 订单状态：new / paid / expired / paid_over / paid_partial\n\n## 回调响应：返回字符串 success",
     "plainText": "订单支付通知 订单状态变化时，支付引擎通过 callback_url 发起回调。  回调事件类型 event_type  类型  说明   expired  订单超时   paid  支付完成   partial_paid  部分支付   overpaid  超额支付   refunded  退款   paid_remain  补款   订单状态：new / paid / expired / paid_over / paid_partial  回调响应：返回字符串 success"

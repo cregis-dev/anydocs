@@ -10,7 +10,46 @@
   ],
   "status": "published",
   "updatedAt": "2026-03-11T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "4b77ed05": {
+      "id": "4b77ed05",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "e2e77e50",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "Welcome"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "541f4994": {
+      "id": "541f4994",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "964112b2",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "This is the canonical Anydocs demo project used to drive build, preview, and reader routes."
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# Welcome\n\nThis is the canonical Anydocs demo project used to drive build, preview, and reader routes.",
     "plainText": "Welcome This is the canonical Anydocs demo project used to drive build, preview, and reader routes."

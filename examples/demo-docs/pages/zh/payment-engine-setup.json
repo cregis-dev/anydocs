@@ -7,7 +7,138 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "bb21bd0f": {
+      "id": "bb21bd0f",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "ebf77052",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "支付引擎准备"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "93b5402c": {
+      "id": "93b5402c",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "8a9d8585",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "设置步骤"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "c11e5985": {
+      "id": "c11e5985",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "8733e557",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "设置账户",
+              "bold": true
+            },
+            {
+              "text": " — 创建团队，设置开发者角色"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "6f5d666e": {
+      "id": "6f5d666e",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "4ff20301",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "创建项目",
+              "bold": true
+            },
+            {
+              "text": " — Cregis 客户端 > 支付引擎 > 创建（需先创建钱包）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "f174a12a": {
+      "id": "f174a12a",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "6ec69ac7",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "配置 IP 白名单",
+              "bold": true
+            },
+            {
+              "text": " — 项目设置 > IP 白名单"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "d71ec2dd": {
+      "id": "d71ec2dd",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "ef1f4502",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "获取 API 信息",
+              "bold": true
+            },
+            {
+              "text": " — 项目设置 > 开发者"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 支付引擎准备\n\n## 设置步骤\n\n1. **设置账户** — 创建团队，设置开发者角色\n2. **创建项目** — Cregis 客户端 > 支付引擎 > 创建（需先创建钱包）\n3. **配置 IP 白名单** — 项目设置 > IP 白名单\n4. **获取 API 信息** — 项目设置 > 开发者",
     "plainText": "支付引擎准备  设置步骤 1. 设置账户 — 创建团队，设置开发者角色 2. 创建项目 — Cregis 客户端  支付引擎  创建（需先创建钱包） 3. 配置 IP 白名单 — 项目设置  IP 白名单 4. 获取 API 信息 — 项目设置  开发者"

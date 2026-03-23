@@ -7,7 +7,389 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "7b6502a1": {
+      "id": "7b6502a1",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "e6882052",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "子地址提币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "9e9162f8": {
+      "id": "9e9162f8",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "a385acc3",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/sub_address_withdrawal",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "0dada8d2": {
+      "id": "0dada8d2",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "07264c4c",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "从项目的子地址发起提币请求。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "a6509139": {
+      "id": "a6509139",
+      "type": "Table",
+      "value": [
+        {
+          "id": "662d85f9",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "66bc8385",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "3c9cd1c1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "29467bdc",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "cdf8e22b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "36e39d61",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d0ee27ef",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "0ab505bf",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "eab4a18c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "f2d88401",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "04f09fbb",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "7d011305",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "currency"
+                }
+              ]
+            },
+            {
+              "id": "14f98c77",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "e6aa3bfc",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "336511aa",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "代币标识"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f6aee9ed",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "81795ef5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "from_address"
+                }
+              ]
+            },
+            {
+              "id": "5d161e5f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "70fcde59",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "da47f9cc",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "子地址（发送方）"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "730a848b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "204ad6e5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "to_address"
+                }
+              ]
+            },
+            {
+              "id": "6296f245",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "c45fff8a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "6fe7a71f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "接收方地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8f8965eb",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "5ae28d80",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "amount"
+                }
+              ]
+            },
+            {
+              "id": "f874f8bb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "b3ba3cbb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "388ae768",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "金额"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "12b2dfe6",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "3722c67e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "third_party_id"
+                }
+              ]
+            },
+            {
+              "id": "b10c618c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "d26170a6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "9688bdc1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "调用方业务编号"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "cebd6a8d": {
+      "id": "cebd6a8d",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "1e7c449e",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回：cid"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 子地址提币\n\n`POST /api/v1/sub_address_withdrawal`\n\n从项目的子地址发起提币请求。\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n| currency | string | 是 | 代币标识 |\n| from_address | string | 是 | 子地址（发送方） |\n| to_address | string | 是 | 接收方地址 |\n| amount | string | 是 | 金额 |\n| third_party_id | string | 是 | 调用方业务编号 |\n\n## 返回：cid",
     "plainText": "子地址提币 POST /api/v1/sub_address_withdrawal 从项目的子地址发起提币请求。  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   currency  string  是  代币标识   from_address  string  是  子地址（发送方）   to_address  string  是  接收方地址   amount  string  是  金额   third_party_id  string  是  调用方业务编号   返回：cid"

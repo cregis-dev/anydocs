@@ -7,7 +7,85 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "ad18749a": {
+      "id": "ad18749a",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "a2b64e59",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "发起钱包提币 v2"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "2886c805": {
+      "id": "2886c805",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "5e6c4c1c",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v2/payout",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "45f649c4": {
+      "id": "45f649c4",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "4a7990c1",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "相比 v1 新增：wallet_id（指定出款钱包）、from_address（发送方地址）、to_address（替代 address）。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "5d9937bc": {
+      "id": "5d9937bc",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "9bd97a3e",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "其余参数与 v1 相同。返回 cid。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 发起钱包提币 v2\n\n`POST /api/v2/payout`\n\n相比 v1 新增：wallet_id（指定出款钱包）、from_address（发送方地址）、to_address（替代 address）。\n\n其余参数与 v1 相同。返回 cid。",
     "plainText": "发起钱包提币 v2 POST /api/v2/payout 相比 v1 新增：wallet_id（指定出款钱包）、from_address（发送方地址）、to_address（替代 address）。 其余参数与 v1 相同。返回 cid。"

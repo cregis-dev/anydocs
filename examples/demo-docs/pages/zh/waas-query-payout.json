@@ -7,7 +7,202 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "39db65b9": {
+      "id": "39db65b9",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "8b151365",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "查询钱包提币信息"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "2d2d5210": {
+      "id": "2d2d5210",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "cf4e272c",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/payout/query",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "5302d8c0": {
+      "id": "5302d8c0",
+      "type": "Table",
+      "value": [
+        {
+          "id": "b3a967a0",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "e8b51552",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "bf222b65",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "41c58325",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "11ecbad6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c5c9fa3e",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "545e1626",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "e505d161",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "d5823ad0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "74b5da38",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "becab80e",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "3b66cdb9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "cid"
+                }
+              ]
+            },
+            {
+              "id": "5a2ba7ec",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "26e2298a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "1625ac0a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Cregis 系统流水号"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "9577e7eb": {
+      "id": "9577e7eb",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "31b31354",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回：完整提币信息（地址、金额、状态、txid 等）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 查询钱包提币信息\n\n`POST /api/v1/payout/query`\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n| cid | int64 | 是 | Cregis 系统流水号 |\n\n## 返回：完整提币信息（地址、金额、状态、txid 等）",
     "plainText": "查询钱包提币信息 POST /api/v1/payout/query  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   cid  int64  是  Cregis 系统流水号   返回：完整提币信息（地址、金额、状态、txid 等）"

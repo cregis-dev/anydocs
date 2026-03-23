@@ -7,7 +7,160 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "f3270540": {
+      "id": "f3270540",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "45e6e9dd",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "退款"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "7194e460": {
+      "id": "7194e460",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "c56b24c7",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "退款类型"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "098685a3": {
+      "id": "098685a3",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "d299b09c",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "部分退款 — 退还部分金额"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "ca356f26": {
+      "id": "ca356f26",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "5c1d8e2f",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "全额退款 — 退还全部金额"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "0b435bd6": {
+      "id": "0b435bd6",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "08ff2912",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "退款状态：0（处理中）、1（成功）、2（失败）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "487b021c": {
+      "id": "487b021c",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "89a43669",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "退款回调字段"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    },
+    "9fe7f2de": {
+      "id": "9fe7f2de",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "a03faa5b",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "refund_id, refund_address, refund_currency, refund_amount, refund_fee, actual_refund_amount, refund_status, refund_tx_id"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 6,
+        "depth": 0
+      }
+    },
+    "07a0f0af": {
+      "id": "07a0f0af",
+      "type": "Blockquote",
+      "value": [
+        {
+          "id": "f0fc4b69",
+          "type": "blockquote",
+          "children": [
+            {
+              "text": "实际退款金额 = 退款金额 - Gas Fee"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 7,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 退款\n\n## 退款类型\n\n- 部分退款 — 退还部分金额\n- 全额退款 — 退还全部金额\n\n## 退款状态：0（处理中）、1（成功）、2（失败）\n\n## 退款回调字段\n\nrefund_id, refund_address, refund_currency, refund_amount, refund_fee, actual_refund_amount, refund_status, refund_tx_id\n\n> 实际退款金额 = 退款金额 - Gas Fee",
     "plainText": "退款  退款类型  部分退款 — 退还部分金额  全额退款 — 退还全部金额  退款状态：0（处理中）、1（成功）、2（失败）  退款回调字段 refund_id, refund_address, refund_currency, refund_amount, refund_fee, actual_refund_amount, refund_status, refund_tx_id  实际退款金额 = 退款金额  Gas Fee"

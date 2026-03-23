@@ -7,7 +7,221 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "f2659fd5": {
+      "id": "f2659fd5",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "36d7ca23",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "查询订单信息"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "0bf02cb8": {
+      "id": "0bf02cb8",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "b33490e1",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v2/order/info",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "8ad133e3": {
+      "id": "8ad133e3",
+      "type": "Table",
+      "value": [
+        {
+          "id": "9e905ec7",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "8396cbe1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "aa0e91d3",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "faad0ae0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "fb6ca4fe",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "38c2b449",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "1dbcd829",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "c6eb452c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "f769bee9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "bb98d395",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "支付引擎项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a4517eba",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "85c3c226",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "cregis_id"
+                }
+              ]
+            },
+            {
+              "id": "a9ec88bb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "c69cdaed",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "fa3d9e41",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Cregis 系统流水号"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "04b74995": {
+      "id": "04b74995",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "60c8c130",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "efe08736": {
+      "id": "efe08736",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "325e3c67",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "订单基本信息、付款记录(payment_detail)、支付信息(payment_info)、商品详情(order_details)、退款记录(refund_data)、结算状态、子商户信息"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 查询订单信息\n\n`POST /api/v2/order/info`\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | 支付引擎项目 ID |\n| cregis_id | string | 是 | Cregis 系统流水号 |\n\n## 返回\n\n订单基本信息、付款记录(payment_detail)、支付信息(payment_info)、商品详情(order_details)、退款记录(refund_data)、结算状态、子商户信息",
     "plainText": "查询订单信息 POST /api/v2/order/info  参数  类型  必须  说明   pid  int64  是  支付引擎项目 ID   cregis_id  string  是  Cregis 系统流水号   返回 订单基本信息、付款记录payment_detail、支付信息payment_info、商品详情order_details、退款记录refund_data、结算状态、子商户信息"

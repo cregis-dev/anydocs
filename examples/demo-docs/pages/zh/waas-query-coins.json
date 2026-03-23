@@ -7,7 +7,160 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "8ca7e0d0": {
+      "id": "8ca7e0d0",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "ddb0655c",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "查询项目支持币种"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "0df5c8d4": {
+      "id": "0df5c8d4",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "10ad4773",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/project/coins",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "5958fca9": {
+      "id": "5958fca9",
+      "type": "Table",
+      "value": [
+        {
+          "id": "8c60584f",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d16d3476",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "f2afb1e4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "79af5ab8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "12cafbad",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a03bd0e2",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "be3768f5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "8167965f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "eaf1bbbe",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "8325270b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "9632d459": {
+      "id": "9632d459",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "1a42e57f",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回：payout_coins 和 address_coins 数组"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 查询项目支持币种\n\n`POST /api/v1/project/coins`\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n\n## 返回：payout_coins 和 address_coins 数组",
     "plainText": "查询项目支持币种 POST /api/v1/project/coins  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   返回：payout_coins 和 address_coins 数组"

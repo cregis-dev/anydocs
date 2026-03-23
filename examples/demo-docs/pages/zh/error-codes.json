@@ -7,7 +7,485 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "057c200a": {
+      "id": "057c200a",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "b1df0182",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "错误代码"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "aa6d3035": {
+      "id": "aa6d3035",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "27fb2c18",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "成功码只有 00000，其他均为异常。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "3ae94285": {
+      "id": "3ae94285",
+      "type": "Table",
+      "value": [
+        {
+          "id": "4d6832a2",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "bdafa167",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "错误码"
+                }
+              ]
+            },
+            {
+              "id": "916838d0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "描述"
+                }
+              ]
+            },
+            {
+              "id": "23fc820a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "解决方案"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1bce4abd",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "422c0670",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "B0001"
+                }
+              ]
+            },
+            {
+              "id": "c4e3f0bb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "签名错误"
+                }
+              ]
+            },
+            {
+              "id": "9c5e0963",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查签名参数和方法"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b02d72d8",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "b471f6b3",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0001"
+                }
+              ]
+            },
+            {
+              "id": "e6b214ef",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "IP 未在白名单"
+                }
+              ]
+            },
+            {
+              "id": "4855dad4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "配置 IP 白名单"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bfd8488d",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "119facb8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0003"
+                }
+              ]
+            },
+            {
+              "id": "8162b8c7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "项目不存在或状态异常"
+                }
+              ]
+            },
+            {
+              "id": "8939a77c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查 pid"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0227927b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "91042b07",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0005"
+                }
+              ]
+            },
+            {
+              "id": "f9733e92",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "不支持的币种"
+                }
+              ]
+            },
+            {
+              "id": "df10bfa2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "确认币种支持列表"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a5a06613",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "f12ffcca",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0006"
+                }
+              ]
+            },
+            {
+              "id": "a78d833a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "提币金额需大于 0"
+                }
+              ]
+            },
+            {
+              "id": "dc62a6af",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查 amount"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d394cddf",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "1278d7d6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0008"
+                }
+              ]
+            },
+            {
+              "id": "54d8de43",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "地址不合法"
+                }
+              ]
+            },
+            {
+              "id": "6bf70250",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查地址格式和网络"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "90bde7ff",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "b7afab22",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0009"
+                }
+              ]
+            },
+            {
+              "id": "dd6d9d42",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "业务编号重复"
+                }
+              ]
+            },
+            {
+              "id": "e6233e38",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查 third_party_id"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f48997e5",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d2ba623c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0018"
+                }
+              ]
+            },
+            {
+              "id": "7c770c87",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "订单编号重复"
+                }
+              ]
+            },
+            {
+              "id": "49d89120",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查 order_number"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "27d4ca5c",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "a146b02a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0024"
+                }
+              ]
+            },
+            {
+              "id": "b396a099",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "订单不存在"
+                }
+              ]
+            },
+            {
+              "id": "d2bbaf42",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "检查 order_id"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bae06878",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "15a8d5f9",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0027"
+                }
+              ]
+            },
+            {
+              "id": "57caf4e7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "批量地址数超限"
+                }
+              ]
+            },
+            {
+              "id": "676b5391",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "最多 100 个"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "08e04c3d",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "dbdc399b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "E0037"
+                }
+              ]
+            },
+            {
+              "id": "dbc4ae92",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "提币钱包不匹配"
+                }
+              ]
+            },
+            {
+              "id": "a4b74b82",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "使用项目指定的出款钱包"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3cfddbb6",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "4e6ba80f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "T0062"
+                }
+              ]
+            },
+            {
+              "id": "aa5b6ed2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "API 地址数不足"
+                }
+              ]
+            },
+            {
+              "id": "e8a072e5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "升级订阅版本"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 错误代码\n\n成功码只有 00000，其他均为异常。\n\n| 错误码 | 描述 | 解决方案 |\n|--------|------|----------|\n| B0001 | 签名错误 | 检查签名参数和方法 |\n| E0001 | IP 未在白名单 | 配置 IP 白名单 |\n| E0003 | 项目不存在或状态异常 | 检查 pid |\n| E0005 | 不支持的币种 | 确认币种支持列表 |\n| E0006 | 提币金额需大于 0 | 检查 amount |\n| E0008 | 地址不合法 | 检查地址格式和网络 |\n| E0009 | 业务编号重复 | 检查 third_party_id |\n| E0018 | 订单编号重复 | 检查 order_number |\n| E0024 | 订单不存在 | 检查 order_id |\n| E0027 | 批量地址数超限 | 最多 100 个 |\n| E0037 | 提币钱包不匹配 | 使用项目指定的出款钱包 |\n| T0062 | API 地址数不足 | 升级订阅版本 |",
     "plainText": "错误代码 成功码只有 00000，其他均为异常。  错误码  描述  解决方案   B0001  签名错误  检查签名参数和方法   E0001  IP 未在白名单  配置 IP 白名单   E0003  项目不存在或状态异常  检查 pid   E0005  不支持的币种  确认币种支持列表   E0006  提币金额需大于 0  检查 amount   E0008  地址不合法  检查地址格式和网络   E0009  业务编号重复  检查 third_party_id   E0018  订单编号重复  检查 order_number   E0024  订单不存在  检查 order_id   E0027  批量地址数超限  最多 100 个   E0037  提币钱包不匹配  使用项目指定的出款钱包   T0062  API 地址数不足  升级订阅版本"

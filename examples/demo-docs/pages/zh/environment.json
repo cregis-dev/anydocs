@@ -7,7 +7,130 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "158bf83f": {
+      "id": "158bf83f",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "c309bcfb",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "环境说明"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "37cc6e68": {
+      "id": "37cc6e68",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "a8f95097",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "Cregis API 提供开发环境和生产环境。建议先在开发环境测试，再部署到生产环境。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "fdd0d425": {
+      "id": "fdd0d425",
+      "type": "Table",
+      "value": [
+        {
+          "id": "c2ba1765",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "79ba76bf",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "环境"
+                }
+              ]
+            },
+            {
+              "id": "abbe8f8b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "用途"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8bdf1881",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "02402132",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "开发环境",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "id": "7f7aadc7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "功能开发、集成测试和问题调试的沙箱环境"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "69a4f2d1",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "349421f1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "生产环境",
+                  "bold": true
+                }
+              ]
+            },
+            {
+              "id": "7dabe757",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "实际业务运营的正式环境"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 环境说明\n\nCregis API 提供开发环境和生产环境。建议先在开发环境测试，再部署到生产环境。\n\n| 环境 | 用途 |\n|------|------|\n| **开发环境** | 功能开发、集成测试和问题调试的沙箱环境 |\n| **生产环境** | 实际业务运营的正式环境 |",
     "plainText": "环境说明 Cregis API 提供开发环境和生产环境。建议先在开发环境测试，再部署到生产环境。  环境  用途   开发环境  功能开发、集成测试和问题调试的沙箱环境   生产环境  实际业务运营的正式环境"

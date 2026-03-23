@@ -7,7 +7,701 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "5f0327a6": {
+      "id": "5f0327a6",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "1ffa3272",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "支持的网络和代币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "86ae12cb": {
+      "id": "86ae12cb",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "00fec0c4",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "主要网络"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "a5004436": {
+      "id": "a5004436",
+      "type": "Table",
+      "value": [
+        {
+          "id": "ea7b58b6",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "298eb5f3",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "网络"
+                }
+              ]
+            },
+            {
+              "id": "c3049f9f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "原生代币"
+                }
+              ]
+            },
+            {
+              "id": "06887e3d",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "chain_id"
+                }
+              ]
+            },
+            {
+              "id": "7ccfdd9c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "主要代币"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "98311b05",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "7e3d2ad4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Ethereum"
+                }
+              ]
+            },
+            {
+              "id": "f0204f61",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "ETH"
+                }
+              ]
+            },
+            {
+              "id": "f415abf4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "60"
+                }
+              ]
+            },
+            {
+              "id": "041cf5cc",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC, DAI, LINK 等"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "54c09c33",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "edb3fbb7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "TRON"
+                }
+              ]
+            },
+            {
+              "id": "d3595912",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "TRX"
+                }
+              ]
+            },
+            {
+              "id": "a2ca4448",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "195"
+                }
+              ]
+            },
+            {
+              "id": "e5d8d378",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cd147a5c",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "69655593",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Solana"
+                }
+              ]
+            },
+            {
+              "id": "efc0e1e7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "SOL"
+                }
+              ]
+            },
+            {
+              "id": "489081f2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "1000"
+                }
+              ]
+            },
+            {
+              "id": "90668d87",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC, USD1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "18cb3a5d",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "4808ea6c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "BNB Smart Chain"
+                }
+              ]
+            },
+            {
+              "id": "8aee3eea",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "BNB"
+                }
+              ]
+            },
+            {
+              "id": "9a3dbb5f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "2510"
+                }
+              ]
+            },
+            {
+              "id": "c669588a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC, USD1 等"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a5ee58ee",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "fb59fb66",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Polygon"
+                }
+              ]
+            },
+            {
+              "id": "90dd2e24",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "POL"
+                }
+              ]
+            },
+            {
+              "id": "41a4f20c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "62"
+                }
+              ]
+            },
+            {
+              "id": "b1754135",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC, DAI"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "066910db",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "4f83b851",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Base"
+                }
+              ]
+            },
+            {
+              "id": "62396dba",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "ETH"
+                }
+              ]
+            },
+            {
+              "id": "3190cdbc",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "66"
+                }
+              ]
+            },
+            {
+              "id": "3bfca70c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDC, USDT, EURC"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ded77ac4",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "fa51b91e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Arbitrum One"
+                }
+              ]
+            },
+            {
+              "id": "70b51416",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "ARB"
+                }
+              ]
+            },
+            {
+              "id": "4c86cc21",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "63"
+                }
+              ]
+            },
+            {
+              "id": "71959419",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "696ed7a3",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "8f63ccf4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Avalanche-C"
+                }
+              ]
+            },
+            {
+              "id": "652fea48",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "AVAX"
+                }
+              ]
+            },
+            {
+              "id": "9f8c3a94",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "65"
+                }
+              ]
+            },
+            {
+              "id": "6a10b6a7",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "57cf6c2b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "85a62e60",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "TON"
+                }
+              ]
+            },
+            {
+              "id": "44daaf3e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "TON"
+                }
+              ]
+            },
+            {
+              "id": "d0ceac53",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "2000"
+                }
+              ]
+            },
+            {
+              "id": "9479889f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9eaca680",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "5749d96c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Aptos"
+                }
+              ]
+            },
+            {
+              "id": "58384aae",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "APT"
+                }
+              ]
+            },
+            {
+              "id": "53e922b8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "3100"
+                }
+              ]
+            },
+            {
+              "id": "5bcb703d",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "—"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "13c3dc15",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "0895334f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "SUI"
+                }
+              ]
+            },
+            {
+              "id": "5f0c7682",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "SUI"
+                }
+              ]
+            },
+            {
+              "id": "576ddee8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "3000"
+                }
+              ]
+            },
+            {
+              "id": "d0079ec5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "CETUS, WAL 等"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ce8bba3a",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "6ed55f8f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Optimism"
+                }
+              ]
+            },
+            {
+              "id": "8ed05490",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "OP"
+                }
+              ]
+            },
+            {
+              "id": "0c239d92",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "64"
+                }
+              ]
+            },
+            {
+              "id": "382a8475",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "USDT, USDC"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6a57d2d1",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "a5b9a43c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "Ripple"
+                }
+              ]
+            },
+            {
+              "id": "a44a4feb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "XRP"
+                }
+              ]
+            },
+            {
+              "id": "a924a200",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "144"
+                }
+              ]
+            },
+            {
+              "id": "53c1a2a4",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "—"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "36242e0e": {
+      "id": "36242e0e",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "5aca7fee",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "其他：DOGE, LTC, FIL, ADA, ETC, opBNB, Linea, X Layer, Sei, Cronos"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "668b3592": {
+      "id": "668b3592",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "cde7b5af",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "币种标识格式"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "f5a4a7bf": {
+      "id": "f5a4a7bf",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "9abcdef3",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "currency = chain_id@token_id，例如 TRX = 195@195"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 支持的网络和代币\n\n## 主要网络\n\n| 网络 | 原生代币 | chain_id | 主要代币 |\n|------|----------|----------|----------|\n| Ethereum | ETH | 60 | USDT, USDC, DAI, LINK 等 |\n| TRON | TRX | 195 | USDT, USDC |\n| Solana | SOL | 1000 | USDT, USDC, USD1 |\n| BNB Smart Chain | BNB | 2510 | USDT, USDC, USD1 等 |\n| Polygon | POL | 62 | USDT, USDC, DAI |\n| Base | ETH | 66 | USDC, USDT, EURC |\n| Arbitrum One | ARB | 63 | USDT, USDC |\n| Avalanche-C | AVAX | 65 | USDT, USDC |\n| TON | TON | 2000 | USDT |\n| Aptos | APT | 3100 | — |\n| SUI | SUI | 3000 | CETUS, WAL 等 |\n| Optimism | OP | 64 | USDT, USDC |\n| Ripple | XRP | 144 | — |\n\n其他：DOGE, LTC, FIL, ADA, ETC, opBNB, Linea, X Layer, Sei, Cronos\n\n## 币种标识格式\n\ncurrency = chain_id@token_id，例如 TRX = 195@195",
     "plainText": "支持的网络和代币  主要网络  网络  原生代币  chain_id  主要代币   Ethereum  ETH  60  USDT, USDC, DAI, LINK 等   TRON  TRX  195  USDT, USDC   Solana  SOL  1000  USDT, USDC, USD1   BNB Smart Chain  BNB  2510  USDT, USDC, USD1 等   Polygon  POL  62  USDT, USDC, DAI   Base  ETH  66  USDC, USDT, EURC   Arbitrum One  ARB  63  USDT, USDC   AvalancheC  AVAX  65  USDT, USDC   TON  TON  2000  USDT   Aptos  APT  3100  —   SUI  SUI  3000  CETUS, WAL 等   Optimism  OP  64  USDT, USDC   Ripple  XRP  144  —  其他：DOGE, LTC, FIL, ADA, ETC, opBNB, Linea, X Layer, Sei, Cronos  币种标识格式 currency = chain_id@token_id，例如 TRX = 195@195"

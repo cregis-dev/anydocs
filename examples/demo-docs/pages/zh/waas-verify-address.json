@@ -7,7 +7,263 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "fec7b943": {
+      "id": "fec7b943",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "edda0bea",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "校验地址是否存在"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "94ae0978": {
+      "id": "94ae0978",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "96015d4a",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/address/inner",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "8a19a77e": {
+      "id": "8a19a77e",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "9a2b86c4",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "校验地址是否为项目生成的地址，防止地址被篡改。建议在充值回调时先校验。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "da21639a": {
+      "id": "da21639a",
+      "type": "Table",
+      "value": [
+        {
+          "id": "ad6fffc7",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "8e098c04",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "530fac6e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "491fe338",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "502fd3e2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "88973119",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "b34f2f8e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "438b4776",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "89433d62",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "61bde997",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f3e7ea1b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "e3252d85",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "address"
+                }
+              ]
+            },
+            {
+              "id": "43347fbf",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "009eb16a",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "cf0ee8a5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "要校验的地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7adf830d",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d0179424",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "chain_id"
+                }
+              ]
+            },
+            {
+              "id": "f867c620",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "296858f6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "d0aa8597",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "区块链 ID"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "b5863c16": {
+      "id": "b5863c16",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "ada617bd",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "返回：result (true/false)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 校验地址是否存在\n\n`POST /api/v1/address/inner`\n\n校验地址是否为项目生成的地址，防止地址被篡改。建议在充值回调时先校验。\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n| address | string | 是 | 要校验的地址 |\n| chain_id | string | 是 | 区块链 ID |\n\n## 返回：result (true/false)",
     "plainText": "校验地址是否存在 POST /api/v1/address/inner 校验地址是否为项目生成的地址，防止地址被篡改。建议在充值回调时先校验。  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   address  string  是  要校验的地址   chain_id  string  是  区块链 ID   返回：result true/false"

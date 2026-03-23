@@ -7,7 +7,310 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "c0799a5c": {
+      "id": "c0799a5c",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "541d7121",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "提币通知"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "4c4edabe": {
+      "id": "4c4edabe",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "27ad1db4",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "提币交易被处理时，WaaS 向 callback_url 发起回调通知。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "c4c5127d": {
+      "id": "c4c5127d",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "1c2c7210",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "提币状态码"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "b23eba66": {
+      "id": "b23eba66",
+      "type": "Table",
+      "value": [
+        {
+          "id": "74dffafb",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "6bd66fc3",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "状态码"
+                }
+              ]
+            },
+            {
+              "id": "da87ce40",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "36e8ca39",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "3ba51667",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "0"
+                }
+              ]
+            },
+            {
+              "id": "eab7bbb5",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "待审批"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4d783092",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "25f26784",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "1"
+                }
+              ]
+            },
+            {
+              "id": "aa98dc28",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "签名通过"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0df23709",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "c420189c",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "2"
+                }
+              ]
+            },
+            {
+              "id": "629d21c1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "签名驳回"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "6ec46924",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "762d6558",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "3"
+                }
+              ]
+            },
+            {
+              "id": "9c7133e2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "审批取消"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "85894b5e",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "30d51ba2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "4"
+                }
+              ]
+            },
+            {
+              "id": "ff975703",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "审批驳回"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ac355f9b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "c20c0fc2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "5"
+                }
+              ]
+            },
+            {
+              "id": "5b110991",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "待签名"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "3a4dff07",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "f55bf1a6",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "6"
+                }
+              ]
+            },
+            {
+              "id": "34d644b8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "交易成功"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "daeb727b",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "92f62316",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "7"
+                }
+              ]
+            },
+            {
+              "id": "20013f09",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "交易失败"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "8c9822e8": {
+      "id": "8c9822e8",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "36ba7397",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "回调响应：返回字符串 success"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 提币通知\n\n提币交易被处理时，WaaS 向 callback_url 发起回调通知。\n\n## 提币状态码\n\n| 状态码 | 说明 |\n|--------|------|\n| 0 | 待审批 |\n| 1 | 签名通过 |\n| 2 | 签名驳回 |\n| 3 | 审批取消 |\n| 4 | 审批驳回 |\n| 5 | 待签名 |\n| 6 | 交易成功 |\n| 7 | 交易失败 |\n\n## 回调响应：返回字符串 success",
     "plainText": "提币通知 提币交易被处理时，WaaS 向 callback_url 发起回调通知。  提币状态码  状态码  说明   0  待审批   1  签名通过   2  签名驳回   3  审批取消   4  审批驳回   5  待签名   6  交易成功   7  交易失败   回调响应：返回字符串 success"

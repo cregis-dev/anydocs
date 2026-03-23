@@ -7,7 +7,179 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "75630413": {
+      "id": "75630413",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "aa6b2887",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "订单货币与支付货币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "5577520c": {
+      "id": "5577520c",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "4c8afb53",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "订单货币 (order_currency)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "7f06f62e": {
+      "id": "7f06f62e",
+      "type": "HeadingThree",
+      "value": [
+        {
+          "id": "de3bc48e",
+          "type": "heading-three",
+          "children": [
+            {
+              "text": "法定货币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "e4be5a04": {
+      "id": "e4be5a04",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "09795a58",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "USD, HKD, EUR, GBP, CNY, SGD, AUD, CAD, TWD, AED, PHP, MYR, BRL, BGN, DKK, SEK, CHF, INR（精度 2 位）"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "71c017f6": {
+      "id": "71c017f6",
+      "type": "HeadingThree",
+      "value": [
+        {
+          "id": "4e9a9f84",
+          "type": "heading-three",
+          "children": [
+            {
+              "text": "加密货币"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "ee240584": {
+      "id": "ee240584",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "f4527c50",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "USDT(2), USDC(2), BTC(8), ETH(2), SOL(2), TRX(2), BNB(2)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    },
+    "657851c3": {
+      "id": "657851c3",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "c32ce5f1",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "支付货币 (tokens)"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 6,
+        "depth": 0
+      }
+    },
+    "300a6ceb": {
+      "id": "300a6ceb",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "b6e4a5e1",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "创建订单时指定接受的加密货币。不传 tokens 则默认支持所有。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 7,
+        "depth": 0
+      }
+    },
+    "5348b4b6": {
+      "id": "5348b4b6",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "3a76334a",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "主要支持：USDT、USDC（多网络）、BTC、ETH、SOL、TRX、BNB 等。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 8,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 订单货币与支付货币\n\n## 订单货币 (order_currency)\n\n### 法定货币\n\nUSD, HKD, EUR, GBP, CNY, SGD, AUD, CAD, TWD, AED, PHP, MYR, BRL, BGN, DKK, SEK, CHF, INR（精度 2 位）\n\n### 加密货币\n\nUSDT(2), USDC(2), BTC(8), ETH(2), SOL(2), TRX(2), BNB(2)\n\n## 支付货币 (tokens)\n\n创建订单时指定接受的加密货币。不传 tokens 则默认支持所有。\n\n主要支持：USDT、USDC（多网络）、BTC、ETH、SOL、TRX、BNB 等。",
     "plainText": "订单货币与支付货币  订单货币 order_currency  法定货币 USD, HKD, EUR, GBP, CNY, SGD, AUD, CAD, TWD, AED, PHP, MYR, BRL, BGN, DKK, SEK, CHF, INR（精度 2 位）  加密货币 USDT2, USDC2, BTC8, ETH2, SOL2, TRX2, BNB2  支付货币 tokens 创建订单时指定接受的加密货币。不传 tokens 则默认支持所有。 主要支持：USDT、USDC（多网络）、BTC、ETH、SOL、TRX、BNB 等。"

@@ -7,7 +7,203 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "1920a458": {
+      "id": "1920a458",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "c2f28e04",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "业务流程概览"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "e2046912": {
+      "id": "e2046912",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "023758d8",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "WaaS 流程"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "e7611cbb": {
+      "id": "e7611cbb",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "e100381b",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "充值：",
+              "bold": true
+            },
+            {
+              "text": " 客户转账 → 链上到账 → 回调通知"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "218c9230": {
+      "id": "218c9230",
+      "type": "BulletedList",
+      "value": [
+        {
+          "id": "19a7ec15",
+          "type": "bulleted-list",
+          "children": [
+            {
+              "text": "提币：",
+              "bold": true
+            },
+            {
+              "text": " 调用 API → 风控审批 → 链上转账 → 回调通知"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "71b333fb": {
+      "id": "71b333fb",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "d1364cd4",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "支付引擎流程"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "72c347d0": {
+      "id": "72c347d0",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "25ba200f",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "收单",
+              "bold": true
+            },
+            {
+              "text": " — 创建订单，分配临时收款地址"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    },
+    "fb749f0f": {
+      "id": "fb749f0f",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "b1e42cdc",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "支付",
+              "bold": true
+            },
+            {
+              "text": " — 用户在有效期内转账"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 6,
+        "depth": 0
+      }
+    },
+    "96e2b258": {
+      "id": "96e2b258",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "8b1a8518",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "资金处理",
+              "bold": true
+            },
+            {
+              "text": " — 归集、KYT 扫描、异常处理"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 7,
+        "depth": 0
+      }
+    },
+    "e9c8ca82": {
+      "id": "e9c8ca82",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "e7e15f1b",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "结算",
+              "bold": true
+            },
+            {
+              "text": " — T+0 结算到指定钱包"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 8,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 业务流程概览\n\n## WaaS 流程\n\n- **充值：** 客户转账 → 链上到账 → 回调通知\n- **提币：** 调用 API → 风控审批 → 链上转账 → 回调通知\n\n## 支付引擎流程\n\n1. **收单** — 创建订单，分配临时收款地址\n2. **支付** — 用户在有效期内转账\n3. **资金处理** — 归集、KYT 扫描、异常处理\n4. **结算** — T+0 结算到指定钱包",
     "plainText": "业务流程概览  WaaS 流程  充值： 客户转账 → 链上到账 → 回调通知  提币： 调用 API → 风控审批 → 链上转账 → 回调通知  支付引擎流程 1. 收单 — 创建订单，分配临时收款地址 2. 支付 — 用户在有效期内转账 3. 资金处理 — 归集、KYT 扫描、异常处理 4. 结算 — T+0 结算到指定钱包"

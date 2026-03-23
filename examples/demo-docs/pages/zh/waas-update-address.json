@@ -7,7 +7,328 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "ad81e178": {
+      "id": "ad81e178",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "e7cc9c6b",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "更新地址"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "a5852745": {
+      "id": "a5852745",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "07cd2151",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "POST /api/v1/address/update",
+              "code": true
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "b8a915bd": {
+      "id": "b8a915bd",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "84e603c7",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "更新地址的别名、回调地址或状态，至少更新一项。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "de2fe795": {
+      "id": "de2fe795",
+      "type": "Table",
+      "value": [
+        {
+          "id": "48251261",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "1c5fe78b",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "参数"
+                }
+              ]
+            },
+            {
+              "id": "51cd8309",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "类型"
+                }
+              ]
+            },
+            {
+              "id": "95841d30",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "必须"
+                }
+              ]
+            },
+            {
+              "id": "a5a2cd88",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "说明"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "32919f61",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "8a0fcd2f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "pid"
+                }
+              ]
+            },
+            {
+              "id": "985ca91e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "int64"
+                }
+              ]
+            },
+            {
+              "id": "7b881da1",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "148a2ca0",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "WaaS 项目 ID"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "aec73a86",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "f0dcefbb",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "address"
+                }
+              ]
+            },
+            {
+              "id": "99fcd7df",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "bb72e7a2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "是"
+                }
+              ]
+            },
+            {
+              "id": "9e4a47d2",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "要更新的地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b4b63cdc",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "a20e9d0f",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "alias"
+                }
+              ]
+            },
+            {
+              "id": "8ff78b85",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "5fbf4632",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "否"
+                }
+              ]
+            },
+            {
+              "id": "32efa719",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "别名"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "e2a5dde4",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "b5e92573",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "callback_url"
+                }
+              ]
+            },
+            {
+              "id": "c86996c8",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "cf864b2e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "否"
+                }
+              ]
+            },
+            {
+              "id": "d133cb13",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "回调地址"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7468c28a",
+          "type": "table-row",
+          "children": [
+            {
+              "id": "d7b03057",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "status"
+                }
+              ]
+            },
+            {
+              "id": "4c093184",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "string"
+                }
+              ]
+            },
+            {
+              "id": "08c75759",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "否"
+                }
+              ]
+            },
+            {
+              "id": "f8ae3f9e",
+              "type": "table-data-cell",
+              "children": [
+                {
+                  "text": "0-启用 1-禁用"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 更新地址\n\n`POST /api/v1/address/update`\n\n更新地址的别名、回调地址或状态，至少更新一项。\n\n| 参数 | 类型 | 必须 | 说明 |\n|------|------|------|------|\n| pid | int64 | 是 | WaaS 项目 ID |\n| address | string | 是 | 要更新的地址 |\n| alias | string | 否 | 别名 |\n| callback_url | string | 否 | 回调地址 |\n| status | string | 否 | 0-启用 1-禁用 |",
     "plainText": "更新地址 POST /api/v1/address/update 更新地址的别名、回调地址或状态，至少更新一项。  参数  类型  必须  说明   pid  int64  是  WaaS 项目 ID   address  string  是  要更新的地址   alias  string  否  别名   callback_url  string  否  回调地址   status  string  否  0启用 1禁用"

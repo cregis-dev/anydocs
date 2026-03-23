@@ -7,7 +7,221 @@
   "tags": [],
   "status": "published",
   "updatedAt": "2026-03-19T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "45347635": {
+      "id": "45347635",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "06ef6958",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "参数分为系统参数（pid, nonce, timestamp, sign）和业务参数。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 7,
+        "depth": 0
+      }
+    },
+    "a1386ecc": {
+      "id": "a1386ecc",
+      "type": "HeadingOne",
+      "value": [
+        {
+          "id": "a84e0f49",
+          "type": "heading-one",
+          "children": [
+            {
+              "text": "认证与签名"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 0,
+        "depth": 0
+      }
+    },
+    "98e097b1": {
+      "id": "98e097b1",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "e1e2d01f",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "签名算法"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 1,
+        "depth": 0
+      }
+    },
+    "c2b67fb0": {
+      "id": "c2b67fb0",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "f418e07f",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "除去 sign 和空值参数外，其他参数按字典序排序"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 2,
+        "depth": 0
+      }
+    },
+    "bd61cd9c": {
+      "id": "bd61cd9c",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "878c12c8",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "按 key1value1key2value2… 格式拼接"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 3,
+        "depth": 0
+      }
+    },
+    "a1d5148c": {
+      "id": "a1d5148c",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "71bd794a",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "将项目 API Key 拼接到字符串最前面"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 4,
+        "depth": 0
+      }
+    },
+    "c59f2111": {
+      "id": "c59f2111",
+      "type": "NumberedList",
+      "value": [
+        {
+          "id": "6e909fa3",
+          "type": "numbered-list",
+          "children": [
+            {
+              "text": "对结果取 MD5 并转为小写，即为 sign"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 5,
+        "depth": 0
+      }
+    },
+    "fff3f6ba": {
+      "id": "fff3f6ba",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "a6bacc40",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "请求格式"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 6,
+        "depth": 0
+      }
+    },
+    "f146ec47": {
+      "id": "f146ec47",
+      "type": "HeadingTwo",
+      "value": [
+        {
+          "id": "b3195e36",
+          "type": "heading-two",
+          "children": [
+            {
+              "text": "响应格式"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 8,
+        "depth": 0
+      }
+    },
+    "a155af8d": {
+      "id": "a155af8d",
+      "type": "Code",
+      "value": [
+        {
+          "id": "41000c72",
+          "type": "code",
+          "children": [
+            {
+              "text": "{\n  \"code\": \"00000\",\n  \"msg\": \"ok\",\n  \"data\": { }\n}"
+            }
+          ],
+          "props": {
+            "language": "json",
+            "theme": "github-dark"
+          }
+        }
+      ],
+      "meta": {
+        "order": 9,
+        "depth": 0
+      }
+    },
+    "c2746e4e": {
+      "id": "c2746e4e",
+      "type": "Paragraph",
+      "value": [
+        {
+          "id": "d9f18000",
+          "type": "paragraph",
+          "children": [
+            {
+              "text": "code 为 00000 表示成功，其他为失败。"
+            }
+          ]
+        }
+      ],
+      "meta": {
+        "order": 10,
+        "depth": 0
+      }
+    }
+  },
   "render": {
     "markdown": "# 认证与签名\n\n## 签名算法\n\n1. 除去 sign 和空值参数外，其他参数按字典序排序\n2. 按 key1value1key2value2… 格式拼接\n3. 将项目 API Key 拼接到字符串最前面\n4. 对结果取 MD5 并转为小写，即为 sign\n\n## 请求格式\n\n参数分为系统参数（pid, nonce, timestamp, sign）和业务参数。\n\n## 响应格式\n\n```json\n{\n  \"code\": \"00000\",\n  \"msg\": \"ok\",\n  \"data\": { }\n}\n```\n\ncode 为 00000 表示成功，其他为失败。",
     "plainText": "认证与签名  签名算法 1. 除去 sign 和空值参数外，其他参数按字典序排序 2. 按 key1value1key2value2… 格式拼接 3. 将项目 API Key 拼接到字符串最前面 4. 对结果取 MD5 并转为小写，即为 sign  请求格式 参数分为系统参数（pid, nonce, timestamp, sign）和业务参数。  响应格式 json {   \"code\": \"00000\",   \"msg\": \"ok\",   \"data\": { } } code 为 00000 表示成功，其他为失败。"
