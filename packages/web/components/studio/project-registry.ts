@@ -87,6 +87,24 @@ export function isAbsoluteProjectPath(projectPath: string): boolean {
   return ABSOLUTE_PATH_PATTERN.test(projectPath.trim());
 }
 
+export function normalizeAbsoluteProjectPath(projectPath: string): string {
+  const normalizedPath = projectPath.trim();
+
+  if (!isAbsoluteProjectPath(normalizedPath)) {
+    throw new Error('请输入文档项目根目录的绝对路径。');
+  }
+
+  return normalizedPath;
+}
+
+export function hasNativeDirectoryPicker(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return typeof (window as Window & ElectronDirectoryDialog).api?.dialog?.selectDirectory === 'function';
+}
+
 export function generateProjectId(projectPath: string): string {
   return encodeProjectKey(projectPath);
 }
@@ -143,7 +161,7 @@ export function removeRecentProject(projects: StudioProject[], projectId: string
   return sanitizeStoredProjects(projects.filter((project) => project.id !== projectId));
 }
 
-export async function pickExternalProjectPath(): Promise<string | null> {
+export async function pickNativeProjectPath(): Promise<string | null> {
   if (typeof window === 'undefined') {
     return null;
   }
@@ -155,22 +173,8 @@ export async function pickExternalProjectPath(): Promise<string | null> {
       return null;
     }
 
-    const selectedPath = response.data.trim();
-    if (!isAbsoluteProjectPath(selectedPath)) {
-      throw new Error('Studio 仅支持通过外部项目根目录加载文档项目。');
-    }
-
-    return selectedPath;
+    return normalizeAbsoluteProjectPath(response.data);
   }
 
-  const manualPath = window.prompt('输入文档项目根目录的绝对路径');
-  if (!manualPath) {
-    return null;
-  }
-
-  if (!isAbsoluteProjectPath(manualPath)) {
-    throw new Error('请输入文档项目根目录的绝对路径。');
-  }
-
-  return manualPath.trim();
+  return null;
 }

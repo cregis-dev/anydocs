@@ -5,12 +5,15 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
+  hasNativeDirectoryPicker,
+  normalizeAbsoluteProjectPath,
+  pickNativeProjectPath,
   type StudioProject,
   loadProjectsFromStorage,
-  pickExternalProjectPath,
   registerRecentProject,
   saveProjectsToStorage,
 } from '@/components/studio/project-registry';
+import { ProjectPathDialog } from '@/components/studio/project-path-dialog';
 import {
   Command,
   CommandEmpty,
@@ -33,6 +36,7 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [mounted, setMounted] = useState(false);
   const [isSelectingFolder, setIsSelectingFolder] = useState(false);
+  const [isProjectPathDialogOpen, setIsProjectPathDialogOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -49,21 +53,30 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
     }
   }, [open, loadProjects]);
 
+  const handleProjectPathSelection = useCallback(async (projectPath: string) => {
+    const { current, projects: updated } = registerRecentProject(projects, normalizeAbsoluteProjectPath(projectPath));
+    saveProjectsToStorage(updated);
+    setProjects(updated);
+    onProjectChange(current.id);
+  }, [onProjectChange, projects]);
+
   const handleSelectFolder = async () => {
     if (isSelectingFolder) return;
     setIsSelectingFolder(true);
     setOpen(false);
 
     try {
-      const projectPath = await pickExternalProjectPath();
+      if (!hasNativeDirectoryPicker()) {
+        setIsProjectPathDialogOpen(true);
+        return;
+      }
+
+      const projectPath = await pickNativeProjectPath();
       if (!projectPath) {
         return;
       }
 
-      const { current, projects: updated } = registerRecentProject(projects, projectPath);
-      saveProjectsToStorage(updated);
-      setProjects(updated);
-      onProjectChange(current.id);
+      await handleProjectPathSelection(projectPath);
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         alert(e instanceof Error ? e.message : 'Failed to open folder');
@@ -111,6 +124,11 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
 
   return (
     <>
+      <ProjectPathDialog
+        open={isProjectPathDialogOpen}
+        onOpenChange={setIsProjectPathDialogOpen}
+        onSubmit={handleProjectPathSelection}
+      />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

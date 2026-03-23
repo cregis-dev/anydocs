@@ -80,6 +80,7 @@ export type ProjectPathContract = {
   configFile: string;
   workflowFile: string;
   importsRoot: string;
+  apiSourcesRoot: string;
   pagesRoot: string;
   navigationRoot: string;
   artifactRoot: string;

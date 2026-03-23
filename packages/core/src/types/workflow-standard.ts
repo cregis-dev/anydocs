@@ -7,10 +7,13 @@ export type WorkflowStandardFile = {
     | 'workflowStandard'
     | 'navigation'
     | 'page'
+    | 'apiSource'
     | 'llms'
     | 'llmsFull'
     | 'machineReadableRoot'
     | 'machineReadableIndex'
+    | 'openApiRoot'
+    | 'openApiIndex'
     | 'searchIndex'
     | 'chunkIndex';
   path: string;

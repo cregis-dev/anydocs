@@ -77,10 +77,10 @@ node --experimental-strip-types packages/cli/src/index.ts <command> [options]
 
 ```bash
 # 在指定目录初始化新项目
-node --experimental-strip-types packages/cli/src/index.ts init ~/my-docs-project
+node --experimental-strip-types packages/cli/src/index.ts init ./my-docs-project
 
 # 查看初始化结果
-ls -la ~/my-docs-project
+ls -la ./my-docs-project
 ```
 
 生成的项目包含：
@@ -113,6 +113,8 @@ ls -la ~/my-docs-project
 ```
 
 ### 3.3 构建示例项目
+
+以下示例使用仓库内置的 `examples/demo-docs`。如果你要验证自己的文档项目，请把它替换成项目目录，例如 `./my-docs-project`。
 
 ```bash
 # 构建到默认位置（examples/demo-docs/dist/）
@@ -163,10 +165,10 @@ dist/
 
 ```bash
 # 构建到自定义位置
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output /tmp/build-output
+node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output ./build-output
 
 # 或使用短参数
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs -o /tmp/build-output
+node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs -o ./build-output
 ```
 
 ### 3.5 监听模式（Watch）
@@ -176,7 +178,7 @@ node --experimental-strip-types packages/cli/src/index.ts build examples/demo-do
 node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
 
 # 监听并输出到自定义目录
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output /tmp/build --watch
+node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output ./build-output --watch
 ```
 
 适用场景：
@@ -600,8 +602,9 @@ pnpm cli:watch
 ## 10. 相关文档
 
 - [文档索引](README.md) - 当前 `docs/` 目录入口
-- [架构文档](planning-artifacts/architecture.md) - 架构设计与技术边界
-- [PRD](planning-artifacts/prd.md) - 产品需求定义
-- [Epics](planning-artifacts/epics.md) - Epic 与 Story 拆分
+- [BMAD 产物索引](../artifacts/bmad/README.md) - 规划、实现与测试产物入口
+- [架构文档](../artifacts/bmad/planning-artifacts/architecture.md) - 架构设计与技术边界
+- [PRD](../artifacts/bmad/planning-artifacts/prd.md) - 产品需求定义
+- [Epics](../artifacts/bmad/planning-artifacts/epics.md) - Epic 与 Story 拆分
 - [使用手册](04-usage-manual.md) - 详细操作指南
 - [README](../README.md) - 项目概览

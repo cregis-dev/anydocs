@@ -3,7 +3,7 @@
 # Version: 6.0.4
 # Date: 2026-03-08T14:12:34.797Z
 
-test_artifacts: "{project-root}/docs/test-artifacts"
+test_artifacts: "{project-root}/artifacts/bmad/test-artifacts"
 tea_use_playwright_utils: true
 tea_use_pactjs_utils: true
 tea_pact_mcp: mcp
@@ -14,12 +14,12 @@ test_stack_type: auto
 ci_platform: auto
 test_framework: auto
 risk_threshold: p1
-test_design_output: docs/test-artifacts/test-design
-test_review_output: docs/test-artifacts/test-reviews
-trace_output: docs/test-artifacts/traceability
+test_design_output: artifacts/bmad/test-artifacts/test-design
+test_review_output: artifacts/bmad/test-artifacts/test-reviews
+trace_output: artifacts/bmad/test-artifacts/traceability
 
 # Core Configuration Values
 user_name: Shawn
 communication_language: Mandarin
 document_output_language: English
-output_folder: "{project-root}/docs"
+output_folder: "{project-root}/artifacts/bmad"

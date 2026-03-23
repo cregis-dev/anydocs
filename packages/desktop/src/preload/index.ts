@@ -73,6 +73,10 @@ const api = {
       projectId: string,
       projectPath?: string
     ): Promise<IpcResponse> => ipcRenderer.invoke('studio:navigation:put', lang, navigation, projectId, projectPath),
+    getApiSources: (projectId: string, projectPath?: string): Promise<IpcResponse> =>
+      ipcRenderer.invoke('studio:api-sources:get', projectId, projectPath),
+    replaceApiSources: (sources: unknown, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+      ipcRenderer.invoke('studio:api-sources:put', sources, projectId, projectPath),
     runBuild: (projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:build:post', projectId, projectPath),
     runPreview: (projectId: string, projectPath?: string): Promise<IpcResponse> =>

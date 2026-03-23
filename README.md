@@ -1,150 +1,83 @@
 # Anydocs
 
-AI 时代的本地优先文档编辑器。
+本地优先文档编辑器，面向两件事：
 
-Anydocs 当前包含三部分能力：
+- 在 `Studio` 里编辑文档页面、导航和项目设置
+- 让 `agent` 通过 `MCP` 稳定地读写文档项目，而不是直接改 JSON
 
-- `Studio`：本地编辑台，使用 Yoopta 编辑页面内容、导航与项目设置
-- `CLI`：初始化、构建、预览、导入文档项目
-- `Docs Reader`：面向发布内容的静态阅读站
-- `MCP Server`：面向本地 agent authoring 的 `stdio` MCP 服务器
+如果你是第一次进入仓库，先看下面两个路径：
 
-## 当前事实
+1. 想先把示例项目跑起来：看“快速启动”
+2. 想直接开始 agent 写作：看“Agent 写作优先路径”
 
-- `pnpm dev` 只启动 Studio 开发环境，入口在 `http://localhost:3000/` 和 `http://localhost:3000/studio`
-- 阅读站的规范路由是 `/{lang}` 和 `/{lang}/{slug}`，`/docs/*` 与 `/{lang}/docs/*` 目前只是兼容性跳转入口
-- 阅读站不会在普通 `pnpm dev` 下开放；请使用 CLI `preview` 或构建后的静态产物查看
-- 构建产物是 flat 输出，不再使用旧的 `dist/projects/default/...` 结构
+## 快速启动
 
-## 快速开始
-
-### 1. 安装依赖
+### 方式 A：先跑示例项目
 
 ```bash
 pnpm install
-```
-
-### 2. 启动 Studio
-
-```bash
 pnpm dev
-```
-
-打开：
-
-- `http://localhost:3000/`
-- `http://localhost:3000/studio`
-
-### 3. 预览示例项目
-
-```bash
 pnpm --filter @anydocs/cli cli preview examples/demo-docs
 ```
 
-CLI 会启动一个本地预览服务，并输出可访问的阅读站 URL。
+然后：
 
-### 4. 构建示例项目
+- 打开 `http://localhost:3000/studio`
+- 在 Studio 里选择 `examples/demo-docs`
+- 终端里的 `preview` 会输出阅读站 URL，用来查看已发布页面
 
-```bash
-pnpm --filter @anydocs/cli cli build examples/demo-docs
-```
+这个路径适合先理解 Anydocs 的编辑方式、页面结构和发布边界。
 
-默认输出到 `examples/demo-docs/dist/`。
+### 方式 B：创建你自己的文档项目
 
-## 常用命令
-
-### 仓库根脚本
+如果你准备直接写自己的文档项目，而不是先玩示例：
 
 ```bash
-pnpm dev            # 启动 Next.js Studio
-pnpm dev:desktop    # 启动 Electron 桌面端
-pnpm build          # 构建整个 workspace
-pnpm build:web      # 构建 web 包
-pnpm build:cli      # 构建 CLI 包
-pnpm build:mcp      # 构建 MCP server 包
-pnpm build:desktop  # 构建桌面端
-pnpm typecheck      # 全仓 TypeScript 检查
-pnpm lint           # 全仓 ESLint
-pnpm test           # core + cli + mcp 测试
-pnpm test:web       # web Playwright 测试
-pnpm test:full      # 全量测试
+pnpm install
+pnpm --filter @anydocs/cli cli init ./my-docs-project --agent codex
+pnpm dev
+pnpm --filter @anydocs/cli cli preview ./my-docs-project
 ```
 
-### CLI
+然后：
 
-推荐在 monorepo 根目录使用：
+- 打开 `http://localhost:3000/studio`
+- 在 Studio 里选择 `./my-docs-project`
+- 让 agent 通过 MCP 操作这个项目
+
+如果你主要使用 Claude Code，可以把初始化命令里的 `--agent codex` 换成 `--agent claude-code`。
+
+## Agent 写作优先路径
+
+这是当前推荐的工作方式。核心思路很简单：
+
+- 用 `Studio` 做人工编辑、检查和发布
+- 用 `MCP` 让 agent 做页面创建、批量更新、导航维护
+- 不让 agent 直接修改 `pages/*.json` 和 `navigation/*.json`
+
+### 1. 初始化一个带 guide 的项目
+
+Codex：
 
 ```bash
-pnpm --filter @anydocs/cli cli <command>
+pnpm --filter @anydocs/cli cli init ./my-docs-project --agent codex
 ```
 
-也可以直接执行入口：
+Claude Code：
 
 ```bash
-node --experimental-strip-types packages/cli/src/index.ts <command>
+pnpm --filter @anydocs/cli cli init ./my-docs-project --agent claude-code
 ```
 
-可用命令：
+生成结果：
 
-```bash
-pnpm --filter @anydocs/cli cli init [targetDir]
-pnpm --filter @anydocs/cli cli build [targetDir] [--output <dir>] [--watch]
-pnpm --filter @anydocs/cli cli preview [targetDir] [--watch]
-pnpm --filter @anydocs/cli cli import <sourceDir> [targetDir] [lang]
-pnpm --filter @anydocs/cli cli convert-import <importId> [targetDir]
-pnpm --filter @anydocs/cli cli help [command]
-pnpm --filter @anydocs/cli cli version
-```
+- `--agent codex` 会生成 `AGENTS.md`
+- `--agent claude-code` 会生成 `Claude.md`
+- 不显式指定时，默认 guide 文件是 `skill.md`
 
-说明：
+### 2. 启动 MCP server
 
-- `preview` 默认就是 live 模式，`--watch` 仅保留兼容含义
-- `build --output <dir>` 会覆盖默认产物输出目录
-
-## 文档项目结构
-
-一个当前实现兼容的文档项目目录通常长这样：
-
-```text
-my-docs/
-├── anydocs.config.json
-├── anydocs.workflow.json
-├── skill.md                 # 默认 agent guide；也可改为 AGENTS.md / Claude.md
-├── pages/
-│   ├── en/
-│   └── zh/
-├── navigation/
-│   ├── en.json
-│   └── zh.json
-├── imports/
-└── dist/
-```
-
-说明：
-
-- `anydocs.config.json` 是项目配置
-- `anydocs.workflow.json` 是工作流契约
-- 项目内 agent guide 默认是 `skill.md`；使用 `--agent codex` 时会生成 `AGENTS.md`，使用 `--agent claude-code` 时会生成 `Claude.md`
-- `pages/` 与 `navigation/` 是 Studio 和 CLI 的 canonical source
-- `imports/` 用于承接 legacy import 中间产物
-
-## MCP Server
-
-Anydocs 现在提供一个可安装/可连接的本地 `stdio` MCP server，包名为 `@anydocs/mcp`。它面向 agent authoring 场景，当前暴露以下工具：
-
-- `project_open`
-- `project_validate`
-- `page_list`
-- `page_get`
-- `page_find`
-- `page_create`
-- `page_update`
-- `page_set_status`
-- `nav_get`
-- `nav_set`
-- `nav_replace_items`
-
-启动方式：
+在工具仓库根目录运行：
 
 ```bash
 pnpm --filter @anydocs/mcp dev
@@ -156,7 +89,9 @@ pnpm --filter @anydocs/mcp dev
 node --experimental-strip-types packages/mcp/src/index.ts
 ```
 
-一个可直接用于 Codex 的 `stdio` 配置示例：
+### 3. 把 MCP 配到 agent
+
+Codex 的 `stdio` 配置示例：
 
 ```json
 {
@@ -164,93 +99,116 @@ node --experimental-strip-types packages/mcp/src/index.ts
     "anydocs": {
       "command": "pnpm",
       "args": ["--filter", "@anydocs/mcp", "dev"],
-      "cwd": "/Users/shawn/workspace/code/anydocs"
+      "cwd": "/path/to/anydocs"
     }
   }
 }
 ```
 
-说明：
+### 4. 让 agent 按这个顺序工作
 
-- 该 MCP server 直接调用 `@anydocs/core` 的 canonical domain logic，不通过 CLI 转发
-- 所有工具都要求显式传入 `projectRoot`，当前不维护多项目会话状态
-- `page_update` 只允许浅合并白名单字段：`slug`、`title`、`description`、`tags`、`content`、`render`、`review`
-- 导航可通过 `nav_set` 整体替换，或通过 `nav_replace_items` 仅替换 `navigation.items`
-- 新项目可通过 `--agent codex` 或 `--agent claude-code` 生成对应的 guide 文件，让 agent 默认优先使用 MCP
+默认顺序建议：
 
-## 构建产物结构
+1. `project_open(projectRoot)`
+2. 需要时 `project_set_languages(...)`
+3. 需要时 `project_validate(projectRoot)`
+4. 先看 `project_open.authoring` 返回的 templates、resources、resourceTemplates
+5. 需要 guidance 或 canonical 示例时，优先读 `anydocs://authoring/guidance`、`anydocs://templates/{templateId}`、`anydocs://blocks/{blockType}/example`
+6. `page_list` / `page_find` / `page_get`
+7. 需要 richer 初稿时优先 `page_create_from_template`
+8. 需要按模板重整已有页面时用 `page_update_from_template`
+9. 常规修改用 `page_update`；如果本轮改了 `content` 且需要同步 reader 文本摘要，可传 `regenerateRender: true`
+10. `page_create` / `page_delete` / `page_set_status`
+11. `nav_get`
+12. `nav_insert` / `nav_delete` / `nav_move`
+13. 只有整体重排时再用 `nav_replace_items` / `nav_set`
 
-当前构建输出为 flat 结构，典型结果如下：
+一句话原则：
 
-```text
-dist/
-├── index.html
-├── llms.txt
-├── search-index.en.json
-├── search-index.zh.json
-├── mcp/
-│   ├── index.json
-│   ├── navigation.en.json
-│   ├── navigation.zh.json
-│   ├── pages.en.json
-│   └── pages.zh.json
-├── en/
-├── zh/
-└── docs/
-```
+- 先 `project_open`
+- 优先用 MCP
+- 最后才考虑直接改文件
 
-其中：
-
-- `en/`、`zh/` 是规范阅读站路由
-- `docs/` 是默认语言兼容入口
-- `llms.txt` 与 `mcp/` 只包含 `published` 内容
-- `dist/mcp/*.json` 是构建出的机器可读产物，不是运行时 MCP server
-
-## 架构概览
-
-### Studio
-
-- 路由：`/`、`/studio`
-- 主要用途：编辑页面、导航、项目设置
-- 数据读写：`/api/local/*` 或桌面端 IPC
-- 可见状态：`draft`、`in_review`、`published`
-
-### Docs Reader
-
-- 规范路由：`/{lang}`、`/{lang}/{slug}`
-- 兼容跳转：`/docs/*`、`/{lang}/docs/*`
-- 只读取 `published` 页面
-- 搜索依赖构建期生成的静态索引
-
-### CLI
-
-- `init`：初始化项目
-- `build`：生成静态站点与机器可读产物
-- `preview`：启动本地阅读站预览
-- `import` / `convert-import`：导入 legacy Markdown/MDX
-
-## 部署
-
-构建结果是纯静态文件，可以部署到任意静态托管环境，例如：
-
-- Nginx / Apache
-- Vercel / Netlify / Cloudflare Pages
-- GitHub Pages
-- AWS S3 / OSS
-
-示例：
+### 5. 日常写作闭环
 
 ```bash
-pnpm --filter @anydocs/cli cli build ./my-docs --output ./dist-prod
+# 终端 1：Studio
+pnpm dev
+
+# 终端 2：Reader preview
+pnpm --filter @anydocs/cli cli preview ./my-docs-project
+
+# 终端 3：需要静态产物时再 build
+pnpm --filter @anydocs/cli cli build ./my-docs-project
 ```
 
-随后部署 `./dist-prod/` 即可。
+这个闭环里：
 
-## 相关文档
+- Studio 负责编辑和项目设置
+- Preview 负责看阅读站效果
+- Build 负责生成最终静态产物和 AI 可读产物
 
-- [docs/README.md](docs/README.md)
-- [docs/planning-artifacts/architecture.md](docs/planning-artifacts/architecture.md)
-- [docs/planning-artifacts/prd.md](docs/planning-artifacts/prd.md)
-- [docs/planning-artifacts/epics.md](docs/planning-artifacts/epics.md)
-- [docs/04-usage-manual.md](docs/04-usage-manual.md)
-- [docs/05-dev-guide.md](docs/05-dev-guide.md)
+## 最常用命令
+
+```bash
+pnpm dev
+pnpm dev:desktop
+pnpm --filter @anydocs/cli cli init ./my-docs-project
+pnpm --filter @anydocs/cli cli build ./my-docs-project
+pnpm --filter @anydocs/cli cli preview ./my-docs-project
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
+pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
+pnpm --filter @anydocs/mcp dev
+```
+
+补充：
+
+- `pnpm dev` 只启动 Studio 开发环境，不直接开放 Reader
+- 阅读站请用 `preview` 或构建后的静态产物查看
+- `preview` 默认就是 live 模式，`--watch` 只是兼容旧用法
+
+## 一个文档项目长什么样
+
+```text
+my-docs-project/
+├── anydocs.config.json
+├── anydocs.workflow.json
+├── AGENTS.md / Claude.md / skill.md
+├── pages/
+├── navigation/
+├── imports/
+└── dist/
+```
+
+说明：
+
+- `pages/` 和 `navigation/` 是 canonical source
+- `dist/` 是构建产物
+- 只有 `published` 页面会进入 Reader、搜索索引、`llms.txt` 和 `mcp/*.json`
+
+## Anydocs 里有什么
+
+- `Studio`：本地编辑台，负责页面、导航、元数据和项目设置
+- `CLI`：初始化、预览、构建、导入
+- `Docs Reader`：只读已发布内容的阅读站
+- `MCP Server`：给 agent 的稳定 authoring 接口
+
+## 什么时候用什么
+
+| 目标 | 用什么 |
+| --- | --- |
+| 编辑页面和导航 | `Studio` |
+| 批量维护页面、让 agent 写作 | `MCP Server` |
+| 本地看阅读站效果 | `preview` |
+| 生成部署产物 | `build` |
+| 导入旧 Markdown / MDX | `import` + `convert-import` |
+
+## 详细文档
+
+如果你已经能跑起来，后续按场景查这些文档：
+
+- [docs/04-usage-manual.md](docs/04-usage-manual.md)：详细操作手册
+- [docs/07-agent-integration.md](docs/07-agent-integration.md)：Codex / Claude Code 与 MCP 的完整集成方式
+- [docs/05-dev-guide.md](docs/05-dev-guide.md)：开发与验证流程
+- [docs/README.md](docs/README.md)：`docs/` 目录索引
+- [artifacts/bmad/README.md](artifacts/bmad/README.md)：规划、技术规格和测试产物索引

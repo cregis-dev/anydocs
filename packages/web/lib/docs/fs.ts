@@ -4,18 +4,24 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import {
+  createApiSourceRepository,
   createDocsRepository,
+  deleteApiSource as deleteApiSourceFromRepository,
   deletePage as deletePageFromRepository,
   findPageBySlug as findPageBySlugInRepository,
   DEFAULT_PROJECT_ID,
   initializeProject,
+  initializeApiSourceRepository,
+  listApiSources as listApiSourcesInRepository,
   listPages as listPagesInRepository,
   loadProjectContract,
   loadNavigation as loadNavigationFromRepository,
   loadPage as loadPageFromRepository,
   normalizeSlug,
+  saveApiSource as saveApiSourceToRepository,
   saveNavigation as saveNavigationToRepository,
   savePage as savePageToRepository,
+  type ApiSourceDoc,
   type ProjectConfig,
   type ProjectSiteTopNavItem,
   updateProjectConfig,
@@ -103,6 +109,10 @@ export async function loadStudioProjectContract(projectId: string = '', customPa
 
 async function getDocsRepository(projectId: string = '', customPath?: string) {
   return createDocsRepository(await getProjectRoot(projectId, customPath));
+}
+
+async function getApiSourceRepository(projectId: string = '', customPath?: string) {
+  return createApiSourceRepository(await getProjectRoot(projectId, customPath));
 }
 
 function derivePageIdFromSlug(slug: string): string {
@@ -314,6 +324,34 @@ export async function updateStudioProjectSettings(
   }
 
   return result.value;
+}
+
+export async function listStudioApiSources(projectId: string = '', customPath?: string): Promise<ApiSourceDoc[]> {
+  return listApiSourcesInRepository(await getApiSourceRepository(projectId, customPath));
+}
+
+export async function replaceStudioApiSources(
+  apiSources: ApiSourceDoc[],
+  projectId: string = '',
+  customPath?: string,
+): Promise<ApiSourceDoc[]> {
+  const repository = await getApiSourceRepository(projectId, customPath);
+  await initializeApiSourceRepository(repository);
+
+  const existing = await listApiSourcesInRepository(repository);
+  const nextIds = new Set(apiSources.map((source) => source.id));
+
+  for (const source of apiSources) {
+    await saveApiSourceToRepository(repository, source);
+  }
+
+  for (const source of existing) {
+    if (!nextIds.has(source.id)) {
+      await deleteApiSourceFromRepository(repository, source.id);
+    }
+  }
+
+  return listApiSourcesInRepository(repository);
 }
 
 export async function findPageBySlug(lang: DocsLang, slug: string, projectId: string = '', customPath?: string): Promise<PageDoc | null> {

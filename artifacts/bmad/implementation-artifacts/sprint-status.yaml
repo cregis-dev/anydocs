@@ -2,7 +2,7 @@
 # project: anydocs
 # project_key: NOKEY
 # tracking_system: file-system
-# story_location: /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts
+# story_location: /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts
 
 # STATUS DEFINITIONS:
 # ==================
@@ -37,7 +37,7 @@ generated: 2026-03-12 16:56:00 +0800
 project: anydocs
 project_key: NOKEY
 tracking_system: file-system
-story_location: /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts
+story_location: /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts
 
 development_status:
   epic-1: done

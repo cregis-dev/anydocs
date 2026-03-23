@@ -3,6 +3,7 @@ import { readFile, writeFile, readdir, stat } from 'fs/promises'
 import { join } from 'path'
 import Store from 'electron-store'
 import {
+  getApiSources,
   getNavigation,
   getPage,
   getPages,
@@ -10,6 +11,7 @@ import {
   postBuild,
   postPage,
   postPreview,
+  putApiSources,
   putNavigation,
   putPage,
   putProject,
@@ -170,6 +172,22 @@ const registerStudioHandlers = (): void => {
       }
     }
   )
+
+  ipcMain.handle('studio:api-sources:get', async (_, projectId: string, customPath?: string) => {
+    try {
+      return { success: true, data: await getApiSources(projectId, customPath) }
+    } catch (error) {
+      return { success: false, error: toErrorPayload(error) }
+    }
+  })
+
+  ipcMain.handle('studio:api-sources:put', async (_, sources: unknown, projectId: string, customPath?: string) => {
+    try {
+      return { success: true, data: await putApiSources(sources as never, projectId, customPath) }
+    } catch (error) {
+      return { success: false, error: toErrorPayload(error) }
+    }
+  })
 
   ipcMain.handle('studio:build:post', async (_, projectId: string, customPath?: string) => {
     try {

@@ -1,95 +1,96 @@
-# Studio E2E Tests
+# Studio Regression Tests
 
-This directory contains end-to-end tests for the Anydocs Studio (Epic 2: Content Editor).
+This directory holds the Playwright layer for repository acceptance checks. It is intentionally split between:
+
+- shell and authoring journeys that exercise the Studio UI
+- local API contract checks that verify the browser-facing filesystem bridge
+- shared helpers under `tests/e2e/support/`
 
 ## Test Structure
 
-```
+```text
 tests/e2e/
-├── studio.spec.ts      # Main Studio E2E tests
-└── README.md           # This file
+├── support/
+│   └── studio.ts
+├── studio.spec.ts
+├── studio-authoring-flow.spec.ts
+├── studio-local-api.spec.ts
+└── README.md
 ```
 
 ## Prerequisites
 
-1. **Install Playwright**:
-   ```bash
-   npx playwright install chromium
-   ```
+1. Install Playwright browsers:
 
-2. **Start Development Server**:
-   ```bash
-   pnpm dev
-   ```
-
-## Running Tests
-
-### Run all tests
 ```bash
-npx playwright test
+pnpm --filter @anydocs/web exec playwright install chromium
 ```
 
-### Run P0 tests only (critical path)
+2. Start the Studio dev server only if you want to reuse an already running instance:
+
 ```bash
-npx playwright test --grep "@p0"
+pnpm dev
 ```
 
-### Run P1 tests only (high priority)
+## Commands
+
+Run the full Playwright suite:
+
 ```bash
-npx playwright test --grep "@p1"
+pnpm --filter @anydocs/web test:e2e
 ```
 
-### Run specific test file
+Run the critical-path gate used for delivery acceptance:
+
 ```bash
-npx playwright test tests/e2e/studio.spec.ts
+pnpm --filter @anydocs/web test:e2e:p0
 ```
 
-### Run with UI (interactive)
+Run only the local API contract regression:
+
 ```bash
-npx playwright test --ui
+pnpm --filter @anydocs/web test:api
 ```
 
-### Generate HTML report
+Run a single spec:
+
 ```bash
-npx playwright show-report
+npx playwright test tests/e2e/studio-authoring-flow.spec.ts
 ```
 
-## Test Coverage
+Open Playwright UI:
 
-### P0 - Critical (Must Pass)
-- Studio homepage loads
-- Three-panel layout renders
-- Yoopta editor renders
-- Navigation tree renders
-- Settings panel renders
-- Save status in footer
-- Preview button exists
+```bash
+pnpm --filter @anydocs/web test:ui
+```
 
-### P1 - High Priority
-- Sidebar toggles
-- Text input in editor
-- Navigation validation display
-- Add page via menu
-- Tags/status fields
-- Auto-save functionality
-- Language switcher
-- Connection status
-- Status confirmation dialog
+## Coverage Model
 
-### P2 - Medium Priority
-- All Yoopta block types
-- Folder expand/collapse
+`@p0`
+
+- welcome-screen entry into Studio
+- open external project
+- create, edit, publish, and delete pages in Studio
+- preview/build flows and generated artifact checks
+- local authoring API contract checks
+
+`@p1`
+
+- explicit preview smoke checks
+- structured error handling for missing pages
 
 ## Environment Variables
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| STUDIO_URL | http://localhost:3000/studio | Studio URL |
-| CI | - | Set to run in CI mode |
+| --- | --- | --- |
+| `STUDIO_URL` | `http://127.0.0.1:3000` | Base URL for the local Studio server |
+| `ANYDOCS_E2E_PROJECT_ROOT` | `packages/.tmp/playwright-anydocs-project` equivalent under repo root | External project root used by the tests |
+| `DOCS_PREVIEW_URL` | unset | Optional explicit reader preview URL for smoke validation |
+| `STUDIO_SKIP_WEBSERVER` | unset | Reuse an already running Studio server when set to `1` |
 
 ## Notes
 
-- Tests are designed to work with Chrome DevTools MCP
-- Some tests will skip if no project is opened (welcome screen)
-- Tests use Playwright's built-in waiting strategies
-- Screenshot and video are captured on failure
+- The support layer is based on stable `data-testid` hooks rather than CSS selectors.
+- Browser tests intentionally avoid page-object indirection and keep assertions explicit in the spec bodies.
+- `studio-local-api.spec.ts` uses Playwright's `request` fixture so API regressions can be caught without a full browser journey.
+- By default the Playwright config starts `pnpm dev` automatically; set `STUDIO_SKIP_WEBSERVER=1` only when you are intentionally reusing an existing server.

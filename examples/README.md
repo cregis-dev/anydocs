@@ -32,20 +32,20 @@ See [demo-docs/README.md](demo-docs/README.md) for detailed instructions.
 
 ```bash
 # Initialize new project
-node --experimental-strip-types packages/cli/src/index.ts init ~/my-docs-project
+node --experimental-strip-types packages/cli/src/index.ts init ./my-docs-project
 
 # Build
-node --experimental-strip-types packages/cli/src/index.ts build ~/my-docs-project
+node --experimental-strip-types packages/cli/src/index.ts build ./my-docs-project
 ```
 
 ### From Example
 
 ```bash
 # Copy example project
-cp -r examples/demo-docs ~/my-docs-project
+cp -r examples/demo-docs ./my-docs-project
 
 # Customize
-cd ~/my-docs-project
+cd ./my-docs-project
 vim anydocs.config.json
 
 # Build
@@ -75,6 +75,6 @@ my-docs-project/
 ## More Information
 
 - [Anydocs Documentation](../docs/README.md)
-- [Architecture](../docs/planning-artifacts/architecture.md)
+- [Architecture](../artifacts/bmad/planning-artifacts/architecture.md)
 - [Usage Manual](../docs/04-usage-manual.md)
 - [Main README](../README.md)

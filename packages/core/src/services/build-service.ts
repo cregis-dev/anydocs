@@ -9,6 +9,7 @@ import {
   type PublishedSiteLanguageContent,
 } from '../publishing/publication-filter.ts';
 import { writePublishedArtifacts } from '../publishing/build-artifacts.ts';
+import { writePublishedOpenApiArtifacts } from '../publishing/build-openapi-artifacts.ts';
 import type { DocsLanguage } from '../types/project.ts';
 
 export type BuildWorkflowOptions = {
@@ -77,6 +78,7 @@ export async function runBuildWorkflow(options: BuildWorkflowOptions): Promise<B
   });
   await mkdir(contract.paths.machineReadableRoot, { recursive: true });
   await writePublishedArtifacts(contract, siteArtifacts);
+  await writePublishedOpenApiArtifacts(contract);
 
   return {
     projectId: contract.config.projectId,

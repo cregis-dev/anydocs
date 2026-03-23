@@ -5,12 +5,12 @@
 
 project_name: anydocs
 user_skill_level: intermediate
-planning_artifacts: "{project-root}/docs/planning-artifacts"
-implementation_artifacts: "{project-root}/docs/implementation-artifacts"
+planning_artifacts: "{project-root}/artifacts/bmad/planning-artifacts"
+implementation_artifacts: "{project-root}/artifacts/bmad/implementation-artifacts"
 project_knowledge: "{project-root}/docs"
 
 # Core Configuration Values
 user_name: Shawn
 communication_language: Mandarin
 document_output_language: English
-output_folder: "{project-root}/docs"
+output_folder: "{project-root}/artifacts/bmad"

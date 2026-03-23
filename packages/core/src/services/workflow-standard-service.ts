@@ -59,6 +59,16 @@ function createSourceFiles(contract: ProjectContract): WorkflowStandardFile[] {
     });
   }
 
+  files.push({
+    id: 'apiSource',
+    path: relativeToRepo(contract, path.join(contract.paths.apiSourcesRoot, '{sourceId}.json')),
+    format: 'json',
+    required: false,
+    writable: true,
+    generated: false,
+    description: 'API source document pattern for OpenAPI-backed reference surfaces.',
+  });
+
   return files;
 }
 
@@ -100,9 +110,27 @@ function createGeneratedArtifacts(contract: ProjectContract): WorkflowStandardFi
       generated: true,
       description: 'Stable machine-readable artifact index for external AI and automation consumers.',
     },
+    {
+      id: 'openApiRoot',
+      path: relativeToRepo(contract, path.join(contract.paths.machineReadableRoot, 'openapi')),
+      format: 'directory',
+      required: false,
+      writable: false,
+      generated: true,
+      description: 'Machine-readable OpenAPI artifacts generated from published api sources.',
+    },
   ];
 
   for (const language of contract.config.languages) {
+    artifacts.push({
+      id: 'openApiIndex',
+      path: relativeToRepo(contract, path.join(contract.paths.machineReadableRoot, 'openapi', `index.${language}.json`)),
+      format: 'json',
+      required: false,
+      writable: false,
+      generated: true,
+      description: `Machine-readable OpenAPI source index for ${language}.`,
+    });
     artifacts.push({
       id: 'searchIndex',
       path: relativeToRepo(contract, contract.paths.languageRoots[language].searchIndexFile),
@@ -331,6 +359,34 @@ function toComparableWorkflowDefinition(definition: WorkflowStandardDefinition) 
   };
 }
 
+function createWorkflowFileKey(file: ReturnType<typeof toComparableWorkflowFile>): string {
+  return `${file.id}:${file.path}`;
+}
+
+function hasCompatibleSourceFiles(
+  persisted: ReturnType<typeof toComparableWorkflowDefinition>['sourceFiles'],
+  expected: ReturnType<typeof toComparableWorkflowDefinition>['sourceFiles'],
+): boolean {
+  const persistedByKey = new Map(persisted.map((file) => [createWorkflowFileKey(file), file]));
+
+  for (const expectedFile of expected) {
+    const persistedFile = persistedByKey.get(createWorkflowFileKey(expectedFile));
+    if (!persistedFile) {
+      if (expectedFile.required) {
+        return false;
+      }
+
+      continue;
+    }
+
+    if (JSON.stringify(persistedFile) !== JSON.stringify(expectedFile)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function readWorkflowStandardDefinition(workflowFile: string): Promise<WorkflowStandardDefinition> {
   const raw = await readFile(workflowFile, 'utf8').catch(() => {
     throw createWorkflowValidationError(
@@ -365,8 +421,19 @@ export function assertWorkflowStandardMatchesContract(
   const expected = createWorkflowStandardDefinition(contract);
   const comparablePersisted = toComparableWorkflowDefinition(definition);
   const comparableExpected = toComparableWorkflowDefinition(expected);
+  const comparablePersistedCore = {
+    ...comparablePersisted,
+    sourceFiles: undefined,
+  };
+  const comparableExpectedCore = {
+    ...comparableExpected,
+    sourceFiles: undefined,
+  };
 
-  if (JSON.stringify(comparablePersisted) !== JSON.stringify(comparableExpected)) {
+  if (
+    JSON.stringify(comparablePersistedCore) !== JSON.stringify(comparableExpectedCore) ||
+    !hasCompatibleSourceFiles(comparablePersisted.sourceFiles, comparableExpected.sourceFiles)
+  ) {
     throw createWorkflowValidationError(
       'workflow-standard-matches-project-contract',
       'Regenerate anydocs.workflow.json so its languages, file paths, and publication rules match the current canonical project contract.',

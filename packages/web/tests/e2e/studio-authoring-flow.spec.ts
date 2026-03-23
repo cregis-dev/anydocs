@@ -1,84 +1,36 @@
-import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 
-import { expect, test, type Dialog, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-const repoRoot = path.resolve(__dirname, '../../../..');
-const cliEntry = path.join(repoRoot, 'packages/cli/src/index.ts');
-const projectRoot =
-  process.env.ANYDOCS_E2E_PROJECT_ROOT ?? path.join(repoRoot, '.tmp', 'playwright-anydocs-project');
-const configFile = path.join(projectRoot, 'anydocs.config.json');
+import {
+  acceptDialog,
+  createDeleteScenario,
+  createStudioPageScenario,
+  ensureProjectExists,
+  openProjectFromWelcome,
+  projectRoot,
+  waitForSaveIdle,
+} from './support/studio';
 
-function runCliCommand(args: string[]) {
-  execFileSync('node', ['--experimental-strip-types', cliEntry, ...args], {
-    cwd: repoRoot,
-    env: process.env,
-    stdio: 'pipe',
-  });
+async function submitCreateGroupDialog(page: Parameters<typeof test>[0]['page'], groupName: string) {
+  const dialog = page.getByRole('dialog', { name: 'Add Group' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('textbox').fill(groupName);
+  await dialog.getByRole('button', { name: 'Create Group' }).click();
+  await expect(dialog).toHaveCount(0);
 }
 
-async function ensureProjectExists() {
-  try {
-    await access(configFile);
-  } catch {
-    runCliCommand(['init', projectRoot]);
-  }
-}
-
-function acceptDialog(page: Page, message: string | RegExp, value?: string) {
-  return page.waitForEvent('dialog').then(async (dialog: Dialog) => {
-    const actual = dialog.message();
-    if (message instanceof RegExp) {
-      assert.match(actual, message);
-    } else {
-      assert.equal(actual, message);
-    }
-    await dialog.accept(value);
-  });
-}
-
-async function acceptDialogSequence(
-  page: Page,
-  entries: Array<{ message: string | RegExp; value?: string }>,
+async function submitCreatePageDialog(
+  page: Parameters<typeof test>[0]['page'],
+  input: { pageSlug: string; pageTitle: string },
 ) {
-  const pending = [...entries];
-
-  await new Promise<void>((resolve, reject) => {
-    const onDialog = async (dialog: Dialog) => {
-      const next = pending.shift();
-      if (!next) {
-        page.off('dialog', onDialog);
-        reject(new Error(`Unexpected dialog: ${dialog.message()}`));
-        return;
-      }
-
-      try {
-        const actual = dialog.message();
-        if (next.message instanceof RegExp) {
-          assert.match(actual, next.message);
-        } else {
-          assert.equal(actual, next.message);
-        }
-
-        if (pending.length === 0) {
-          page.off('dialog', onDialog);
-        }
-
-        await dialog.accept(next.value);
-
-        if (pending.length === 0) {
-          resolve();
-        }
-      } catch (error) {
-        page.off('dialog', onDialog);
-        reject(error);
-      }
-    };
-
-    page.on('dialog', onDialog);
-  });
+  const dialog = page.getByRole('dialog', { name: 'Add Page' });
+  await expect(dialog).toBeVisible();
+  const textboxes = dialog.getByRole('textbox');
+  await textboxes.nth(0).fill(input.pageTitle);
+  await textboxes.nth(1).fill(input.pageSlug);
+  await dialog.getByRole('button', { name: 'Create Page' }).click();
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -90,25 +42,11 @@ test.beforeAll(async () => {
 test('authoring flow covers CLI init, Studio editing, preview, and build @p0', async ({ page }) => {
   test.setTimeout(600000);
 
-  const runId = Date.now().toString(36);
-  const groupName = `API Guides ${runId}`;
-  const pageTitle = `Authentication API ${runId}`;
-  const pageSlug = `api/authentication-${runId}`;
-  const pageId = `authentication-${runId}`;
-  const pageDescription = `Token and session flows for ${runId}.`;
-  const pageBody = `Authentication flow ${runId}`;
+  const { groupName, pageBody, pageDescription, pageId, pageSlug, pageTitle } =
+    createStudioPageScenario();
   const savedNavFile = path.join(projectRoot, 'navigation', 'en.json');
 
-  await page.goto('/studio');
-  await expect(page.getByTestId('studio-open-project-button')).toBeVisible();
-
-  const openProjectDialog = acceptDialog(page, '输入文档项目根目录的绝对路径', projectRoot);
-  await page.getByTestId('studio-open-project-button').click();
-  await openProjectDialog;
-
-  await expect(page.getByText('Anydocs Project')).toBeVisible();
-  await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
-  await expect(page.getByTestId('studio-settings-sidebar')).toHaveCount(0);
+  await openProjectFromWelcome(page);
 
   await page.getByTestId('studio-open-project-settings-button').click();
   await expect(page.getByTestId('studio-settings-sidebar')).toBeVisible();
@@ -116,19 +54,14 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
   await page.getByTestId('studio-close-settings-sidebar').click();
   await expect(page.getByTestId('studio-settings-sidebar')).toHaveCount(0);
 
-  const createGroupDialog = acceptDialog(page, '请输入分组名称', groupName);
   await page.getByTestId('studio-create-menu-trigger').click();
   await page.getByTestId('studio-create-group-button').click();
-  await createGroupDialog;
+  await submitCreateGroupDialog(page, groupName);
   await expect(page.getByText(groupName)).toBeVisible();
 
-  const createPageDialogs = acceptDialogSequence(page, [
-    { message: '请输入 slug（例如 getting-started/new-page）', value: pageSlug },
-    { message: '请输入标题（Display Title）', value: pageTitle },
-  ]);
   await page.getByTestId('studio-create-menu-trigger').click();
   await page.getByTestId('studio-create-page-button').click();
-  await createPageDialogs;
+  await submitCreatePageDialog(page, { pageSlug, pageTitle });
 
   await page.getByTestId(`studio-nav-page-menu-trigger-${pageId}`).click();
   await page.getByTestId(`studio-nav-page-edit-button-${pageId}`).click();
@@ -155,7 +88,7 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
   await editor.click();
   await page.keyboard.type(pageBody);
 
-  await expect(page.getByTestId('studio-save-status')).toContainText('All changes saved', { timeout: 20000 });
+  await waitForSaveIdle(page);
   await expect
     .poll(async () => await readFile(savedNavFile, 'utf8'), { timeout: 15000 })
     .toContain(groupName);
@@ -217,25 +150,15 @@ test('authoring flow covers CLI init, Studio editing, preview, and build @p0', a
 test('deleting a page removes the file and clears its navigation references @p0', async ({ page }) => {
   test.setTimeout(600000);
 
-  const runId = Date.now().toString(36);
-  const pageTitle = `Delete Me ${runId}`;
-  const pageSlug = `cleanup/delete-me-${runId}`;
-  const pageId = `delete-me-${runId}`;
+  const { pageId, pageSlug, pageTitle } = createDeleteScenario();
   const projectNavFile = path.join(projectRoot, 'navigation', 'en.json');
   const projectPageFile = path.join(projectRoot, 'pages', 'en', `${pageId}.json`);
 
-  await page.goto('/studio');
-  const openProjectDialog = acceptDialog(page, '输入文档项目根目录的绝对路径', projectRoot);
-  await page.getByTestId('studio-open-project-button').click();
-  await openProjectDialog;
+  await openProjectFromWelcome(page);
 
-  const createPageDialogs = acceptDialogSequence(page, [
-    { message: '请输入 slug（例如 getting-started/new-page）', value: pageSlug },
-    { message: '请输入标题（Display Title）', value: pageTitle },
-  ]);
   await page.getByTestId('studio-create-menu-trigger').click();
   await page.getByTestId('studio-create-page-button').click();
-  await createPageDialogs;
+  await submitCreatePageDialog(page, { pageSlug, pageTitle });
 
   await page.getByTestId(`studio-nav-page-menu-trigger-${pageId}`).click();
   await page.getByTestId(`studio-nav-page-edit-button-${pageId}`).click();
@@ -266,5 +189,5 @@ test('deleting a page removes the file and clears its navigation references @p0'
   await expect
     .poll(async () => await readFile(projectNavFile, 'utf8'), { timeout: 15000 })
     .not.toContain(pageId);
-  await expect(page.getByTestId('studio-page-title-input')).not.toHaveValue(pageTitle);
+  await expect(page.getByTestId('studio-page-title-input')).toHaveCount(0);
 });

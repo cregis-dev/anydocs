@@ -12,6 +12,7 @@ import { convertImportedLegacyContent } from '../src/services/legacy-conversion-
 import { importLegacyDocumentation } from '../src/services/legacy-import-service.ts';
 import { assessWorkflowForwardCompatibility } from '../src/services/workflow-compatibility-service.ts';
 import {
+  assertWorkflowStandardMatchesContract,
   createWorkflowStandardDefinition,
   exportWorkflowStandard,
   readWorkflowStandardDefinition,
@@ -86,6 +87,28 @@ test('validateWorkflowStandardDefinition accepts exported workflow standards and
 
     assert.equal(definition.standardId, 'anydocs-phase-1');
     assert.ok(definition.generatedArtifacts.some((file) => file.id === 'machineReadableIndex'));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('assertWorkflowStandardMatchesContract accepts workflow definitions missing optional future source files', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const config = createDefaultProjectConfig({ languages: ['en'] });
+    const paths = createProjectPathContract(repoRoot, config);
+    const definition = createWorkflowStandardDefinition({ config, paths });
+
+    assert.doesNotThrow(() =>
+      assertWorkflowStandardMatchesContract(
+        {
+          ...definition,
+          sourceFiles: definition.sourceFiles.filter((file) => file.id !== 'apiSource'),
+        },
+        { config, paths },
+      ),
+    );
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }

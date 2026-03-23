@@ -153,3 +153,77 @@ body {
 :where([data-card]:hover) {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+
+.theme-atlas-docs .anydocs-scalar-shell {
+  --scalar-background-1: #ffffff;
+  --scalar-background-2: #f6f6f2;
+  --scalar-background-3: #eef2ec;
+  --scalar-sidebar-background-1: color-mix(in srgb, var(--atlas-sidebar-surface) 88%, white);
+  --scalar-sidebar-search-background: var(--atlas-search-background);
+  --scalar-color-1: var(--atlas-foreground);
+  --scalar-color-2: var(--atlas-copy);
+  --scalar-color-3: var(--atlas-muted-foreground);
+  --scalar-sidebar-color-1: var(--atlas-copy);
+  --scalar-sidebar-color-2: var(--atlas-muted-foreground);
+  --scalar-border-color: var(--atlas-content-border);
+  --scalar-link-color: var(--atlas-foreground);
+  --scalar-color-accent: var(--atlas-primary);
+  --scalar-color-green: var(--atlas-primary);
+  --scalar-color-blue: color-mix(in srgb, var(--atlas-primary) 50%, #2563eb);
+  --scalar-color-orange: #c77700;
+  --scalar-color-red: #b42318;
+  --scalar-color-yellow: #947200;
+  --scalar-radius: 10px;
+  --scalar-radius-lg: 14px;
+  --scalar-radius-xl: 18px;
+  --scalar-button-1: var(--atlas-foreground);
+  --scalar-button-1-color: #ffffff;
+  --refs-sidebar-width: clamp(280px, 24vw, 336px);
+  --refs-content-max-width: min(1180px, calc(100vw - 420px));
+  --refs-header-height: 0px;
+}
+
+.theme-atlas-docs .anydocs-scalar-frame {
+  background:
+    radial-gradient(circle at top left, rgba(31, 195, 90, 0.07), transparent 24%),
+    linear-gradient(180deg, #fcfcfb 0%, #ffffff 16%, #ffffff 100%);
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app {
+  color: var(--docs-body-copy);
+  background: transparent;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app .markdown {
+  color: var(--docs-body-copy);
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app .markdown a,
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app a {
+  color: var(--atlas-foreground);
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app input,
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app textarea,
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app select,
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app button {
+  font-family: inherit;
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app .custom-scroll,
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app .cm-scroller {
+  scrollbar-color: color-mix(in srgb, var(--atlas-muted-foreground) 35%, transparent) transparent;
+}
+
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app [id^="headlessui-menu-items"],
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app [role="dialog"],
+.theme-atlas-docs .anydocs-scalar-shell .scalar-app [role="menu"] {
+  border-radius: 14px;
+}
+
+@media (max-width: 1100px) {
+  .theme-atlas-docs .anydocs-scalar-shell {
+    --refs-content-max-width: 100%;
+  }
+}

@@ -36,7 +36,7 @@ export default async function Layout({
   const [projectName, siteTheme, siteNavigation] = await Promise.all([
     getPublishedProjectName(source.projectId, source.customPath),
     getPublishedSiteTheme(source.projectId, source.customPath),
-    getPublishedSiteNavigation(source.projectId, source.customPath),
+    getPublishedSiteNavigation(docsLang, source.projectId, source.customPath),
   ]);
   const theme = resolveDocsTheme(siteTheme.id);
   const ReaderLayout = theme.ReaderLayout;

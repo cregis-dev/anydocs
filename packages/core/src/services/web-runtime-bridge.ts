@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,9 @@ import type { ProjectPathContract } from '../types/project.ts';
 
 const CORE_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../index.ts', import.meta.url)));
 let webRuntimeQueue: Promise<void> = Promise.resolve();
+const WEB_RUNTIME_LOCK_DIR = '.anydocs-web-runtime.lock';
+const WEB_RUNTIME_LOCK_TIMEOUT_MS = 5 * 60_000;
+const WEB_RUNTIME_LOCK_POLL_MS = 250;
 
 function resolveWebPackageRoot() {
   const cwd = process.cwd();
@@ -96,6 +99,38 @@ function formatBridgeFailure(command: string, exitCode: number | null, signal: N
   return new Error(`${command} failed (exit=${exitCode ?? 'null'}, signal=${signal ?? 'null'}).${suffix}`);
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return typeof error === 'object' && error !== null && ('code' in error || 'message' in error);
+}
+
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return isNodeError(error) && error.code === 'EPERM';
+  }
+}
+
+async function cleanupStaleFilesystemLock(lockDir: string): Promise<void> {
+  try {
+    const owner = JSON.parse(await readFile(path.join(lockDir, 'owner.json'), 'utf8')) as { pid?: unknown };
+    if (typeof owner.pid === 'number' && !isPidAlive(owner.pid)) {
+      await rm(lockDir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      return;
+    }
+
+    throw error;
+  }
+}
+
 async function resolveNodeExecutable(): Promise<string> {
   const override = process.env.ANYDOCS_NODE_BINARY?.trim();
   if (override) {
@@ -162,22 +197,68 @@ function waitForChildExit(child: ChildProcess): Promise<{ exitCode: number | nul
   });
 }
 
-async function acquireWebRuntimeLock(): Promise<() => void> {
+async function acquireFilesystemWebRuntimeLock(): Promise<() => Promise<void>> {
+  const lockDir = path.join(resolveWebPackageRoot(), WEB_RUNTIME_LOCK_DIR);
+  const ownerPath = path.join(lockDir, 'owner.json');
+  const deadline = Date.now() + WEB_RUNTIME_LOCK_TIMEOUT_MS;
+
+  while (true) {
+    try {
+      await mkdir(lockDir);
+      await writeFile(
+        ownerPath,
+        JSON.stringify({
+          pid: process.pid,
+          acquiredAt: new Date().toISOString(),
+        }),
+        'utf8',
+      );
+
+      let released = false;
+      return async () => {
+        if (released) {
+          return;
+        }
+
+        released = true;
+        await rm(lockDir, { recursive: true, force: true });
+      };
+    } catch (error) {
+      if (!isNodeError(error) || error.code !== 'EEXIST') {
+        throw error;
+      }
+
+      await cleanupStaleFilesystemLock(lockDir);
+      if (Date.now() >= deadline) {
+        throw new Error(`Timed out waiting for the shared web runtime lock at "${lockDir}".`);
+      }
+
+      await delay(WEB_RUNTIME_LOCK_POLL_MS);
+    }
+  }
+}
+
+async function acquireWebRuntimeLock(): Promise<() => Promise<void>> {
   const previous = webRuntimeQueue;
-  let releaseLock!: () => void;
+  let releaseProcessQueue!: () => void;
   webRuntimeQueue = new Promise<void>((resolve) => {
-    releaseLock = resolve;
+    releaseProcessQueue = resolve;
   });
   await previous;
+  const releaseFilesystemLock = await acquireFilesystemWebRuntimeLock();
 
   let released = false;
-  return () => {
+  return async () => {
     if (released) {
       return;
     }
 
     released = true;
-    releaseLock();
+    try {
+      await releaseFilesystemLock();
+    } finally {
+      releaseProcessQueue();
+    }
   };
 }
 
@@ -202,7 +283,7 @@ export async function exportDocsSite(options: ExportDocsSiteOptions): Promise<vo
       throw formatBridgeFailure('Docs site export', result.exitCode, result.signal, stderr);
     }
   } finally {
-    releaseLock();
+    await releaseLock();
   }
 }
 
@@ -278,9 +359,7 @@ export async function startDocsPreviewServer(
     );
     const url = `http://${host}:${port}`;
     const readyUrl = new URL(readyPath, `${url}/`).toString();
-    const exitPromise = waitForChildExit(child).finally(() => {
-      releaseLock();
-    });
+    const exitPromise = waitForChildExit(child).finally(() => releaseLock());
 
     await waitForPreviewServerReady(child, readyUrl, startTimeoutMs);
 
@@ -301,7 +380,7 @@ export async function startDocsPreviewServer(
       waitUntilExit: () => exitPromise,
     };
   } catch (error) {
-    releaseLock();
+    await releaseLock();
     throw error;
   }
 }

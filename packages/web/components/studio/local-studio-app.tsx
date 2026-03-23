@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 
-import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { ApiSourceDoc, DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LocalStudioSettings } from '@/components/studio/local-studio-settings';
@@ -31,8 +31,10 @@ import { NavigationComposer } from '@/components/studio/navigation-composer';
 import { formatLanguageLabel } from '@/components/studio/language-label';
 import {
   type StudioProject,
+  hasNativeDirectoryPicker,
   loadProjectsFromStorage,
-  pickExternalProjectPath,
+  normalizeAbsoluteProjectPath,
+  pickNativeProjectPath,
   removeRecentProject,
   registerRecentProject,
   saveProjectsToStorage,
@@ -41,10 +43,12 @@ import { WelcomeScreen } from '@/components/studio/welcome-screen';
 import {
   createStudioPage,
   deleteStudioPage,
+  getStudioApiSources,
   getStudioNavigation,
   getStudioPage,
   getStudioPages,
   getStudioProject,
+  replaceStudioApiSources,
   runStudioBuild,
   runStudioPreview,
   saveStudioNavigation,
@@ -81,12 +85,14 @@ type ProjectState = {
   sidebarActiveForegroundColor: string;
   codeTheme: 'github-light' | 'github-dark';
   topNavItems: ProjectSiteTopNavItem[];
+  apiSources: ApiSourceDoc[];
   outputDir: string;
 } | null;
 
 type RightSidebarMode = 'page' | 'project' | null;
 type WorkflowAction = 'preview' | 'build';
 type SidebarCreateDialog = { type: 'page' | 'group' | 'link' } | null;
+const STUDIO_BOOTSTRAP_RETRY_DELAYS_MS = [250, 500, 1_000, 1_500, 2_500, 4_000] as const;
 
 function collectNavPageRefs(items: NavItem[], out: { pageId: string; hidden: boolean }[]) {
   for (const item of items) {
@@ -170,6 +176,72 @@ function sortPagesBySlug(pages: PageDoc[]) {
   return [...pages].sort((left, right) => left.slug.localeCompare(right.slug));
 }
 
+function normalizeProjectApiSources(
+  apiSources: ApiSourceDoc[],
+  languages: DocsLang[],
+  defaultLanguage: DocsLang,
+): ApiSourceDoc[] {
+  return apiSources.map((source) =>
+    languages.includes(source.lang)
+      ? source
+      : {
+          ...source,
+          lang: defaultLanguage,
+        },
+  );
+}
+
+function applyProjectPatch(
+  current: Exclude<ProjectState, null>,
+  patch: Partial<Exclude<ProjectState, null>>,
+): Exclude<ProjectState, null> {
+  const nextLanguages = patch.languages ?? current.languages;
+  const nextDefaultLanguage =
+    patch.defaultLanguage ??
+    (nextLanguages.includes(current.defaultLanguage) ? current.defaultLanguage : nextLanguages[0] ?? current.defaultLanguage);
+
+  return {
+    ...current,
+    ...patch,
+    languages: nextLanguages,
+    defaultLanguage: nextDefaultLanguage,
+    apiSources: normalizeProjectApiSources(patch.apiSources ?? current.apiSources, nextLanguages, nextDefaultLanguage),
+  };
+}
+
+function sanitizeApiSourcesForSave(apiSources: ApiSourceDoc[]): ApiSourceDoc[] {
+  return apiSources.map((source) => {
+    const routeBase = source.runtime?.routeBase?.trim();
+
+    return {
+      ...source,
+      id: source.id.trim(),
+      display: {
+        ...source.display,
+        title: source.display.title.trim(),
+      },
+      source:
+        source.source.kind === 'url'
+          ? {
+              kind: 'url',
+              url: source.source.url.trim(),
+            }
+          : {
+              kind: 'file',
+              path: source.source.path.trim(),
+            },
+      ...(routeBase || source.runtime?.tryIt
+        ? {
+            runtime: {
+              ...(routeBase ? { routeBase } : {}),
+              ...(source.runtime?.tryIt ? { tryIt: source.runtime.tryIt } : {}),
+            },
+          }
+        : {}),
+    };
+  });
+}
+
 function slugifyGroupId(value: string) {
   return (
     value
@@ -178,6 +250,15 @@ function slugifyGroupId(value: string) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .replace(/-{2,}/g, '-') || `group-${Date.now().toString(36)}`
+  );
+}
+
+function isTransientStudioBootstrapError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    /Request failed:\s*404\s+Not Found/i.test(message) ||
+    /received HTML instead/i.test(message)
   );
 }
 
@@ -313,10 +394,12 @@ export function LocalStudioApp() {
     };
   }, [workflowMenuOpen]);
 
-  const handleOpenFolder = useCallback(async () => {
+  const handleOpenFolder = useCallback(async (projectPathOverride?: string) => {
     setIsOpeningFolder(true);
     try {
-      const projectPath = await pickExternalProjectPath();
+      const projectPath = projectPathOverride
+        ? normalizeAbsoluteProjectPath(projectPathOverride)
+        : await pickNativeProjectPath();
       if (!projectPath) {
         return;
       }
@@ -372,14 +455,40 @@ export function LocalStudioApp() {
     }
     setLoad((s) => ({ ...s, loading: true, error: null }));
     try {
-      const project = await getStudioProject(projectId, selectedProject.path);
+      let project;
+      let pages;
+      let nav;
+      let apiSources;
+
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          project = await getStudioProject(projectId, selectedProject.path);
+          const nextLang = lang && project.config.languages.includes(lang)
+            ? lang
+            : project.config.defaultLanguage;
+          [nav, pages, apiSources] = await Promise.all([
+            getStudioNavigation(nextLang, projectId, selectedProject.path),
+            getStudioPages(nextLang, projectId, selectedProject.path),
+            getStudioApiSources(projectId, selectedProject.path),
+          ]);
+
+          if (lang !== nextLang) {
+            setLang(nextLang);
+          }
+
+          break;
+        } catch (error) {
+          if (attempt >= STUDIO_BOOTSTRAP_RETRY_DELAYS_MS.length || !isTransientStudioBootstrapError(error)) {
+            throw error;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, STUDIO_BOOTSTRAP_RETRY_DELAYS_MS[attempt]));
+        }
+      }
+
       const nextLang = lang && project.config.languages.includes(lang)
         ? lang
         : project.config.defaultLanguage;
-      const [nav, pages] = await Promise.all([
-        getStudioNavigation(nextLang, projectId, selectedProject.path),
-        getStudioPages(nextLang, projectId, selectedProject.path),
-      ]);
       setProjectState({
         name: project.config.name,
         projectRoot: project.paths.projectRoot,
@@ -399,11 +508,9 @@ export function LocalStudioApp() {
         sidebarActiveForegroundColor: project.config.site.theme.colors?.sidebarActiveForeground ?? '',
         codeTheme: project.config.site.theme.codeTheme ?? 'github-dark',
         topNavItems: project.config.site.navigation?.topNav ?? [],
+        apiSources: apiSources.sources,
         outputDir: project.config.build?.outputDir ?? '',
       });
-      if (lang !== nextLang) {
-        setLang(nextLang);
-      }
       const preserveDraftNavigation = navDirtyRef.current || savingNavRef.current;
       setLoad({
         nav: preserveDraftNavigation ? navDraftRef.current ?? nav : nav,
@@ -636,6 +743,11 @@ export function LocalStudioApp() {
         projectId,
         selectedProject.path,
       );
+      const apiSourcesResponse = await replaceStudioApiSources(
+        sanitizeApiSourcesForSave(projectState.apiSources),
+        projectId,
+        selectedProject.path,
+      );
       setProjectState((current) =>
         current
           ? {
@@ -657,6 +769,7 @@ export function LocalStudioApp() {
               sidebarActiveForegroundColor: response.config.site.theme.colors?.sidebarActiveForeground ?? '',
               codeTheme: response.config.site.theme.codeTheme ?? 'github-dark',
               topNavItems: response.config.site.navigation?.topNav ?? [],
+              apiSources: apiSourcesResponse.sources,
               outputDir: response.config.build?.outputDir ?? '',
             }
           : current,
@@ -990,7 +1103,8 @@ export function LocalStudioApp() {
       <WelcomeScreen
         recentProjects={recentProjects}
         isOpeningFolder={isOpeningFolder}
-        onOpenProject={() => void handleOpenFolder()}
+        supportsNativeDirectoryPicker={hasNativeDirectoryPicker()}
+        onOpenProject={(projectPath) => handleOpenFolder(projectPath)}
         onSelectProject={handleProjectSelect}
         onRemoveProject={handleRecentProjectRemove}
       />
@@ -1358,7 +1472,7 @@ export function LocalStudioApp() {
                 setDirtyTick((tick) => tick + 1);
               }}
               onProjectChange={(patch) => {
-                setProjectState((current) => (current ? { ...current, ...patch } : current));
+                setProjectState((current) => (current ? applyProjectPatch(current, patch) : current));
                 setProjectDirty(true);
                 setProjectDirtyTick((tick) => tick + 1);
               }}

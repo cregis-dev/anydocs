@@ -14,6 +14,9 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/cli test && pnpm --filter @anydocs/mcp test",
+    "test:e2e": "pnpm --filter @anydocs/web test:e2e",
+    "test:e2e:p0": "pnpm --filter @anydocs/web test:e2e:p0",
+    "test:acceptance": "pnpm test && pnpm --filter @anydocs/web test:e2e:p0",
     "test:web": "pnpm --filter @anydocs/web test",
     "test:full": "pnpm test && pnpm test:web"
   },

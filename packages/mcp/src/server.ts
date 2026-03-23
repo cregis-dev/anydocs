@@ -1,7 +1,14 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
+import { listResourceDefinitions, listResourceTemplateDefinitions, readResource } from './resources.ts';
 import { navigationTools } from './tools/navigation-tools.ts';
 import { pageTools } from './tools/page-tools.ts';
 import { projectTools } from './tools/project-tools.ts';
@@ -25,6 +32,7 @@ export function createAnydocsMcpServer(): Server {
     },
     {
       capabilities: {
+        resources: {},
         tools: {},
       },
     },
@@ -37,6 +45,16 @@ export function createAnydocsMcpServer(): Server {
       inputSchema: definition.inputSchema,
     })),
   }));
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+    resources: listResourceDefinitions(),
+  }));
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
+    resourceTemplates: listResourceTemplateDefinitions(),
+  }));
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => readResource(request.params.uri));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const definition = toolDefinitionByName.get(request.params.name);

@@ -432,7 +432,12 @@ test('build emits a deployable static docs site and exits successfully', async (
     await assert.rejects(() => access(path.join(repoRoot, 'dist', '_not-found')));
 
     const exportedFiles = await listFilesRecursively(path.join(repoRoot, 'dist'));
-    const leakedTxtFiles = exportedFiles.filter((filePath) => filePath.endsWith('.txt') && !filePath.endsWith('llms.txt'));
+    const leakedTxtFiles = exportedFiles.filter(
+      (filePath) =>
+        filePath.endsWith('.txt') &&
+        !filePath.endsWith('llms.txt') &&
+        !filePath.endsWith('llms-full.txt'),
+    );
     assert.deepEqual(leakedTxtFiles, []);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

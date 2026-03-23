@@ -7,16 +7,46 @@ import test from 'node:test';
 import { ValidationError } from '../src/errors/validation-error.ts';
 import { createDocsRepository, loadNavigation, loadPage } from '../src/fs/docs-repository.ts';
 import {
+  createPagesBatch,
   createPage,
+  deleteAuthoredPage,
+  deleteNavigationItem,
+  insertNavigationItem,
+  moveNavigationItem,
   replaceNavigationItems,
   setPageStatus,
+  setPageStatusesBatch,
+  setProjectLanguages,
   setNavigation,
+  updatePagesBatch,
   updatePage,
 } from '../src/services/authoring-service.ts';
+import { loadProjectContract } from '../src/fs/content-repository.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 
 async function createTempProjectRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-authoring-'));
+}
+
+function createYooptaContent(text: string = 'Body copy') {
+  return {
+    'block-1': {
+      id: 'block-1',
+      type: 'Paragraph',
+      value: [
+        {
+          id: 'paragraph-1',
+          type: 'paragraph',
+          children: [{ text }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: {
+        order: 0,
+        depth: 0,
+      },
+    },
+  };
 }
 
 test('createPage writes a canonical page file and returns the created page metadata', async () => {
@@ -34,7 +64,7 @@ test('createPage writes a canonical page file and returns the created page metad
         title: 'Guide',
         description: 'Authoring guide',
         tags: ['GUIDE'],
-        content: { blocks: [] },
+        content: createYooptaContent(),
       },
     });
 
@@ -68,7 +98,7 @@ test('createPage rejects duplicate slugs with a stable validation error', async 
         id: 'guide',
         slug: 'shared-slug',
         title: 'Guide',
-        content: { blocks: [] },
+        content: createYooptaContent(),
       },
     });
 
@@ -81,13 +111,42 @@ test('createPage rejects duplicate slugs with a stable validation error', async 
             id: 'guide-2',
             slug: 'shared-slug',
             title: 'Guide 2',
-            content: { blocks: [] },
+            content: createYooptaContent(),
           },
         }),
       (error: unknown) =>
         error instanceof ValidationError &&
         error.details.rule === 'page-slug-unique-per-language' &&
         error.details.metadata?.duplicatePageId === 'guide',
+    );
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('createPage rejects content that is not valid Yoopta structure', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    await assert.rejects(
+      () =>
+        createPage({
+          projectRoot,
+          lang: 'en',
+          page: {
+            id: 'guide',
+            slug: 'guide',
+            title: 'Guide',
+            content: {
+              blocks: [],
+            },
+          },
+        }),
+      (error: unknown) =>
+        error instanceof ValidationError &&
+        error.details.rule === 'page-content-must-be-valid-yoopta',
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -108,7 +167,7 @@ test('updatePage applies a shallow patch and refreshes updatedAt', async () => {
         title: 'Guide',
         description: 'Before',
         tags: ['GUIDE'],
-        content: { blocks: [] },
+        content: createYooptaContent(),
       },
     });
 
@@ -160,6 +219,66 @@ test('updatePage rejects missing pages', async () => {
   }
 });
 
+test('updatePage can regenerate render output from the resulting Yoopta content', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent('Before'),
+      },
+    });
+
+    const result = await updatePage({
+      projectRoot,
+      lang: 'en',
+      pageId: 'guide',
+      patch: {
+        content: {
+          'block-1': {
+            id: 'block-1',
+            type: 'HeadingTwo',
+            value: [
+              {
+                id: 'heading-1',
+                type: 'heading-two',
+                children: [{ text: 'Updated Section' }],
+                props: { nodeType: 'block' },
+              },
+            ],
+            meta: { order: 0, depth: 0 },
+          },
+          'block-2': {
+            id: 'block-2',
+            type: 'Paragraph',
+            value: [
+              {
+                id: 'paragraph-2',
+                type: 'paragraph',
+                children: [{ text: 'Updated body copy' }],
+                props: { nodeType: 'block' },
+              },
+            ],
+            meta: { order: 1, depth: 0 },
+          },
+        },
+      },
+      regenerateRender: true,
+    });
+
+    assert.equal(result.page.render?.markdown, '## Updated Section\n\nUpdated body copy');
+    assert.equal(result.page.render?.plainText, 'Updated Section\n\nUpdated body copy');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('setPageStatus persists a valid status transition', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -172,7 +291,7 @@ test('setPageStatus persists a valid status transition', async () => {
         id: 'guide',
         slug: 'guide',
         title: 'Guide',
-        content: { blocks: [] },
+        content: createYooptaContent(),
       },
     });
 
@@ -203,7 +322,7 @@ test('setPageStatus preserves publication approval enforcement', async () => {
         id: 'imported-guide',
         slug: 'imported-guide',
         title: 'Imported Guide',
-        content: { blocks: [] },
+        content: createYooptaContent(),
         review: {
           required: true,
           sourceType: 'legacy-import',
@@ -229,6 +348,61 @@ test('setPageStatus preserves publication approval enforcement', async () => {
   }
 });
 
+test('deleteAuthoredPage removes the page file and matching navigation references through authoring service', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await setNavigation({
+      projectRoot,
+      lang: 'en',
+      navigation: {
+        version: 1,
+        items: [
+          {
+            type: 'section',
+            title: 'Docs',
+            children: [
+              { type: 'page', pageId: 'welcome' },
+              { type: 'page', pageId: 'guide' },
+            ],
+          },
+        ],
+      },
+    });
+
+    const result = await deleteAuthoredPage({
+      projectRoot,
+      lang: 'en',
+      pageId: 'guide',
+    });
+
+    assert.match(result.filePath, /pages\/en\/guide\.json$/);
+    assert.equal(result.removedNavigationRefs, 1);
+    assert.equal(await loadPage(createDocsRepository(projectRoot), 'en', 'guide'), null);
+    const navigation = await loadNavigation(createDocsRepository(projectRoot), 'en');
+    assert.deepEqual(navigation.items, [
+      {
+        type: 'section',
+        title: 'Docs',
+        children: [{ type: 'page', pageId: 'welcome' }],
+      },
+    ]);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('setNavigation persists canonical navigation with existing page validation', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -241,7 +415,7 @@ test('setNavigation persists canonical navigation with existing page validation'
         id: 'guide',
         slug: 'guide',
         title: 'Guide',
-        content: { blocks: [] },
+        content: createYooptaContent(),
       },
     });
 
@@ -317,6 +491,323 @@ test('replaceNavigationItems preserves the current version and replaces item str
     assert.equal(result.navigation.version, 1);
     assert.equal(result.navigation.items[0]?.type, 'section');
     assert.equal(result.navigation.items[0]?.title, 'Guides');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('setProjectLanguages updates enabled languages and refreshes canonical project contract files', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = await setProjectLanguages({
+      projectRoot,
+      languages: ['en', 'zh'],
+      defaultLanguage: 'zh',
+    });
+
+    assert.match(result.filePath, /anydocs\.config\.json$/);
+    assert.deepEqual(result.config.languages, ['en', 'zh']);
+    assert.equal(result.config.defaultLanguage, 'zh');
+
+    const contractResult = await loadProjectContract(projectRoot);
+    assert.equal(contractResult.ok, true);
+    if (contractResult.ok) {
+      assert.deepEqual(contractResult.value.config.languages, ['en', 'zh']);
+      assert.equal(contractResult.value.config.defaultLanguage, 'zh');
+    }
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('insertNavigationItem inserts into a nested section without replacing the whole document manually', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await setNavigation({
+      projectRoot,
+      lang: 'en',
+      navigation: {
+        version: 1,
+        items: [
+          {
+            type: 'section',
+            title: 'Docs',
+            children: [{ type: 'page', pageId: 'welcome' }],
+          },
+        ],
+      },
+    });
+
+    const result = await insertNavigationItem({
+      projectRoot,
+      lang: 'en',
+      parentPath: '0',
+      index: 1,
+      item: { type: 'page', pageId: 'guide' },
+    });
+
+    assert.deepEqual(result.navigation.items, [
+      {
+        type: 'section',
+        title: 'Docs',
+        children: [
+          { type: 'page', pageId: 'welcome' },
+          { type: 'page', pageId: 'guide' },
+        ],
+      },
+    ]);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('deleteNavigationItem removes only the targeted item path', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await setNavigation({
+      projectRoot,
+      lang: 'en',
+      navigation: {
+        version: 1,
+        items: [
+          {
+            type: 'section',
+            title: 'Docs',
+            children: [
+              { type: 'page', pageId: 'welcome' },
+              { type: 'page', pageId: 'guide' },
+            ],
+          },
+        ],
+      },
+    });
+
+    const result = await deleteNavigationItem({
+      projectRoot,
+      lang: 'en',
+      itemPath: '0/1',
+    });
+
+    assert.deepEqual(result.navigation.items, [
+      {
+        type: 'section',
+        title: 'Docs',
+        children: [{ type: 'page', pageId: 'welcome' }],
+      },
+    ]);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('moveNavigationItem reorders a nested item into a different top-level group', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await setNavigation({
+      projectRoot,
+      lang: 'en',
+      navigation: {
+        version: 1,
+        items: [
+          {
+            type: 'section',
+            title: 'Getting Started',
+            children: [{ type: 'page', pageId: 'welcome' }],
+          },
+          {
+            type: 'section',
+            title: 'Reference',
+            children: [{ type: 'page', pageId: 'guide' }],
+          },
+        ],
+      },
+    });
+
+    const result = await moveNavigationItem({
+      projectRoot,
+      lang: 'en',
+      itemPath: '1/0',
+      parentPath: '0',
+      index: 1,
+    });
+
+    assert.deepEqual(result.navigation.items, [
+      {
+        type: 'section',
+        title: 'Getting Started',
+        children: [
+          { type: 'page', pageId: 'welcome' },
+          { type: 'page', pageId: 'guide' },
+        ],
+      },
+      {
+        type: 'section',
+        title: 'Reference',
+        children: [],
+      },
+    ]);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('createPagesBatch creates multiple pages after validating the whole batch', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = await createPagesBatch({
+      projectRoot,
+      lang: 'en',
+      pages: [
+        {
+          id: 'guide',
+          slug: 'guide',
+          title: 'Guide',
+          content: createYooptaContent(),
+        },
+        {
+          id: 'api',
+          slug: 'api',
+          title: 'API',
+          content: createYooptaContent(),
+        },
+      ],
+    });
+
+    assert.equal(result.count, 2);
+    assert.deepEqual(result.pages.map((page) => page.id), ['guide', 'api']);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('updatePagesBatch applies multiple page patches atomically', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'api',
+        slug: 'api',
+        title: 'API',
+        content: createYooptaContent(),
+      },
+    });
+
+    const result = await updatePagesBatch({
+      projectRoot,
+      lang: 'en',
+      updates: [
+        {
+          pageId: 'guide',
+          patch: { title: 'Guide Updated' },
+        },
+        {
+          pageId: 'api',
+          patch: { description: 'API Reference' },
+        },
+      ],
+    });
+
+    assert.equal(result.count, 2);
+    assert.equal(result.pages[0]?.title, 'Guide Updated');
+    assert.equal(result.pages[1]?.description, 'API Reference');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('setPageStatusesBatch updates multiple page statuses in one validated batch', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent(),
+      },
+    });
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'api',
+        slug: 'api',
+        title: 'API',
+        content: createYooptaContent(),
+      },
+    });
+
+    const result = await setPageStatusesBatch({
+      projectRoot,
+      lang: 'en',
+      updates: [
+        { pageId: 'guide', status: 'in_review' },
+        { pageId: 'api', status: 'in_review' },
+      ],
+    });
+
+    assert.equal(result.count, 2);
+    assert.deepEqual(result.pages.map((page) => page.status), ['in_review', 'in_review']);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

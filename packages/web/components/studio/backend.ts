@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProjectContract, ProjectSiteTopNavItem } from '@anydocs/core';
+import type { ApiSourceDoc, ProjectContract, ProjectSiteTopNavItem } from '@anydocs/core';
 
 import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { createLocalApiUrl } from '@/components/studio/local-api-url';
@@ -21,6 +21,10 @@ export type StudioPreviewResponse = {
 export type StudioBuildResponse = {
   artifactRoot: string;
   languages: Array<{ lang: DocsLang; publishedPages: number }>;
+};
+
+export type StudioApiSourcesResponse = {
+  sources: ApiSourceDoc[];
 };
 
 type StudioProjectSettingsPatch = {
@@ -97,6 +101,12 @@ type DesktopStudioApi = {
     projectId: string,
     projectPath?: string,
   ) => Promise<IpcResponse<NavigationDoc>>;
+  getApiSources: (projectId: string, projectPath?: string) => Promise<IpcResponse<StudioApiSourcesResponse>>;
+  replaceApiSources: (
+    sources: ApiSourceDoc[],
+    projectId: string,
+    projectPath?: string,
+  ) => Promise<IpcResponse<StudioApiSourcesResponse>>;
   runBuild: (projectId: string, projectPath?: string) => Promise<IpcResponse<StudioBuildResponse>>;
   runPreview: (projectId: string, projectPath?: string) => Promise<IpcResponse<StudioPreviewResponse>>;
 };
@@ -345,6 +355,45 @@ export async function saveStudioNavigation(
     {
       method: 'PUT',
       body: JSON.stringify(navigation),
+    },
+  );
+}
+
+export async function getStudioApiSources(
+  projectId: string,
+  projectPath?: string,
+): Promise<StudioApiSourcesResponse> {
+  const desktopApi = getDesktopStudioApi();
+  if (desktopApi) {
+    return fromIpc(desktopApi.getApiSources(projectId, projectPath));
+  }
+
+  return jsonFetch<StudioApiSourcesResponse>(
+    createLocalApiUrl('api-sources', {
+      projectId,
+      path: projectPath,
+    }),
+  );
+}
+
+export async function replaceStudioApiSources(
+  sources: ApiSourceDoc[],
+  projectId: string,
+  projectPath?: string,
+): Promise<StudioApiSourcesResponse> {
+  const desktopApi = getDesktopStudioApi();
+  if (desktopApi) {
+    return fromIpc(desktopApi.replaceApiSources(sources, projectId, projectPath));
+  }
+
+  return jsonFetch<StudioApiSourcesResponse>(
+    createLocalApiUrl('api-sources', {
+      projectId,
+      path: projectPath,
+    }),
+    {
+      method: 'PUT',
+      body: JSON.stringify({ sources }),
     },
   );
 }

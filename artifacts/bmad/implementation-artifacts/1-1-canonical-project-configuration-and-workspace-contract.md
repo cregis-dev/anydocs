@@ -132,18 +132,18 @@ so that every workflow starts from the same local-first project model.
 
 - No `project-context.md` file was discovered for this repo during story creation.
 - Use these planning documents as source-of-truth for this story:
-  - [`epics.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/epics.md)
-  - [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md)
-  - [`prd.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/prd.md)
+  - [`epics.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/epics.md)
+  - [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md)
+  - [`prd.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/prd.md)
 
 ### References
 
-- [`epics.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/epics.md) - Epic 1, Story 1.1
-- [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md) - Core Architectural Decisions
-- [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md) - Implementation Patterns & Consistency Rules
-- [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md) - Project Structure & Boundaries
-- [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md) - Architecture Validation Results
-- [`prd.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/prd.md) - Functional Requirements FR1, FR2, FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR11, FR12, FR46, FR47, FR48
+- [`epics.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/epics.md) - Epic 1, Story 1.1
+- [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md) - Core Architectural Decisions
+- [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md) - Implementation Patterns & Consistency Rules
+- [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md) - Project Structure & Boundaries
+- [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md) - Architecture Validation Results
+- [`prd.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/prd.md) - Functional Requirements FR1, FR2, FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR11, FR12, FR46, FR47, FR48
 - [`packages/web/lib/docs/types.ts`](/Users/shawn/workspace/code/anydocs/packages/web/lib/docs/types.ts)
 - [`packages/web/lib/docs/fs.ts`](/Users/shawn/workspace/code/anydocs/packages/web/lib/docs/fs.ts)
 - [`packages/web/scripts/gen-public-assets.mjs`](/Users/shawn/workspace/code/anydocs/packages/web/scripts/gen-public-assets.mjs)
@@ -193,7 +193,7 @@ GPT-5 Codex
 - `/Users/shawn/workspace/code/anydocs/packages/web/lib/docs/data.ts`
 - `/Users/shawn/workspace/code/anydocs/packages/web/app/api/local/project/route.ts`
 - `/Users/shawn/workspace/code/anydocs/package.json`
-- `/Users/shawn/workspace/code/anydocs/docs/implementation-artifacts/1-1-canonical-project-configuration-and-workspace-contract.md`
+- `/Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts/1-1-canonical-project-configuration-and-workspace-contract.md`
 
 ### Change Log
 

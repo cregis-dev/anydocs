@@ -1,4 +1,4 @@
-import { ValidationError, SUPPORTED_DOCS_LANGUAGES } from '@anydocs/core';
+import { SUPPORTED_DOCS_LANGUAGES, ValidationError } from '@anydocs/core';
 import type { DocsLang } from '@/lib/docs/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -15,11 +15,7 @@ export type LocalApiProjectQuery = {
   customPath?: string;
 };
 
-function makeValidationError(
-  message: string,
-  rule: string,
-  metadata?: Record<string, unknown>,
-): ValidationError {
+function makeValidationError(message: string, rule: string, metadata?: Record<string, unknown>): ValidationError {
   return new ValidationError(message, {
     entity: 'studio-local-api',
     rule,

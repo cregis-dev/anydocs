@@ -1,5 +1,6 @@
 import type { YooptaContentValue } from '@yoopta/editor';
 import type {
+  ApiSourceDoc,
   DocsLang as CoreDocsLang,
   NavItem,
   NavigationDoc,
@@ -13,4 +14,4 @@ export type DocsLang = CoreDocsLang;
 export type PageStatus = CorePageStatus;
 export type PageDoc = CorePageDoc<YooptaContentValue>;
 export const SUPPORTED_DOCS_LANGUAGES = ['zh', 'en'] as const satisfies readonly DocsLang[];
-export type { NavItem, NavigationDoc, PageRender, PageReview };
+export type { ApiSourceDoc, NavItem, NavigationDoc, PageRender, PageReview };

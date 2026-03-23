@@ -9,10 +9,10 @@ stepsCompleted:
   - 7
   - 8
 inputDocuments:
-  - docs/planning-artifacts/prd.md
-  - docs/planning-artifacts/prd-validation-report.md
-  - docs/planning-artifacts/prd-validation-report-rerun.md
-  - docs/planning-artifacts/prd-validation-report-rerun-2.md
+  - artifacts/bmad/planning-artifacts/prd.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report-rerun.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report-rerun-2.md
   - docs/README.md
   - docs/04-usage-manual.md
   - docs/05-dev-guide.md
@@ -342,11 +342,16 @@ anydocs/
 │   ├── README.md
 │   ├── 04-usage-manual.md
 │   ├── 05-dev-guide.md
-│   ├── planning-artifacts/
-│   │   ├── prd.md
-│   │   ├── architecture.md
-│   │   └── epics.md
-│   └── implementation-artifacts/
+│   ├── 06-classic-docs-theme-config.md
+│   └── 07-agent-integration.md
+├── artifacts/
+│   └── bmad/
+│       ├── planning-artifacts/
+│       │   ├── prd.md
+│       │   ├── architecture.md
+│       │   └── epics.md
+│       ├── implementation-artifacts/
+│       └── test-artifacts/
 ├── packages/
 │   ├── core/
 │   │   ├── package.json

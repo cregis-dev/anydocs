@@ -58,9 +58,18 @@ pnpm build:desktop
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm test:e2e:p0
+pnpm test:acceptance
 pnpm test:web
 pnpm test:full
 ```
+
+## Pre-GitHub Submission Gate
+
+- Before any commit, push, or PR intended for GitHub, run the relevant automated tests locally.
+- Minimum required gate for repository code changes: `pnpm test`
+- If the change touches `packages/web`, Studio, reader routes, local APIs, build/preview flows, or other user-facing authoring behavior, also run: `pnpm test:acceptance`
+- Do not submit to GitHub with known failing tests unless the user explicitly accepts the risk and the failing scope is documented in the handoff.
 
 ### CLI Commands
 
@@ -194,9 +203,9 @@ Supported navigation node types: `section`, `folder`, `page`, `link`
 
 - `README.md`: repository overview
 - `docs/README.md`: docs index
-- `docs/planning-artifacts/architecture.md`: architecture decisions and planning context
-- `docs/planning-artifacts/prd.md`: product requirements
-- `docs/planning-artifacts/epics.md`: delivery breakdown
+- `artifacts/bmad/planning-artifacts/architecture.md`: architecture decisions and planning context
+- `artifacts/bmad/planning-artifacts/prd.md`: product requirements
+- `artifacts/bmad/planning-artifacts/epics.md`: delivery breakdown
 - `packages/web/lib/docs/fs.ts`: Studio-side filesystem bridge
 - `packages/web/lib/docs/data.ts`: published reader data/runtime selection
 - `packages/web/app/[lang]/[...slug]/page.tsx`: canonical reader page
@@ -255,21 +264,21 @@ pnpm install
 pnpm dev
 ```
 
-Then open `http://localhost:3000/studio` and select `examples/demo-docs` as the project path.
+Then open `http://localhost:3000/studio` and select `examples/demo-docs` as the demo project path.
 
 ### Create a New Project
 
 ```bash
-pnpm --filter @anydocs/cli cli init ./workspace/my-docs
-pnpm --filter @anydocs/cli cli preview ./workspace/my-docs
-pnpm --filter @anydocs/cli cli build ./workspace/my-docs
+pnpm --filter @anydocs/cli cli init ./my-docs-project
+pnpm --filter @anydocs/cli cli preview ./my-docs-project
+pnpm --filter @anydocs/cli cli build ./my-docs-project
 ```
 
 ### Import Legacy Markdown
 
 ```bash
-pnpm --filter @anydocs/cli cli import ./legacy-docs ./workspace/my-docs zh
-pnpm --filter @anydocs/cli cli convert-import <importId> ./workspace/my-docs
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
+pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
 ```
 
 ## Known Gaps

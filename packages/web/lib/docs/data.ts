@@ -5,11 +5,13 @@ import { cookies } from 'next/headers';
 import {
   buildPublishedSiteLanguageContent,
   isPageApprovedForPublication,
+  type ProjectSiteTopNavItem,
   type ProjectSiteNavigation,
   type ProjectSiteTheme,
 } from '@anydocs/core';
 
 import { findPageBySlug, listPages, loadNavigation, loadStudioProjectContract } from '@/lib/docs/fs';
+import { getPublishedApiSources } from '@/lib/docs/api-sources';
 import { sanitizeCookieDocsSource, type DocsRuntimeSource } from '@/lib/docs/request-source';
 import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
 export type { DocsRuntimeSource } from '@/lib/docs/request-source';
@@ -121,12 +123,35 @@ export async function getPublishedSiteTheme(projectId: string = '', customPath?:
 }
 
 export async function getPublishedSiteNavigation(
+  lang?: DocsLang,
   projectId: string = '',
   customPath?: string,
 ): Promise<ProjectSiteNavigation | undefined> {
   const source = resolveDataSource(projectId, customPath);
   const contract = await loadStudioProjectContract(source.projectId, source.customPath);
-  return contract.config.site.navigation;
+  const configuredNavigation = contract.config.site.navigation;
+  const targetLang = lang ?? contract.config.defaultLanguage;
+  const apiSources = await getPublishedApiSources(targetLang, source.projectId, source.customPath);
+  if (apiSources.length === 0) {
+    return configuredNavigation;
+  }
+
+  const topNav = [...(configuredNavigation?.topNav ?? [])];
+  const hasReferenceEntry = topNav.some((item) => item.type === 'external' && item.href === `/${targetLang}/reference`);
+  if (!hasReferenceEntry) {
+    const referenceItem: ProjectSiteTopNavItem = {
+      id: 'api-reference',
+      type: 'external',
+      href: `/${targetLang}/reference`,
+      label: {
+        en: 'API Reference',
+        zh: 'API 参考',
+      },
+    };
+    topNav.push(referenceItem);
+  }
+
+  return topNav.length > 0 ? { topNav } : configuredNavigation;
 }
 
 export async function getPublishedSite(lang: DocsLang, projectId: string = '', customPath?: string) {

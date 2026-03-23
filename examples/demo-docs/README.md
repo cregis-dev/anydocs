@@ -30,7 +30,7 @@ cd /path/to/anydocs
 node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
 
 # Build to custom location
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output /tmp/demo-build
+node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output ./demo-build
 
 # Watch mode
 node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
@@ -75,14 +75,14 @@ Edit `anydocs.config.json` to customize:
 ### Option 1: Use CLI init
 
 ```bash
-node --experimental-strip-types packages/cli/src/index.ts init ~/my-docs-project
+node --experimental-strip-types packages/cli/src/index.ts init ./my-docs-project
 ```
 
 ### Option 2: Copy this example
 
 ```bash
-cp -r examples/demo-docs ~/my-docs-project
-cd ~/my-docs-project
+cp -r examples/demo-docs ./my-docs-project
+cd ./my-docs-project
 
 # Edit configuration
 vim anydocs.config.json
@@ -92,13 +92,13 @@ vim pages/zh/welcome.json
 vim navigation/zh.json
 
 # Build
-node --experimental-strip-types /path/to/anydocs/packages/cli/src/index.ts build .
+node --experimental-strip-types ../packages/cli/src/index.ts build .
 ```
 
 ## Documentation
 
 See [Anydocs documentation](../../docs/README.md) for more information:
-- [Architecture](../../docs/planning-artifacts/architecture.md)
-- [PRD](../../docs/planning-artifacts/prd.md)
+- [Architecture](../../artifacts/bmad/planning-artifacts/architecture.md)
+- [PRD](../../artifacts/bmad/planning-artifacts/prd.md)
 - [Usage Manual](../../docs/04-usage-manual.md)
 - [Dev Guide](../../docs/05-dev-guide.md)

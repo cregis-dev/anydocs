@@ -3,6 +3,13 @@ import { pathToFileURL } from 'node:url';
 import { createAnydocsMcpServer, listToolDefinitions, startStdioServer } from './server.ts';
 
 export { ANYDOCS_MCP_SERVER_NAME, ANYDOCS_MCP_SERVER_VERSION } from './server.ts';
+export {
+  listAuthoringResourceReferences,
+  listAuthoringResourceTemplateReferences,
+  listResourceDefinitions,
+  listResourceTemplateDefinitions,
+  readResource,
+} from './resources.ts';
 export { navigationTools } from './tools/navigation-tools.ts';
 export { pageTools } from './tools/page-tools.ts';
 export { projectTools } from './tools/project-tools.ts';

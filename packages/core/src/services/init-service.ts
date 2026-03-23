@@ -168,6 +168,7 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
   await fs.mkdir(paths.artifactRoot, { recursive: true });
   await fs.mkdir(paths.machineReadableRoot, { recursive: true });
   await fs.mkdir(paths.importsRoot, { recursive: true });
+  await fs.mkdir(paths.apiSourcesRoot, { recursive: true });
 
   return {
     contract: {

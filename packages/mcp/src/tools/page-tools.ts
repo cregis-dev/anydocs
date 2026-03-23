@@ -1,10 +1,17 @@
 import {
+  PAGE_TEMPLATE_KINDS,
   ValidationError,
+  createPagesBatch,
   createPage,
+  createPageFromTemplate,
+  deleteAuthoredPage,
   findPageBySlug,
   listPages,
   loadPage,
+  setPageStatusesBatch,
   setPageStatus,
+  updatePageFromTemplate,
+  updatePagesBatch,
   updatePage,
   type PageReview,
   type PageRender,
@@ -121,6 +128,37 @@ function optionalObjectArgument(
   return value;
 }
 
+function requireObjectArrayArgument(
+  tool: string,
+  args: Record<string, unknown>,
+  key: string,
+): Array<Record<string, unknown>> {
+  const value = args[key];
+  if (!Array.isArray(value) || value.some((item) => !isRecord(item))) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be an array of objects.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-object-array-argument',
+      remediation: `Provide "${key}" as an array of objects.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+
+  return value as Array<Record<string, unknown>>;
+}
+
+function requireKnownTemplateKind(tool: string, value: unknown) {
+  if (typeof value !== 'string' || !PAGE_TEMPLATE_KINDS.includes(value as (typeof PAGE_TEMPLATE_KINDS)[number])) {
+    throw new ValidationError(`Tool "${tool}" requires "template" to be one of ${PAGE_TEMPLATE_KINDS.join(', ')}.`, {
+      entity: 'mcp-tool',
+      rule: 'page-template-kind-must-be-supported',
+      remediation: `Provide "template" as one of: ${PAGE_TEMPLATE_KINDS.join(', ')}.`,
+      metadata: { tool, received: value, allowed: [...PAGE_TEMPLATE_KINDS] },
+    });
+  }
+
+  return value as (typeof PAGE_TEMPLATE_KINDS)[number];
+}
+
 function parsePatch(tool: string, args: Record<string, unknown>) {
   const patch = optionalObjectArgument(tool, args, 'patch');
   if (!patch) {
@@ -149,6 +187,88 @@ function parsePatch(tool: string, args: Record<string, unknown>) {
     ...(isRecord(patch.render) ? { render: patch.render as PageRender } : {}),
     ...(isRecord(patch.review) ? { review: patch.review as PageReview } : {}),
   };
+}
+
+function parseTemplateCallout(
+  tool: string,
+  value: unknown,
+  key: string,
+): { title?: string; body: string; theme?: 'info' | 'warning' | 'success' } {
+  if (!isRecord(value)) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be an object.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-object-argument',
+      remediation: `Provide "${key}" as an object.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+
+  return {
+    ...(typeof value.title === 'string' ? { title: value.title } : {}),
+    body: requireStringArgument(tool, value, 'body'),
+    ...(typeof value.theme === 'string' ? { theme: value.theme as 'info' | 'warning' | 'success' } : {}),
+  };
+}
+
+function parseTemplateSections(tool: string, args: Record<string, unknown>, key: string) {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  return requireObjectArrayArgument(tool, args, key).map((section) => ({
+    title: requireStringArgument(tool, section, 'title'),
+    ...(typeof section.body === 'string' ? { body: section.body } : {}),
+    ...(Array.isArray(section.items) ? { items: section.items as string[] } : {}),
+    ...(typeof section.code === 'string' ? { code: section.code } : {}),
+    ...(typeof section.language === 'string' ? { language: section.language } : {}),
+    ...(section.callout ? { callout: parseTemplateCallout(tool, section.callout, 'callout') } : {}),
+  }));
+}
+
+function parseTemplateSteps(tool: string, args: Record<string, unknown>, key: string) {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  return requireObjectArrayArgument(tool, args, key).map((step) => ({
+    title: requireStringArgument(tool, step, 'title'),
+    ...(typeof step.body === 'string' ? { body: step.body } : {}),
+    ...(typeof step.code === 'string' ? { code: step.code } : {}),
+    ...(typeof step.language === 'string' ? { language: step.language } : {}),
+  }));
+}
+
+function parseTemplateCallouts(tool: string, args: Record<string, unknown>, key: string) {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  return requireObjectArrayArgument(tool, args, key).map((callout) => parseTemplateCallout(tool, callout, key));
+}
+
+function optionalBooleanArgument(
+  tool: string,
+  args: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be a boolean when provided.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-boolean-argument',
+      remediation: `Provide "${key}" as true or false, or omit it.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+
+  return value;
 }
 
 export const pageTools: ToolDefinition[] = [
@@ -346,6 +466,179 @@ export const pageTools: ToolDefinition[] = [
     },
   },
   {
+    name: 'page_create_from_template',
+    description:
+      'Create a canonical Anydocs page from a structured rich-content template, generating both Yoopta content and render output.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        pageId: { type: 'string' },
+        slug: { type: 'string' },
+        title: { type: 'string' },
+        template: { type: 'string', enum: [...PAGE_TEMPLATE_KINDS] },
+        description: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        status: { type: 'string', enum: ['draft', 'in_review', 'published'] },
+        review: { type: 'object' },
+        summary: { type: 'string' },
+        sections: { type: 'array', items: { type: 'object' } },
+        steps: { type: 'array', items: { type: 'object' } },
+        callouts: { type: 'array', items: { type: 'object' } },
+      },
+      required: ['projectRoot', 'lang', 'pageId', 'slug', 'title', 'template'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_create_from_template', argumentsValue);
+      const projectRoot = requireStringArgument('page_create_from_template', args, 'projectRoot');
+      const lang = requireStringArgument('page_create_from_template', args, 'lang');
+      const pageId = requireStringArgument('page_create_from_template', args, 'pageId');
+      const slug = requireStringArgument('page_create_from_template', args, 'slug');
+      const title = requireStringArgument('page_create_from_template', args, 'title');
+      const template = requireKnownTemplateKind('page_create_from_template', args.template);
+      const description = optionalStringArgument('page_create_from_template', args, 'description');
+      const tags = optionalStringArrayArgument('page_create_from_template', args, 'tags');
+      const status =
+        args.status == null ? undefined : requireKnownPageStatus('page_create_from_template', args.status);
+      const review = optionalPageReview('page_create_from_template', args, 'review');
+      const summary = optionalStringArgument('page_create_from_template', args, 'summary');
+      const sections = parseTemplateSections('page_create_from_template', args, 'sections');
+      const steps = parseTemplateSteps('page_create_from_template', args, 'steps');
+      const callouts = parseTemplateCallouts('page_create_from_template', args, 'callouts');
+
+      return executeTool('page_create_from_template', { projectRoot, lang, pageId }, async () => {
+        const context = await loadProjectContext('page_create_from_template', projectRoot, lang);
+        return createPageFromTemplate({
+          projectRoot,
+          lang: context.lang!,
+          page: {
+            id: pageId,
+            slug,
+            title,
+            description,
+            tags,
+            status,
+            review,
+          },
+          template,
+          ...(summary ? { summary } : {}),
+          ...(sections ? { sections } : {}),
+          ...(steps ? { steps } : {}),
+          ...(callouts ? { callouts } : {}),
+        });
+      });
+    },
+  },
+  {
+    name: 'page_update_from_template',
+    description:
+      'Update an existing canonical Anydocs page from a structured rich-content template, regenerating both Yoopta content and render output.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        pageId: { type: 'string' },
+        template: { type: 'string', enum: [...PAGE_TEMPLATE_KINDS] },
+        slug: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        review: { type: 'object' },
+        summary: { type: 'string' },
+        sections: { type: 'array', items: { type: 'object' } },
+        steps: { type: 'array', items: { type: 'object' } },
+        callouts: { type: 'array', items: { type: 'object' } },
+      },
+      required: ['projectRoot', 'lang', 'pageId', 'template'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_update_from_template', argumentsValue);
+      const projectRoot = requireStringArgument('page_update_from_template', args, 'projectRoot');
+      const lang = requireStringArgument('page_update_from_template', args, 'lang');
+      const pageId = requireStringArgument('page_update_from_template', args, 'pageId');
+      const template = requireKnownTemplateKind('page_update_from_template', args.template);
+      const slug = optionalStringArgument('page_update_from_template', args, 'slug');
+      const title = optionalStringArgument('page_update_from_template', args, 'title');
+      const description = optionalStringArgument('page_update_from_template', args, 'description');
+      const tags = optionalStringArrayArgument('page_update_from_template', args, 'tags');
+      const review = optionalPageReview('page_update_from_template', args, 'review');
+      const summary = optionalStringArgument('page_update_from_template', args, 'summary');
+      const sections = parseTemplateSections('page_update_from_template', args, 'sections');
+      const steps = parseTemplateSteps('page_update_from_template', args, 'steps');
+      const callouts = parseTemplateCallouts('page_update_from_template', args, 'callouts');
+
+      return executeTool('page_update_from_template', { projectRoot, lang, pageId }, async () => {
+        const context = await loadProjectContext('page_update_from_template', projectRoot, lang);
+        return updatePageFromTemplate({
+          projectRoot,
+          lang: context.lang!,
+          pageId,
+          template,
+          patch: {
+            ...(slug ? { slug } : {}),
+            ...(title ? { title } : {}),
+            ...(description ? { description } : {}),
+            ...(tags ? { tags } : {}),
+            ...(review ? { review } : {}),
+          },
+          ...(summary ? { summary } : {}),
+          ...(sections ? { sections } : {}),
+          ...(steps ? { steps } : {}),
+          ...(callouts ? { callouts } : {}),
+        });
+      });
+    },
+  },
+  {
+    name: 'page_batch_create',
+    description: 'Create multiple canonical page documents in one validated batch.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        pages: {
+          type: 'array',
+          description: 'Array of page create payloads.',
+          items: { type: 'object' },
+        },
+      },
+      required: ['projectRoot', 'lang', 'pages'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_batch_create', argumentsValue);
+      const projectRoot = requireStringArgument('page_batch_create', args, 'projectRoot');
+      const lang = requireStringArgument('page_batch_create', args, 'lang');
+      const pages = requireObjectArrayArgument('page_batch_create', args, 'pages').map((page, index) => ({
+        id: requireStringArgument('page_batch_create', page, 'id'),
+        slug: requireStringArgument('page_batch_create', page, 'slug'),
+        title: requireStringArgument('page_batch_create', page, 'title'),
+        description: optionalStringArgument('page_batch_create', page, 'description'),
+        tags: optionalStringArrayArgument('page_batch_create', page, 'tags'),
+        status:
+          page.status == null ? undefined : requireKnownPageStatus('page_batch_create', page.status),
+        content: optionalObjectArgument('page_batch_create', page, 'content'),
+        render: optionalPageRender('page_batch_create', page, 'render'),
+        review: optionalPageReview('page_batch_create', page, 'review'),
+        __index: index,
+      }));
+
+      return executeTool('page_batch_create', { projectRoot, lang }, async () => {
+        const context = await loadProjectContext('page_batch_create', projectRoot, lang);
+        return createPagesBatch({
+          projectRoot,
+          lang: context.lang!,
+          pages: pages.map(({ __index: _unused, ...page }) => page),
+        });
+      });
+    },
+  },
+  {
     name: 'page_update',
     description:
       'Shallow-merge an explicit whitelist of mutable page fields onto an existing canonical page document.',
@@ -361,6 +654,11 @@ export const pageTools: ToolDefinition[] = [
             'Allowed fields: slug, title, description, tags, content, render, review. Unsupported fields are rejected.',
           additionalProperties: true,
         },
+        regenerateRender: {
+          type: 'boolean',
+          description:
+            'When true and patch.render is omitted, regenerate render.markdown/plainText from the resulting Yoopta content.',
+        },
       },
       required: ['projectRoot', 'lang', 'pageId', 'patch'],
       additionalProperties: false,
@@ -373,12 +671,116 @@ export const pageTools: ToolDefinition[] = [
 
       return executeTool('page_update', { projectRoot, lang, pageId }, async () => {
         const patch = parsePatch('page_update', args);
+        const regenerateRender = optionalBooleanArgument('page_update', args, 'regenerateRender');
         const context = await loadProjectContext('page_update', projectRoot, lang);
         return updatePage({
           projectRoot,
           lang: context.lang!,
           pageId,
           patch,
+          regenerateRender,
+        });
+      });
+    },
+  },
+  {
+    name: 'page_batch_update',
+    description: 'Apply shallow page patches to multiple canonical page documents in one validated batch.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        updates: {
+          type: 'array',
+          description: 'Array of { pageId, patch, regenerateRender? } entries.',
+          items: { type: 'object' },
+        },
+      },
+      required: ['projectRoot', 'lang', 'updates'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_batch_update', argumentsValue);
+      const projectRoot = requireStringArgument('page_batch_update', args, 'projectRoot');
+      const lang = requireStringArgument('page_batch_update', args, 'lang');
+      const updates = requireObjectArrayArgument('page_batch_update', args, 'updates').map((entry) => ({
+        pageId: requireStringArgument('page_batch_update', entry, 'pageId'),
+        patch: parsePatch('page_batch_update', entry),
+        regenerateRender: optionalBooleanArgument('page_batch_update', entry, 'regenerateRender'),
+      }));
+
+      return executeTool('page_batch_update', { projectRoot, lang }, async () => {
+        const context = await loadProjectContext('page_batch_update', projectRoot, lang);
+        return updatePagesBatch({
+          projectRoot,
+          lang: context.lang!,
+          updates,
+        });
+      });
+    },
+  },
+  {
+    name: 'page_delete',
+    description: 'Delete a canonical Anydocs page and remove matching navigation references in that language.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        pageId: { type: 'string' },
+      },
+      required: ['projectRoot', 'lang', 'pageId'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_delete', argumentsValue);
+      const projectRoot = requireStringArgument('page_delete', args, 'projectRoot');
+      const lang = requireStringArgument('page_delete', args, 'lang');
+      const pageId = requireStringArgument('page_delete', args, 'pageId');
+
+      return executeTool('page_delete', { projectRoot, lang, pageId }, async () => {
+        const context = await loadProjectContext('page_delete', projectRoot, lang);
+        return deleteAuthoredPage({
+          projectRoot,
+          lang: context.lang!,
+          pageId,
+        });
+      });
+    },
+  },
+  {
+    name: 'page_batch_set_status',
+    description: 'Set canonical page statuses for multiple pages in one validated batch.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        updates: {
+          type: 'array',
+          description: 'Array of { pageId, status } entries.',
+          items: { type: 'object' },
+        },
+      },
+      required: ['projectRoot', 'lang', 'updates'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_batch_set_status', argumentsValue);
+      const projectRoot = requireStringArgument('page_batch_set_status', args, 'projectRoot');
+      const lang = requireStringArgument('page_batch_set_status', args, 'lang');
+      const updates = requireObjectArrayArgument('page_batch_set_status', args, 'updates').map((entry) => ({
+        pageId: requireStringArgument('page_batch_set_status', entry, 'pageId'),
+        status: requireKnownPageStatus('page_batch_set_status', entry.status),
+      }));
+
+      return executeTool('page_batch_set_status', { projectRoot, lang }, async () => {
+        const context = await loadProjectContext('page_batch_set_status', projectRoot, lang);
+        return setPageStatusesBatch({
+          projectRoot,
+          lang: context.lang!,
+          updates,
         });
       });
     },

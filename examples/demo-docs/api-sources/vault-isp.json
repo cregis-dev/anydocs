@@ -1,0 +1,20 @@
+{
+  "id": "vault-isp",
+  "type": "openapi",
+  "lang": "zh",
+  "status": "published",
+  "source": {
+    "kind": "file",
+    "path": "/Users/shawn/workspace/docs_home/anydocs-03/imports/openapi-vault-isp/source-spec.json"
+  },
+  "display": {
+    "title": "Vault ISP API",
+    "groupId": "api-reference"
+  },
+  "runtime": {
+    "routeBase": "/zh/reference/vault-isp",
+    "tryIt": {
+      "enabled": false
+    }
+  }
+}

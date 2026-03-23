@@ -6,4 +6,4 @@
 user_name: Shawn
 communication_language: Mandarin
 document_output_language: English
-output_folder: "{project-root}/docs"
+output_folder: "{project-root}/artifacts/bmad"

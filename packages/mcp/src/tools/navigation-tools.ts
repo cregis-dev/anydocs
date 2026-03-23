@@ -1,8 +1,12 @@
 import {
+  deleteNavigationItem,
+  insertNavigationItem,
+  moveNavigationItem,
   ValidationError,
   loadNavigation,
   replaceNavigationItems,
   setNavigation,
+  type NavItem,
   type NavigationDoc,
 } from '@anydocs/core';
 
@@ -52,6 +56,23 @@ function requireNavigationItems(
   }
 
   return value as NavigationDoc['items'];
+}
+
+function requireNavigationItem(
+  tool: string,
+  args: Record<string, unknown>,
+): NavItem {
+  const value = args.item;
+  if (!isRecord(value)) {
+    throw new ValidationError(`Tool "${tool}" requires a navigation item object.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-navigation-item-required',
+      remediation: 'Provide "item" as a navigation item object.',
+      metadata: { tool, received: value },
+    });
+  }
+
+  return value as NavItem;
 }
 
 export const navigationTools: ToolDefinition[] = [
@@ -144,6 +165,124 @@ export const navigationTools: ToolDefinition[] = [
           projectRoot,
           lang: context.lang!,
           items: requireNavigationItems('nav_replace_items', args),
+        });
+      });
+    },
+  },
+  {
+    name: 'nav_insert',
+    description:
+      'Insert a navigation item at the root or into a section/folder using a slash-separated parentPath like "0/1".',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        parentPath: {
+          type: 'string',
+          description: 'Optional slash-separated path to a section or folder. Omit for the root.',
+        },
+        index: {
+          type: 'number',
+          description: 'Optional zero-based insertion index. Omit to append.',
+        },
+        item: {
+          type: 'object',
+          description: 'The navigation item to insert.',
+        },
+      },
+      required: ['projectRoot', 'lang', 'item'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('nav_insert', argumentsValue);
+      const projectRoot = requireStringArgument('nav_insert', args, 'projectRoot');
+      const lang = requireStringArgument('nav_insert', args, 'lang');
+
+      return executeTool('nav_insert', { projectRoot, lang }, async () => {
+        const context = await loadProjectContext('nav_insert', projectRoot, lang);
+        return insertNavigationItem({
+          projectRoot,
+          lang: context.lang!,
+          item: requireNavigationItem('nav_insert', args),
+          ...(typeof args.parentPath === 'string' ? { parentPath: args.parentPath } : {}),
+          ...(typeof args.index === 'number' ? { index: args.index } : {}),
+        });
+      });
+    },
+  },
+  {
+    name: 'nav_delete',
+    description:
+      'Delete a navigation item using a slash-separated itemPath like "0/1/2".',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        itemPath: {
+          type: 'string',
+          description: 'Slash-separated zero-based item path.',
+        },
+      },
+      required: ['projectRoot', 'lang', 'itemPath'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('nav_delete', argumentsValue);
+      const projectRoot = requireStringArgument('nav_delete', args, 'projectRoot');
+      const lang = requireStringArgument('nav_delete', args, 'lang');
+      const itemPath = requireStringArgument('nav_delete', args, 'itemPath');
+
+      return executeTool('nav_delete', { projectRoot, lang, itemPath }, async () => {
+        const context = await loadProjectContext('nav_delete', projectRoot, lang);
+        return deleteNavigationItem({
+          projectRoot,
+          lang: context.lang!,
+          itemPath,
+        });
+      });
+    },
+  },
+  {
+    name: 'nav_move',
+    description:
+      'Move a navigation item to the root or into another section/folder using slash-separated itemPath and parentPath values.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        lang: { type: 'string' },
+        itemPath: {
+          type: 'string',
+          description: 'Slash-separated zero-based item path for the item to move.',
+        },
+        parentPath: {
+          type: 'string',
+          description: 'Optional slash-separated path to a section or folder. Omit for the root.',
+        },
+        index: {
+          type: 'number',
+          description: 'Optional zero-based insertion index in the destination container.',
+        },
+      },
+      required: ['projectRoot', 'lang', 'itemPath'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('nav_move', argumentsValue);
+      const projectRoot = requireStringArgument('nav_move', args, 'projectRoot');
+      const lang = requireStringArgument('nav_move', args, 'lang');
+      const itemPath = requireStringArgument('nav_move', args, 'itemPath');
+
+      return executeTool('nav_move', { projectRoot, lang, itemPath }, async () => {
+        const context = await loadProjectContext('nav_move', projectRoot, lang);
+        return moveNavigationItem({
+          projectRoot,
+          lang: context.lang!,
+          itemPath,
+          ...(typeof args.parentPath === 'string' ? { parentPath: args.parentPath } : {}),
+          ...(typeof args.index === 'number' ? { index: args.index } : {}),
         });
       });
     },

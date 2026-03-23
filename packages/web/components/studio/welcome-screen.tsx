@@ -1,14 +1,17 @@
 'use client';
 
 import { FolderOpen, Loader2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { ProjectPathDialog } from '@/components/studio/project-path-dialog';
 import type { StudioProject } from '@/components/studio/project-registry';
 
 interface WelcomeScreenProps {
   recentProjects: StudioProject[];
   isOpeningFolder: boolean;
-  onOpenProject: () => void;
+  supportsNativeDirectoryPicker: boolean;
+  onOpenProject: (projectPath?: string) => Promise<void> | void;
   onSelectProject: (project: StudioProject) => void;
   onRemoveProject: (project: StudioProject) => void;
 }
@@ -16,10 +19,13 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({
   recentProjects,
   isOpeningFolder,
+  supportsNativeDirectoryPicker,
   onOpenProject,
   onSelectProject,
   onRemoveProject,
 }: WelcomeScreenProps) {
+  const [isProjectPathDialogOpen, setIsProjectPathDialogOpen] = useState(false);
+
   return (
     <div className="min-h-dvh bg-fd-background text-fd-foreground flex flex-col items-center justify-center p-8">
       <div className="max-w-md w-full text-center space-y-8">
@@ -32,7 +38,14 @@ export function WelcomeScreen({
 
         <div className="space-y-4">
           <Button
-            onClick={onOpenProject}
+            onClick={() => {
+              if (supportsNativeDirectoryPicker) {
+                void onOpenProject();
+                return;
+              }
+
+              setIsProjectPathDialogOpen(true);
+            }}
             disabled={isOpeningFolder}
             className="w-full h-12 text-lg gap-2"
             size="lg"
@@ -51,6 +64,14 @@ export function WelcomeScreen({
             )}
           </Button>
         </div>
+
+        <ProjectPathDialog
+          open={isProjectPathDialogOpen}
+          onOpenChange={setIsProjectPathDialogOpen}
+          onSubmit={async (projectPath) => {
+            await onOpenProject(projectPath);
+          }}
+        />
 
         {recentProjects.length > 0 && (
           <div className="space-y-3 pt-8">

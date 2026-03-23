@@ -1,11 +1,15 @@
 import path from 'node:path'
 
 import {
+  createApiSourceRepository,
   createDocsRepository,
   createDefaultProjectConfig,
+  deleteApiSource,
   deletePage,
   DEFAULT_PROJECT_ID,
   initializeProject,
+  initializeApiSourceRepository,
+  listApiSources,
   listPages,
   loadNavigation,
   loadPage,
@@ -13,9 +17,11 @@ import {
   normalizeSlug,
   runBuildWorkflow,
   runPreviewWorkflow,
+  saveApiSource,
   saveNavigation,
   savePage,
   updateProjectConfig,
+  type ApiSourceDoc,
   type DeletePageResult,
   type DocsLang,
   type NavigationDoc,
@@ -221,6 +227,44 @@ export async function putNavigation(
   return saveNavigation(repository, lang, navigation, {
     existingPageIds: pages.map((page) => page.id)
   })
+}
+
+async function getApiSourceRepository(projectId = DEFAULT_PROJECT_ID, customPath?: string) {
+  const contract = await resolveProjectContract(projectId, customPath)
+  return createApiSourceRepository(contract.paths.projectRoot)
+}
+
+export async function getApiSources(projectId = '', customPath?: string) {
+  return {
+    sources: await listApiSources(await getApiSourceRepository(projectId || DEFAULT_PROJECT_ID, customPath))
+  }
+}
+
+export async function putApiSources(
+  input: { sources?: ApiSourceDoc[] } | ApiSourceDoc[],
+  projectId = '',
+  customPath?: string
+) {
+  const repository = await getApiSourceRepository(projectId || DEFAULT_PROJECT_ID, customPath)
+  await initializeApiSourceRepository(repository)
+
+  const nextSources = Array.isArray(input) ? input : input.sources ?? []
+  const existing = await listApiSources(repository)
+  const nextIds = new Set(nextSources.map((source) => source.id))
+
+  for (const source of nextSources) {
+    await saveApiSource(repository, source)
+  }
+
+  for (const source of existing) {
+    if (!nextIds.has(source.id)) {
+      await deleteApiSource(repository, source.id)
+    }
+  }
+
+  return {
+    sources: await listApiSources(repository)
+  }
 }
 
 export async function putProject(

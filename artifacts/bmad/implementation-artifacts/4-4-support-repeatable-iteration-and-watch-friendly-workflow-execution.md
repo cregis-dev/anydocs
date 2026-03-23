@@ -70,10 +70,10 @@ Story 4.4 is the only remaining implementation backlog item in Epic 4. The repos
 
 ### Architecture Compliance
 
-- `@anydocs/core` remains the owner of build orchestration and project contract logic. CLI stays a thin adapter over core services. [Source: docs/planning-artifacts/architecture.md]
-- `--watch` or iterative flows must reuse the same validation and generation steps as one-shot flows. [Source: docs/planning-artifacts/architecture.md]
-- Build and preview must remain deterministic, idempotent where practical, and runnable locally and in CI. [Source: docs/planning-artifacts/architecture.md]
-- Avoid duplicating rules between Studio and CLI. The same saved project state must flow through both surfaces unchanged. [Source: docs/planning-artifacts/architecture.md]
+- `@anydocs/core` remains the owner of build orchestration and project contract logic. CLI stays a thin adapter over core services. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- `--watch` or iterative flows must reuse the same validation and generation steps as one-shot flows. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- Build and preview must remain deterministic, idempotent where practical, and runnable locally and in CI. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- Avoid duplicating rules between Studio and CLI. The same saved project state must flow through both surfaces unchanged. [Source: artifacts/bmad/planning-artifacts/architecture.md]
 
 ### Library / Framework Requirements
 
@@ -137,15 +137,15 @@ Story 4.4 is the only remaining implementation backlog item in Epic 4. The repos
 
 - No `project-context.md` file was found in this repository.
 - Use these planning artifacts as the source of truth for this story:
-  - `docs/planning-artifacts/epics.md`
-  - `docs/planning-artifacts/prd.md`
-  - `docs/planning-artifacts/architecture.md`
+  - `artifacts/bmad/planning-artifacts/epics.md`
+  - `artifacts/bmad/planning-artifacts/prd.md`
+  - `artifacts/bmad/planning-artifacts/architecture.md`
 
 ### References
 
-- [Source: docs/planning-artifacts/epics.md]
-- [Source: docs/planning-artifacts/prd.md]
-- [Source: docs/planning-artifacts/architecture.md]
+- [Source: artifacts/bmad/planning-artifacts/epics.md]
+- [Source: artifacts/bmad/planning-artifacts/prd.md]
+- [Source: artifacts/bmad/planning-artifacts/architecture.md]
 - [Source: packages/cli/src/index.ts]
 - [Source: packages/cli/src/commands/build-command.ts]
 - [Source: packages/cli/src/commands/preview-command.ts]
@@ -171,7 +171,7 @@ GPT-5 Codex
 ### Debug Log References
 
 - Sprint status identified `4-4-support-repeatable-iteration-and-watch-friendly-workflow-execution` as the first remaining backlog story in Epic 4.
-- No previous Epic 4 story file was found under `docs/implementation-artifacts`, so there are no prior dev-story notes to inherit.
+- No previous Epic 4 story file was found under `artifacts/bmad/implementation-artifacts`, so there are no prior dev-story notes to inherit.
 - Implemented a shared watch loop in `@anydocs/core` and kept CLI build/preview commands as thin adapters over `runBuildWorkflow` and `runPreviewWorkflow`.
 - Replaced unstable `fs.watch` fan-out with canonical target snapshot polling after repeated `EMFILE` failures during local test execution against atomic JSON writes.
 - Verified `@anydocs/core` tests, `@anydocs/core` typecheck, and `@anydocs/cli` tests locally; `@anydocs/web` Playwright still has two unrelated baseline failures (`E2-S2-T02` timeout in editor input flow and `/api/local/page` returning `500`).
@@ -201,7 +201,7 @@ GPT-5 Codex
 - /Users/shawn/workspace/code/anydocs/packages/core/src/services/index.ts
 - /Users/shawn/workspace/code/anydocs/packages/core/src/services/watch-service.ts
 - /Users/shawn/workspace/code/anydocs/packages/core/tests/build-preview-service.test.ts
-- /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts/4-4-support-repeatable-iteration-and-watch-friendly-workflow-execution.md
+- /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts/4-4-support-repeatable-iteration-and-watch-friendly-workflow-execution.md
 
 ### Change Log
 

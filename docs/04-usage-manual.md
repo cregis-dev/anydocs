@@ -1,6 +1,6 @@
-# Anydocs 项目使用手册
+# Anydocs 详细操作手册
 
-本文面向项目维护者、内容编辑者和需要使用 CLI 的开发者，说明当前仓库的实际使用方式。内容以代码现状为准，优先覆盖本地开发、项目初始化、构建发布和旧文档导入。
+本文是面向项目维护者、内容编辑者和 CLI 使用者的详细操作手册。根 `README` 优先解决“如何快速启动”和“如何进入 agent 写作流程”，这里则展开说明本地开发、项目初始化、构建发布和旧文档导入的完整操作方式。
 
 ## 1. 你可以用 Anydocs 做什么
 
@@ -170,7 +170,7 @@ convert-import <importId> [targetDir]
 在指定目录创建一个标准 Anydocs 项目：
 
 ```bash
-pnpm --filter @anydocs/cli cli init ~/my-docs-project
+pnpm --filter @anydocs/cli cli init ./my-docs-project
 ```
 
 执行后会创建独立项目：
@@ -196,13 +196,13 @@ pnpm --filter @anydocs/cli cli init ~/my-docs-project
 
 ```bash
 # 构建到默认位置（项目目录下的 dist/）
-pnpm --filter @anydocs/cli cli build examples/demo-docs
+pnpm --filter @anydocs/cli cli build ./my-docs-project
 
 # 构建到自定义位置
-pnpm --filter @anydocs/cli cli build examples/demo-docs --output /var/www/docs
+pnpm --filter @anydocs/cli cli build ./my-docs-project --output ./build-output
 
 # 监听模式
-pnpm --filter @anydocs/cli cli build examples/demo-docs --watch
+pnpm --filter @anydocs/cli cli build ./my-docs-project --watch
 ```
 
 构建会校验项目合同并生成：
@@ -251,7 +251,7 @@ dist/
 ### 6.5 启动本地动态阅读站
 
 ```bash
-pnpm --filter @anydocs/cli preview examples/demo-docs
+pnpm --filter @anydocs/cli preview ./my-docs-project
 ```
 
 这个命令会启动一个本地动态 Docs Site 预览服务，并打印可直接打开的 URL。它的作用是：
@@ -279,7 +279,7 @@ pnpm --filter @anydocs/cli preview examples/demo-docs --watch
 第一步，导入旧文档到暂存区：
 
 ```bash
-pnpm --filter @anydocs/cli cli import ./legacy-docs examples/demo-docs zh
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
 ```
 
 规则：
@@ -300,7 +300,7 @@ imports/<importId>/
 第二步，把暂存内容转换为正式页面：
 
 ```bash
-pnpm --filter @anydocs/cli cli convert-import <importId> examples/demo-docs
+pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
 ```
 
 转换后会发生这些事情：
@@ -324,7 +324,7 @@ pnpm --filter @anydocs/cli cli convert-import <importId> examples/demo-docs
 ```bash
 pnpm install
 pnpm dev
-# 在 Studio 中编辑 examples/demo-docs
+# 在 Studio 中编辑仓库内置示例项目 examples/demo-docs
 pnpm --filter @anydocs/cli cli build examples/demo-docs
 ```
 
@@ -338,16 +338,16 @@ pnpm --filter @anydocs/cli cli build examples/demo-docs
 
 ```bash
 # 初始化
-pnpm --filter @anydocs/cli cli init ~/my-docs-project
+pnpm --filter @anydocs/cli cli init ./my-docs-project
 
 # 构建
-pnpm --filter @anydocs/cli cli build ~/my-docs-project
+pnpm --filter @anydocs/cli cli build ./my-docs-project
 
 # 构建到自定义位置
-pnpm --filter @anydocs/cli cli build ~/my-docs-project --output /var/www/docs
+pnpm --filter @anydocs/cli cli build ./my-docs-project --output ./build-output
 
 # 预览
-pnpm --filter @anydocs/cli preview ~/my-docs-project
+pnpm --filter @anydocs/cli preview ./my-docs-project
 ```
 
 适合场景：
@@ -359,8 +359,8 @@ pnpm --filter @anydocs/cli preview ~/my-docs-project
 ### 工作流 C：导入旧站内容
 
 ```bash
-pnpm --filter @anydocs/cli cli import ./legacy-docs ~/my-docs-project zh
-pnpm --filter @anydocs/cli cli convert-import <importId> ~/my-docs-project
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
+pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
 pnpm dev
 # 在 Studio 中审核和发布导入的内容
 ```
@@ -456,10 +456,10 @@ my-docs-project/
 
 ```bash
 # 构建
-pnpm --filter @anydocs/cli cli build ~/my-docs-project --output ./build
+pnpm --filter @anydocs/cli cli build ./my-docs-project --output ./build
 
-# 部署到 Nginx
-cp -r ./build/* /var/www/html/docs/
+# 复制到你的静态站点目录
+cp -r ./build/* <your-static-site-dir>/
 
 # 部署到 Vercel
 cd ./build
@@ -514,8 +514,8 @@ pnpm --filter @anydocs/cli cli build examples/demo-docs
 pnpm --filter @anydocs/cli preview examples/demo-docs
 
 # 创建新项目
-pnpm --filter @anydocs/cli cli init ~/my-docs-project
+pnpm --filter @anydocs/cli cli init ./my-docs-project
 
 # 导入旧文档
-pnpm --filter @anydocs/cli cli import ./legacy-docs ~/my-docs-project zh
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
 ```

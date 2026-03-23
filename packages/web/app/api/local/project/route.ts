@@ -10,8 +10,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const { projectId, customPath } = readProjectQuery(request);
-    const contract = await loadStudioProjectContract(projectId, customPath);
-    return json(contract);
+    return json(await loadStudioProjectContract(projectId, customPath));
   } catch (error) {
     return handleRouteError(error);
   }
@@ -22,8 +21,7 @@ export async function PUT(request: NextRequest) {
     const { projectId, customPath } = readProjectQuery(request);
     const patch = await readJsonBody<ProjectSettingsPatch>(request);
     await updateStudioProjectSettings(patch, projectId, customPath);
-    const contract = await loadStudioProjectContract(projectId, customPath);
-    return json(contract);
+    return json(await loadStudioProjectContract(projectId, customPath));
   } catch (error) {
     return handleRouteError(error);
   }

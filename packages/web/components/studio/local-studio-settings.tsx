@@ -3,7 +3,7 @@
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 import { ArrowDown, ArrowUp, Link2, Plus, Trash2 } from 'lucide-react';
 
-import type { DocsLang } from '@/lib/docs/types';
+import type { ApiSourceDoc, DocsLang } from '@/lib/docs/types';
 import { SUPPORTED_DOCS_LANGUAGES } from '@/lib/docs/types';
 import type { PageDoc, PageReview, PageStatus } from '@/lib/docs/types';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ type ProjectSettingsValue = {
   sidebarActiveForegroundColor: string;
   codeTheme: 'github-light' | 'github-dark';
   topNavItems: ProjectSiteTopNavItem[];
+  apiSources: ApiSourceDoc[];
   outputDir: string;
 };
 
@@ -57,6 +58,7 @@ type ProjectSettingsPatch = {
   sidebarActiveForegroundColor?: string;
   codeTheme?: 'github-light' | 'github-dark';
   topNavItems?: ProjectSiteTopNavItem[];
+  apiSources?: ApiSourceDoc[];
   languages?: DocsLang[];
   outputDir?: string;
 };
@@ -93,6 +95,31 @@ function setTopNavLabelValue(item: ProjectSiteTopNavItem, language: DocsLang, va
 
 function createTopNavItemId(prefix: 'group' | 'link', index: number) {
   return `${prefix}-${Date.now().toString(36)}-${index.toString(36)}`;
+}
+
+function createApiSourceId(index: number) {
+  return `api-source-${Date.now().toString(36)}-${index.toString(36)}`;
+}
+
+function createApiSourceDraft(language: DocsLang, index: number): ApiSourceDoc {
+  return {
+    id: createApiSourceId(index),
+    type: 'openapi',
+    lang: language,
+    status: 'draft',
+    source: {
+      kind: 'url',
+      url: 'https://example.com/openapi.json',
+    },
+    display: {
+      title: 'New API Source',
+    },
+    runtime: {
+      tryIt: {
+        enabled: false,
+      },
+    },
+  };
 }
 
 function SettingsSection({
@@ -592,6 +619,246 @@ function ProjectSettingsContent({
           )}
         </SettingsSection>
       ) : null}
+
+      <SettingsSection title="API Sources" description="Manage OpenAPI-backed references published by this docs project.">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              onProjectChange({
+                apiSources: [...project.apiSources, createApiSourceDraft(project.defaultLanguage, project.apiSources.length)],
+              })
+            }
+          >
+            <Plus className="mr-1 size-4" />
+            Add API Source
+          </Button>
+        </div>
+
+        {project.apiSources.length ? (
+          <div className="space-y-3">
+            {project.apiSources.map((source, index) => (
+              <div key={`${source.id}-${index}`} className="space-y-3 rounded-lg border border-fd-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-fd-foreground">{source.display.title || source.id}</div>
+                    <div className="text-xs text-fd-muted-foreground">{source.id}</div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      onProjectChange({
+                        apiSources: project.apiSources.filter((_, itemIndex) => itemIndex !== index),
+                      })
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Source ID</div>
+                    <Input
+                      value={source.id}
+                      onChange={(e) => {
+                        const next = [...project.apiSources];
+                        next[index] = { ...source, id: e.target.value };
+                        onProjectChange({ apiSources: next });
+                      }}
+                      placeholder="vault-isp"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Title</div>
+                    <Input
+                      value={source.display.title}
+                      onChange={(e) => {
+                        const next = [...project.apiSources];
+                        next[index] = {
+                          ...source,
+                          display: {
+                            ...source.display,
+                            title: e.target.value,
+                          },
+                        };
+                        onProjectChange({ apiSources: next });
+                      }}
+                      placeholder="Vault ISP API"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Language</div>
+                    <Select
+                      value={source.lang}
+                      onValueChange={(value) => {
+                        const next = [...project.apiSources];
+                        next[index] = { ...source, lang: value as DocsLang };
+                        onProjectChange({ apiSources: next });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {project.languages.map((language) => (
+                          <SelectItem key={language} value={language}>
+                            {formatLanguageLabel(language)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Status</div>
+                    <Select
+                      value={source.status}
+                      onValueChange={(value) => {
+                        const next = [...project.apiSources];
+                        next[index] = { ...source, status: value as ApiSourceDoc['status'] };
+                        onProjectChange({ apiSources: next });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="in_review">In Review</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Source Kind</div>
+                    <Select
+                      value={source.source.kind}
+                      onValueChange={(value) => {
+                        const next = [...project.apiSources];
+                        next[index] =
+                          value === 'file'
+                            ? {
+                                ...source,
+                                source: {
+                                  kind: 'file',
+                                  path: source.source.kind === 'file' ? source.source.path : '',
+                                },
+                              }
+                            : {
+                                ...source,
+                                source: {
+                                  kind: 'url',
+                                  url: source.source.kind === 'url' ? source.source.url : 'https://example.com/openapi.json',
+                                },
+                              };
+                        onProjectChange({ apiSources: next });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source kind" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="url">URL</SelectItem>
+                        <SelectItem value="file">File</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 text-xs text-fd-muted-foreground">
+                    {source.source.kind === 'url' ? 'OpenAPI URL' : 'OpenAPI File Path'}
+                  </div>
+                  <Input
+                    value={source.source.kind === 'url' ? source.source.url : source.source.path}
+                    onChange={(e) => {
+                      const next = [...project.apiSources];
+                      next[index] =
+                        source.source.kind === 'url'
+                          ? {
+                              ...source,
+                              source: {
+                                kind: 'url',
+                                url: e.target.value,
+                              },
+                            }
+                          : {
+                              ...source,
+                              source: {
+                                kind: 'file',
+                                path: e.target.value,
+                              },
+                            };
+                      onProjectChange({ apiSources: next });
+                    }}
+                    placeholder={source.source.kind === 'url' ? 'https://...' : 'openapi/spec.json'}
+                  />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="mb-1 text-xs text-fd-muted-foreground">Scalar Route Base</div>
+                    <Input
+                      value={source.runtime?.routeBase ?? ''}
+                      onChange={(e) => {
+                        const next = [...project.apiSources];
+                        next[index] = {
+                          ...source,
+                          runtime: {
+                            ...source.runtime,
+                            routeBase: e.target.value,
+                            ...(source.runtime?.tryIt ? { tryIt: source.runtime.tryIt } : {}),
+                          },
+                        };
+                        onProjectChange({ apiSources: next });
+                      }}
+                      placeholder={`/${source.lang}/reference/${source.id}`}
+                    />
+                  </div>
+
+                  <label className="flex items-center justify-between gap-3 rounded-md border border-fd-border px-3 py-2 text-sm">
+                    <div>
+                      <div className="font-medium">Enable Try It Out</div>
+                      <div className="text-xs text-fd-muted-foreground">Expose Scalar test requests for this source.</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={source.runtime?.tryIt?.enabled ?? false}
+                      onChange={(e) => {
+                        const next = [...project.apiSources];
+                        next[index] = {
+                          ...source,
+                          runtime: {
+                            ...source.runtime,
+                            ...(source.runtime?.routeBase ? { routeBase: source.runtime.routeBase } : {}),
+                            tryIt: {
+                              enabled: e.target.checked,
+                            },
+                          },
+                        };
+                        onProjectChange({ apiSources: next });
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-fd-border p-3 text-sm text-fd-muted-foreground">
+            No API sources configured.
+          </div>
+        )}
+      </SettingsSection>
 
       <SettingsSection title="Build" description="Output location for preview/build artifacts.">
         <div>

@@ -159,7 +159,7 @@ This story is the first follow-up after Epic 5 was previously marked complete. I
 **Current baseline**
 - `packages/core/src/publishing/build-artifacts.ts` already emits `llms.txt`, `search-index.<lang>.json`, `mcp/index.json`, `mcp/pages.<lang>.json`, and `mcp/navigation.<lang>.json`.
 - `packages/web/components/docs/search-panel.tsx` consumes `search-index.<lang>.json` through browser-side MiniSearch.
-- `docs/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md` now defines the desired artifact contract, chunk schema, and search positioning.
+- `artifacts/bmad/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md` now defines the desired artifact contract, chunk schema, and search positioning.
 - `sprint-status.yaml` currently marks Epic 5 and Story 5.4 as done, so this work must be tracked as a new story rather than silently broadening a completed one.
 
 **Current gap**
@@ -185,10 +185,10 @@ This story is the first follow-up after Epic 5 was previously marked complete. I
 
 ### Architecture Compliance
 
-- Preserve the single publication filter path for site output, search output, and AI-facing output. [Source: docs/planning-artifacts/architecture.md]
-- Generated machine-readable artifacts must be derived from the canonical shared domain model and remain build outputs rather than hand-edited files. [Source: docs/planning-artifacts/architecture.md]
-- Search remains build-time generated in Phase 1 and should stay lightweight and browser-executed. [Source: docs/planning-artifacts/architecture.md]
-- External AI tools are expected to interact through generated published artifacts rather than product-internal UI state. [Source: docs/planning-artifacts/architecture.md]
+- Preserve the single publication filter path for site output, search output, and AI-facing output. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- Generated machine-readable artifacts must be derived from the canonical shared domain model and remain build outputs rather than hand-edited files. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- Search remains build-time generated in Phase 1 and should stay lightweight and browser-executed. [Source: artifacts/bmad/planning-artifacts/architecture.md]
+- External AI tools are expected to interact through generated published artifacts rather than product-internal UI state. [Source: artifacts/bmad/planning-artifacts/architecture.md]
 
 ### File Structure Requirements
 
@@ -201,7 +201,7 @@ This story is the first follow-up after Epic 5 was previously marked complete. I
   - `docs/04-usage-manual.md`
   - `docs/05-dev-guide.md`
 - Reference specification:
-  - `docs/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md`
+  - `artifacts/bmad/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md`
 - Do not move this logic into `packages/web` except for the reader-facing search copy or presentation changes.
 
 ### Testing Requirements
@@ -225,17 +225,17 @@ This story is the first follow-up after Epic 5 was previously marked complete. I
 
 - No `project-context.md` file was found in this repository.
 - Use these planning and implementation artifacts as the source of truth for this story:
-  - `docs/planning-artifacts/epics.md`
-  - `docs/planning-artifacts/prd.md`
-  - `docs/planning-artifacts/architecture.md`
-  - `docs/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md`
+  - `artifacts/bmad/planning-artifacts/epics.md`
+  - `artifacts/bmad/planning-artifacts/prd.md`
+  - `artifacts/bmad/planning-artifacts/architecture.md`
+  - `artifacts/bmad/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md`
 
 ### References
 
-- [`epics.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/epics.md) - Epic 5, Stories 5.4 and 5.5 context
-- [`prd.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/prd.md) - FR40, FR43, FR44, FR45
-- [`architecture.md`](/Users/shawn/workspace/code/anydocs/docs/planning-artifacts/architecture.md) - publication filtering, search indexing, and AI-facing artifact rules
-- [`tech-spec-ai-readable-artifacts-and-find-search.md`](/Users/shawn/workspace/code/anydocs/docs/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md)
+- [`epics.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/epics.md) - Epic 5, Stories 5.4 and 5.5 context
+- [`prd.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/prd.md) - FR40, FR43, FR44, FR45
+- [`architecture.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/planning-artifacts/architecture.md) - publication filtering, search indexing, and AI-facing artifact rules
+- [`tech-spec-ai-readable-artifacts-and-find-search.md`](/Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts/tech-spec-ai-readable-artifacts-and-find-search.md)
 - [`build-artifacts.ts`](/Users/shawn/workspace/code/anydocs/packages/core/src/publishing/build-artifacts.ts)
 - [`workflow-standard-service.ts`](/Users/shawn/workspace/code/anydocs/packages/core/src/services/workflow-standard-service.ts)
 - [`workflow-standard.ts`](/Users/shawn/workspace/code/anydocs/packages/core/src/types/workflow-standard.ts)
@@ -274,7 +274,7 @@ GPT-5 Codex
 - /Users/shawn/workspace/code/anydocs/packages/web/components/docs/search-panel.tsx
 - /Users/shawn/workspace/code/anydocs/docs/04-usage-manual.md
 - /Users/shawn/workspace/code/anydocs/docs/05-dev-guide.md
-- /Users/shawn/workspace/code/anydocs/docs/implementation-artifacts/5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find.md
+- /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts/5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find.md
 
 ### Change Log
 

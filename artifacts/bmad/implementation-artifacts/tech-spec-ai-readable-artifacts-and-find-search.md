@@ -89,8 +89,8 @@ This design preserves deterministic static output, keeps publication rules consi
 | `packages/core/src/types/workflow-standard.ts` | Workflow-standard artifact identifier typing |
 | `packages/web/components/docs/search-panel.tsx` | Current human-facing reader search consumer |
 | `packages/core/tests/build-preview-service.test.ts` | Current artifact generation verification |
-| `docs/planning-artifacts/prd.md` | Product positioning and AI-first vision |
-| `docs/planning-artifacts/architecture.md` | Shared publication and static artifact architecture rules |
+| `artifacts/bmad/planning-artifacts/prd.md` | Product positioning and AI-first vision |
+| `artifacts/bmad/planning-artifacts/architecture.md` | Shared publication and static artifact architecture rules |
 
 ### Technical Decisions
 

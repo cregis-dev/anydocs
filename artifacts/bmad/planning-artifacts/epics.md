@@ -5,11 +5,11 @@ stepsCompleted:
   - 3
   - 4
 inputDocuments:
-  - docs/planning-artifacts/prd.md
-  - docs/planning-artifacts/architecture.md
-  - docs/planning-artifacts/prd-validation-report.md
-  - docs/planning-artifacts/prd-validation-report-rerun.md
-  - docs/planning-artifacts/prd-validation-report-rerun-2.md
+  - artifacts/bmad/planning-artifacts/prd.md
+  - artifacts/bmad/planning-artifacts/architecture.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report-rerun.md
+  - artifacts/bmad/planning-artifacts/prd-validation-report-rerun-2.md
 ---
 
 # anydocs - Epic Breakdown

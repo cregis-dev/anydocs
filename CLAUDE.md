@@ -51,8 +51,18 @@ pnpm build:cli        # Build CLI package
 pnpm build:desktop    # Build Electron app
 pnpm typecheck        # TypeScript type checking
 pnpm lint             # ESLint
+pnpm test             # Package-level regression gate
+pnpm test:e2e:p0      # Critical-path Playwright gate
+pnpm test:acceptance  # GitHub submission gate
 pnpm check            # Full validation: gen:public + typecheck + lint
 ```
+
+## Pre-GitHub Submission Gate
+
+- Before any commit, push, or PR intended for GitHub, run the relevant automated tests locally.
+- Minimum required gate for repository code changes: `pnpm test`
+- If the change touches `packages/web`, Studio, reader routes, local APIs, build/preview flows, or other user-facing authoring behavior, also run `pnpm test:acceptance`.
+- Do not submit to GitHub with known failing tests unless the user explicitly accepts the risk and the failing scope is documented in the handoff.
 
 ### CLI Commands
 ```bash
@@ -74,7 +84,7 @@ node --experimental-strip-types packages/cli/src/index.ts convert-import <import
 
 # Examples
 node --experimental-strip-types packages/cli/src/index.ts build .
-node --experimental-strip-types packages/cli/src/index.ts build . --output /var/www/docs
+node --experimental-strip-types packages/cli/src/index.ts build . --output ./build-output
 node --experimental-strip-types packages/cli/src/index.ts build . --watch
 ```
 
@@ -211,9 +221,9 @@ Supported node types: `section`, `folder`, `page`, `link`
 ### Key Files & Directories
 
 - **Docs Index**: `docs/README.md` (entrypoint for current documentation structure)
-- **Architecture**: `docs/planning-artifacts/architecture.md` (planning and architectural decisions)
-- **PRD**: `docs/planning-artifacts/prd.md` (product requirements)
-- **Epics**: `docs/planning-artifacts/epics.md` (delivery breakdown)
+- **Architecture**: `artifacts/bmad/planning-artifacts/architecture.md` (planning and architectural decisions)
+- **PRD**: `artifacts/bmad/planning-artifacts/prd.md` (product requirements)
+- **Epics**: `artifacts/bmad/planning-artifacts/epics.md` (delivery breakdown)
 - **Usage Manual**: `docs/04-usage-manual.md` (detailed operational guide)
 - **Dev Guide**: `docs/05-dev-guide.md` (developer workflow guide)
 - **Data Layer**:
@@ -261,9 +271,9 @@ pnpm --filter @anydocs/cli cli build .        # Generate public assets
 
 ### Workflow B: Create New Project
 ```bash
-pnpm --filter @anydocs/cli cli init ./workspace/my-docs
-pnpm --filter @anydocs/cli cli build ./workspace/my-docs
-pnpm --filter @anydocs/cli preview ./workspace/my-docs
+pnpm --filter @anydocs/cli cli init ./my-docs-project
+pnpm --filter @anydocs/cli cli build ./my-docs-project
+pnpm --filter @anydocs/cli preview ./my-docs-project
 ```
 
 ### Workflow C: Import Legacy Docs

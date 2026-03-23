@@ -1,5 +1,5 @@
 ---
-validationTarget: 'docs/planning-artifacts/prd.md'
+validationTarget: 'artifacts/bmad/planning-artifacts/prd.md'
 validationDate: '2026-03-11'
 inputDocuments:
   - .trae/documents/PRD_DocEditor_v2.md
@@ -29,7 +29,7 @@ overallStatus: 'Warning'
 
 # PRD Validation Report
 
-**PRD Being Validated:** docs/planning-artifacts/prd.md
+**PRD Being Validated:** artifacts/bmad/planning-artifacts/prd.md
 **Validation Date:** 2026-03-11
 
 ## Input Documents
