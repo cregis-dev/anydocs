@@ -25,7 +25,7 @@
     "build": "pnpm clean && pnpm --filter @anydocs/core build && tsc -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
     "@anydocs/core": "workspace:*",

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "paths": {
+      "@anydocs/core": [
+        "../core/src/index.ts"
+      ]
+    }
+  }
+}
