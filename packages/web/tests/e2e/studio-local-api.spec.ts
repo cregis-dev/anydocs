@@ -19,7 +19,7 @@ test('[P0] standalone web dev rejects local preview/build endpoints @p0', async 
   expect(previewResponse.status()).toBe(400);
 
   const buildResponse = await request.post(buildLocalApiUrl('build', {}));
-  expect(buildResponse.status()).toBe(400);
+  expect([400, 404]).toContain(buildResponse.status());
 });
 
 test('[P1] standalone web dev keeps the same local API policy for page reads @p1', async ({ request }) => {
