@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anydocs/core": "1.0.1",
+    "@anydocs/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.4",
     "zod": "^3.25.76"
   },

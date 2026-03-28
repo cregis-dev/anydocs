@@ -39,7 +39,10 @@ const PROJECT_AGENT_GUIDE_FILES = {
   'claude-code': 'Claude.md',
 } as const;
 const INIT_SERVICE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_SKILL_GUIDE_PATH = path.resolve(INIT_SERVICE_DIR, '../../../../docs/skill.md');
+const PROJECT_SKILL_GUIDE_CANDIDATES = [
+  path.resolve(INIT_SERVICE_DIR, '../../docs/skill.md'),
+  path.resolve(INIT_SERVICE_DIR, '../../../../docs/skill.md'),
+];
 
 async function ensurePathDoesNotExist(targetPath: string, entity: string, remediation: string) {
   try {
@@ -76,8 +79,32 @@ async function copyProjectSkillGuide(
     await fs.access(targetPath);
     return null;
   } catch {
+    let sourcePath: string | null = null;
+
+    for (const candidatePath of PROJECT_SKILL_GUIDE_CANDIDATES) {
+      try {
+        await fs.access(candidatePath);
+        sourcePath = candidatePath;
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    if (!sourcePath) {
+      throw new ValidationError('Cannot initialize project because the bundled Anydocs agent guide is missing.', {
+        entity: 'project-skill-guide',
+        rule: 'init-skill-guide-missing',
+        remediation:
+          'Reinstall @anydocs/core or restore docs/skill.md in the Anydocs repository before running anydocs init again.',
+        metadata: {
+          searchedPaths: PROJECT_SKILL_GUIDE_CANDIDATES,
+        },
+      });
+    }
+
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.copyFile(REPO_SKILL_GUIDE_PATH, targetPath);
+    await fs.copyFile(sourcePath, targetPath);
     return targetPath;
   }
 }

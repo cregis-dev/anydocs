@@ -15,8 +15,8 @@ importers:
   packages/cli:
     dependencies:
       '@anydocs/core':
-        specifier: 1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../core
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -239,8 +239,8 @@ importers:
   packages/mcp:
     dependencies:
       '@anydocs/core':
-        specifier: 1.0.1
-        version: 1.0.1
+        specifier: workspace:*
+        version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.4
         version: 1.27.1(zod@3.25.76)
@@ -442,12 +442,6 @@ packages:
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
-
-  '@anydocs/core@1.0.1':
-    resolution: {integrity: sha512-1vnvoYZHUh9oFBJQW3QPRJnp3lZ4/Cx5wces3aqWz4ajIMOvsRPo7YRVdMEps1qfM+t8jUp5yae1ji+p/htqRQ==}
-
-  '@anydocs/core@1.0.3':
-    resolution: {integrity: sha512-WnxLMYF0a0hQ1tBUk2n0xkqUyW+WhnNWE+10f2pyN2c/o9uFSakfRuH4MS7HlBlocBWJwGen6JtC8xlWk8IA5g==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -6678,10 +6672,6 @@ snapshots:
     dependencies:
       package-manager-detector: 1.6.0
       tinyexec: 1.0.4
-
-  '@anydocs/core@1.0.1': {}
-
-  '@anydocs/core@1.0.3': {}
 
   '@babel/code-frame@7.29.0':
     dependencies:
