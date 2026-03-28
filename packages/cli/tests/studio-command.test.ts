@@ -87,7 +87,7 @@ async function waitForHttp(url: string, timeoutMs = 20_000): Promise<void> {
   throw new Error(`Timed out waiting for HTTP server at ${url}.`);
 }
 
-test('studio starts a locked single-project Studio server and rejects cross-project access', { timeout: 60_000 }, async () => {
+test('studio starts a locked single-project Studio server and rejects cross-project access', { timeout: 240_000 }, async () => {
   const repoRoot = await createTempRepoRoot('anydocs-cli-studio-project-');
   const otherProjectRoot = await createTempRepoRoot('anydocs-cli-studio-other-');
 
@@ -99,6 +99,7 @@ test('studio starts a locked single-project Studio server and rejects cross-proj
       const output = await waitForOutput(
         spawned.getCombinedOutput,
         /"url": "http:\/\/127\.0\.0\.1:\d+\/studio"/,
+        240_000,
       );
       const match = output.match(/"url": "(http:\/\/127\.0\.0\.1:\d+\/studio)"/);
       assert.ok(match, `Expected Studio URL in output, received:\n${output}`);

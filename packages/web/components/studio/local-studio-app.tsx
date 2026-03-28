@@ -59,6 +59,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { docsThemeRegistry } from '@/lib/themes/registry';
+import {
+  filterNavigationToGroup,
+  findFirstPageIdInGroup,
+  pageBelongsToGroup,
+  resolveTopNavLabel,
+} from '@/lib/themes/atlas-nav';
+import { cn } from '@/lib/utils';
 
 type LoadState = { nav: NavigationDoc | null; pages: PageDoc[]; loading: boolean; error: string | null };
 type ProjectState = {
@@ -285,6 +293,15 @@ function removePageRefsFromNav(items: NavItem[], pageId: string): { items: NavIt
   return { items: nextItems, removed };
 }
 
+function replaceNavigationGroupChildren(nav: NavigationDoc, groupId: string, children: NavItem[]): NavigationDoc {
+  return {
+    ...nav,
+    items: nav.items.map((item) =>
+      (item.type === 'section' || item.type === 'folder') && item.id === groupId ? { ...item, children } : item,
+    ),
+  };
+}
+
 type LocalStudioAppProps = {
   bootContext: StudioBootContext;
   host: StudioHost;
@@ -318,6 +335,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [navDirtyTick, setNavDirtyTick] = useState(0);
+  const [selectedTopNavGroupId, setSelectedTopNavGroupId] = useState<string | null>(null);
   
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarMode, setRightSidebarMode] = useState<RightSidebarMode>(null);
@@ -639,6 +657,68 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   }, [filter, load.pages]);
 
   const validation = useMemo(() => validateStudioNavAndPages(navDraft, load.pages), [navDraft, load.pages]);
+  const currentTheme = useMemo(
+    () => (projectState ? docsThemeRegistry[projectState.themeId] ?? null : null),
+    [projectState],
+  );
+  const configuredTopNavEntries = useMemo(
+    () =>
+      (projectState?.topNavItems ?? []).map((item) => ({
+        item,
+        label: resolveTopNavLabel(item.label, lang ?? projectState?.defaultLanguage ?? 'en'),
+      })),
+    [lang, projectState],
+  );
+  const fallbackTopNavEntries = useMemo(
+    () =>
+      (navDraft?.items ?? [])
+        .flatMap((item) =>
+          (item.type === 'section' || item.type === 'folder') && item.id
+            ? [
+                {
+                  item: {
+                    id: `studio-top-nav-${item.id}`,
+                    type: 'nav-group' as const,
+                    groupId: item.id,
+                    label: item.title,
+                  },
+                  label: item.title,
+                },
+              ]
+            : [],
+        ),
+    [navDraft],
+  );
+  const topNavEntries = configuredTopNavEntries.length > 0 ? configuredTopNavEntries : fallbackTopNavEntries;
+  const topNavGroupEntries = useMemo(
+    () =>
+      topNavEntries.filter(
+        (entry): entry is typeof entry & { item: Extract<ProjectSiteTopNavItem, { type: 'nav-group' }> } =>
+          entry.item.type === 'nav-group',
+      ),
+    [topNavEntries],
+  );
+  const showStudioTopNav = !!(
+    currentTheme?.capabilities.topNav &&
+    topNavEntries.length > 0
+  );
+  const activePageTopNavGroupId = useMemo(() => {
+    if (!navDraft || !activeId) {
+      return null;
+    }
+
+    return (
+      topNavGroupEntries.find((entry) => pageBelongsToGroup(navDraft.items, entry.item.groupId, activeId))?.item.groupId ?? null
+    );
+  }, [activeId, navDraft, topNavGroupEntries]);
+  const activeStudioTopNavGroupId = showStudioTopNav ? selectedTopNavGroupId : null;
+  const visibleNavDraft = useMemo(() => {
+    if (!navDraft || !activeStudioTopNavGroupId) {
+      return navDraft;
+    }
+
+    return filterNavigationToGroup(navDraft, activeStudioTopNavGroupId);
+  }, [activeStudioTopNavGroupId, navDraft]);
   const topLevelNavGroups = useMemo(
     () =>
       (navDraft?.items ?? [])
@@ -655,6 +735,28 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     () => load.pages.filter((page) => page.review?.required && page.status !== 'published'),
     [load.pages],
   );
+
+  useEffect(() => {
+    if (!showStudioTopNav) {
+      setSelectedTopNavGroupId(null);
+      return;
+    }
+
+    const availableGroupIds = new Set(topNavGroupEntries.map((entry) => entry.item.groupId));
+    const fallbackGroupId = topNavGroupEntries[0]?.item.groupId ?? null;
+
+    setSelectedTopNavGroupId((current) => {
+      if (current && availableGroupIds.has(current) && (!activePageTopNavGroupId || current !== activePageTopNavGroupId)) {
+        return current;
+      }
+
+      if (activePageTopNavGroupId && availableGroupIds.has(activePageTopNavGroupId)) {
+        return activePageTopNavGroupId;
+      }
+
+      return current && availableGroupIds.has(current) ? current : fallbackGroupId;
+    });
+  }, [activePageTopNavGroupId, showStudioTopNav, topNavGroupEntries]);
 
   const onSave = useCallback(
     async (next: PageDoc) => {
@@ -1000,6 +1102,26 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     setRightSidebarMode(null);
   }, []);
 
+  const handleTopNavGroupSelect = useCallback(
+    (groupId: string) => {
+      setSelectedTopNavGroupId(groupId);
+      if (!navDraft) {
+        return;
+      }
+
+      if (activeId && pageBelongsToGroup(navDraft.items, groupId, activeId)) {
+        return;
+      }
+
+      const nextPageId = findFirstPageIdInGroup(navDraft.items, groupId);
+      if (nextPageId) {
+        setActiveId(nextPageId);
+        setRightSidebarMode(null);
+      }
+    },
+    [activeId, navDraft],
+  );
+
   const runPreview = useCallback(async () => {
     if (!selectedProject?.path) {
       setWorkflowMessage(null);
@@ -1156,11 +1278,15 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   return (
     <div className="h-dvh overflow-hidden bg-fd-background text-fd-foreground flex flex-col">
       {/* Top Navigation Bar */}
-      <header className="flex h-12 items-center justify-between border-b border-fd-border px-4 shrink-0">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold truncate">{projectState?.name || selectedProject?.name || 'No Project'}</span>
-            <span className="text-xs text-fd-muted-foreground truncate">{projectState?.projectRoot || selectedProject?.path || ''}</span>
+      <header className="flex h-12 items-center justify-between gap-4 border-b border-fd-border px-4 shrink-0">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="min-w-0">
+            <span
+              className="block truncate text-sm font-semibold"
+              title={projectState?.projectRoot || selectedProject?.path || undefined}
+            >
+              {projectState?.name || selectedProject?.name || 'No Project'}
+            </span>
           </div>
           {isProjectLocked ? null : (
             <Button
@@ -1175,6 +1301,47 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
             </Button>
           )}
         </div>
+
+        {showStudioTopNav ? (
+          <nav className="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto px-2">
+            {topNavEntries.map(({ item, label }) => {
+              if (item.type === 'external') {
+                return (
+                  <a
+                    key={item.id}
+                    href={item.href}
+                    target={item.openInNewTab ? '_blank' : undefined}
+                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                    className="inline-flex h-9 shrink-0 items-center rounded-lg border border-transparent px-3 text-sm text-fd-muted-foreground transition hover:bg-fd-muted hover:text-fd-foreground"
+                  >
+                    {label}
+                  </a>
+                );
+              }
+
+              const active = item.groupId === activeStudioTopNavGroupId;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={cn(
+                    'inline-flex h-9 shrink-0 items-center rounded-lg border px-3 text-sm transition',
+                    active
+                      ? 'border-fd-border bg-fd-card font-semibold text-fd-foreground shadow-sm'
+                      : 'border-transparent text-fd-muted-foreground hover:bg-fd-muted hover:text-fd-foreground',
+                  )}
+                  onClick={() => handleTopNavGroupSelect(item.groupId)}
+                  data-testid={`studio-top-nav-${item.groupId}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         <div className="flex items-center gap-2.5">
           <div className="flex items-center overflow-hidden rounded-lg border border-fd-border bg-fd-card shadow-sm">
@@ -1327,7 +1494,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                 </div>
               ) : load.error ? (
                 <div className="px-2 py-3 text-sm text-fd-muted-foreground">{load.error}</div>
-              ) : navDraft ? (
+              ) : visibleNavDraft ? (
                 <div className="space-y-2">
                   {validation.errors.length || validation.warnings.length ? (
                     <div className="rounded-lg border border-fd-border bg-fd-background p-2 text-xs">
@@ -1344,7 +1511,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     </div>
                   ) : null}
                   <NavigationComposer
-                    nav={navDraft}
+                    nav={visibleNavDraft}
                     pages={filteredPages}
                     activePageId={activeId}
                     onSelectPage={(id) => {
@@ -1354,7 +1521,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     onOpenPageSettings={openPageSettings}
                     onCreatePage={createPageForNavigation}
                     onChange={(next) => {
-                      setNavDraft(next);
+                      setNavDraft((current) => {
+                        if (!current || !activeStudioTopNavGroupId) {
+                          return next;
+                        }
+
+                        return replaceNavigationGroupChildren(current, activeStudioTopNavGroupId, next.items);
+                      });
                       setNavDirty(true);
                       setNavDirtyTick((tick) => tick + 1);
                     }}

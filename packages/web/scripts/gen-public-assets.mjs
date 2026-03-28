@@ -1,12 +1,14 @@
 import { spawn } from 'node:child_process';
 import { cp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(webRoot, '../..');
-const nextBin = path.join(webRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
+const require = createRequire(import.meta.url);
+const nextBin = require.resolve('next/dist/bin/next');
 const tsconfigPath = path.join(webRoot, 'tsconfig.json');
 const RUNTIME_ENV_ALLOWLIST = new Set([
   'CI',
@@ -149,6 +151,7 @@ async function pruneNonDocsSiteArtifacts(outputRoot, mode) {
 }
 
 async function pruneInternalExportArtifacts(outputRoot) {
+  const preservedTextFiles = new Set(['llms.txt', 'robots.txt']);
   const entries = await readdir(outputRoot, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -164,7 +167,7 @@ async function pruneInternalExportArtifacts(outputRoot) {
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith('.txt') && entry.name !== 'llms.txt') {
+    if (entry.isFile() && entry.name.endsWith('.txt') && !preservedTextFiles.has(entry.name)) {
       await rm(entryPath, { force: true });
     }
   }

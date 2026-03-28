@@ -58,6 +58,7 @@ export type ProjectSiteNavigation = {
 };
 
 export type ProjectSiteConfig = {
+  url?: string;
   theme: ProjectSiteTheme;
   navigation?: ProjectSiteNavigation;
 };

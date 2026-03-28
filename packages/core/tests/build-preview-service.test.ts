@@ -57,6 +57,12 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const update = await updateProjectConfig(repoRoot, {
+      site: {
+        url: 'https://docs.example.com',
+      },
+    });
+    assert.equal(update.ok, true);
     const result = await runBuildWorkflow({ repoRoot });
 
     assert.equal(result.projectId, 'default');
@@ -70,6 +76,8 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     await access(path.join(result.artifactRoot, 'en', 'welcome', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'docs', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'docs', 'welcome', 'index.html'));
+    await access(path.join(result.artifactRoot, 'sitemap.xml'));
+    await access(path.join(result.artifactRoot, 'robots.txt'));
     await assert.rejects(() => access(path.join(result.artifactRoot, 'studio')));
     await assert.rejects(() => access(path.join(result.artifactRoot, 'projects')));
     await assert.rejects(() => access(path.join(result.artifactRoot, 'admin')));
@@ -77,7 +85,11 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
 
     const exportedFiles = await listFilesRecursively(result.artifactRoot);
     const leakedTxtFiles = exportedFiles.filter(
-      (filePath) => filePath.endsWith('.txt') && !filePath.endsWith('llms.txt') && !filePath.endsWith('llms-full.txt'),
+      (filePath) =>
+        filePath.endsWith('.txt') &&
+        !filePath.endsWith('llms.txt') &&
+        !filePath.endsWith('llms-full.txt') &&
+        !filePath.endsWith('robots.txt'),
     );
     assert.deepEqual(leakedTxtFiles, []);
 
@@ -86,6 +98,8 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     const searchIndex = JSON.parse(
       await readFile(path.join(result.artifactRoot, 'search-index.en.json'), 'utf8'),
     ) as { lang: string; docs: Array<{ slug: string }> };
+    const sitemap = await readFile(path.join(result.artifactRoot, 'sitemap.xml'), 'utf8');
+    const robots = await readFile(path.join(result.artifactRoot, 'robots.txt'), 'utf8');
     const llms = await readFile(path.join(result.artifactRoot, 'llms.txt'), 'utf8');
     const llmsFull = await readFile(path.join(result.artifactRoot, 'llms-full.txt'), 'utf8');
     const chunks = JSON.parse(
@@ -107,6 +121,10 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
 
     assert.match(rootIndex, /\/en(?!\/docs)/);
     assert.match(docsPage, /Welcome/);
+    assert.match(docsPage, /<html[^>]+lang="en"/);
+    assert.match(sitemap, /https:\/\/docs\.example\.com\/en/);
+    assert.match(sitemap, /https:\/\/docs\.example\.com\/en\/welcome/);
+    assert.match(robots, /Sitemap: https:\/\/docs\.example\.com\/sitemap\.xml/);
     assert.equal(searchIndex.lang, 'en');
     assert.deepEqual(searchIndex.docs.map((entry) => entry.slug), ['welcome']);
     assert.match(llms, /\/en\/welcome/);
@@ -380,6 +398,12 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const update = await updateProjectConfig(repoRoot, {
+      site: {
+        url: 'https://docs.example.com',
+      },
+    });
+    assert.equal(update.ok, true);
     const repository = createDocsRepository(repoRoot);
     const result = await runPreviewWorkflow({ repoRoot, startTimeoutMs: 60_000 });
 
@@ -390,6 +414,8 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
 
       const initialBody = await waitForPreviewText(`${result.url}${result.docsPath}`, 'Welcome');
       assert.match(initialBody, /Welcome/);
+      assert.match(initialBody, /<html[^>]+lang="en"/);
+      assert.match(initialBody, /noindex/);
 
       await savePage(repository, 'en', {
         id: 'welcome',

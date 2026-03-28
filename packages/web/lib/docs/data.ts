@@ -116,6 +116,12 @@ export async function getPublishedProjectName(projectId: string = '', customPath
   return contract.config.name;
 }
 
+export async function getPublishedSiteUrl(projectId: string = '', customPath?: string): Promise<string | undefined> {
+  const source = resolveDataSource(projectId, customPath);
+  const contract = await loadStudioProjectContract(source.projectId, source.customPath);
+  return contract.config.site.url;
+}
+
 export async function getPublishedSiteTheme(projectId: string = '', customPath?: string): Promise<ProjectSiteTheme> {
   const source = resolveDataSource(projectId, customPath);
   const contract = await loadStudioProjectContract(source.projectId, source.customPath);

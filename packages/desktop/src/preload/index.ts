@@ -1,11 +1,23 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-// Types for IPC communication
-interface IpcResponse {
-  success: boolean
-  data?: any
-  error?: { code: string; message: string }
+type IpcError = {
+  code: string
+  message: string
 }
+
+// Types for IPC communication
+interface IpcResponse<T = unknown> {
+  success: boolean
+  data?: T
+  error?: IpcError
+}
+
+type FilterDescriptor = { name: string; extensions: string[] }
+
+type WindowApi = Window &
+  typeof globalThis & {
+    api: typeof api
+  }
 
 // Expose protected methods to the renderer process
 const api = {
@@ -20,14 +32,14 @@ const api = {
   // Dialog operations
   dialog: {
     selectDirectory: (): Promise<IpcResponse> => ipcRenderer.invoke('dialog:selectDirectory'),
-    selectFile: (filters?: { name: string; extensions: string[] }[]): Promise<IpcResponse> =>
+    selectFile: (filters?: FilterDescriptor[]): Promise<IpcResponse> =>
       ipcRenderer.invoke('dialog:selectFile', filters)
   },
 
   // Navigation operations
   nav: {
     read: (lang: string): Promise<IpcResponse> => ipcRenderer.invoke('nav:read', lang),
-    write: (lang: string, navData: any): Promise<IpcResponse> =>
+    write: (lang: string, navData: unknown): Promise<IpcResponse> =>
       ipcRenderer.invoke('nav:write', lang, navData)
   },
 
@@ -42,28 +54,49 @@ const api = {
   // Store operations (electron-store)
   store: {
     get: (key: string): Promise<IpcResponse> => ipcRenderer.invoke('store:get', key),
-    set: (key: string, value: any): Promise<IpcResponse> => ipcRenderer.invoke('store:set', key, value),
+    set: (key: string, value: unknown): Promise<IpcResponse> =>
+      ipcRenderer.invoke('store:set', key, value),
     delete: (key: string): Promise<IpcResponse> => ipcRenderer.invoke('store:delete', key)
   },
 
   studio: {
     getProject: (projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:project:get', projectId, projectPath),
-    updateProject: (patch: unknown, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+    updateProject: (
+      patch: unknown,
+      projectId: string,
+      projectPath?: string
+    ): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:project:put', patch, projectId, projectPath),
     getPages: (lang: string, projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:pages:get', lang, projectId, projectPath),
-    getPage: (lang: string, pageId: string, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+    getPage: (
+      lang: string,
+      pageId: string,
+      projectId: string,
+      projectPath?: string
+    ): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:page:get', lang, pageId, projectId, projectPath),
-    savePage: (lang: string, page: unknown, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+    savePage: (
+      lang: string,
+      page: unknown,
+      projectId: string,
+      projectPath?: string
+    ): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:page:put', lang, page, projectId, projectPath),
     createPage: (
       lang: string,
       input: { slug: string; title: string },
       projectId: string,
       projectPath?: string
-    ): Promise<IpcResponse> => ipcRenderer.invoke('studio:page:post', lang, input, projectId, projectPath),
-    deletePage: (lang: string, pageId: string, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+    ): Promise<IpcResponse> =>
+      ipcRenderer.invoke('studio:page:post', lang, input, projectId, projectPath),
+    deletePage: (
+      lang: string,
+      pageId: string,
+      projectId: string,
+      projectPath?: string
+    ): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:page:delete', lang, pageId, projectId, projectPath),
     getNavigation: (lang: string, projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:navigation:get', lang, projectId, projectPath),
@@ -72,10 +105,15 @@ const api = {
       navigation: unknown,
       projectId: string,
       projectPath?: string
-    ): Promise<IpcResponse> => ipcRenderer.invoke('studio:navigation:put', lang, navigation, projectId, projectPath),
+    ): Promise<IpcResponse> =>
+      ipcRenderer.invoke('studio:navigation:put', lang, navigation, projectId, projectPath),
     getApiSources: (projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:api-sources:get', projectId, projectPath),
-    replaceApiSources: (sources: unknown, projectId: string, projectPath?: string): Promise<IpcResponse> =>
+    replaceApiSources: (
+      sources: unknown,
+      projectId: string,
+      projectPath?: string
+    ): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:api-sources:put', sources, projectId, projectPath),
     runBuild: (projectId: string, projectPath?: string): Promise<IpcResponse> =>
       ipcRenderer.invoke('studio:build:post', projectId, projectPath),
@@ -99,6 +137,6 @@ if (process.contextIsolated) {
     console.error('[Preload] Error exposing API:', error)
   }
 } else {
-  // @ts-ignore
-  window.api = api
+  const globalWindow = window as WindowApi
+  globalWindow.api = api
 }

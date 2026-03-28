@@ -7,12 +7,11 @@ import { isDesktopRuntimeEnabled, isExplicitCliDocsRuntimeEnabled } from '@/lib/
 export default function StudioPage() {
   const bootContext = readStudioBootContext();
 
-  if (
-    (process.env.NODE_ENV === 'production' &&
-      !isDesktopRuntimeEnabled() &&
-      bootContext.mode !== 'cli-single-project') ||
-    isExplicitCliDocsRuntimeEnabled()
-  ) {
+  if (isExplicitCliDocsRuntimeEnabled()) {
+    notFound();
+  }
+
+  if (!isDesktopRuntimeEnabled() && bootContext.mode !== 'cli-single-project') {
     notFound();
   }
 

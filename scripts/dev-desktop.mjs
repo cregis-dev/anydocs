@@ -101,7 +101,10 @@ async function main() {
     rendererHost,
     '--port',
     rendererPort
-  ], process.env, webRoot)
+  ], {
+    ...process.env,
+    ANYDOCS_DESKTOP_RUNTIME: '1'
+  }, webRoot)
 
   await waitForServer(healthUrl)
 

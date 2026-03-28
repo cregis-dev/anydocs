@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 
@@ -11,7 +12,18 @@ import {
   resolveRequestDocsSource,
 } from '@/lib/docs/data';
 import type { DocsLang } from '@/lib/docs/types';
+import { resolveDocsLocale } from '@/lib/docs/seo';
 import { resolveDocsTheme } from '@/lib/themes/resolve-theme';
+
+import '../globals.css';
+
+export const metadata: Metadata = {
+  title: {
+    default: 'Dev Docs',
+    template: '%s | Dev Docs',
+  },
+  description: '面向开发者的产品/组件文档与示例',
+};
 
 export default async function Layout({
   children,
@@ -42,16 +54,20 @@ export default async function Layout({
   const ReaderLayout = theme.ReaderLayout;
 
   return (
-    <ReaderLayout
-      lang={docsLang}
-      availableLanguages={availableLanguages}
-      nav={nav}
-      pages={pages}
-      projectName={projectName}
-      siteTheme={siteTheme}
-      siteNavigation={siteNavigation}
-    >
-      {children}
-    </ReaderLayout>
+    <html lang={resolveDocsLocale(docsLang)} className="cregis-theme" suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
+        <ReaderLayout
+          lang={docsLang}
+          availableLanguages={availableLanguages}
+          nav={nav}
+          pages={pages}
+          projectName={projectName}
+          siteTheme={siteTheme}
+          siteNavigation={siteNavigation}
+        >
+          {children}
+        </ReaderLayout>
+      </body>
+    </html>
   );
 }

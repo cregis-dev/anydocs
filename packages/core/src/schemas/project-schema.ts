@@ -38,6 +38,19 @@ function isSlugLikeId(value: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
+function normalizeSiteUrl(value: string): string {
+  const normalized = new URL(value.trim());
+  if (normalized.protocol !== 'http:' && normalized.protocol !== 'https:') {
+    throw new Error('unsupported protocol');
+  }
+
+  if (normalized.pathname !== '/') {
+    normalized.pathname = normalized.pathname.replace(/\/+$/, '');
+  }
+
+  return normalized.toString().replace(/\/$/, normalized.pathname === '/' ? '/' : '');
+}
+
 function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavLabel {
   if (typeof input === 'string') {
     if (input.trim().length === 0) {
@@ -251,6 +264,28 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
     );
   }
 
+  const siteUrl = site.url;
+  let normalizedSiteUrl: string | undefined;
+  if (siteUrl != null) {
+    if (typeof siteUrl !== 'string' || siteUrl.trim().length === 0) {
+      throw makeValidationError(
+        'site-url-string',
+        'Use a non-empty absolute http(s) URL for "site.url" when configuring canonical metadata.',
+        { received: siteUrl },
+      );
+    }
+
+    try {
+      normalizedSiteUrl = normalizeSiteUrl(siteUrl);
+    } catch {
+      throw makeValidationError(
+        'site-url-http-absolute',
+        'Use an absolute http(s) URL for "site.url", for example "https://docs.example.com".',
+        { received: siteUrl },
+      );
+    }
+  }
+
   const theme = site.theme;
   if (!isRecord(theme)) {
     throw makeValidationError(
@@ -438,6 +473,7 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
     defaultLanguage,
     languages: [...uniqueLanguages],
     site: {
+      ...(typeof normalizedSiteUrl === 'string' ? { url: normalizedSiteUrl } : {}),
       theme: {
         id: themeId.trim(),
         ...(branding

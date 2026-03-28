@@ -298,7 +298,7 @@ function createBlockExample(blockType: string): Record<string, unknown> {
         [blockId]: {
           id: blockId,
           type: blockType,
-          value: [{ id: elementId, type: 'code', children: [{ text: 'pnpm --filter @anydocs/mcp dev' }], props: { nodeType: 'void', language: 'bash' } }],
+          value: [{ id: elementId, type: 'code', children: [{ text: 'npx -y @anydocs/mcp' }], props: { nodeType: 'void', language: 'bash' } }],
           meta,
         },
       };

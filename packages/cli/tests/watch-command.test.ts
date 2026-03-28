@@ -135,7 +135,7 @@ test('cli prints command-specific help and version', async () => {
 
   assert.equal(versionResult.exitCode, 0);
   assert.equal(versionResult.signal, null);
-  assert.equal(versionSpawned.getStdout().trim(), '1.0.2');
+  assert.equal(versionSpawned.getStdout().trim(), '1.0.5');
   assert.equal(versionSpawned.getStderr(), '');
 });
 
@@ -149,7 +149,7 @@ test('version supports structured json output', async () => {
   assert.deepEqual(JSON.parse(spawned.getStdout()), {
     ok: true,
     data: {
-      version: '1.0.2',
+      version: '1.0.5',
     },
     meta: {
       command: 'version',
@@ -436,7 +436,8 @@ test('build emits a deployable static docs site and exits successfully', async (
       (filePath) =>
         filePath.endsWith('.txt') &&
         !filePath.endsWith('llms.txt') &&
-        !filePath.endsWith('llms-full.txt'),
+        !filePath.endsWith('llms-full.txt') &&
+        !filePath.endsWith('robots.txt'),
     );
     assert.deepEqual(leakedTxtFiles, []);
   } finally {

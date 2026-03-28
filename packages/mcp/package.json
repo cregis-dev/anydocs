@@ -1,19 +1,34 @@
 {
   "name": "@anydocs/mcp",
-  "version": "1.0.0",
-  "private": true,
+  "version": "1.0.1",
   "type": "module",
   "bin": {
-    "anydocs-mcp": "./src/index.ts"
+    "anydocs-mcp": "dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "dev": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "pnpm clean && pnpm --filter @anydocs/core build && tsc -p tsconfig.json",
+    "prepublishOnly": "pnpm build",
     "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anydocs/core": "workspace:*",
+    "@anydocs/core": "1.0.1",
     "@modelcontextprotocol/sdk": "^1.17.4",
     "zod": "^3.25.76"
   },

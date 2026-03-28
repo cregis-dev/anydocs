@@ -11,6 +11,7 @@ import {
 import { formatCliCommand } from '../help.ts';
 import { error, info } from '../output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
+import { configureDocsRuntimeEnv } from '../runtime/runtime-root.ts';
 
 type BuildCommandOptions = {
   targetDir?: string;
@@ -61,6 +62,8 @@ export async function runBuildCommand(options: BuildCommandOptions = {}): Promis
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
+    await configureDocsRuntimeEnv();
+
     if (!watch) {
       const result = await runBuildWorkflow({ repoRoot, outputDir: output });
       if (json) {

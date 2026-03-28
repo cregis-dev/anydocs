@@ -1,5 +1,4 @@
-const shouldStaticExport =
-  process.env.ANYDOCS_DOCS_RUNTIME === 'export' || process.env.NODE_ENV === 'production';
+const shouldStaticExport = process.env.ANYDOCS_DOCS_RUNTIME === 'export';
 
 const nextConfig = {
   reactStrictMode: true,

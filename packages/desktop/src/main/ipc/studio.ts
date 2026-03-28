@@ -22,7 +22,10 @@ import {
   savePage,
   updateProjectConfig,
   type ApiSourceDoc,
+  type ApiSourceRepository,
+  type BuildWorkflowResult,
   type DeletePageResult,
+  type DocsRepository,
   type DocsLang,
   type NavigationDoc,
   type PageDoc,
@@ -82,7 +85,10 @@ function resolveRepoRoot(customPath?: string): string {
   return path.resolve(customPath)
 }
 
-async function resolveProjectContract(projectId = DEFAULT_PROJECT_ID, customPath?: string): Promise<ProjectContract> {
+async function resolveProjectContract(
+  projectId = DEFAULT_PROJECT_ID,
+  customPath?: string
+): Promise<ProjectContract> {
   const result = await loadProjectContract(resolveRepoRoot(customPath), projectId || undefined)
   if (!result.ok) {
     throw result.error
@@ -91,7 +97,10 @@ async function resolveProjectContract(projectId = DEFAULT_PROJECT_ID, customPath
   return result.value
 }
 
-async function getDocsRepository(projectId = DEFAULT_PROJECT_ID, customPath?: string) {
+async function getDocsRepository(
+  projectId = DEFAULT_PROJECT_ID,
+  customPath?: string
+): Promise<DocsRepository> {
   const contract = await resolveProjectContract(projectId, customPath)
   return createDocsRepository(contract.paths.projectRoot)
 }
@@ -162,18 +171,34 @@ async function stopActivePreview(projectRoot: string): Promise<boolean> {
   return true
 }
 
-export async function getProject(projectId = '', customPath?: string) {
+export async function getProject(projectId = '', customPath?: string): Promise<ProjectContract> {
   return resolveProjectContract(projectId || DEFAULT_PROJECT_ID, customPath)
 }
 
-export async function getPages(lang: DocsLang, projectId = '', customPath?: string) {
+export async function getPages(
+  lang: DocsLang,
+  projectId = '',
+  customPath?: string
+): Promise<{ pages: PageDoc[] }> {
   return {
-    pages: await listPages(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang)
+    pages: await listPages(
+      await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath),
+      lang
+    )
   }
 }
 
-export async function getPage(lang: DocsLang, pageId: string, projectId = '', customPath?: string) {
-  const page = await loadPage(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang, pageId)
+export async function getPage(
+  lang: DocsLang,
+  pageId: string,
+  projectId = '',
+  customPath?: string
+): Promise<PageDoc> {
+  const page = await loadPage(
+    await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath),
+    lang,
+    pageId
+  )
   if (!page) {
     throw new Error(`Page "${pageId}" not found.`)
   }
@@ -181,7 +206,12 @@ export async function getPage(lang: DocsLang, pageId: string, projectId = '', cu
   return page
 }
 
-export async function putPage(lang: DocsLang, page: PageDoc, projectId = '', customPath?: string) {
+export async function putPage(
+  lang: DocsLang,
+  page: PageDoc,
+  projectId = '',
+  customPath?: string
+): Promise<PageDoc> {
   return savePage(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang, page)
 }
 
@@ -190,7 +220,7 @@ export async function postPage(
   input: { slug: string; title: string },
   projectId = '',
   customPath?: string
-) {
+): Promise<PageDoc> {
   const normalizedSlug = normalizeSlug(input.slug)
   const title = input.title.trim() || 'Untitled'
 
@@ -208,11 +238,24 @@ export async function postPage(
   })
 }
 
-export async function removePage(lang: DocsLang, pageId: string, projectId = '', customPath?: string): Promise<DeletePageResult> {
-  return deletePage(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang, pageId)
+export async function removePage(
+  lang: DocsLang,
+  pageId: string,
+  projectId = '',
+  customPath?: string
+): Promise<DeletePageResult> {
+  return deletePage(
+    await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath),
+    lang,
+    pageId
+  )
 }
 
-export async function getNavigation(lang: DocsLang, projectId = '', customPath?: string): Promise<NavigationDoc> {
+export async function getNavigation(
+  lang: DocsLang,
+  projectId = '',
+  customPath?: string
+): Promise<NavigationDoc> {
   return loadNavigation(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang)
 }
 
@@ -229,14 +272,22 @@ export async function putNavigation(
   })
 }
 
-async function getApiSourceRepository(projectId = DEFAULT_PROJECT_ID, customPath?: string) {
+async function getApiSourceRepository(
+  projectId = DEFAULT_PROJECT_ID,
+  customPath?: string
+): Promise<ApiSourceRepository> {
   const contract = await resolveProjectContract(projectId, customPath)
   return createApiSourceRepository(contract.paths.projectRoot)
 }
 
-export async function getApiSources(projectId = '', customPath?: string) {
+export async function getApiSources(
+  projectId = '',
+  customPath?: string
+): Promise<{ sources: ApiSourceDoc[] }> {
   return {
-    sources: await listApiSources(await getApiSourceRepository(projectId || DEFAULT_PROJECT_ID, customPath))
+    sources: await listApiSources(
+      await getApiSourceRepository(projectId || DEFAULT_PROJECT_ID, customPath)
+    )
   }
 }
 
@@ -244,11 +295,11 @@ export async function putApiSources(
   input: { sources?: ApiSourceDoc[] } | ApiSourceDoc[],
   projectId = '',
   customPath?: string
-) {
+): Promise<{ sources: ApiSourceDoc[] }> {
   const repository = await getApiSourceRepository(projectId || DEFAULT_PROJECT_ID, customPath)
   await initializeApiSourceRepository(repository)
 
-  const nextSources = Array.isArray(input) ? input : input.sources ?? []
+  const nextSources = Array.isArray(input) ? input : (input.sources ?? [])
   const existing = await listApiSources(repository)
   const nextIds = new Set(nextSources.map((source) => source.id))
 
@@ -295,7 +346,11 @@ export async function putProject(
         }
       : {})
   }
-  const result = await updateProjectConfig(resolveRepoRoot(customPath), nextPatch, contract.config.projectId)
+  const result = await updateProjectConfig(
+    resolveRepoRoot(customPath),
+    nextPatch,
+    contract.config.projectId
+  )
   if (!result.ok) {
     throw result.error
   }
@@ -303,7 +358,10 @@ export async function putProject(
   return resolveProjectContract(contract.config.projectId, customPath)
 }
 
-export async function postBuild(projectId = '', customPath?: string) {
+export async function postBuild(
+  projectId = '',
+  customPath?: string
+): Promise<Pick<BuildWorkflowResult, 'artifactRoot' | 'languages'>> {
   const contract = await resolveProjectContract(projectId || DEFAULT_PROJECT_ID, customPath)
   await stopActivePreview(contract.paths.projectRoot)
 
@@ -318,7 +376,10 @@ export async function postBuild(projectId = '', customPath?: string) {
   }
 }
 
-export async function postPreview(projectId = '', customPath?: string) {
+export async function postPreview(
+  projectId = '',
+  customPath?: string
+): Promise<{ docsPath: string; previewUrl: string }> {
   const contract = await resolveProjectContract(projectId || DEFAULT_PROJECT_ID, customPath)
   const projectRoot = contract.paths.projectRoot
 
@@ -337,15 +398,17 @@ export async function postPreview(projectId = '', customPath?: string) {
   }
 }
 
-export async function ensureProject(projectPath: string) {
+export async function ensureProject(projectPath: string): Promise<ProjectContract> {
   const resolvedPath = path.resolve(projectPath)
   const contract = await loadProjectContract(resolvedPath)
   if (contract.ok) {
     return contract.value
   }
 
-  return initializeProject({
+  const result = await initializeProject({
     repoRoot: resolvedPath,
     projectId: createDefaultProjectConfig().projectId
   })
+
+  return result.contract
 }

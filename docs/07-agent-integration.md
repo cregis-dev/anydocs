@@ -13,6 +13,21 @@
 1. `@anydocs/mcp` 的 `stdio` MCP server
 2. 项目根目录里的 agent guide 文件
 
+如果你是通过 npm 安装使用 Anydocs，而不是从仓库源码运行，推荐命令是：
+
+```bash
+npx @anydocs/cli <command>
+npx -y @anydocs/mcp
+```
+
+如果你更喜欢全局命令，也可以：
+
+```bash
+npm install -g @anydocs/cli @anydocs/mcp
+anydocs <command>
+anydocs-mcp
+```
+
 ## 1. 推荐集成方式
 
 对 Codex、Claude Code 这类 coding agent，推荐使用：
@@ -39,25 +54,34 @@
 {
   "mcpServers": {
     "anydocs": {
-      "command": "pnpm",
-      "args": ["--filter", "@anydocs/mcp", "dev"],
-      "cwd": "/path/to/anydocs"
+      "command": "npx",
+      "args": ["-y", "@anydocs/mcp"]
     }
   }
 }
 ```
 
-如果你不想依赖 `pnpm` 子命令，也可以直接运行入口：
+如果你已经全局安装，也可以把 `command` 直接写成 `anydocs-mcp`：
 
 ```json
 {
   "mcpServers": {
     "anydocs": {
-      "command": "node",
-      "args": [
-        "--experimental-strip-types",
-        "packages/mcp/src/index.ts"
-      ],
+      "command": "anydocs-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+如果你是在 Anydocs 仓库里开发 MCP 本身，才推荐继续使用源码入口：
+
+```json
+{
+  "mcpServers": {
+    "anydocs": {
+      "command": "pnpm",
+      "args": ["--filter", "@anydocs/mcp", "dev"],
       "cwd": "/path/to/anydocs"
     }
   }
@@ -71,13 +95,13 @@
 可以直接这样初始化项目：
 
 ```bash
-pnpm --filter @anydocs/cli cli init ./my-docs-project --agent codex
+npx @anydocs/cli init ./my-docs-project --agent codex
 ```
 
 或：
 
 ```bash
-pnpm --filter @anydocs/cli cli project create ./my-docs-project --agent codex
+npx @anydocs/cli project create ./my-docs-project --agent codex
 ```
 
 这样生成的 `AGENTS.md` 会指导 Codex：
@@ -102,13 +126,13 @@ pnpm --filter @anydocs/cli cli project create ./my-docs-project --agent codex
 初始化项目时：
 
 ```bash
-pnpm --filter @anydocs/cli cli init ./my-docs-project --agent claude-code
+npx @anydocs/cli init ./my-docs-project --agent claude-code
 ```
 
 或：
 
 ```bash
-pnpm --filter @anydocs/cli cli project create ./my-docs-project --agent claude-code
+npx @anydocs/cli project create ./my-docs-project --agent claude-code
 ```
 
 这样项目会带上一份 `Claude.md`，内容与标准 guide 模板一致，但文件名更适合 Claude Code 的约定式读取。

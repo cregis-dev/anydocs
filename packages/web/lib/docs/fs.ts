@@ -236,6 +236,7 @@ export async function updateStudioProjectSettings(
     languages?: DocsLang[];
     defaultLanguage?: DocsLang;
     site?: {
+      url?: string;
       theme?: {
         id?: string;
         branding?: {
@@ -278,17 +279,18 @@ export async function updateStudioProjectSettings(
     ...(patch.languages !== undefined ? { languages: patch.languages } : {}),
     ...(patch.defaultLanguage !== undefined ? { defaultLanguage: patch.defaultLanguage } : {}),
     ...(patch.build !== undefined ? { build: patch.build } : {}),
-    ...(themePatch
+    ...((patch.site?.url !== undefined || themePatch || navigationPatch)
       ? {
           site: {
             ...currentSite,
+            ...(patch.site?.url !== undefined ? { url: patch.site.url } : {}),
             theme: {
               ...currentTheme,
-              ...(themePatch.id !== undefined ? { id: themePatch.id } : {}),
-              ...(themePatch.branding !== undefined ? { branding: themePatch.branding } : {}),
-              ...(themePatch.chrome !== undefined ? { chrome: themePatch.chrome } : {}),
-              ...(themePatch.colors !== undefined ? { colors: themePatch.colors } : {}),
-              ...(themePatch.codeTheme !== undefined ? { codeTheme: themePatch.codeTheme } : {}),
+              ...(themePatch?.id !== undefined ? { id: themePatch.id } : {}),
+              ...(themePatch?.branding !== undefined ? { branding: themePatch.branding } : {}),
+              ...(themePatch?.chrome !== undefined ? { chrome: themePatch.chrome } : {}),
+              ...(themePatch?.colors !== undefined ? { colors: themePatch.colors } : {}),
+              ...(themePatch?.codeTheme !== undefined ? { codeTheme: themePatch.codeTheme } : {}),
             },
             ...(navigationPatch !== undefined
               ? {
@@ -298,17 +300,6 @@ export async function updateStudioProjectSettings(
                       : undefined,
                 }
               : {}),
-          },
-        }
-      : {}),
-    ...(!themePatch && navigationPatch !== undefined
-      ? {
-          site: {
-            ...currentSite,
-            navigation:
-              navigationPatch.topNav && navigationPatch.topNav.length > 0
-                ? { topNav: navigationPatch.topNav }
-                : undefined,
           },
         }
       : {}),

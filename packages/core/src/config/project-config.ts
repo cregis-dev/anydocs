@@ -24,6 +24,7 @@ export function createDefaultProjectConfig(
     defaultLanguage,
     languages,
     site: {
+      ...(overrides.site?.url ? { url: overrides.site.url } : {}),
       theme: {
         id: overrides.site?.theme?.id ?? DEFAULT_DOCS_THEME_ID,
         ...(overrides.site?.theme?.branding ? { branding: overrides.site.theme.branding } : {}),

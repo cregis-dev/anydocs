@@ -30,11 +30,12 @@ export function resolveStudioProjectQuery(request: NextRequest): StudioProjectQu
   const requestedProjectId = request.nextUrl.searchParams.get('projectId')?.trim() ?? '';
   const requestedCustomPath = normalizeOptionalString(request.nextUrl.searchParams.get('path'));
 
-  if (process.env.ANYDOCS_STUDIO_MODE !== 'cli-single-project') {
-    return {
-      projectId: requestedProjectId,
-      customPath: requestedCustomPath,
-    };
+  const studioMode = process.env.ANYDOCS_STUDIO_MODE;
+
+  if (studioMode !== 'cli-single-project') {
+    throw createProjectPolicyError('Studio local APIs are only available in CLI Studio runtime.', {
+      studioMode: studioMode ?? 'web-dev',
+    });
   }
 
   const lockedProjectRoot = normalizeOptionalString(process.env.ANYDOCS_STUDIO_PROJECT_ROOT);

@@ -10,25 +10,35 @@ import type { ProjectPathContract } from '../types/project.ts';
 
 const CORE_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let webRuntimeQueue: Promise<void> = Promise.resolve();
+const WEB_RUNTIME_ROOT_ENV = 'ANYDOCS_WEB_RUNTIME_ROOT';
 const WEB_RUNTIME_LOCK_DIR = '.anydocs-web-runtime.lock';
 const WEB_RUNTIME_LOCK_TIMEOUT_MS = 5 * 60_000;
 const WEB_RUNTIME_LOCK_POLL_MS = 250;
 
+function isWebRuntimeRoot(candidate: string) {
+  return existsSync(path.join(candidate, 'scripts', 'gen-public-assets.mjs'));
+}
+
 function resolveWebPackageRoot() {
   const cwd = process.cwd();
+  const configuredRoot = process.env[WEB_RUNTIME_ROOT_ENV]?.trim();
   const candidates = [
+    ...(configuredRoot ? [path.resolve(cwd, configuredRoot)] : []),
     cwd,
     path.join(cwd, 'packages', 'web'),
     path.join(path.resolve(CORE_PACKAGE_ROOT, '../../..'), 'packages', 'web'),
+    path.resolve(CORE_PACKAGE_ROOT, '../../cli/docs-runtime'),
   ];
 
   for (const candidate of candidates) {
-    if (existsSync(path.join(candidate, 'scripts', 'gen-public-assets.mjs'))) {
+    if (isWebRuntimeRoot(candidate)) {
       return candidate;
     }
   }
 
-  return path.join(path.resolve(CORE_PACKAGE_ROOT, '../../..'), 'packages', 'web');
+  throw new Error(
+    `Unable to locate the docs web runtime. Set ${WEB_RUNTIME_ROOT_ENV} or install a CLI package that includes docs-runtime.`,
+  );
 }
 
 const BRIDGE_ENV_ALLOWLIST = new Set([

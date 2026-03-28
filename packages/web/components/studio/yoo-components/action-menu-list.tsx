@@ -1,6 +1,6 @@
-import { ActionMenuList } from '@yoopta/ui';
-// @ts-ignore
-import type { Placement } from '@floating-ui/dom';
+import { ActionMenuList } from "@yoopta/ui";
+// @ts-expect-error Yoopta does not re-export the floating-ui placement type we need here.
+import type { Placement } from "@floating-ui/dom";
 
 type Props = {
   open: boolean;
@@ -9,7 +9,12 @@ type Props = {
   placement?: Placement;
 };
 
-export const YooptaActionMenuList = ({ open, onOpenChange, anchor, placement = 'right-start' }: Props) => {
+export const YooptaActionMenuList = ({
+  open,
+  onOpenChange,
+  anchor,
+  placement = "right-start",
+}: Props) => {
   return (
     <ActionMenuList
       open={open}

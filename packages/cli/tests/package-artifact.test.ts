@@ -55,11 +55,16 @@ test('packed cli tarball includes the packaged studio runtime', { timeout: 240_0
 
     const listing = await runCommand('tar', ['-tzf', tarballPath], CLI_WORKDIR);
     assert.match(listing.stdout, /package\/dist\/commands\/studio-command\.js/);
+    assert.match(listing.stdout, /package\/dist\/runtime\/runtime-root\.js/);
     assert.match(listing.stdout, /package\/studio-runtime\/app\/studio\/page\.tsx/);
     assert.match(listing.stdout, /package\/studio-runtime\/components\/studio\/studio-entry\.tsx/);
     assert.match(listing.stdout, /package\/studio-runtime\/lib\/studio\/server\/project-policy\.ts/);
     assert.match(listing.stdout, /package\/studio-runtime\/next\.config\.mjs/);
     assert.match(listing.stdout, /package\/studio-runtime\/tsconfig\.json/);
+    assert.match(listing.stdout, /package\/docs-runtime\/scripts\/gen-public-assets\.mjs/);
+    assert.match(listing.stdout, /package\/docs-runtime\/app\/\[lang\]\/\[\.\.\.slug\]\/page\.tsx/);
+    assert.match(listing.stdout, /package\/docs-runtime\/next\.config\.mjs/);
+    assert.match(listing.stdout, /package\/docs-runtime\/tsconfig\.json/);
   } finally {
     await rm(tarballPath, { force: true });
   }

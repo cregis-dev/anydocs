@@ -1,14 +1,13 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { loadProjectContract } from '@anydocs/core';
 
 import { error, info } from '../output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
+import { resolveStudioRuntimeRoot } from '../runtime/runtime-root.ts';
 
 type StudioCommandOptions = {
   targetDir?: string;
@@ -18,7 +17,6 @@ type StudioCommandOptions = {
   json?: boolean;
 };
 
-const CLI_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../../package.json', import.meta.url)));
 const STUDIO_READY_TIMEOUT_MS = 60_000;
 const require = createRequire(import.meta.url);
 
@@ -29,26 +27,6 @@ function sanitizePathSegment(value: string): string {
 
 function resolveStudioDistDir(projectId: string, port: number): string {
   return path.join('.next-cli-studio', `${sanitizePathSegment(projectId)}-${port}`);
-}
-
-function resolveStudioRuntimeRoot(): string {
-  const candidates = [
-    path.join(CLI_PACKAGE_ROOT, 'studio-runtime'),
-    path.resolve(CLI_PACKAGE_ROOT, '../web'),
-    process.cwd(),
-    path.join(process.cwd(), 'packages', 'web'),
-  ];
-
-  for (const candidate of candidates) {
-    if (
-      existsSync(path.join(candidate, 'next.config.mjs')) &&
-      existsSync(path.join(candidate, 'app', 'studio', 'page.tsx'))
-    ) {
-      return candidate;
-    }
-  }
-
-  throw new Error('Unable to locate the Studio runtime. Expected a packaged studio-runtime or a local packages/web workspace.');
 }
 
 function resolveNextBin(): string {
@@ -193,11 +171,11 @@ export async function runStudioCommand(options: StudioCommandOptions = {}): Prom
     }
 
     const contract = contractResult.value;
-    const runtimeRoot = resolveStudioRuntimeRoot();
+    const runtimeRoot = await resolveStudioRuntimeRoot();
     const nextBin = resolveNextBin();
     const port = options.port ?? (await pickAvailablePort(host));
     const distDir = resolveStudioDistDir(contract.config.projectId, port);
-    const child = spawn(process.execPath, [nextBin, 'dev', '--hostname', host, '--port', String(port)], {
+    const child = spawn(process.execPath, [nextBin, 'dev', '--webpack', '--hostname', host, '--port', String(port)], {
       cwd: runtimeRoot,
       env: {
         ...process.env,

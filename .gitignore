@@ -10,6 +10,7 @@ coverage/
 
 # Build outputs
 .next/
+.next-cli-studio/
 .next-cli-export*/
 .next-cli-preview*/
 out/
@@ -59,7 +60,12 @@ next-env.d.ts
 
 # Playwright
 .playwright/
+.playwright-cli/
 .tmp/
+.anydocs-web-runtime.lock/
 
 # Misc
 *.pem
+packages/cli/docs-runtime/
+packages/cli/studio-runtime/
+packages/cli/*.tgz

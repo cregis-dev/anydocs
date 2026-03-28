@@ -1,18 +1,24 @@
-import { redirect, notFound } from 'next/navigation';
+import { redirect, notFound } from "next/navigation";
 
 import {
+  getCliDocsSourceFromEnv,
   getDefaultLanguageStaticParams,
   getDefaultPublishedLanguage,
   isDocsReaderAvailable,
   resolveRequestDocsSource,
-} from '@/lib/docs/data';
+} from "@/lib/docs/data";
 
 export async function generateStaticParams() {
   if (!isDocsReaderAvailable()) {
     return [];
   }
 
-  return getDefaultLanguageStaticParams();
+  const source = getCliDocsSourceFromEnv();
+  if (!source) {
+    return [];
+  }
+
+  return getDefaultLanguageStaticParams(source.projectId, source.customPath);
 }
 
 export default async function Page({
@@ -26,7 +32,10 @@ export default async function Page({
 
   const { slug } = await params;
   const source = await resolveRequestDocsSource();
-  const suffix = slug?.length ? `/${slug.join('/')}` : '';
-  const defaultLanguage = await getDefaultPublishedLanguage(source.projectId, source.customPath);
+  const suffix = slug?.length ? `/${slug.join("/")}` : "";
+  const defaultLanguage = await getDefaultPublishedLanguage(
+    source.projectId,
+    source.customPath,
+  );
   redirect(`/${defaultLanguage}${suffix}`);
 }

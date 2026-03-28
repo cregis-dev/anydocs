@@ -18,15 +18,24 @@ import {
   removePage
 } from './studio'
 
-const StoreConstructor = (Store as typeof Store & { default?: typeof Store }).default ?? Store
-const store = new StoreConstructor()
+type IpcErrorPayload = {
+  code: string
+  message: string
+}
 
-function toErrorPayload(error: unknown) {
+const StoreConstructor = (Store as typeof Store & { default?: typeof Store }).default ?? Store
+const store = new StoreConstructor<Record<string, unknown>>()
+
+function toErrorPayload(error: unknown): IpcErrorPayload {
   if (error instanceof Error) {
     return { code: 'IPC_ERROR', message: error.message }
   }
 
   return { code: 'IPC_ERROR', message: 'Unexpected IPC error' }
+}
+
+function toMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unexpected IPC error'
 }
 
 // File Operations IPC Handlers
@@ -36,8 +45,8 @@ const registerFileHandlers = (): void => {
     try {
       const content = await readFile(filePath, 'utf-8')
       return { success: true, data: content }
-    } catch (error: any) {
-      return { success: false, error: { code: 'READ_ERROR', message: error.message } }
+    } catch (error: unknown) {
+      return { success: false, error: { code: 'READ_ERROR', message: toMessage(error) } }
     }
   })
 
@@ -46,8 +55,8 @@ const registerFileHandlers = (): void => {
     try {
       await writeFile(filePath, content, 'utf-8')
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: { code: 'WRITE_ERROR', message: error.message } }
+    } catch (error: unknown) {
+      return { success: false, error: { code: 'WRITE_ERROR', message: toMessage(error) } }
     }
   })
 
@@ -68,8 +77,8 @@ const registerFileHandlers = (): void => {
         })
       )
       return { success: true, data: files }
-    } catch (error: any) {
-      return { success: false, error: { code: 'LIST_ERROR', message: error.message } }
+    } catch (error: unknown) {
+      return { success: false, error: { code: 'LIST_ERROR', message: toMessage(error) } }
     }
   })
 
@@ -82,13 +91,16 @@ const registerFileHandlers = (): void => {
   })
 
   // Select file dialog
-  ipcMain.handle('dialog:selectFile', async (_, filters?: { name: string; extensions: string[] }[]) => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: filters || [{ name: 'All Files', extensions: ['*'] }]
-    })
-    return { success: !result.canceled, data: result.filePaths[0] }
-  })
+  ipcMain.handle(
+    'dialog:selectFile',
+    async (_, filters?: { name: string; extensions: string[] }[]) => {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: filters || [{ name: 'All Files', extensions: ['*'] }]
+      })
+      return { success: !result.canceled, data: result.filePaths[0] }
+    }
+  )
 }
 
 const registerStudioHandlers = (): void => {
@@ -100,41 +112,62 @@ const registerStudioHandlers = (): void => {
     }
   })
 
-  ipcMain.handle('studio:project:put', async (_, patch: unknown, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await putProject(patch as never, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:project:put',
+    async (_, patch: unknown, projectId: string, customPath?: string) => {
+      try {
+        return { success: true, data: await putProject(patch as never, projectId, customPath) }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
-  ipcMain.handle('studio:pages:get', async (_, lang: string, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await getPages(lang as never, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:pages:get',
+    async (_, lang: string, projectId: string, customPath?: string) => {
+      try {
+        return { success: true, data: await getPages(lang as never, projectId, customPath) }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
-  ipcMain.handle('studio:page:get', async (_, lang: string, pageId: string, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await getPage(lang as never, pageId, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:page:get',
+    async (_, lang: string, pageId: string, projectId: string, customPath?: string) => {
+      try {
+        return { success: true, data: await getPage(lang as never, pageId, projectId, customPath) }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
-  ipcMain.handle('studio:page:put', async (_, lang: string, page: unknown, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await putPage(lang as never, page as never, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:page:put',
+    async (_, lang: string, page: unknown, projectId: string, customPath?: string) => {
+      try {
+        return {
+          success: true,
+          data: await putPage(lang as never, page as never, projectId, customPath)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
   ipcMain.handle(
     'studio:page:post',
-    async (_, lang: string, input: { slug: string; title: string }, projectId: string, customPath?: string) => {
+    async (
+      _,
+      lang: string,
+      input: { slug: string; title: string },
+      projectId: string,
+      customPath?: string
+    ) => {
       try {
         return { success: true, data: await postPage(lang as never, input, projectId, customPath) }
       } catch (error) {
@@ -147,26 +180,35 @@ const registerStudioHandlers = (): void => {
     'studio:page:delete',
     async (_, lang: string, pageId: string, projectId: string, customPath?: string) => {
       try {
-        return { success: true, data: await removePage(lang as never, pageId, projectId, customPath) }
+        return {
+          success: true,
+          data: await removePage(lang as never, pageId, projectId, customPath)
+        }
       } catch (error) {
         return { success: false, error: toErrorPayload(error) }
       }
     }
   )
 
-  ipcMain.handle('studio:navigation:get', async (_, lang: string, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await getNavigation(lang as never, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:navigation:get',
+    async (_, lang: string, projectId: string, customPath?: string) => {
+      try {
+        return { success: true, data: await getNavigation(lang as never, projectId, customPath) }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
   ipcMain.handle(
     'studio:navigation:put',
     async (_, lang: string, navigation: unknown, projectId: string, customPath?: string) => {
       try {
-        return { success: true, data: await putNavigation(lang as never, navigation as never, projectId, customPath) }
+        return {
+          success: true,
+          data: await putNavigation(lang as never, navigation as never, projectId, customPath)
+        }
       } catch (error) {
         return { success: false, error: toErrorPayload(error) }
       }
@@ -181,13 +223,16 @@ const registerStudioHandlers = (): void => {
     }
   })
 
-  ipcMain.handle('studio:api-sources:put', async (_, sources: unknown, projectId: string, customPath?: string) => {
-    try {
-      return { success: true, data: await putApiSources(sources as never, projectId, customPath) }
-    } catch (error) {
-      return { success: false, error: toErrorPayload(error) }
+  ipcMain.handle(
+    'studio:api-sources:put',
+    async (_, sources: unknown, projectId: string, customPath?: string) => {
+      try {
+        return { success: true, data: await putApiSources(sources as never, projectId, customPath) }
+      } catch (error) {
+        return { success: false, error: toErrorPayload(error) }
+      }
     }
-  })
+  )
 
   ipcMain.handle('studio:build:post', async (_, projectId: string, customPath?: string) => {
     try {
@@ -244,7 +289,7 @@ const registerStoreHandlers = (): void => {
     return { success: true, data: store.get(key) }
   })
 
-  ipcMain.handle('store:set', (_, key: string, value: any) => {
+  ipcMain.handle('store:set', (_, key: string, value: unknown) => {
     store.set(key, value)
     return { success: true }
   })

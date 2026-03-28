@@ -5,9 +5,10 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const cliRoot = path.resolve(scriptDir, '..');
 const webRoot = path.resolve(cliRoot, '../web');
-const runtimeRoot = path.join(cliRoot, 'studio-runtime');
+const studioRuntimeRoot = path.join(cliRoot, 'studio-runtime');
+const docsRuntimeRoot = path.join(cliRoot, 'docs-runtime');
 
-const copiedEntries = [
+const sharedEntries = [
   'app',
   'components',
   'lib',
@@ -18,6 +19,9 @@ const copiedEntries = [
   'postcss.config.mjs',
   'tailwind.config.mjs',
 ];
+
+const studioCopiedEntries = [...sharedEntries];
+const docsCopiedEntries = [...sharedEntries, 'scripts'];
 
 const runtimeTsconfig = {
   compilerOptions: {
@@ -51,34 +55,41 @@ const runtimeTsconfig = {
   exclude: ['node_modules', 'examples', 'tests', 'demo'],
 };
 
-const runtimePackageJson = {
-  name: '@anydocs/cli-studio-runtime',
-  private: true,
-  type: 'module',
-};
+function createRuntimePackageJson(name) {
+  return {
+    name,
+    private: true,
+    type: 'module',
+  };
+}
 
-async function main() {
-  await rm(runtimeRoot, { recursive: true, force: true });
-  await mkdir(runtimeRoot, { recursive: true });
+async function prepareRuntime(rootDir, copiedEntries, packageName) {
+  await rm(rootDir, { recursive: true, force: true });
+  await mkdir(rootDir, { recursive: true });
 
   for (const entry of copiedEntries) {
-    await cp(path.join(webRoot, entry), path.join(runtimeRoot, entry), {
+    await cp(path.join(webRoot, entry), path.join(rootDir, entry), {
       recursive: true,
       force: true,
     });
   }
 
   await writeFile(
-    path.join(runtimeRoot, 'next-env.d.ts'),
-    '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n\n// This file is generated for the packaged Studio runtime.\n',
+    path.join(rootDir, 'next-env.d.ts'),
+    '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n\n// This file is generated for the packaged CLI runtime.\n',
     'utf8',
   );
-  await writeFile(path.join(runtimeRoot, 'tsconfig.json'), `${JSON.stringify(runtimeTsconfig, null, 2)}\n`, 'utf8');
+  await writeFile(path.join(rootDir, 'tsconfig.json'), `${JSON.stringify(runtimeTsconfig, null, 2)}\n`, 'utf8');
   await writeFile(
-    path.join(runtimeRoot, 'package.json'),
-    `${JSON.stringify(runtimePackageJson, null, 2)}\n`,
+    path.join(rootDir, 'package.json'),
+    `${JSON.stringify(createRuntimePackageJson(packageName), null, 2)}\n`,
     'utf8',
   );
+}
+
+async function main() {
+  await prepareRuntime(studioRuntimeRoot, studioCopiedEntries, '@anydocs/cli-studio-runtime');
+  await prepareRuntime(docsRuntimeRoot, docsCopiedEntries, '@anydocs/cli-docs-runtime');
 }
 
 main().catch((error) => {

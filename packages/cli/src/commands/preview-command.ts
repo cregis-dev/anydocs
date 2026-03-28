@@ -8,6 +8,7 @@ import {
 
 import { error, info } from '../output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
+import { configureDocsRuntimeEnv } from '../runtime/runtime-root.ts';
 
 type PreviewCommandOptions = {
   targetDir?: string;
@@ -44,6 +45,8 @@ export async function runPreviewCommand(options: PreviewCommandOptions = {}): Pr
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
+    await configureDocsRuntimeEnv();
+
     if (watch) {
       info('Preview runs in live mode by default; --watch is kept as a compatibility flag.');
     }

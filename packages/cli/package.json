@@ -1,19 +1,20 @@
 {
   "name": "@anydocs/cli",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "type": "module",
   "bin": {
     "anydocs": "dist/index.js"
   },
   "files": [
     "dist",
-    "studio-runtime"
+    "studio-runtime",
+    "docs-runtime"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true }); require('node:fs').rmSync('studio-runtime', { recursive: true, force: true })\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true }); require('node:fs').rmSync('studio-runtime', { recursive: true, force: true }); require('node:fs').rmSync('docs-runtime', { recursive: true, force: true })\"",
     "cli": "node --experimental-strip-types src/index.ts",
     "dev": "tsx src/index.ts",
     "preview": "node --experimental-strip-types src/index.ts preview",
@@ -24,7 +25,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anydocs/core": "1.0.2",
+    "@anydocs/core": "1.0.3",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-scroll-area": "^1.2.9",

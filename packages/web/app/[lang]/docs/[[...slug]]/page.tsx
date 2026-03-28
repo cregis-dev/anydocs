@@ -1,9 +1,10 @@
-import { redirect, notFound } from 'next/navigation';
+import { redirect, notFound } from "next/navigation";
 
 import {
+  getCliDocsSourceFromEnv,
   getPublishedDocStaticParams,
   isDocsReaderAvailable,
-} from '@/lib/docs/data';
+} from "@/lib/docs/data";
 
 export default async function Page({
   params,
@@ -15,7 +16,7 @@ export default async function Page({
   }
 
   const { lang, slug } = await params;
-  const suffix = slug?.length ? `/${slug.join('/')}` : '';
+  const suffix = slug?.length ? `/${slug.join("/")}` : "";
   redirect(`/${lang}${suffix}`);
 }
 
@@ -24,5 +25,10 @@ export async function generateStaticParams() {
     return [];
   }
 
-  return getPublishedDocStaticParams();
+  const source = getCliDocsSourceFromEnv();
+  if (!source) {
+    return [];
+  }
+
+  return getPublishedDocStaticParams(source.projectId, source.customPath);
 }

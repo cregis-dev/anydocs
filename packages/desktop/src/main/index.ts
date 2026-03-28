@@ -1,4 +1,5 @@
 import { app, shell, BrowserWindow } from 'electron'
+import { existsSync } from 'node:fs'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
@@ -22,8 +23,7 @@ function getProdAppPath(): string {
   }
   // For unpacked build, try local web/out first, then fall back to monorepo path
   const localPath = join(__dirname, '../../web/out')
-  const fs = require('fs')
-  if (fs.existsSync(localPath)) {
+  if (existsSync(localPath)) {
     return localPath
   }
   return getNextExportPath()

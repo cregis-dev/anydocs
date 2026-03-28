@@ -6,7 +6,7 @@ const webServer =
     ? undefined
     : {
         command: 'pnpm dev',
-        url: 'http://127.0.0.1:3000',
+        url: 'http://127.0.0.1:3000/robots.txt',
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
       };

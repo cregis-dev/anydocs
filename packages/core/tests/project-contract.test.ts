@@ -694,6 +694,37 @@ test('updateProjectConfig persists build outputDir and allows clearing branding/
   }
 });
 
+test('updateProjectConfig persists normalized site.url overrides', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+
+  try {
+    const result = await updateProjectConfig(repoRoot, {
+      site: {
+        url: 'https://docs.example.com/product/',
+      },
+    });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    assert.equal(result.value.site.url, 'https://docs.example.com/product');
+
+    const persistedConfig = JSON.parse(
+      await readFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), 'utf8'),
+    ) as {
+      site?: {
+        url?: string;
+      };
+    };
+    assert.equal(persistedConfig.site?.url, 'https://docs.example.com/product');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('loadProjectContract rejects invalid classic-docs chrome and color overrides', async () => {
   const repoRoot = await createTempRepoRoot();
   const projectRoot = repoRoot;
@@ -758,6 +789,49 @@ test('loadProjectContract rejects invalid classic-docs chrome and color override
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.details.rule, 'site-theme-colors-primary-hex');
+    }
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadProjectContract rejects invalid site.url overrides', async () => {
+  const repoRoot = await createTempRepoRoot();
+  const projectRoot = repoRoot;
+
+  try {
+    await mkdir(path.join(projectRoot, 'pages', 'en'), { recursive: true });
+    await mkdir(path.join(projectRoot, 'navigation'), { recursive: true });
+    await writeFile(
+      path.join(projectRoot, 'navigation', 'en.json'),
+      `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`,
+      'utf8',
+    );
+
+    const invalidSiteUrlConfig = {
+      version: 1,
+      projectId: 'default',
+      name: 'Invalid Site URL',
+      defaultLanguage: 'en',
+      languages: ['en'],
+      site: {
+        url: 'ftp://docs.example.com',
+        theme: {
+          id: 'classic-docs',
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(invalidSiteUrlConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    const result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.details.rule, 'site-url-http-absolute');
     }
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

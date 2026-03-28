@@ -5,6 +5,21 @@
 - 在 `Studio` 里编辑文档页面、导航和项目设置
 - 让 `agent` 通过 `MCP` 稳定地读写文档项目，而不是直接改 JSON
 
+如果你只想直接使用已发布的 CLI 和 MCP，而不是先从源码运行，可以用：
+
+```bash
+npx @anydocs/cli version
+npx -y @anydocs/mcp
+```
+
+或全局安装：
+
+```bash
+npm install -g @anydocs/cli @anydocs/mcp
+anydocs version
+anydocs-mcp
+```
+
 如果你是第一次进入仓库，先看下面两个路径：
 
 1. 想先把示例项目跑起来：看“快速启动”
@@ -34,9 +49,9 @@ pnpm --filter @anydocs/cli cli preview examples/demo-docs
 
 ```bash
 pnpm install
-pnpm --filter @anydocs/cli cli init ./my-docs-project --agent codex
+npx @anydocs/cli init ./my-docs-project --agent codex
 pnpm dev
-pnpm --filter @anydocs/cli cli preview ./my-docs-project
+npx @anydocs/cli preview ./my-docs-project
 ```
 
 然后：
@@ -60,13 +75,13 @@ pnpm --filter @anydocs/cli cli preview ./my-docs-project
 Codex：
 
 ```bash
-pnpm --filter @anydocs/cli cli init ./my-docs-project --agent codex
+npx @anydocs/cli init ./my-docs-project --agent codex
 ```
 
 Claude Code：
 
 ```bash
-pnpm --filter @anydocs/cli cli init ./my-docs-project --agent claude-code
+npx @anydocs/cli init ./my-docs-project --agent claude-code
 ```
 
 生成结果：
@@ -77,16 +92,22 @@ pnpm --filter @anydocs/cli cli init ./my-docs-project --agent claude-code
 
 ### 2. 启动 MCP server
 
-在工具仓库根目录运行：
+推荐直接运行已发布的 npm 包：
+
+```bash
+npx -y @anydocs/mcp
+```
+
+如果你已经全局安装，也可以直接运行：
+
+```bash
+anydocs-mcp
+```
+
+如果你是在 Anydocs 仓库里做本地开发，也可以继续用源码入口：
 
 ```bash
 pnpm --filter @anydocs/mcp dev
-```
-
-也可以直接运行入口：
-
-```bash
-node --experimental-strip-types packages/mcp/src/index.ts
 ```
 
 ### 3. 把 MCP 配到 agent
@@ -97,9 +118,8 @@ Codex 的 `stdio` 配置示例：
 {
   "mcpServers": {
     "anydocs": {
-      "command": "pnpm",
-      "args": ["--filter", "@anydocs/mcp", "dev"],
-      "cwd": "/path/to/anydocs"
+      "command": "npx",
+      "args": ["-y", "@anydocs/mcp"]
     }
   }
 }
@@ -136,10 +156,10 @@ Codex 的 `stdio` 配置示例：
 pnpm dev
 
 # 终端 2：Reader preview
-pnpm --filter @anydocs/cli cli preview ./my-docs-project
+npx @anydocs/cli preview ./my-docs-project
 
 # 终端 3：需要静态产物时再 build
-pnpm --filter @anydocs/cli cli build ./my-docs-project
+npx @anydocs/cli build ./my-docs-project
 ```
 
 这个闭环里：
@@ -153,12 +173,12 @@ pnpm --filter @anydocs/cli cli build ./my-docs-project
 ```bash
 pnpm dev
 pnpm dev:desktop
-pnpm --filter @anydocs/cli cli init ./my-docs-project
-pnpm --filter @anydocs/cli cli build ./my-docs-project
-pnpm --filter @anydocs/cli cli preview ./my-docs-project
-pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
-pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
-pnpm --filter @anydocs/mcp dev
+npx @anydocs/cli init ./my-docs-project
+npx @anydocs/cli build ./my-docs-project
+npx @anydocs/cli preview ./my-docs-project
+npx @anydocs/cli import ./legacy-docs ./my-docs-project zh
+npx @anydocs/cli convert-import <importId> ./my-docs-project
+npx -y @anydocs/mcp
 ```
 
 补充：

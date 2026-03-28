@@ -279,13 +279,6 @@ export function AtlasDocsReaderLayout({
         </div>
       </header>
 
-<<<<<<< HEAD
-      <div className="mx-auto lg:!grid lg:!min-h-[calc(100dvh-60px)] lg:!max-w-[1600px] lg:!grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
-          <div className="sticky top-[60px] h-[calc(100dvh-60px)] overflow-hidden">{desktopSidebar}</div>
-        </aside>
-        <main className="min-w-0 bg-[color:var(--atlas-body-background)] lg:col-start-2">{children}</main>
-=======
       <div
         className={cn(
           'mx-auto lg:min-h-[calc(100dvh-60px)] lg:max-w-[1600px]',
@@ -300,7 +293,6 @@ export function AtlasDocsReaderLayout({
         <main className={cn('min-w-0 bg-[color:var(--atlas-body-background)]', !isReferenceRoute && 'lg:col-start-2')}>
           {children}
         </main>
->>>>>>> e486e01 (Add API source authoring and stabilize studio workflows)
       </div>
     </div>
   );

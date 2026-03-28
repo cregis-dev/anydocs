@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -19,12 +19,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type IndexPath = number[];
-
-const IconBtn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
-  <Button type="button" variant="ghost" size="icon" className="size-8" onClick={onClick}>
-    {children}
-  </Button>
-);
 
 const Menu = ({
   open,
@@ -103,6 +97,17 @@ const MenuItem = ({
 
 const MenuSep = () => <div className="my-1 h-px bg-fd-border" role="separator" />;
 
+function handlePseudoButtonKeyDown(event: ReactKeyboardEvent<HTMLElement>, onActivate?: () => void) {
+  if (!onActivate) {
+    return;
+  }
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    onActivate();
+  }
+}
+
 const Row = ({
   depth,
   selected,
@@ -131,13 +136,19 @@ const Row = ({
     )}
     style={{ paddingLeft: 8 + depth * 14 }}
   >
-    <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(event) => handlePseudoButtonKeyDown(event, onClick)}
+      className="flex min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
+    >
       {leading}
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{title}</div>
         {subtitle ? <div className="truncate text-xs text-fd-muted-foreground">{subtitle}</div> : null}
       </div>
-    </button>
+    </div>
     {actions ? (
       <div className={cn('flex items-center', selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
         {actions}
@@ -226,12 +237,18 @@ export function NavigationTree({
       return (
         <div key={k} className="pt-3">
           <div className="group flex items-center justify-between px-2">
-            <button type="button" className="flex items-center gap-1" onClick={() => toggleCollapsed(path)}>
+            <div
+              role="button"
+              tabIndex={0}
+              className="flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
+              onClick={() => toggleCollapsed(path)}
+              onKeyDown={(event) => handlePseudoButtonKeyDown(event, () => toggleCollapsed(path))}
+            >
               <span className="inline-flex size-8 items-center justify-center">
                 {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </span>
               <div className="text-xs font-semibold tracking-wider text-fd-muted-foreground">{item.title}</div>
-            </button>
+            </div>
             <div className={cn('flex items-center', 'opacity-0 transition group-hover:opacity-100')}>
               <Menu
                 open={isMenuOpen}
@@ -319,9 +336,9 @@ export function NavigationTree({
             depth={depth}
             leading={
               <>
-                <IconBtn onClick={() => toggleCollapsed(path)}>
+                <span className="inline-flex size-8 items-center justify-center">
                   {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                </IconBtn>
+                </span>
                 <Folder className="size-4 text-fd-muted-foreground" />
               </>
             }

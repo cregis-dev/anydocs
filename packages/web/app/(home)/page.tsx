@@ -12,8 +12,9 @@ export default async function Page() {
     redirect(`/${defaultLanguage}`);
   }
 
-  if (process.env.NODE_ENV === 'production' && !isDesktopRuntimeEnabled()) {
+  if (!isDesktopRuntimeEnabled() && bootContext.mode !== 'cli-single-project') {
     notFound();
   }
+
   return <StudioEntry bootContext={bootContext} />;
 }

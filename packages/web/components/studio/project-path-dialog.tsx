@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from "react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,16 +10,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export function ProjectPathDialog({
   open,
   onOpenChange,
   onSubmit,
-  title = 'Open External Project',
-  description = 'Enter the absolute path to your docs project root.',
-  submitLabel = 'Open Project',
+  title = "Open External Project",
+  description = "Enter the absolute path to your docs project root.",
+  submitLabel = "Open Project",
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -28,20 +28,22 @@ export function ProjectPathDialog({
   description?: string;
   submitLabel?: string;
 }) {
-  const [projectPath, setProjectPath] = useState('');
+  const [projectPath, setProjectPath] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) {
-      setProjectPath('');
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setProjectPath("");
       setSubmitting(false);
       setError(null);
     }
-  }, [open]);
+
+    onOpenChange(nextOpen);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg rounded-2xl border-fd-border bg-fd-card p-0">
         <form
           className="grid gap-0"
@@ -55,9 +57,13 @@ export function ProjectPathDialog({
             setError(null);
             try {
               await onSubmit(projectPath);
-              onOpenChange(false);
+              handleOpenChange(false);
             } catch (submitError) {
-              setError(submitError instanceof Error ? submitError.message : 'Failed to open project');
+              setError(
+                submitError instanceof Error
+                  ? submitError.message
+                  : "Failed to open project",
+              );
               setSubmitting(false);
             }
           }}
@@ -69,7 +75,9 @@ export function ProjectPathDialog({
 
           <div className="grid gap-4 px-6 py-5">
             <div className="grid gap-2">
-              <div className="text-sm font-medium text-fd-foreground">Project root path</div>
+              <div className="text-sm font-medium text-fd-foreground">
+                Project root path
+              </div>
               <Input
                 autoFocus
                 value={projectPath}
@@ -83,14 +91,22 @@ export function ProjectPathDialog({
             </div>
 
             {error ? (
-              <div className="text-sm text-fd-error" data-testid="studio-project-path-error">
+              <div
+                className="text-sm text-fd-error"
+                data-testid="studio-project-path-error"
+              >
                 {error}
               </div>
             ) : null}
           </div>
 
           <DialogFooter className="border-t border-fd-border px-6 py-4">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleOpenChange(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
             <Button

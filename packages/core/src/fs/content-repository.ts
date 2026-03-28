@@ -232,9 +232,26 @@ export async function updateProjectConfig(
 
   return toValidationResult(async () => {
     const currentConfig = contractResult.value.config;
+    const nextSite =
+      patch.site !== undefined
+        ? {
+            ...currentConfig.site,
+            ...patch.site,
+            ...(patch.site.theme !== undefined
+              ? {
+                  theme: {
+                    ...currentConfig.site.theme,
+                    ...patch.site.theme,
+                  },
+                }
+              : {}),
+          }
+        : currentConfig.site;
     const nextConfig = validateProjectConfig({
       ...currentConfig,
       ...patch,
+      site: nextSite,
+      ...(patch.build !== undefined ? { build: patch.build } : currentConfig.build ? { build: currentConfig.build } : {}),
       projectId: currentConfig.projectId,
       version: currentConfig.version,
     });

@@ -78,7 +78,11 @@ export const createApplicationMenu = (): void => {
               { role: 'delete' as const },
               { role: 'selectAll' as const }
             ]
-          : [{ role: 'delete' as const }, { type: 'separator' as const }, { role: 'selectAll' as const }])
+          : [
+              { role: 'delete' as const },
+              { type: 'separator' as const },
+              { role: 'selectAll' as const }
+            ])
       ]
     },
     // View menu
@@ -103,7 +107,12 @@ export const createApplicationMenu = (): void => {
         { role: 'minimize' },
         { role: 'zoom' },
         ...(isMac
-          ? [{ type: 'separator' as const }, { role: 'front' as const }, { type: 'separator' as const }, { role: 'window' as const }]
+          ? [
+              { type: 'separator' as const },
+              { role: 'front' as const },
+              { type: 'separator' as const },
+              { role: 'window' as const }
+            ]
           : [{ role: 'close' as const }])
       ]
     },
