@@ -57,16 +57,6 @@ function isPublished(name, version) {
   process.exit(result.status ?? 1);
 }
 
-if (
-  !dryRun &&
-  process.env.CI === 'true' &&
-  !process.env.NPM_TOKEN &&
-  !process.env.NODE_AUTH_TOKEN
-) {
-  console.error('NPM_TOKEN or NODE_AUTH_TOKEN is required to publish packages.');
-  process.exit(1);
-}
-
 const packages = packageDirs.map((relativeDir) => {
   const manifest = readPackageManifest(relativeDir);
 
