@@ -1,7 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { loadProjectContract } from '@anydocs/core';
 
@@ -19,6 +21,7 @@ type StudioCommandOptions = {
 
 const STUDIO_READY_TIMEOUT_MS = 60_000;
 const require = createRequire(import.meta.url);
+const CLI_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../../package.json', import.meta.url)));
 
 function sanitizePathSegment(value: string): string {
   const normalized = value.trim().replace(/[^a-zA-Z0-9._-]+/g, '-');
@@ -31,6 +34,77 @@ function resolveStudioDistDir(projectId: string, port: number): string {
 
 function resolveNextBin(): string {
   return require.resolve('next/dist/bin/next');
+}
+
+async function prepareLocalStudioRuntime(json: boolean): Promise<string | null> {
+  const prepareScript = path.join(CLI_PACKAGE_ROOT, 'scripts', 'prepare-studio-runtime.mjs');
+  const studioRuntimeRoot = path.join(CLI_PACKAGE_ROOT, 'studio-runtime');
+  const workspaceWebRoot = path.resolve(CLI_PACKAGE_ROOT, '../web');
+
+  const result = await Promise.allSettled([
+    readFile(prepareScript, 'utf8'),
+    readFile(path.join(workspaceWebRoot, 'next.config.mjs'), 'utf8'),
+  ]);
+
+  if (result.some((entry) => entry.status === 'rejected')) {
+    return null;
+  }
+
+  const child = spawn(process.execPath, [prepareScript], {
+    cwd: CLI_PACKAGE_ROOT,
+    stdio: json ? 'pipe' : 'inherit',
+  });
+  const output = collectChildOutput(child);
+  const exitResult = await waitForChildExit(child);
+  if (exitResult.exitCode !== 0) {
+    const stderr = [output.stderr().trim(), output.stdout().trim()].filter(Boolean).join('\n');
+    throw formatChildFailure('prepare-studio-runtime', exitResult.exitCode, exitResult.signal, stderr);
+  }
+
+  return studioRuntimeRoot;
+}
+
+function resolveTsconfigPath(runtimeRoot: string): string {
+  return path.join(runtimeRoot, 'tsconfig.json');
+}
+
+async function snapshotTsconfig(runtimeRoot: string): Promise<string | null> {
+  return readFile(resolveTsconfigPath(runtimeRoot), 'utf8').catch(() => null);
+}
+
+function normalizeGeneratedTypeIncludes(include: unknown, distDir: string): string[] {
+  const entries = Array.isArray(include) ? include : [];
+  const baseIncludes = entries.filter(
+    (entry): entry is string => typeof entry === 'string' && !/^\.next($|[-/])/.test(entry),
+  );
+
+  return [
+    ...baseIncludes,
+    `${distDir}/types/**/*.ts`,
+    `${distDir}/dev/types/**/*.ts`,
+  ];
+}
+
+async function prepareTsconfigForDist(runtimeRoot: string, originalContent: string, distDir: string): Promise<void> {
+  const parsed = JSON.parse(originalContent) as Record<string, unknown>;
+  const nextConfig = {
+    ...parsed,
+    include: normalizeGeneratedTypeIncludes(parsed.include, distDir),
+  };
+
+  await writeFile(resolveTsconfigPath(runtimeRoot), `${JSON.stringify(nextConfig, null, 2)}\n`, 'utf8');
+}
+
+async function restoreTsconfig(runtimeRoot: string, originalContent: string | null): Promise<void> {
+  if (originalContent === null) {
+    return;
+  }
+
+  const tsconfigPath = resolveTsconfigPath(runtimeRoot);
+  const currentContent = await readFile(tsconfigPath, 'utf8').catch(() => null);
+  if (currentContent !== null && currentContent !== originalContent) {
+    await writeFile(tsconfigPath, originalContent, 'utf8');
+  }
 }
 
 function appendOutputTail(current: string, chunk: string, maxChars: number) {
@@ -171,10 +245,14 @@ export async function runStudioCommand(options: StudioCommandOptions = {}): Prom
     }
 
     const contract = contractResult.value;
-    const runtimeRoot = await resolveStudioRuntimeRoot();
+    const runtimeRoot = (await prepareLocalStudioRuntime(json)) ?? (await resolveStudioRuntimeRoot());
     const nextBin = resolveNextBin();
     const port = options.port ?? (await pickAvailablePort(host));
     const distDir = resolveStudioDistDir(contract.config.projectId, port);
+    const originalTsconfig = await snapshotTsconfig(runtimeRoot);
+    if (originalTsconfig !== null) {
+      await prepareTsconfigForDist(runtimeRoot, originalTsconfig, distDir);
+    }
     const child = spawn(process.execPath, [nextBin, 'dev', '--webpack', '--hostname', host, '--port', String(port)], {
       cwd: runtimeRoot,
       env: {
@@ -241,6 +319,7 @@ export async function runStudioCommand(options: StudioCommandOptions = {}): Prom
     } finally {
       process.off('SIGINT', handleSignal);
       process.off('SIGTERM', handleSignal);
+      await restoreTsconfig(runtimeRoot, originalTsconfig);
     }
   } catch (caughtError: unknown) {
     if (json) {
