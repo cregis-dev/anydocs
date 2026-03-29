@@ -71,6 +71,10 @@ pnpm test:full
 - If the change touches `packages/web`, Studio, reader routes, local APIs, build/preview flows, or other user-facing authoring behavior, also run: `pnpm test:acceptance`
 - Do not submit to GitHub with known failing tests unless the user explicitly accepts the risk and the failing scope is documented in the handoff.
 
+## Release Constraints
+
+- For release, npm publishing, package versioning, or git tag work, read `RELEASE.md` before making changes.
+
 ### CLI Commands
 
 ```bash

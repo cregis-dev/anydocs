@@ -15,6 +15,8 @@
 
 如果你在修改 Anydocs 工具仓库本身的源代码、测试、CLI 或 web UI，仍然使用正常的代码编辑流程。
 
+如果你在修改工具仓库本身并涉及 release、发包、版本号或 tag，先阅读仓库根目录的 `RELEASE.md`，再执行相关操作。
+
 ## 2. 能力发现
 
 第一次连接 Anydocs MCP server 时，不要假设当前暴露了哪些工具、resources 或 resourceTemplates。先做一轮 discovery，再决定如何执行。
