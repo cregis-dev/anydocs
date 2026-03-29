@@ -71,6 +71,16 @@ pnpm test:full
 - If the change touches `packages/web`, Studio, reader routes, local APIs, build/preview flows, or other user-facing authoring behavior, also run: `pnpm test:acceptance`
 - Do not submit to GitHub with known failing tests unless the user explicitly accepts the risk and the failing scope is documented in the handoff.
 
+## Branch Constraints
+
+- Do not use a long-lived `dev` branch as the default delivery branch.
+- Treat `dev` only as an optional local scratch or integration branch, not as the branch that opens PRs to `main`.
+- For any work that will be pushed, reviewed, or merged, start from the latest `main` and create a short-lived task branch.
+- Use task-focused branch names in the form `codex/<area>-<summary>`.
+- For release-only work, use `codex/release-YYYY-MM-DD` and append `-2`, `-3`, etc. when needed.
+- Before starting a new task, prefer creating a fresh branch from updated `main` instead of continuing to pile unrelated work onto an older branch.
+- If the current branch name no longer matches the work on it, stop reusing it for new tasks and move subsequent work onto a new correctly named branch.
+
 ## Release Constraints
 
 - For release, npm publishing, package versioning, or git tag work, read `RELEASE.md` before making changes.
