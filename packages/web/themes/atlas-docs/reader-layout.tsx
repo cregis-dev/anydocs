@@ -10,7 +10,6 @@ import { DocsSidebar } from '@/components/docs/sidebar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { DocsThemeReaderLayoutProps } from '@/lib/themes/types';
-import { cn } from '@/lib/utils';
 import {
   buildTopNavHref,
   filterNavigationToGroup,
@@ -57,9 +56,6 @@ export function AtlasDocsReaderLayout({
   const router = useRouter();
   const pathname = usePathname();
   const normalizedPathname = normalizeRoutePath(pathname);
-  const referenceRoot = normalizeRoutePath(`/${lang}/reference`);
-  const isReferenceRoute =
-    normalizedPathname === referenceRoot || normalizedPathname.startsWith(`${referenceRoot}/`);
   const topNav = useMemo(() => siteNavigation?.topNav ?? [], [siteNavigation]);
   const [optimisticNavState, setOptimisticNavState] = useState<{ groupId: string; sourcePath: string } | null>(null);
   const [, startTransition] = useTransition();
@@ -159,12 +155,7 @@ export function AtlasDocsReaderLayout({
 
           <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto lg:!flex">
             {topNavLinks.map(({ item, label, href }) => {
-              const active =
-                (item.type === 'nav-group' && item.groupId === effectiveActiveGroupId) ||
-                (item.type === 'external' &&
-                  item.href.startsWith('/') &&
-                  (normalizedPathname === normalizeRoutePath(item.href) ||
-                    normalizedPathname.startsWith(`${normalizeRoutePath(item.href)}/`)));
+              const active = item.type === 'nav-group' && item.groupId === effectiveActiveGroupId;
               const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
               const className =
                 'inline-flex h-9 shrink-0 items-center rounded-md border px-3 text-[13px] transition ' +
@@ -216,12 +207,6 @@ export function AtlasDocsReaderLayout({
               <div className="border-b border-fd-border px-4 py-4">
                 <div className="flex flex-wrap gap-2">
                   {topNavLinks.map(({ item, label, href }) => {
-                    const active =
-                      (item.type === 'nav-group' && item.groupId === effectiveActiveGroupId) ||
-                      (item.type === 'external' &&
-                        item.href.startsWith('/') &&
-                        (normalizedPathname === normalizeRoutePath(item.href) ||
-                          normalizedPathname.startsWith(`${normalizeRoutePath(item.href)}/`)));
                     const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
                     if (item.type === 'external') {
                       return (
@@ -233,9 +218,7 @@ export function AtlasDocsReaderLayout({
                           className={
                             cta
                               ? 'rounded-full bg-[color:var(--atlas-primary)] px-3 py-1.5 text-xs font-semibold text-[color:var(--atlas-primary-foreground)]'
-                              : active
-                                ? 'rounded-lg border border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] px-3 py-1.5 text-xs font-medium text-fd-foreground'
-                                : 'rounded-lg border border-fd-border px-3 py-1.5 text-xs text-fd-muted-foreground'
+                              : 'rounded-lg border border-fd-border px-3 py-1.5 text-xs text-fd-muted-foreground'
                           }
                         >
                           {label}
@@ -261,38 +244,27 @@ export function AtlasDocsReaderLayout({
                   })}
                 </div>
               </div>
-              {!isReferenceRoute ? (
-                <DocsSidebar
-                  lang={lang}
-                  nav={effectiveFilteredNav}
-                  pages={pages}
-                  showHomeLink={false}
-                  showSearch={showSearch}
-                  availableLanguages={availableLanguages}
-                  showLanguageSwitcher
-                  rootFolderDisplay="section"
-                  className="h-full border-r-0"
-                />
-              ) : null}
+              <DocsSidebar
+                lang={lang}
+                nav={effectiveFilteredNav}
+                pages={pages}
+                showHomeLink={false}
+                showSearch={showSearch}
+                availableLanguages={availableLanguages}
+                showLanguageSwitcher
+                rootFolderDisplay="section"
+                className="h-full border-r-0"
+              />
             </DialogContent>
           </Dialog>
         </div>
       </header>
 
-      <div
-        className={cn(
-          'mx-auto lg:!min-h-[calc(100dvh-60px)] lg:!max-w-[1600px]',
-          !isReferenceRoute && 'lg:!grid lg:!grid-cols-[280px_minmax(0,1fr)]',
-        )}
-      >
-        {!isReferenceRoute ? (
-          <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
-            <div className="sticky top-[60px] h-[calc(100dvh-60px)] overflow-hidden">{desktopSidebar}</div>
-          </aside>
-        ) : null}
-        <main className={cn('min-w-0 bg-[color:var(--atlas-body-background)]', !isReferenceRoute && 'lg:col-start-2')}>
-          {children}
-        </main>
+      <div className="mx-auto lg:grid lg:min-h-[calc(100dvh-60px)] lg:max-w-[1600px] lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-fd-border bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
+          <div className="sticky top-[60px] h-[calc(100dvh-60px)] overflow-hidden">{desktopSidebar}</div>
+        </aside>
+        <main className="min-w-0 bg-[color:var(--atlas-body-background)] lg:col-start-2">{children}</main>
       </div>
     </div>
   );
