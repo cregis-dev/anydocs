@@ -2,6 +2,10 @@
   "name": "@anydocs/mcp",
   "version": "1.0.3",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
   "bin": {
     "anydocs-mcp": "dist/index.js"
   },

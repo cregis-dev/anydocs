@@ -1,7 +1,11 @@
 {
   "name": "@anydocs/cli",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
   "bin": {
     "anydocs": "dist/index.js"
   },
