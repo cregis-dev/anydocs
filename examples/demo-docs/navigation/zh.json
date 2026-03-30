@@ -2,98 +2,13 @@
   "version": 1,
   "items": [
     {
-      "id": "guide",
       "type": "section",
-      "title": "开发指南",
-      "children": [
-        { "type": "page", "pageId": "introduction" },
-        { "type": "page", "pageId": "environment" },
-        { "type": "page", "pageId": "waas-setup" },
-        { "type": "page", "pageId": "payment-engine-setup" },
-        { "type": "page", "pageId": "authentication" },
-        { "type": "page", "pageId": "business-flow" }
-      ]
-    },
-    {
-      "id": "waas-api",
-      "type": "section",
-      "title": "WaaS API",
+      "title": "开始使用",
       "children": [
         {
-          "type": "folder",
-          "title": "地址",
-          "children": [
-            { "type": "page", "pageId": "waas-create-address" },
-            { "type": "page", "pageId": "waas-batch-create-address" },
-            { "type": "page", "pageId": "waas-update-address" },
-            { "type": "page", "pageId": "waas-verify-address" },
-            { "type": "page", "pageId": "waas-address-legal" }
-          ]
-        },
-        {
-          "type": "folder",
-          "title": "充值",
-          "children": [
-            { "type": "page", "pageId": "waas-deposit-callback" }
-          ]
-        },
-        {
-          "type": "folder",
-          "title": "提币",
-          "children": [
-            { "type": "page", "pageId": "waas-payout" },
-            { "type": "page", "pageId": "waas-payout-v2" },
-            { "type": "page", "pageId": "waas-sub-address-withdrawal" },
-            { "type": "page", "pageId": "waas-payout-callback" }
-          ]
-        },
-        {
-          "type": "folder",
-          "title": "归集",
-          "children": [
-            { "type": "page", "pageId": "waas-collection" }
-          ]
-        },
-        {
-          "type": "folder",
-          "title": "查询",
-          "children": [
-            { "type": "page", "pageId": "waas-query-coins" },
-            { "type": "page", "pageId": "waas-query-payout" },
-            { "type": "page", "pageId": "waas-query-sub-address" }
-          ]
+          "type": "page",
+          "pageId": "welcome"
         }
-      ]
-    },
-    {
-      "id": "payment-engine-api",
-      "type": "section",
-      "title": "支付引擎 API",
-      "children": [
-        { "type": "page", "pageId": "pe-create-order" },
-        { "type": "page", "pageId": "pe-order-callback" },
-        { "type": "page", "pageId": "pe-query-order" },
-        { "type": "page", "pageId": "pe-refund" },
-        { "type": "page", "pageId": "pe-settlement" }
-      ]
-    },
-    {
-      "id": "reference",
-      "type": "section",
-      "title": "参考",
-      "children": [
-        { "type": "page", "pageId": "error-codes" },
-        { "type": "page", "pageId": "supported-tokens" },
-        { "type": "page", "pageId": "supported-currencies" }
-      ]
-    },
-    {
-      "id": "sdk-tools",
-      "type": "section",
-      "title": "SDK & 开发工具",
-      "children": [
-        { "type": "page", "pageId": "sdk-overview" },
-        { "type": "page", "pageId": "dev-tools" }
       ]
     }
   ]

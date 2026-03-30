@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectId": "default",
-  "name": "Cregis Developer Center",
+  "name": "Anydocs Demo",
   "defaultLanguage": "zh",
   "languages": [
     "zh",
@@ -9,48 +9,12 @@
   ],
   "site": {
     "theme": {
-      "id": "atlas-docs",
+      "id": "classic-docs",
       "branding": {
-        "siteTitle": "Cregis Developer",
-        "homeLabel": "开发者中心",
-        "logoSrc": "/logo/light.svg",
-        "logoAlt": "Cregis"
+        "siteTitle": "Anydocs Demo",
+        "homeLabel": "Demo Home"
       },
       "codeTheme": "github-dark"
-    },
-    "navigation": {
-      "topNav": [
-        {
-          "id": "nav-docs",
-          "type": "nav-group",
-          "groupId": "guide",
-          "label": { "zh": "开发指南", "en": "Documentation" }
-        },
-        {
-          "id": "nav-waas",
-          "type": "nav-group",
-          "groupId": "waas-api",
-          "label": { "zh": "WaaS API", "en": "API References" }
-        },
-        {
-          "id": "nav-pe",
-          "type": "nav-group",
-          "groupId": "payment-engine-api",
-          "label": { "zh": "支付引擎", "en": "Payment Engine" }
-        },
-        {
-          "id": "nav-ref",
-          "type": "nav-group",
-          "groupId": "reference",
-          "label": { "zh": "参考", "en": "FAQs" }
-        },
-        {
-          "id": "nav-sdk",
-          "type": "nav-group",
-          "groupId": "sdk-tools",
-          "label": { "zh": "SDK & 工具", "en": "SDKs and Tools" }
-        }
-      ]
     }
   }
 }
