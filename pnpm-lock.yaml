@@ -113,6 +113,9 @@ importers:
       lucide-react:
         specifier: ^0.542.0
         version: 0.542.0(react@19.2.3)
+      mermaid:
+        specifier: ^11.13.0
+        version: 11.13.0
       minisearch:
         specifier: ^7.1.2
         version: 7.2.0

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "Anydocs - AI-Era Documentation Platform",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
   "scripts": {
     "dev": "pnpm --filter @anydocs/web dev",
     "dev:desktop": "node scripts/dev-desktop.mjs",
@@ -18,7 +22,9 @@
     "test:e2e:p0": "pnpm --filter @anydocs/web test:e2e:p0",
     "test:acceptance": "pnpm test && pnpm --filter @anydocs/web test:e2e:p0",
     "test:web": "pnpm --filter @anydocs/web test",
-    "test:full": "pnpm test && pnpm test:web"
+    "test:full": "pnpm test && pnpm test:web",
+    "release:npm": "node scripts/release-npm.mjs",
+    "release:npm:dry-run": "node scripts/release-npm.mjs --dry-run"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

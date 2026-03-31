@@ -2,34 +2,14 @@
   "version": 1,
   "items": [
     {
-      "id": "guide",
       "type": "section",
-      "title": "Documentation",
-      "children": []
-    },
-    {
-      "id": "waas-api",
-      "type": "section",
-      "title": "WaaS API",
-      "children": []
-    },
-    {
-      "id": "payment-engine-api",
-      "type": "section",
-      "title": "Payment Engine",
-      "children": []
-    },
-    {
-      "id": "reference",
-      "type": "section",
-      "title": "References",
-      "children": []
-    },
-    {
-      "id": "sdk-tools",
-      "type": "section",
-      "title": "SDKs and Tools",
-      "children": []
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
     }
   ]
 }

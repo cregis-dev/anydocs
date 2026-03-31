@@ -96,6 +96,9 @@ export default async function ApiReferencePage({
       source.projectId,
       source.customPath,
     );
+    if (apiSources.length === 0) {
+      notFound();
+    }
     return renderApiReferenceIndex(lang, apiSources);
   }
 
@@ -199,6 +202,14 @@ export async function generateMetadata({
   );
 
   if (segments.length === 0) {
+    const apiSources = await getPublishedApiSources(
+      lang,
+      source.projectId,
+      source.customPath,
+    );
+    if (apiSources.length === 0) {
+      return {};
+    }
     const languageAlternatesEntries = await Promise.all(
       languages.map(async (language) => {
         const apiSources = await getPublishedApiSources(

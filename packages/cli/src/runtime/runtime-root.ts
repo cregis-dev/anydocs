@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { cp, mkdir, mkdtemp, rm, symlink } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,7 +45,11 @@ export async function materializeRuntimeRoot(runtimeRoot: string, runtimeName: '
     },
   });
   const packagedNodeModulesRoot = resolvePackagedInstallNodeModulesRoot(runtimeRoot);
-  await symlink(packagedNodeModulesRoot, path.join(targetRoot, 'node_modules'), 'dir');
+  await cp(packagedNodeModulesRoot, path.join(targetRoot, 'node_modules'), {
+    recursive: true,
+    force: true,
+    dereference: true,
+  });
 
   const cleanup = () => {
     void rm(targetRoot, { recursive: true, force: true });

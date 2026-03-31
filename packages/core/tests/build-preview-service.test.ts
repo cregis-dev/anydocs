@@ -91,6 +91,7 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     await access(path.join(result.artifactRoot, 'en', 'welcome', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'docs', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'docs', 'welcome', 'index.html'));
+    await access(path.join(result.artifactRoot, 'en', 'reference', 'index.html'));
     await access(path.join(result.artifactRoot, 'sitemap.xml'));
     await access(path.join(result.artifactRoot, 'robots.txt'));
     await assert.rejects(() => access(path.join(result.artifactRoot, 'studio')));
@@ -113,6 +114,10 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     const searchIndex = JSON.parse(
       await readFile(path.join(result.artifactRoot, 'search-index.en.json'), 'utf8'),
     ) as { lang: string; docs: Array<{ slug: string }> };
+    const referenceRoot = await readFile(
+      path.join(result.artifactRoot, 'en', 'reference', 'index.html'),
+      'utf8',
+    );
     const sitemap = await readFile(path.join(result.artifactRoot, 'sitemap.xml'), 'utf8');
     const robots = await readFile(path.join(result.artifactRoot, 'robots.txt'), 'utf8');
     const llms = await readFile(path.join(result.artifactRoot, 'llms.txt'), 'utf8');
@@ -137,6 +142,8 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.match(rootIndex, /\/en(?!\/docs)/);
     assert.match(docsPage, /Welcome/);
     assert.match(docsPage, /<html[^>]+lang="en"/);
+    assert.match(referenceRoot, /404/);
+    assert.doesNotMatch(referenceRoot, /Published API Sources/);
     assert.match(sitemap, /https:\/\/docs\.example\.com\/en/);
     assert.match(sitemap, /https:\/\/docs\.example\.com\/en\/welcome/);
     assert.match(robots, /Sitemap: https:\/\/docs\.example\.com\/sitemap\.xml/);
@@ -199,6 +206,38 @@ test('published artifacts emit a fallback chunk for published pages without head
     assert.deepEqual(chunks.chunks[0]?.headingPath, []);
     assert.equal(chunks.chunks[0]?.order, 1);
     assert.equal(chunks.chunks[0]?.text, 'Body content without headings for chunk fallback.');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('published artifacts preserve inline code text in chunk content', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+    await savePage(repository, 'en', {
+      id: 'welcome',
+      lang: 'en',
+      slug: 'welcome',
+      title: 'Welcome',
+      status: 'published',
+      content: {},
+      render: {
+        markdown: '# Welcome\n\nCall `project_open` before `page_update`.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const chunks = JSON.parse(
+      await readFile(path.join(contract.paths.machineReadableRoot, 'chunks.en.json'), 'utf8'),
+    ) as {
+      chunks: Array<{ text: string }>;
+    };
+
+    assert.match(chunks.chunks[0]?.text ?? '', /project_open/);
+    assert.match(chunks.chunks[0]?.text ?? '', /page_update/);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }

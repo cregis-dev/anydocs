@@ -11,6 +11,11 @@ import { initializeProject } from '@anydocs/core';
 
 const CLI_ENTRY = fileURLToPath(new URL('../src/index.ts', import.meta.url));
 const CLI_WORKDIR = fileURLToPath(new URL('..', import.meta.url));
+const CLI_PACKAGE_JSON = fileURLToPath(new URL('../package.json', import.meta.url));
+
+const { version: CLI_VERSION } = JSON.parse(
+  await readFile(CLI_PACKAGE_JSON, 'utf8'),
+) as { version: string };
 
 type SpawnedCli = {
   child: ChildProcessWithoutNullStreams;
@@ -148,7 +153,7 @@ test('cli prints command-specific help and version', async () => {
 
   assert.equal(versionResult.exitCode, 0);
   assert.equal(versionResult.signal, null);
-  assert.equal(versionSpawned.getStdout().trim(), '1.0.5');
+  assert.equal(versionSpawned.getStdout().trim(), CLI_VERSION);
   assert.equal(versionSpawned.getStderr(), '');
 });
 
@@ -162,7 +167,7 @@ test('version supports structured json output', async () => {
   assert.deepEqual(JSON.parse(spawned.getStdout()), {
     ok: true,
     data: {
-      version: '1.0.5',
+      version: CLI_VERSION,
     },
     meta: {
       command: 'version',
