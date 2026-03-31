@@ -28,11 +28,15 @@ function createWaitForExit(child: ChildProcessWithoutNullStreams) {
   return () =>
     new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolve) => {
       if (child.exitCode !== null || child.signalCode !== null) {
+        child.stdout.destroy();
+        child.stderr.destroy();
         resolve({ exitCode: child.exitCode, signal: child.signalCode });
         return;
       }
 
       child.once('exit', (exitCode, signal) => {
+        child.stdout.destroy();
+        child.stderr.destroy();
         resolve({ exitCode, signal });
       });
     });

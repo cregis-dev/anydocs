@@ -5,6 +5,7 @@ import Link from 'next/link';
 import MiniSearch from 'minisearch';
 
 import { Input } from '@/components/ui/input';
+import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { cn } from '@/lib/utils';
 
 type SearchDoc = {
@@ -36,6 +37,8 @@ export function SearchPanel({
 }) {
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState<SearchIndex | null>(null);
+  const copy = getDocsUiCopy(lang);
+  const resolvedPlaceholder = placeholder;
 
   useEffect(() => {
     let cancelled = false;
@@ -80,7 +83,8 @@ export function SearchPanel({
       <Input
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
+        aria-label={resolvedPlaceholder}
         className={cn(
           'h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] shadow-none placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
           inputClassName,
@@ -88,12 +92,17 @@ export function SearchPanel({
       />
       {q.trim() ? (
         <div
+          aria-live="polite"
           className={cn(
             'max-h-[50dvh] overflow-y-auto rounded-xl border border-fd-border bg-[color:var(--docs-search-results-background,var(--fd-card))] p-2 shadow-lg shadow-slate-900/5',
             resultsClassName,
           )}
         >
-          {results.length ? (
+          {!idx ? (
+            <div className="px-2 py-3 text-sm text-fd-muted-foreground">
+              {copy.search.loading}
+            </div>
+          ) : results.length ? (
             <div className="space-y-1">
               {results.map((r) => (
                 <Link
@@ -109,7 +118,18 @@ export function SearchPanel({
               ))}
             </div>
           ) : (
-            <div className="px-2 py-3 text-sm text-fd-muted-foreground">No matching pages</div>
+            <div className="space-y-2 px-2 py-3">
+              <div className="text-sm text-fd-muted-foreground">{copy.search.noResults}</div>
+              <div className="text-xs leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                {copy.search.noResultsHint}
+              </div>
+              <Link
+                href={`/${lang}`}
+                className="inline-flex rounded-full border border-fd-border px-3 py-1.5 text-xs font-medium text-fd-foreground transition hover:bg-fd-muted"
+              >
+                {copy.search.browseHome}
+              </Link>
+            </div>
           )}
         </div>
       ) : null}

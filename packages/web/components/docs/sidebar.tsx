@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { SearchPanel } from '@/components/docs/search-panel';
+import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
@@ -184,6 +185,13 @@ type DocsSidebarProps = {
   rootFolderDisplay?: 'collapsible' | 'section';
   insetClassName?: string;
   fillHeight?: boolean;
+  searchWrapperClassName?: string;
+  searchPlaceholder?: string;
+  searchInputClassName?: string;
+  searchResultsClassName?: string;
+  navWrapperClassName?: string;
+  navListClassName?: string;
+  footerClassName?: string;
 };
 
 export function DocsSidebar({
@@ -200,9 +208,17 @@ export function DocsSidebar({
   rootFolderDisplay = 'collapsible',
   insetClassName,
   fillHeight = true,
+  searchWrapperClassName,
+  searchPlaceholder,
+  searchInputClassName,
+  searchResultsClassName,
+  navWrapperClassName,
+  navListClassName,
+  footerClassName,
 }: DocsSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const copy = getDocsUiCopy(lang);
   const normalizedPathname = normalizeRoutePath(pathname);
   const activePageId = (() => {
     for (const p of pages) {
@@ -219,12 +235,19 @@ export function DocsSidebar({
   const activeLanguageMeta = getLanguageMeta(lang);
 
   return (
-    <aside className={cn('flex flex-col border-r border-fd-border bg-fd-card', fillHeight && 'h-full', className)}>
+    <aside
+      aria-label={copy.sidebar.navigationLabel}
+      className={cn(
+        'flex min-h-0 flex-col overflow-hidden border-r border-fd-border bg-fd-card',
+        fillHeight && 'h-full',
+        className,
+      )}
+    >
       {showBranding ? (
         <Link
           href={`/${lang}`}
           className={cn(
-            'px-6 pt-6 transition hover:opacity-85',
+            'shrink-0 px-6 pt-6 transition hover:opacity-85',
             insetClassName,
             hasLogo && hasTitle && 'flex items-center gap-3',
             hasLogo && !hasTitle && 'inline-flex items-center',
@@ -241,7 +264,7 @@ export function DocsSidebar({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={branding?.logoSrc}
-                alt={branding?.logoAlt ?? (hasTitle ? `${siteTitle} logo` : 'Project logo')}
+                alt={branding?.logoAlt ?? (hasTitle ? `${siteTitle} logo` : copy.common.projectLogoAlt)}
                 className="h-full w-full object-contain"
               />
             </span>
@@ -258,23 +281,31 @@ export function DocsSidebar({
       ) : null}
 
       {showSearch ? (
-        <div className={cn('px-6 pt-4', insetClassName)}>
+        <div className={cn('shrink-0 px-6 pt-4', insetClassName, searchWrapperClassName)}>
           <SearchPanel
             lang={lang}
-            inputClassName="h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]"
-            resultsClassName="rounded-xl border-fd-border bg-fd-background shadow-lg"
+            placeholder={searchPlaceholder}
+            inputClassName={cn(
+              'border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
+              searchInputClassName,
+            )}
+            resultsClassName={cn(
+              'rounded-xl border-fd-border bg-fd-background shadow-lg',
+              searchResultsClassName,
+            )}
           />
         </div>
       ) : null}
 
       <div
         className={cn(
-          'px-6 pb-6 pt-5',
+          'min-h-0 px-6 pb-6 pt-5',
           fillHeight ? 'flex-1 overflow-y-auto' : 'overflow-visible',
           insetClassName,
+          navWrapperClassName,
         )}
       >
-        <div>
+        <div className={cn('space-y-1.5', navListClassName)}>
           {nav.items.map((item, idx) => (
             <NavNode
               key={idx}
@@ -289,11 +320,17 @@ export function DocsSidebar({
         </div>
       </div>
 
-      <div className={cn('space-y-4 border-t border-fd-border px-6 py-6 text-xs text-fd-muted-foreground', insetClassName)}>
+      <div
+        className={cn(
+          'space-y-4 border-t border-fd-border px-6 py-6 text-xs text-fd-muted-foreground',
+          insetClassName,
+          footerClassName,
+        )}
+      >
         {showHomeLink ? (
           <div className="flex items-center justify-between gap-3">
             <Link href={`/${lang}`} className="font-medium text-fd-foreground transition hover:text-fd-primary">
-              {homeLabel ?? 'Docs Home'}
+              {homeLabel ?? copy.sidebar.homeLabel}
             </Link>
           </div>
         ) : null}

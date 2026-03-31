@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 
+import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { DocsSidebar } from '@/components/docs/sidebar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -36,10 +37,6 @@ function getAtlasDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteTheme
   if (colors.primaryForeground) style['--atlas-primary-foreground'] = colors.primaryForeground;
   if (colors.accent) style['--atlas-accent'] = colors.accent;
   if (colors.accentForeground) style['--atlas-accent-foreground'] = colors.accentForeground;
-  if (colors.sidebarActive) style['--atlas-sidebar-active'] = colors.sidebarActive;
-  if (colors.sidebarActiveForeground) {
-    style['--atlas-sidebar-active-foreground'] = colors.sidebarActiveForeground;
-  }
 
   return style;
 }
@@ -54,6 +51,7 @@ export function AtlasDocsReaderLayout({
   siteTheme,
   siteNavigation,
 }: DocsThemeReaderLayoutProps) {
+  const copy = getDocsUiCopy(lang);
   const router = useRouter();
   const pathname = usePathname();
   const normalizedPathname = normalizeRoutePath(pathname);
@@ -137,7 +135,14 @@ export function AtlasDocsReaderLayout({
       availableLanguages={availableLanguages}
       showLanguageSwitcher
       rootFolderDisplay="section"
-      className="h-full border-r-0"
+      className="h-full border-r-0 bg-[color:var(--atlas-sidebar-surface)]"
+      searchWrapperClassName="pt-3"
+      searchPlaceholder={copy.sidebar.searchPlaceholder}
+      searchInputClassName="h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-white px-3.5 text-[13px] shadow-none"
+      searchResultsClassName="rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+      navWrapperClassName="pt-4"
+      navListClassName="space-y-1"
+      footerClassName="border-t-[color:color-mix(in_srgb,var(--fd-border)_82%,white)] bg-[color:var(--atlas-sidebar-surface)] pb-4 pt-3 shadow-none"
     />
   );
 
@@ -150,7 +155,7 @@ export function AtlasDocsReaderLayout({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoSrc}
-                alt={logoAlt ?? (siteTitle ? `${siteTitle} logo` : 'Project logo')}
+                alt={logoAlt ?? (siteTitle ? `${siteTitle} logo` : copy.common.projectLogoAlt)}
                 className="h-7 w-auto object-contain"
               />
             ) : null}
@@ -167,12 +172,12 @@ export function AtlasDocsReaderLayout({
                     normalizedPathname.startsWith(`${normalizeRoutePath(item.href)}/`)));
               const cta = item.type === 'external' && looksLikePrimaryActionLabel(label);
               const className =
-                'inline-flex h-9 shrink-0 items-center rounded-md border px-3 text-[13px] transition ' +
+                'inline-flex h-8 shrink-0 items-center rounded-lg px-3.5 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200 ' +
                 (cta
-                  ? 'border-transparent bg-[color:var(--atlas-primary)] font-semibold text-[color:var(--atlas-primary-foreground)] hover:opacity-95'
+                  ? 'bg-[color:var(--atlas-primary)] text-[color:var(--atlas-primary-foreground)] hover:bg-[color:color-mix(in_srgb,var(--atlas-primary)_92%,white)]'
                   : active
-                    ? 'border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] font-semibold text-fd-foreground'
-                    : 'border-transparent text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground');
+                    ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                    : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground');
 
               if (item.type === 'external') {
                 return (
@@ -205,16 +210,14 @@ export function AtlasDocsReaderLayout({
             <DialogTrigger asChild>
               <Button variant="secondary" size="icon" className="ml-auto rounded-lg lg:!hidden">
                 <Menu className="h-4 w-4" />
-                <span className="sr-only">Open navigation</span>
+                <span className="sr-only">{copy.common.openNavigation}</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="left-0 top-0 h-dvh max-w-[22rem] translate-x-0 translate-y-0 rounded-none border-r border-fd-border bg-fd-background p-0">
-              <DialogTitle className="sr-only">Documentation navigation</DialogTitle>
-              <DialogDescription className="sr-only">
-                Browse site sections, documentation pages, and language options.
-              </DialogDescription>
-              <div className="border-b border-fd-border px-4 py-4">
-                <div className="flex flex-wrap gap-2">
+            <DialogContent className="left-0 top-0 h-dvh max-w-[20.5rem] translate-x-0 translate-y-0 rounded-none border-r border-fd-border bg-fd-background p-0">
+              <DialogTitle className="sr-only">{copy.common.documentationNavigation}</DialogTitle>
+              <DialogDescription className="sr-only">{copy.common.navigationDialogDescription}</DialogDescription>
+              <div className="border-b border-fd-border px-3 py-3">
+                <div className="grid grid-cols-2 gap-2">
                   {topNavLinks.map(({ item, label, href }) => {
                     const active =
                       (item.type === 'nav-group' && item.groupId === effectiveActiveGroupId) ||
@@ -232,10 +235,10 @@ export function AtlasDocsReaderLayout({
                           rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                           className={
                             cta
-                              ? 'rounded-full bg-[color:var(--atlas-primary)] px-3 py-1.5 text-xs font-semibold text-[color:var(--atlas-primary-foreground)]'
+                              ? 'flex min-h-10 items-center justify-center rounded-lg bg-[color:var(--atlas-primary)] px-3 py-2 text-center text-[11px] font-semibold leading-4 text-[color:var(--atlas-primary-foreground)] transition-colors duration-200 hover:bg-[color:color-mix(in_srgb,var(--atlas-primary)_92%,white)]'
                               : active
-                                ? 'rounded-lg border border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] px-3 py-1.5 text-xs font-medium text-fd-foreground'
-                                : 'rounded-lg border border-fd-border px-3 py-1.5 text-xs text-fd-muted-foreground'
+                                ? 'flex min-h-10 items-center justify-center rounded-lg bg-[color:var(--atlas-top-nav-active-background)] px-3 py-2 text-center text-[11px] font-medium leading-4 text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                                : 'flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] leading-4 text-fd-muted-foreground transition-colors duration-200 hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground'
                           }
                         >
                           {label}
@@ -248,10 +251,10 @@ export function AtlasDocsReaderLayout({
                         key={item.id}
                         href={href}
                         className={
-                          'rounded-lg border px-3 py-1.5 text-xs transition ' +
+                          'flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] leading-4 transition-colors duration-200 ' +
                           (item.groupId === effectiveActiveGroupId
-                            ? 'border-[color:var(--atlas-top-nav-active-border)] bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground'
-                            : 'border-transparent bg-fd-muted text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground')
+                            ? 'bg-[color:var(--atlas-top-nav-active-background)] font-medium text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                            : 'text-fd-muted-foreground hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground')
                         }
                         onClick={(event) => handleTopNavGroupNavigate(event, item.groupId, href)}
                       >
@@ -271,7 +274,14 @@ export function AtlasDocsReaderLayout({
                   availableLanguages={availableLanguages}
                   showLanguageSwitcher
                   rootFolderDisplay="section"
-                  className="h-full border-r-0"
+                  className="h-full border-r-0 bg-[color:var(--atlas-sidebar-surface)]"
+                  searchWrapperClassName="pt-3"
+                  searchPlaceholder={copy.sidebar.searchPlaceholder}
+                  searchInputClassName="h-10 rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-white px-3.5 text-[13px] shadow-none"
+                  searchResultsClassName="rounded-lg border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                  navWrapperClassName="pt-4"
+                  navListClassName="space-y-1"
+                  footerClassName="border-t-[color:color-mix(in_srgb,var(--fd-border)_82%,white)] bg-[color:var(--atlas-sidebar-surface)] pb-4 pt-3 shadow-none"
                 />
               ) : null}
             </DialogContent>

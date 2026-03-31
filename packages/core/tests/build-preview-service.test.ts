@@ -229,7 +229,10 @@ test('runBuildWorkflow keeps an empty-state docs shell when there are no publish
       await readFile(path.join(result.artifactRoot, 'search-index.en.json'), 'utf8'),
     ) as { docs: unknown[] };
 
-    assert.match(docsShell, /Select a document from the sidebar\./);
+    assert.match(
+      docsShell,
+      /Start exploring your documentation here|Select a document from the sidebar\./,
+    );
     assert.equal(searchIndex.docs.length, 0);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

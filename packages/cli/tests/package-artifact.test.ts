@@ -28,6 +28,9 @@ async function runCommand(command: string, args: string[], cwd: string): Promise
 
     child.once('error', reject);
     child.once('exit', (exitCode, signal) => {
+      child.stdout.destroy();
+      child.stderr.destroy();
+
       if (exitCode === 0) {
         resolve({ stdout, stderr });
         return;

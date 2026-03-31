@@ -177,6 +177,11 @@ function collectChildOutput(child: ChildProcess, maxChars = 32_000) {
   };
 }
 
+function destroyChildPipes(child: ChildProcess) {
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+}
+
 function shellEscapeArg(value: string) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
@@ -201,7 +206,14 @@ async function createBridgeChild(
 
 function waitForChildExit(child: ChildProcess): Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }> {
   return new Promise((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      destroyChildPipes(child);
+      resolve({ exitCode: child.exitCode, signal: child.signalCode });
+      return;
+    }
+
     child.once('exit', (exitCode, signal) => {
+      destroyChildPipes(child);
       resolve({ exitCode, signal });
     });
   });

@@ -114,9 +114,7 @@ export default async function Page({
   const toc = extractTocFromMarkdown(markdown);
   const effectiveToc =
     toc.length > 0 ? toc : extractTocFromYooptaContent(yooptaContent);
-  const crumbs = !isAtlasTheme
-    ? (buildBreadcrumbsByPageId(nav).get(page.id) ?? [])
-    : [];
+  const crumbs = buildBreadcrumbsByPageId(nav).get(page.id) ?? [];
   const showBreadcrumbs = crumbs.length > 0;
   const { prev, next } = findNextPrevPageIds(nav.items, page.id);
   const prevPage = prev ? (pages.find((p) => p.id === prev) ?? null) : null;
@@ -138,12 +136,16 @@ export default async function Page({
         <div
           className={cn(
             "mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20",
-            isAtlasTheme &&
-              "max-w-none rounded-[10px] border border-[color:var(--atlas-content-border)] bg-white px-6 py-6 shadow-[0_1px_0_var(--atlas-content-shadow)] sm:px-8 lg:px-11 lg:py-6",
+            isAtlasTheme && "max-w-[760px] pb-16 pt-8",
           )}
         >
           {showBreadcrumbs ? (
-            <div className="mb-8 text-[14px] leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+            <div
+              className={cn(
+                "mb-8 text-[14px] leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]",
+                isAtlasTheme && "mb-7 text-[12px] leading-5 tracking-[0.01em]",
+              )}
+            >
               <span className="inline-flex max-w-full items-center gap-2">
                 {crumbs.map((c, i) => (
                   <span
@@ -174,7 +176,7 @@ export default async function Page({
                 className={cn(
                   "max-w-[590px] text-[18px] font-light leading-[1.75] text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]",
                   isAtlasTheme &&
-                    "max-w-[760px] text-[13px] font-normal leading-6",
+                    "max-w-[720px] text-[15px] font-normal leading-7 tracking-[-0.01em]",
                 )}
               >
                 {page.description}
@@ -182,27 +184,23 @@ export default async function Page({
             ) : null}
           </header>
 
-          {isAtlasTheme ? (
-            <div className="mb-6 h-px w-full bg-[color:var(--atlas-border)]" />
-          ) : null}
-
           <DocContentView
             markdown={markdown}
             yooptaContent={yooptaContent}
             markdownClassName={cn(
               isAtlasTheme &&
-                "prose-p:my-2.5 prose-p:text-[13px] prose-p:leading-6 prose-li:text-[13px] prose-li:leading-6 prose-h2:mb-2 prose-h2:mt-6 prose-h3:mb-1.5 prose-h3:mt-3 prose-table:mt-4",
+                "prose-p:my-3 prose-p:text-[15px] prose-p:leading-7 prose-li:text-[15px] prose-li:leading-7 prose-h2:mb-3 prose-h2:mt-10 prose-h3:mb-2 prose-h3:mt-7 prose-table:mt-6",
             )}
             yooptaClassName={cn(
               isAtlasTheme &&
-                "[&_h2]:mb-2 [&_h2]:mt-6 [&_h3]:mb-1.5 [&_h3]:mt-3 [&_li]:text-[13px] [&_li]:leading-6 [&_p]:my-2.5 [&_p]:text-[13px] [&_p]:leading-6 [&_table]:mt-4",
+                "[&_h2]:mb-3 [&_h2]:mt-10 [&_h3]:mb-2 [&_h3]:mt-7 [&_li]:text-[15px] [&_li]:leading-7 [&_p]:my-3 [&_p]:text-[15px] [&_p]:leading-7 [&_table]:mt-6",
             )}
           />
 
           <div
             className={cn(
               "mt-14 flex items-center justify-between border-t border-fd-border pt-6",
-              isAtlasTheme && "mt-12",
+              isAtlasTheme && "mt-12 border-t-0 pt-0",
             )}
           >
             {prevPage ? (
@@ -211,7 +209,7 @@ export default async function Page({
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
                   isAtlasTheme &&
-                    "rounded-lg bg-white hover:bg-[color:var(--atlas-sidebar-hover)]",
+                    "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
                 )}
               >
                 ← {prevPage.title}
@@ -225,7 +223,7 @@ export default async function Page({
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
                   isAtlasTheme &&
-                    "rounded-lg bg-white hover:bg-[color:var(--atlas-sidebar-hover)]",
+                    "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
                 )}
               >
                 {nextPage.title} →
@@ -240,11 +238,25 @@ export default async function Page({
       <DocsToc
         toc={effectiveToc}
         className={cn(
-          isAtlasTheme && "w-[240px] border-l-0 bg-transparent px-4 py-4",
+          isAtlasTheme &&
+            "sticky top-[60px] self-start h-[calc(100dvh-60px)] w-[280px] overflow-hidden border-l-0 bg-transparent px-5 py-6",
         )}
         contentClassName={cn(
           isAtlasTheme &&
-            "rounded-xl border border-[color:var(--docs-toc-border)] bg-[color:var(--docs-toc-background)] px-4 py-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]",
+            "rounded-[22px] border border-[color:color-mix(in_srgb,var(--fd-border)_82%,white)] bg-white px-6 py-7 shadow-[0_14px_40px_rgba(15,23,42,0.06)]",
+        )}
+        hideTitle={isAtlasTheme}
+        listClassName={cn(
+          isAtlasTheme &&
+            "relative space-y-4 pl-10 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:bg-[color:color-mix(in_srgb,var(--docs-toc-divider)_92%,white)]",
+        )}
+        activeLinkClassName={cn(
+          isAtlasTheme &&
+            "relative -ml-10 rounded-none border-l-0 bg-transparent py-0 pl-10 text-[14px] font-medium leading-6 text-[color:var(--docs-toc-link-active,var(--fd-foreground))] before:absolute before:left-0 before:top-1/2 before:h-10 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-[color:var(--docs-toc-link-active,var(--fd-foreground))]",
+        )}
+        inactiveLinkClassName={cn(
+          isAtlasTheme &&
+            "rounded-none border-l-0 bg-transparent py-0 pl-10 text-[14px] font-normal leading-6 text-[color:var(--docs-toc-link,var(--fd-muted-foreground))] hover:text-[color:var(--docs-toc-link-hover,var(--fd-foreground))]",
         )}
       />
     </div>

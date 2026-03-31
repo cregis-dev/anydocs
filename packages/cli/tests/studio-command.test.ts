@@ -27,19 +27,38 @@ function createWaitForExit(child: ChildProcessWithoutNullStreams) {
   return () =>
     new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolve) => {
       if (child.exitCode !== null || child.signalCode !== null) {
+        child.stdout.destroy();
+        child.stderr.destroy();
         resolve({ exitCode: child.exitCode, signal: child.signalCode });
         return;
       }
 
       child.once('exit', (exitCode, signal) => {
+        child.stdout.destroy();
+        child.stderr.destroy();
         resolve({ exitCode, signal });
       });
     });
 }
 
+async function terminateChild(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals = 'SIGKILL') {
+  if (child.exitCode === null && child.signalCode === null) {
+    if (process.platform !== 'win32' && typeof child.pid === 'number') {
+      try {
+        process.kill(-child.pid, signal);
+      } catch {
+        child.kill(signal);
+      }
+    } else {
+      child.kill(signal);
+    }
+  }
+}
+
 function spawnCli(args: string[]): SpawnedCli {
   const child = spawn(process.execPath, ['--experimental-strip-types', CLI_ENTRY, ...args], {
     cwd: CLI_WORKDIR,
+    detached: process.platform !== 'win32',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -145,7 +164,7 @@ test('studio starts a locked single-project Studio server and rejects cross-proj
 
     } finally {
       if (!spawned.child.killed) {
-        spawned.child.kill('SIGKILL');
+        await terminateChild(spawned.child);
       }
 
       await spawned.waitForExit();
