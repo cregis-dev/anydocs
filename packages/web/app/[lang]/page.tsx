@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import {
   getCliDocsSourceFromEnv,
+  getPublishedContext,
   getPublishedProjectName,
   getPublishedLanguages,
   getPublishedSiteTheme,
@@ -16,6 +17,9 @@ import {
   resolveDocsLocale,
 } from "@/lib/docs/seo";
 import type { DocsLang } from "@/lib/docs/types";
+import { ClassicDocsLanding } from "@/components/docs/classic-docs-landing";
+import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
+import { CLASSIC_DOCS_THEME_ID } from "@/themes/classic-docs/manifest";
 
 export async function generateStaticParams() {
   if (!isDocsReaderAvailable()) {
@@ -44,6 +48,8 @@ export default async function Page({
   }
 
   const { lang } = await params;
+  const docsLang = lang as DocsLang;
+  const copy = getDocsUiCopy(docsLang);
   const source = await resolveRequestDocsSource();
   const languages = await getPublishedLanguages(
     source.projectId,
@@ -53,11 +59,32 @@ export default async function Page({
     notFound();
   }
 
+  const siteTheme = await getPublishedSiteTheme(source.projectId, source.customPath);
+  if (siteTheme.id === CLASSIC_DOCS_THEME_ID) {
+    const [projectName, { nav, pages }] = await Promise.all([
+      getPublishedProjectName(source.projectId, source.customPath),
+      getPublishedContext(docsLang, source.projectId, source.customPath),
+    ]);
+    const siteTitle = siteTheme.branding?.siteTitle?.trim() || projectName;
+
+    return (
+      <ClassicDocsLanding
+        lang={docsLang}
+        nav={nav}
+        pages={pages}
+        siteTitle={siteTitle}
+        showSearch={siteTheme.chrome?.showSearch ?? true}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-semibold">Docs</h1>
+      <h1 className="text-2xl font-semibold">{copy.common.docs}</h1>
       <p className="mt-2 text-sm text-fd-muted-foreground">
-        Select a document from the sidebar.
+        {docsLang === "zh"
+          ? "请从左侧目录中选择一个页面。"
+          : "Select a document from the sidebar."}
       </p>
     </div>
   );
@@ -98,10 +125,15 @@ export async function generateMetadata({
       .filter((entry): entry is [string, string] => entry !== null),
   );
   const canonical = buildPublishedAbsoluteUrl(siteUrl, lang);
+  const copy = getDocsUiCopy(lang);
+  const description =
+    lang === "zh"
+      ? `浏览 ${siteTitle} 的已发布${copy.common.docs}。`
+      : `Browse published documentation for ${siteTitle}.`;
 
   return {
     title: siteTitle,
-    description: `Browse published documentation for ${siteTitle}.`,
+    description,
     robots: buildPreviewRobotsMetadata(),
     ...(canonical || Object.keys(languageAlternates).length > 0
       ? {

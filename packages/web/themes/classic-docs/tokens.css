@@ -1,22 +1,22 @@
 .theme-classic-docs {
-  --classic-background: #ffffff;
-  --classic-foreground: #111827;
+  --classic-background: #f8fafc;
+  --classic-foreground: #0f172a;
   --classic-panel: #ffffff;
   --classic-panel-elevated: #ffffff;
-  --classic-border: #e5e7eb;
-  --classic-muted: #f9fafb;
-  --classic-muted-foreground: #6b7280;
-  --classic-copy: #374151;
-  --classic-copy-subtle: #9ca3af;
-  --classic-primary: #111827;
+  --classic-border: #dbe3ee;
+  --classic-muted: #eef2f7;
+  --classic-muted-foreground: #64748b;
+  --classic-copy: #1f2937;
+  --classic-copy-subtle: #64748b;
+  --classic-primary: #0f172a;
   --classic-primary-foreground: #ffffff;
-  --classic-accent: #f3f4f6;
-  --classic-accent-foreground: #111827;
-  --classic-sidebar-active: #111827;
-  --classic-sidebar-active-foreground: #111827;
-  --classic-sidebar-active-background: color-mix(in srgb, var(--classic-sidebar-active) 6%, white);
-  --classic-sidebar-hover: color-mix(in srgb, var(--classic-sidebar-active) 4%, white);
-  --classic-ring: color-mix(in srgb, var(--classic-primary) 45%, white);
+  --classic-accent: #e8eef5;
+  --classic-accent-foreground: #0f172a;
+  --classic-sidebar-active: #0f172a;
+  --classic-sidebar-active-foreground: #0f172a;
+  --classic-sidebar-active-background: color-mix(in srgb, var(--classic-sidebar-active) 5%, white);
+  --classic-sidebar-hover: color-mix(in srgb, var(--classic-sidebar-active) 3%, white);
+  --classic-ring: color-mix(in srgb, var(--classic-primary) 36%, white);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -56,7 +56,7 @@
   --docs-sidebar-active-border: var(--classic-sidebar-active);
   --docs-sidebar-hover: var(--classic-sidebar-hover);
   --docs-sidebar-brand-surface: var(--classic-panel-elevated);
-  --docs-sidebar-section: var(--classic-copy-subtle);
+  --docs-sidebar-section: #475569;
   --docs-sidebar-link: var(--classic-copy);
   --docs-sidebar-link-subtle: var(--classic-muted-foreground);
   --docs-body-copy: var(--classic-copy);
