@@ -624,7 +624,7 @@ test('updateProjectConfig creates missing language roots when enabling a new lan
   }
 });
 
-test('updateProjectConfig persists build outputDir and allows clearing branding/build overrides', async () => {
+test('updateProjectConfig persists build outputDir and allows clearing optional overrides while keeping valid branding', async () => {
   const repoRoot = await createTempRepoRoot();
   await writeValidContract(repoRoot);
 
@@ -672,7 +672,9 @@ test('updateProjectConfig persists build outputDir and allows clearing branding/
       site: {
         theme: {
           id: 'classic-docs',
-          branding: {},
+          branding: {
+            siteTitle: 'Only title',
+          },
           chrome: {},
           colors: {},
           codeTheme: 'github-dark',
@@ -686,7 +688,9 @@ test('updateProjectConfig persists build outputDir and allows clearing branding/
       return;
     }
     assert.equal(second.value.build, undefined);
-    assert.deepEqual(second.value.site.theme.branding, {});
+    assert.deepEqual(second.value.site.theme.branding, {
+      siteTitle: 'Only title',
+    });
     assert.deepEqual(second.value.site.theme.chrome, {});
     assert.deepEqual(second.value.site.theme.colors, {});
   } finally {
@@ -789,6 +793,151 @@ test('loadProjectContract rejects invalid classic-docs chrome and color override
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.details.rule, 'site-theme-colors-primary-hex');
+    }
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadProjectContract requires a branding site title or logo when branding overrides are present', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+  const projectRoot = repoRoot;
+
+  try {
+    await mkdir(path.join(projectRoot, 'pages', 'en'), { recursive: true });
+    await mkdir(path.join(projectRoot, 'navigation'), { recursive: true });
+    await writeFile(
+      path.join(projectRoot, 'navigation', 'en.json'),
+      `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`,
+      'utf8',
+    );
+
+    const invalidBrandingConfig = {
+      version: 1,
+      projectId: 'default',
+      name: 'Branding Required',
+      defaultLanguage: 'en',
+      languages: ['en', 'zh'],
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            homeLabel: 'Docs Home',
+            logoAlt: 'Brand logo',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(invalidBrandingConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    let result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.details.rule, 'site-theme-branding-site-title-or-logo-required');
+    }
+
+    const titleOnlyConfig = {
+      ...invalidBrandingConfig,
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            siteTitle: 'Docs Home',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(titleOnlyConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, true);
+
+    const blankTitleWithLogoConfig = {
+      ...invalidBrandingConfig,
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            siteTitle: '   ',
+            logoSrc: '/brand.svg',
+            logoAlt: 'Brand logo',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(blankTitleWithLogoConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.deepEqual(result.value.config.site.theme.branding, {
+        logoSrc: '/brand.svg',
+        logoAlt: 'Brand logo',
+      });
+    }
+
+    const logoOnlyConfig = {
+      ...invalidBrandingConfig,
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            logoSrc: '/brand.svg',
+            logoAlt: 'Brand logo',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(logoOnlyConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, true);
+
+    const blankTitleAndLogoConfig = {
+      ...invalidBrandingConfig,
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            siteTitle: '   ',
+            logoSrc: '   ',
+            homeLabel: 'Docs Home',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(blankTitleAndLogoConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.details.rule, 'site-theme-branding-site-title-or-logo-required');
     }
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

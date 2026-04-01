@@ -828,6 +828,12 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       return;
     }
     try {
+      const branding = {
+        ...(projectState.siteTitle.trim() ? { siteTitle: projectState.siteTitle.trim() } : {}),
+        ...(projectState.homeLabel.trim() ? { homeLabel: projectState.homeLabel.trim() } : {}),
+        ...(projectState.logoSrc.trim() ? { logoSrc: projectState.logoSrc.trim() } : {}),
+        ...(projectState.logoAlt.trim() ? { logoAlt: projectState.logoAlt.trim() } : {}),
+      };
       const patch: StudioProjectSettingsPatch = {
         name: projectState.name,
         languages: projectState.languages,
@@ -835,12 +841,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         site: {
           theme: {
             id: projectState.themeId,
-            branding: {
-              ...(projectState.siteTitle.trim() ? { siteTitle: projectState.siteTitle.trim() } : {}),
-              ...(projectState.homeLabel.trim() ? { homeLabel: projectState.homeLabel.trim() } : {}),
-              ...(projectState.logoSrc.trim() ? { logoSrc: projectState.logoSrc.trim() } : {}),
-              ...(projectState.logoAlt.trim() ? { logoAlt: projectState.logoAlt.trim() } : {}),
-            },
+            ...(Object.keys(branding).length > 0 ? { branding } : {}),
             chrome: projectState.showSearch ? {} : { showSearch: false },
             colors: {
               ...(projectState.primaryColor.trim() ? { primary: projectState.primaryColor.trim() } : {}),

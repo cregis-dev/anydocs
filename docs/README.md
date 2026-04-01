@@ -8,6 +8,7 @@
 - [05-dev-guide.md](05-dev-guide.md): 面向开发者的开发与验证指南
 - [06-classic-docs-theme-config.md](06-classic-docs-theme-config.md): `classic-docs` 阅读主题配置说明
 - [07-agent-integration.md](07-agent-integration.md): Codex / Claude Code 与 Anydocs MCP 的集成方式
+- [08-ai-first-ci.md](08-ai-first-ci.md): 面向公司内部的 AI-First CI 与外部 AI reviewer 落地指南
 - [skill.md](skill.md): 项目内 agent guide 模板，指导 agent 通过 MCP 使用 Anydocs
 
 ## BMAD Artifacts

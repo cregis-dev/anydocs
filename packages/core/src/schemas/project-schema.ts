@@ -38,6 +38,19 @@ function isSlugLikeId(value: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
+function normalizeOptionalTrimmedString(value: unknown, rule: string, remediation: string): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string') {
+    throw makeValidationError(rule, remediation, { received: value });
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 function normalizeSiteUrl(value: string): string {
   const normalized = new URL(value.trim());
   if (normalized.protocol !== 'http:' && normalized.protocol !== 'https:') {
@@ -321,39 +334,44 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
     );
   }
 
-  const siteTitle = branding?.siteTitle;
-  if (siteTitle != null && (typeof siteTitle !== 'string' || siteTitle.trim().length === 0)) {
-    throw makeValidationError(
-      'site-theme-branding-site-title-string',
-      'Use a non-empty string for "site.theme.branding.siteTitle" when overriding the reader title.',
-      { received: siteTitle },
-    );
-  }
+  const siteTitle = normalizeOptionalTrimmedString(
+    branding?.siteTitle,
+    'site-theme-branding-site-title-string',
+    'Use a string for "site.theme.branding.siteTitle" when overriding the reader title.',
+  );
 
-  const homeLabel = branding?.homeLabel;
-  if (homeLabel != null && (typeof homeLabel !== 'string' || homeLabel.trim().length === 0)) {
-    throw makeValidationError(
-      'site-theme-branding-home-label-string',
-      'Use a non-empty string for "site.theme.branding.homeLabel" when overriding the footer home label.',
-      { received: homeLabel },
-    );
-  }
+  const homeLabel = normalizeOptionalTrimmedString(
+    branding?.homeLabel,
+    'site-theme-branding-home-label-string',
+    'Use a string for "site.theme.branding.homeLabel" when overriding the footer home label.',
+  );
 
-  const logoSrc = branding?.logoSrc;
-  if (logoSrc != null && (typeof logoSrc !== 'string' || logoSrc.trim().length === 0)) {
-    throw makeValidationError(
-      'site-theme-branding-logo-src-string',
-      'Use a non-empty string for "site.theme.branding.logoSrc" when configuring a sidebar logo URL or path.',
-      { received: logoSrc },
-    );
-  }
+  const logoSrc = normalizeOptionalTrimmedString(
+    branding?.logoSrc,
+    'site-theme-branding-logo-src-string',
+    'Use a string for "site.theme.branding.logoSrc" when configuring a sidebar logo URL or path.',
+  );
 
-  const logoAlt = branding?.logoAlt;
-  if (logoAlt != null && (typeof logoAlt !== 'string' || logoAlt.trim().length === 0)) {
+  const logoAlt = normalizeOptionalTrimmedString(
+    branding?.logoAlt,
+    'site-theme-branding-logo-alt-string',
+    'Use a string for "site.theme.branding.logoAlt" when overriding sidebar logo alt text.',
+  );
+
+  if (
+    branding
+    && siteTitle === undefined
+    && logoSrc === undefined
+  ) {
     throw makeValidationError(
-      'site-theme-branding-logo-alt-string',
-      'Use a non-empty string for "site.theme.branding.logoAlt" when overriding sidebar logo alt text.',
-      { received: logoAlt },
+      'site-theme-branding-site-title-or-logo-required',
+      'Provide at least one of "site.theme.branding.siteTitle" or "site.theme.branding.logoSrc" when setting branding overrides.',
+      {
+        received: {
+          siteTitle,
+          logoSrc,
+        },
+      },
     );
   }
 
@@ -479,10 +497,10 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
         ...(branding
           ? {
               branding: {
-                ...(typeof siteTitle === 'string' ? { siteTitle: siteTitle.trim() } : {}),
-                ...(typeof homeLabel === 'string' ? { homeLabel: homeLabel.trim() } : {}),
-                ...(typeof logoSrc === 'string' ? { logoSrc: logoSrc.trim() } : {}),
-                ...(typeof logoAlt === 'string' ? { logoAlt: logoAlt.trim() } : {}),
+                ...(siteTitle !== undefined ? { siteTitle } : {}),
+                ...(homeLabel !== undefined ? { homeLabel } : {}),
+                ...(logoSrc !== undefined ? { logoSrc } : {}),
+                ...(logoAlt !== undefined ? { logoAlt } : {}),
               },
             }
           : {}),

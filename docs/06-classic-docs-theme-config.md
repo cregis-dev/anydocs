@@ -227,7 +227,9 @@
 
 - `chrome.showSearch` 不是布尔值
 - 任意 `colors.*` 不是 `#RRGGBB`
-- `branding.logoSrc` / `branding.logoAlt` / `branding.siteTitle` 是空字符串或错误类型
+- `branding.logoSrc` / `branding.logoAlt` / `branding.siteTitle` 如果类型错误会直接报错
+- `branding.siteTitle` 和 `branding.logoSrc` 的空字符串会按“未设置”处理
+- 当声明 `branding` 时，`branding.siteTitle` 和 `branding.logoSrc` 不能同时未设置，至少要提供一个
 
 ---
 
