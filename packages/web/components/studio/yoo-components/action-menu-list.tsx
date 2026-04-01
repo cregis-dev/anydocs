@@ -1,6 +1,7 @@
 import { ActionMenuList } from "@yoopta/ui";
-// @ts-expect-error Yoopta does not re-export the floating-ui placement type we need here.
-import type { Placement } from "@floating-ui/dom";
+import type { ActionMenuListRootProps } from "@yoopta/ui/action-menu-list";
+
+type Placement = ActionMenuListRootProps["placement"];
 
 type Props = {
   open: boolean;

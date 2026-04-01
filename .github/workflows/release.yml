@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+
+jobs:
+  publish-npm:
+    name: Publish npm packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify release commit is on main
+        run: |
+          git fetch origin main --force
+          git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run release gate tests
+        run: pnpm test
+
+      - name: Validate CLI package artifact
+        run: pnpm --filter @anydocs/cli test:package
+
+      - name: Publish npm packages
+        run: pnpm release:npm

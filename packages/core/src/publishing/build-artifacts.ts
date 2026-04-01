@@ -162,10 +162,10 @@ const CHUNK_OVERLAP_CHARS = 200;
 function stripMarkdown(markdown: string): string {
   return markdown
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/[#>*_~]/g, ' ')
+    .replace(/[#>*~]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
