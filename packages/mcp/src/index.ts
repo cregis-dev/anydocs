@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 import { createAnydocsMcpServer, listToolDefinitions, startStdioServer } from './server.ts';
@@ -22,7 +23,7 @@ async function main() {
   await startStdioServer();
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   void main().catch((error: unknown) => {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
     process.stderr.write(`${message}\n`);
