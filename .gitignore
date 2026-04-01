@@ -66,6 +66,8 @@ next-env.d.ts
 
 # Misc
 *.pem
+__pycache__/
+*.py[cod]
 packages/cli/docs-runtime/
 packages/cli/studio-runtime/
 packages/cli/*.tgz
