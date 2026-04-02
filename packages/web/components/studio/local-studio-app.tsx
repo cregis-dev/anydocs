@@ -67,6 +67,7 @@ import {
   resolveTopNavLabel,
 } from '@/lib/themes/atlas-nav';
 import { cn } from '@/lib/utils';
+import { listResolvedProjectPageTemplates } from '../../../core/src/templates/page-template-definitions.ts';
 
 type LoadState = { nav: NavigationDoc | null; pages: PageDoc[]; loading: boolean; error: string | null };
 type ProjectState = {
@@ -88,6 +89,7 @@ type ProjectState = {
   sidebarActiveForegroundColor: string;
   codeTheme: 'github-light' | 'github-dark';
   topNavItems: ProjectSiteTopNavItem[];
+  authoringTemplates: ReturnType<typeof listResolvedProjectPageTemplates>;
   apiSources: ApiSourceDoc[];
   outputDir: string;
 } | null;
@@ -551,6 +553,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         sidebarActiveForegroundColor: project.config.site.theme.colors?.sidebarActiveForeground ?? '',
         codeTheme: project.config.site.theme.codeTheme ?? 'github-dark',
         topNavItems: project.config.site.navigation?.topNav ?? [],
+        authoringTemplates: listResolvedProjectPageTemplates(project.config),
         apiSources: apiSources.sources,
         outputDir: project.config.build?.outputDir ?? '',
       });
@@ -898,6 +901,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               sidebarActiveForegroundColor: response.config.site.theme.colors?.sidebarActiveForeground ?? '',
               codeTheme: response.config.site.theme.codeTheme ?? 'github-dark',
               topNavItems: response.config.site.navigation?.topNav ?? [],
+              authoringTemplates: listResolvedProjectPageTemplates(response.config),
               apiSources: apiSourcesResponse.sources,
               outputDir: response.config.build?.outputDir ?? '',
             }

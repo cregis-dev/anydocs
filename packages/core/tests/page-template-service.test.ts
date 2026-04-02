@@ -6,9 +6,16 @@ import test from 'node:test';
 
 import { ValidationError } from '../src/errors/validation-error.ts';
 import { createDocsRepository, loadPage } from '../src/fs/docs-repository.ts';
+import { createDefaultProjectConfig } from '../src/config/project-config.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { createPage } from '../src/services/authoring-service.ts';
-import { composePageFromTemplate, createPageFromTemplate, updatePageFromTemplate } from '../src/services/page-template-service.ts';
+import {
+  composePageFromTemplate,
+  createPageFromTemplate,
+  filterPublicPageMetadata,
+  updatePageFromTemplate,
+  validatePageAgainstProjectTemplates,
+} from '../src/services/page-template-service.ts';
 
 async function createTempProjectRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-page-template-'));
@@ -90,6 +97,163 @@ test('composePageFromTemplate rejects empty how-to templates', () => {
       error instanceof ValidationError &&
       error.details.rule === 'page-template-how-to-steps-required',
   );
+});
+
+test('validatePageAgainstProjectTemplates normalizes custom metadata fields', () => {
+  const config = createDefaultProjectConfig({
+    authoring: {
+      pageTemplates: [
+        {
+          id: 'adr',
+          label: 'ADR',
+          baseTemplate: 'reference',
+          metadataSchema: {
+            fields: [
+              {
+                id: 'decision-status',
+                label: 'Decision Status',
+                type: 'enum',
+                required: true,
+                visibility: 'public',
+                options: ['proposed', 'accepted', 'superseded'],
+              },
+              {
+                id: 'author',
+                label: 'Author',
+                type: 'string',
+              },
+              {
+                id: 'reviewers',
+                label: 'Reviewers',
+                type: 'string[]',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const page = validatePageAgainstProjectTemplates(
+    {
+      id: 'adr-001',
+      lang: 'en',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'accepted',
+        author: ' shawn ',
+        reviewers: ['alice', ' bob ', 'alice', ''],
+      },
+      status: 'draft',
+      content: {},
+    },
+    config,
+  );
+
+  assert.equal(page.template, 'adr');
+  assert.deepEqual(page.metadata, {
+    'decision-status': 'accepted',
+    author: 'shawn',
+    reviewers: ['alice', 'bob'],
+  });
+});
+
+test('validatePageAgainstProjectTemplates rejects metadata without a template', () => {
+  const config = createDefaultProjectConfig();
+
+  assert.throws(
+    () =>
+      validatePageAgainstProjectTemplates(
+        {
+          id: 'guide',
+          lang: 'en',
+          slug: 'guide',
+          title: 'Guide',
+          metadata: { author: 'shawn' },
+          status: 'draft',
+          content: {},
+        },
+        config,
+      ),
+    (error: unknown) =>
+      error instanceof ValidationError && error.details.rule === 'page-metadata-requires-template',
+  );
+});
+
+test('validatePageAgainstProjectTemplates rejects unknown template ids', () => {
+  const config = createDefaultProjectConfig();
+
+  assert.throws(
+    () =>
+      validatePageAgainstProjectTemplates(
+        {
+          id: 'guide',
+          lang: 'en',
+          slug: 'guide',
+          title: 'Guide',
+          template: 'unknown-template',
+          status: 'draft',
+          content: {},
+        },
+        config,
+      ),
+    (error: unknown) =>
+      error instanceof ValidationError && error.details.rule === 'page-template-must-exist',
+  );
+});
+
+test('filterPublicPageMetadata returns only public template fields', () => {
+  const config = createDefaultProjectConfig({
+    authoring: {
+      pageTemplates: [
+        {
+          id: 'adr',
+          label: 'ADR',
+          baseTemplate: 'reference',
+          metadataSchema: {
+            fields: [
+              {
+                id: 'decision-status',
+                label: 'Decision Status',
+                type: 'enum',
+                visibility: 'public',
+                options: ['proposed', 'accepted'],
+              },
+              {
+                id: 'author',
+                label: 'Author',
+                type: 'string',
+                visibility: 'internal',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const publicMetadata = filterPublicPageMetadata(
+    {
+      id: 'adr-001',
+      lang: 'en',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'accepted',
+        author: 'shawn',
+      },
+      status: 'published',
+      content: {},
+    },
+    config,
+  );
+
+  assert.deepEqual(publicMetadata, {
+    'decision-status': 'accepted',
+  });
 });
 
 test('updatePageFromTemplate rewrites an existing page with generated content and render output', async () => {

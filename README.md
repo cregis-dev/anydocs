@@ -61,24 +61,23 @@ npx @anydocs/cli preview ./my-docs-project
 - 让 agent 通过 MCP 操作这个项目
 
 如果你主要使用 Claude Code，可以把初始化命令里的 `--agent codex` 换成 `--agent claude-code`。
+如果不传 `--project-id` / `--name`，`init` 会根据目标目录名自动推导项目 ID 和项目名称，并把 `site.theme.branding.siteTitle`、`build.outputDir` 这类常用字段一并写入 `anydocs.config.json`。
 
 ## Agent 写作优先路径
 
-这是当前推荐的工作方式。核心思路很简单：
+这是当前推荐的工作方式：
 
 - 用 `Studio` 做人工编辑、检查和发布
 - 用 `MCP` 让 agent 做页面创建、批量更新、导航维护
 - 不让 agent 直接修改 `pages/*.json` 和 `navigation/*.json`
 
-### 1. 初始化一个带 guide 的项目
-
-Codex：
+### 1. 初始化项目
 
 ```bash
 npx @anydocs/cli init ./my-docs-project --agent codex
 ```
 
-Claude Code：
+或：
 
 ```bash
 npx @anydocs/cli init ./my-docs-project --agent claude-code
@@ -87,32 +86,25 @@ npx @anydocs/cli init ./my-docs-project --agent claude-code
 生成结果：
 
 - `--agent codex` 会生成 `AGENTS.md`
-- `--agent claude-code` 会生成 `Claude.md`
+- `--agent claude-code` 会生成 `CLAUDE.md` 和 `.claude/commands/`
 - 不显式指定时，默认 guide 文件是 `skill.md`
+- 仓库内统一模板来源是 [docs/agent.md](docs/agent.md)
 
 ### 2. 启动 MCP server
-
-推荐直接运行已发布的 npm 包：
 
 ```bash
 npx -y @anydocs/mcp
 ```
 
-如果你已经全局安装，也可以直接运行：
-
-```bash
-anydocs-mcp
-```
-
-如果你是在 Anydocs 仓库里做本地开发，也可以继续用源码入口：
+仓库本地开发 MCP 时：
 
 ```bash
 pnpm --filter @anydocs/mcp dev
 ```
 
-### 3. 把 MCP 配到 agent
+### 3. 配到 agent
 
-Codex 的 `stdio` 配置示例：
+Codex 的 `stdio` 示例：
 
 ```json
 {
@@ -125,48 +117,29 @@ Codex 的 `stdio` 配置示例：
 }
 ```
 
-### 4. 让 agent 按这个顺序工作
+Claude Code 同理：注册 `@anydocs/mcp` 为 `stdio` MCP server，并让项目根目录的 `CLAUDE.md` 作为最小入口文件。
 
-默认顺序建议：
+### 4. 执行原则
 
-1. `project_open(projectRoot)`
-2. 需要时 `project_set_languages(...)`
-3. 需要时 `project_validate(projectRoot)`
-4. 先看 `project_open.authoring` 返回的 templates、resources、resourceTemplates
-5. 需要 guidance 或 canonical 示例时，优先读 `anydocs://authoring/guidance`、`anydocs://templates/{templateId}`、`anydocs://blocks/{blockType}/example`
-6. `page_list` / `page_find` / `page_get`
-7. 需要 richer 初稿时优先 `page_create_from_template`
-8. 需要按模板重整已有页面时用 `page_update_from_template`
-9. 常规修改用 `page_update`；如果本轮改了 `content` 且需要同步 reader 文本摘要，可传 `regenerateRender: true`
-10. `page_create` / `page_delete` / `page_set_status`
-11. `nav_get`
-12. `nav_insert` / `nav_delete` / `nav_move`
-13. 只有整体重排时再用 `nav_replace_items` / `nav_set`
+- 第一跳始终是 `project_open(projectRoot)`
+- 写入前先读现状，写入后再回读确认
+- 页面涉及 `template` / `metadata` 时，先看 `project_open.authoring.templates`
+- 需要详细规则时读 `anydocs://authoring/guidance`
+- 优先用 MCP，最后才考虑直接改文件
 
-一句话原则：
+Markdown 迁移优先级：
 
-- 先 `project_open`
-- 优先用 MCP
-- 最后才考虑直接改文件
+- 整页迁移用 `page_create_from_markdown`
+- 片段补录或追加用 `page_update_from_markdown`
+- richer 初稿用 `page_create_from_template`
 
-### 5. 日常写作闭环
+日常闭环：
 
 ```bash
-# 终端 1：Studio
 pnpm dev
-
-# 终端 2：Reader preview
 npx @anydocs/cli preview ./my-docs-project
-
-# 终端 3：需要静态产物时再 build
 npx @anydocs/cli build ./my-docs-project
 ```
-
-这个闭环里：
-
-- Studio 负责编辑和项目设置
-- Preview 负责看阅读站效果
-- Build 负责生成最终静态产物和 AI 可读产物
 
 ## 最常用命令
 
@@ -193,7 +166,8 @@ npx -y @anydocs/mcp
 my-docs-project/
 ├── anydocs.config.json
 ├── anydocs.workflow.json
-├── AGENTS.md / Claude.md / skill.md
+├── AGENTS.md / CLAUDE.md / skill.md
+├── .claude/commands/           # Claude Code 项目会额外生成
 ├── pages/
 ├── navigation/
 ├── imports/
@@ -227,8 +201,9 @@ my-docs-project/
 
 如果你已经能跑起来，后续按场景查这些文档：
 
-- [docs/04-usage-manual.md](docs/04-usage-manual.md)：详细操作手册
-- [docs/07-agent-integration.md](docs/07-agent-integration.md)：Codex / Claude Code 与 MCP 的完整集成方式
-- [docs/05-dev-guide.md](docs/05-dev-guide.md)：开发与验证流程
+- [docs/usage-manual.md](docs/usage-manual.md)：详细操作手册
+- [docs/agent.md](docs/agent.md)：项目根最小 agent guide 模板
+- [docs/developer-guide.md](docs/developer-guide.md)：开发与验证流程
+- [docs/classic-docs-theme-config.md](docs/classic-docs-theme-config.md)：`classic-docs` 阅读主题配置
 - [docs/README.md](docs/README.md)：`docs/` 目录索引
 - [artifacts/bmad/README.md](artifacts/bmad/README.md)：规划、技术规格和测试产物索引

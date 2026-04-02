@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test';
 
+import { isCliSingleProjectStudio } from './support/studio-mode';
 import { studioUrl } from './support/studio';
 
 const docsPreviewUrl = process.env.DOCS_PREVIEW_URL;
 
 test.describe('Studio shell', () => {
   test('[P0] standalone web dev does not expose /studio @p0', async ({ page }) => {
+    test.skip(isCliSingleProjectStudio, 'Standalone-only assertion.');
+
     await page.goto(studioUrl);
 
     await expect(page).toHaveTitle(/404|Not Found/i);
@@ -13,6 +16,8 @@ test.describe('Studio shell', () => {
   });
 
   test('[P0] standalone web dev does not expose the root studio page @p0', async ({ page }) => {
+    test.skip(isCliSingleProjectStudio, 'Standalone-only assertion.');
+
     await page.goto('/');
 
     await expect(page).toHaveTitle(/404|Not Found/i);

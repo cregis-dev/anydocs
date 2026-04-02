@@ -33,16 +33,37 @@ export type InitProjectResult = {
   createdFiles: string[];
 };
 
+const DEFAULT_INIT_LANGUAGE: DocsLanguage = 'zh';
+const DEFAULT_INIT_LANGUAGES: DocsLanguage[] = ['zh', 'en'];
+
 const PROJECT_SKILL_GUIDE_FILE = 'skill.md';
 const PROJECT_AGENT_GUIDE_FILES = {
   codex: 'AGENTS.md',
-  'claude-code': 'Claude.md',
+  'claude-code': 'CLAUDE.md',
 } as const;
 const INIT_SERVICE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_SKILL_GUIDE_CANDIDATES = [
-  path.resolve(INIT_SERVICE_DIR, '../../docs/skill.md'),
-  path.resolve(INIT_SERVICE_DIR, '../../../../docs/skill.md'),
-];
+const PROJECT_GUIDE_TEMPLATE_FILES = {
+  default: 'agent.md',
+  codex: 'agent.md',
+  'claude-code': 'agent.md',
+} as const;
+const CLAUDE_COMMAND_TEMPLATES = [
+  {
+    sourceRelativePath: 'claude-code-commands/anydocs-new-page.md',
+    targetRelativePath: path.join('.claude', 'commands', 'anydocs-new-page.md'),
+  },
+  {
+    sourceRelativePath: 'claude-code-commands/anydocs-publish-page.md',
+    targetRelativePath: path.join('.claude', 'commands', 'anydocs-publish-page.md'),
+  },
+] as const;
+
+function createBundledDocCandidates(relativePath: string): string[] {
+  return [
+    path.resolve(INIT_SERVICE_DIR, '../../docs', relativePath),
+    path.resolve(INIT_SERVICE_DIR, '../../../../docs', relativePath),
+  ];
+}
 
 async function ensurePathDoesNotExist(targetPath: string, entity: string, remediation: string) {
   try {
@@ -69,44 +90,88 @@ function resolveAgentGuideFileName(agent: InitProjectOptions['agent']): string {
   return agent ? PROJECT_AGENT_GUIDE_FILES[agent] : PROJECT_SKILL_GUIDE_FILE;
 }
 
-async function copyProjectSkillGuide(
+async function resolveBundledTemplatePath(
+  candidates: string[],
+  entity: string,
+  remediation: string,
+): Promise<string> {
+  for (const candidatePath of candidates) {
+    try {
+      await fs.access(candidatePath);
+      return candidatePath;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new ValidationError(`Cannot initialize project because the bundled ${entity} is missing.`, {
+    entity,
+    rule: 'init-bundled-template-missing',
+    remediation,
+    metadata: {
+      searchedPaths: candidates,
+    },
+  });
+}
+
+async function copyBundledTemplate(
   projectRoot: string,
-  agent?: InitProjectOptions['agent'],
+  targetRelativePath: string,
+  sourceCandidates: string[],
+  entity: string,
+  remediation: string,
 ): Promise<string | null> {
-  const targetPath = path.join(projectRoot, resolveAgentGuideFileName(agent));
+  const targetPath = path.join(projectRoot, targetRelativePath);
 
   try {
     await fs.access(targetPath);
     return null;
   } catch {
-    let sourcePath: string | null = null;
-
-    for (const candidatePath of PROJECT_SKILL_GUIDE_CANDIDATES) {
-      try {
-        await fs.access(candidatePath);
-        sourcePath = candidatePath;
-        break;
-      } catch {
-        continue;
-      }
-    }
-
-    if (!sourcePath) {
-      throw new ValidationError('Cannot initialize project because the bundled Anydocs agent guide is missing.', {
-        entity: 'project-skill-guide',
-        rule: 'init-skill-guide-missing',
-        remediation:
-          'Reinstall @anydocs/core or restore docs/skill.md in the Anydocs repository before running anydocs init again.',
-        metadata: {
-          searchedPaths: PROJECT_SKILL_GUIDE_CANDIDATES,
-        },
-      });
-    }
-
+    const sourcePath = await resolveBundledTemplatePath(sourceCandidates, entity, remediation);
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.copyFile(sourcePath, targetPath);
     return targetPath;
   }
+}
+
+async function copyProjectSkillGuide(
+  projectRoot: string,
+  agent?: InitProjectOptions['agent'],
+): Promise<string | null> {
+  const templatePath =
+    PROJECT_GUIDE_TEMPLATE_FILES[agent ?? 'default'];
+
+  return copyBundledTemplate(
+    projectRoot,
+    resolveAgentGuideFileName(agent),
+    createBundledDocCandidates(templatePath),
+    'project-agent-guide',
+    `Reinstall @anydocs/core or restore docs/${templatePath} in the Anydocs repository before running anydocs init again.`,
+  );
+}
+
+async function copyClaudeCommandTemplates(projectRoot: string, agent?: InitProjectOptions['agent']): Promise<string[]> {
+  if (agent !== 'claude-code') {
+    return [];
+  }
+
+  const createdFiles: string[] = [];
+
+  for (const template of CLAUDE_COMMAND_TEMPLATES) {
+    const copiedPath = await copyBundledTemplate(
+      projectRoot,
+      template.targetRelativePath,
+      createBundledDocCandidates(template.sourceRelativePath),
+      'claude-command-template',
+      `Reinstall @anydocs/core or restore docs/${template.sourceRelativePath} in the Anydocs repository before running anydocs init again.`,
+    );
+
+    if (copiedPath) {
+      createdFiles.push(copiedPath);
+    }
+  }
+
+  return createdFiles;
 }
 
 function createStarterPage(language: DocsLanguage): PageDoc<Record<string, never>> {
@@ -129,13 +194,15 @@ function createStarterPage(language: DocsLanguage): PageDoc<Record<string, never
   };
 }
 
-function createStarterNavigation(): NavigationDoc {
+function createStarterNavigation(language: DocsLanguage): NavigationDoc {
+  const isEnglish = language === 'en';
+
   return {
     version: 1,
     items: [
       {
         type: 'section',
-        title: 'Getting Started',
+        title: isEnglish ? 'Getting Started' : '开始使用',
         children: [
           {
             type: 'page',
@@ -148,12 +215,14 @@ function createStarterNavigation(): NavigationDoc {
 }
 
 export async function initializeProject(options: InitProjectOptions): Promise<InitProjectResult> {
+  const defaultLanguage = options.defaultLanguage ?? DEFAULT_INIT_LANGUAGE;
+  const languages = options.languages ?? DEFAULT_INIT_LANGUAGES;
   const config = validateProjectConfig(
     createDefaultProjectConfig({
       projectId: options.projectId,
       name: options.projectName,
-      defaultLanguage: options.defaultLanguage,
-      languages: options.languages,
+      defaultLanguage,
+      languages,
     }),
   );
 
@@ -180,11 +249,11 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
   if (skillGuideFile) {
     createdFiles.push(skillGuideFile);
   }
+  createdFiles.push(...(await copyClaudeCommandTemplates(paths.projectRoot, options.agent)));
   const repository = createDocsRepository(paths.projectRoot);
-  const starterNavigation = createStarterNavigation();
 
   for (const language of config.languages) {
-    await saveNavigation(repository, language, starterNavigation);
+    await saveNavigation(repository, language, createStarterNavigation(language));
     const starterPage = createStarterPage(language);
     await savePage(repository, language, starterPage);
 

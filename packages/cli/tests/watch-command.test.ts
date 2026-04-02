@@ -186,7 +186,8 @@ test('cli rejects unknown commands with a clear error', async () => {
 });
 
 test('init prints next-step commands after creating a project', async () => {
-  const repoRoot = await createTempRepoRoot();
+  const tempRoot = await createTempRepoRoot();
+  const repoRoot = path.join(tempRoot, 'acme-help-center');
 
   try {
     const spawned = spawnCli(['init', repoRoot]);
@@ -201,8 +202,24 @@ test('init prints next-step commands after creating a project', async () => {
     assert.match(spawned.getStdout(), /Preview it locally: anydocs preview/);
     assert.equal(spawned.getStderr(), '');
     await access(path.join(repoRoot, 'skill.md'));
+
+    const configRaw = await readFile(path.join(repoRoot, 'anydocs.config.json'), 'utf8');
+    const config = JSON.parse(configRaw) as {
+      projectId: string;
+      name: string;
+      defaultLanguage: string;
+      languages: string[];
+      site?: { theme?: { branding?: { siteTitle?: string } } };
+      build?: { outputDir?: string };
+    };
+    assert.equal(config.projectId, 'acme-help-center');
+    assert.equal(config.name, 'Acme Help Center');
+    assert.equal(config.defaultLanguage, 'zh');
+    assert.deepEqual(config.languages, ['zh', 'en']);
+    assert.equal(config.site?.theme?.branding?.siteTitle, 'Acme Help Center');
+    assert.equal(config.build?.outputDir, './dist');
   } finally {
-    await rm(repoRoot, { recursive: true, force: true });
+    await rm(tempRoot, { recursive: true, force: true });
   }
 });
 
@@ -263,7 +280,9 @@ test('project create supports richer initialization options', async () => {
     assert.equal(output.data.projectRoot, repoRoot);
     assert.deepEqual(output.data.languages, ['zh', 'en']);
     assert.match(output.data.createdFiles.join('\n'), /anydocs\.workflow\.json/);
-    assert.match(output.data.createdFiles.join('\n'), /Claude\.md/);
+    assert.match(output.data.createdFiles.join('\n'), /CLAUDE\.md/);
+    assert.match(output.data.createdFiles.join('\n'), /\.claude\/commands\/anydocs-new-page\.md/);
+    assert.match(output.data.createdFiles.join('\n'), /\.claude\/commands\/anydocs-publish-page\.md/);
 
     const configRaw = await readFile(path.join(repoRoot, 'anydocs.config.json'), 'utf8');
     const config = JSON.parse(configRaw) as {
@@ -276,7 +295,9 @@ test('project create supports richer initialization options', async () => {
     assert.equal(config.name, 'Acme Docs');
     assert.equal(config.defaultLanguage, 'zh');
     assert.deepEqual(config.languages, ['zh', 'en']);
-    await access(path.join(repoRoot, 'Claude.md'));
+    await access(path.join(repoRoot, 'CLAUDE.md'));
+    await access(path.join(repoRoot, '.claude', 'commands', 'anydocs-new-page.md'));
+    await access(path.join(repoRoot, '.claude', 'commands', 'anydocs-publish-page.md'));
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }

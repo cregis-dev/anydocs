@@ -257,6 +257,200 @@ test('loadProjectContract rejects top navigation group references missing from a
   }
 });
 
+test('loadProjectContract accepts custom authoring page templates in project config', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+
+  try {
+    const rawConfig = JSON.parse(await readFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), 'utf8')) as Record<string, unknown>;
+    rawConfig.authoring = {
+      pageTemplates: [
+        {
+          id: 'adr',
+          label: {
+            en: 'ADR',
+            zh: '架构决策记录',
+          },
+          description: 'Architecture decision record',
+          baseTemplate: 'reference',
+          defaultSummary: ' Document the decision and rationale. ',
+          defaultSections: [
+            { title: 'Context', body: ' Why this change is needed. ' },
+            { title: 'Decision' },
+          ],
+          metadataSchema: {
+            fields: [
+              {
+                id: 'decision-status',
+                label: {
+                  en: 'Decision Status',
+                },
+                type: 'enum',
+                required: true,
+                visibility: 'public',
+                options: ['proposed', 'accepted', 'superseded'],
+              },
+              {
+                id: 'author',
+                label: 'Author',
+                type: 'string',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const config = rawConfig as ReturnType<typeof createDefaultProjectConfig>;
+    const paths = createProjectPathContract(repoRoot, config);
+    await writeFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+    await writeFile(
+      path.join(repoRoot, ANYDOCS_WORKFLOW_FILE),
+      `${JSON.stringify(createWorkflowStandardDefinition({ config, paths }), null, 2)}\n`,
+      'utf8',
+    );
+
+    const result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    const template = result.value.config.authoring?.pageTemplates?.[0];
+    assert.equal(template?.id, 'adr');
+    assert.deepEqual(template?.label, { en: 'ADR', zh: '架构决策记录' });
+    assert.equal(template?.defaultSummary, 'Document the decision and rationale.');
+    assert.deepEqual(template?.defaultSections, [
+      { title: 'Context', body: 'Why this change is needed.' },
+      { title: 'Decision' },
+    ]);
+    assert.deepEqual(template?.metadataSchema?.fields, [
+      {
+        id: 'decision-status',
+        label: { en: 'Decision Status' },
+        type: 'enum',
+        required: true,
+        visibility: 'public',
+        options: ['proposed', 'accepted', 'superseded'],
+      },
+      {
+        id: 'author',
+        label: 'Author',
+        type: 'string',
+      },
+    ]);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadProjectContract rejects invalid authoring page template metadata schema', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+
+  try {
+    const rawConfig = JSON.parse(await readFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), 'utf8')) as Record<string, unknown>;
+    rawConfig.authoring = {
+      pageTemplates: [
+        {
+          id: 'adr',
+          label: 'ADR',
+          baseTemplate: 'reference',
+          metadataSchema: {
+            fields: [
+              {
+                id: 'decision-status',
+                label: 'Decision Status',
+                type: 'enum',
+              },
+            ],
+          },
+        },
+      ],
+    };
+    await writeFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), `${JSON.stringify(rawConfig, null, 2)}\n`, 'utf8');
+
+    const result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+
+    assert.equal(result.error.details.entity, 'project-config');
+    assert.equal(result.error.details.rule, 'authoring-page-template-field-options-required');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadProjectContract rejects custom page templates that reuse built-in template ids', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+
+  try {
+    const rawConfig = JSON.parse(await readFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), 'utf8')) as Record<string, unknown>;
+    rawConfig.authoring = {
+      pageTemplates: [
+        {
+          id: 'reference',
+          label: 'Custom Reference',
+          baseTemplate: 'reference',
+        },
+      ],
+    };
+    await writeFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), `${JSON.stringify(rawConfig, null, 2)}\n`, 'utf8');
+
+    const result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+
+    assert.equal(result.error.details.entity, 'project-config');
+    assert.equal(result.error.details.rule, 'authoring-page-template-id-built-in-reserved');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('loadProjectContract rejects persisted pages that reference missing templates', async () => {
+  const repoRoot = await createTempRepoRoot();
+  await writeValidContract(repoRoot);
+
+  try {
+    await writeFile(
+      path.join(repoRoot, 'pages', 'en', 'adr-001.json'),
+      `${JSON.stringify(
+        {
+          id: 'adr-001',
+          lang: 'en',
+          slug: 'architecture/adr-001',
+          title: 'ADR 001',
+          template: 'adr',
+          status: 'draft',
+          content: {},
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+
+    const result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+
+    assert.equal(result.error.details.entity, 'page-doc');
+    assert.equal(result.error.details.rule, 'page-template-must-exist');
+    assert.equal(result.error.details.metadata?.pageId, 'adr-001');
+    assert.equal(result.error.details.metadata?.templateId, 'adr');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('loadProjectContract fails when workflow standard file is missing', async () => {
   const repoRoot = await createTempRepoRoot();
   await writeValidContract(repoRoot);
@@ -396,7 +590,7 @@ test('loadProjectContract fails when persisted workflow metadata drifts from the
           contentModel: {
             projectConfigFields: ['version', 'projectId', 'name', 'defaultLanguage', 'languages'],
             pageRequiredFields: ['id', 'lang', 'slug', 'title', 'status', 'content'],
-            pageOptionalFields: ['description', 'tags', 'updatedAt', 'render'],
+            pageOptionalFields: ['description', 'template', 'metadata', 'tags', 'updatedAt', 'render'],
             navigationRequiredFields: ['version', 'items'],
           },
           orchestration: {
@@ -480,10 +674,12 @@ test('updateProjectConfig rewrites the workflow standard to match updated projec
       ),
     ) as {
       enabledLanguages: string[];
+      contentModel: { projectConfigFields: string[] };
       sourceFiles: Array<{ path: string }>;
     };
 
     assert.deepEqual(workflow.enabledLanguages, ['zh']);
+    assert.equal(workflow.contentModel.projectConfigFields.includes('authoring'), true);
     assert.equal(workflow.sourceFiles.some((file) => file.path.includes('/navigation/en.json')), false);
     assert.equal(workflow.sourceFiles.some((file) => file.path.includes('/pages/en/')), false);
   } finally {

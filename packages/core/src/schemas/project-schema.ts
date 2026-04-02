@@ -2,12 +2,22 @@ import { ValidationError } from '../errors/validation-error.ts';
 import {
   SUPPORTED_DOCS_CODE_THEMES,
   type DocsCodeTheme,
+  type ProjectAuthoringConfig,
+  type ProjectLocalizedLabel,
+  type ProjectPageTemplateDefinition,
+  type ProjectPageTemplateMetadataField,
+  type ProjectPageMetadataFieldType,
+  type ProjectPageMetadataVisibility,
   SUPPORTED_DOCS_LANGUAGES,
   type DocsLanguage,
   type ProjectSiteTopNavItem,
   type ProjectSiteTopNavLabel,
   type ProjectConfig,
 } from '../types/project.ts';
+
+const PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES = ['concept', 'how_to', 'reference'] as const;
+const PROJECT_PAGE_METADATA_FIELD_TYPES = ['string', 'text', 'enum', 'boolean', 'date', 'string[]'] as const;
+const PROJECT_PAGE_METADATA_VISIBILITIES = ['public', 'internal'] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -64,13 +74,24 @@ function normalizeSiteUrl(value: string): string {
   return normalized.toString().replace(/\/$/, normalized.pathname === '/' ? '/' : '');
 }
 
-function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavLabel {
+function validateLocalizedLabel(
+  input: unknown,
+  metadata: Record<string, unknown>,
+  stringRule: string,
+  stringRemediation: string,
+  objectRule: string,
+  objectRemediation: string,
+  languageStringRule: string,
+  languageStringRemediation: (language: DocsLanguage) => string,
+  languageRequiredRule: string,
+  languageRequiredRemediation: string,
+): ProjectLocalizedLabel {
   if (typeof input === 'string') {
     if (input.trim().length === 0) {
       throw makeValidationError(
-        'site-navigation-top-nav-label-string',
-        'Use a non-empty string for a top navigation label.',
-        { itemId, received: input },
+        stringRule,
+        stringRemediation,
+        { ...metadata, received: input },
       );
     }
 
@@ -79,9 +100,9 @@ function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavL
 
   if (!isRecord(input)) {
     throw makeValidationError(
-      'site-navigation-top-nav-label-object',
-      'Use a string or language-keyed object for top navigation labels.',
-      { itemId, received: input },
+      objectRule,
+      objectRemediation,
+      { ...metadata, received: input },
     );
   }
 
@@ -94,9 +115,9 @@ function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavL
 
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw makeValidationError(
-        'site-navigation-top-nav-label-language-string',
-        `Use a non-empty string for "site.navigation.topNav[].label.${language}" when provided.`,
-        { itemId, language, received: value },
+        languageStringRule,
+        languageStringRemediation(language),
+        { ...metadata, language, received: value },
       );
     }
 
@@ -105,13 +126,299 @@ function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavL
 
   if (Object.keys(next).length === 0) {
     throw makeValidationError(
-      'site-navigation-top-nav-label-language-required',
-      'Provide at least one localized top navigation label value.',
-      { itemId, received: input },
+      languageRequiredRule,
+      languageRequiredRemediation,
+      { ...metadata, received: input },
     );
   }
 
   return next;
+}
+
+function validateTopNavLabel(input: unknown, itemId: string): ProjectSiteTopNavLabel {
+  return validateLocalizedLabel(
+    input,
+    { itemId },
+    'site-navigation-top-nav-label-string',
+    'Use a non-empty string for a top navigation label.',
+    'site-navigation-top-nav-label-object',
+    'Use a string or language-keyed object for top navigation labels.',
+    'site-navigation-top-nav-label-language-string',
+    (language) => `Use a non-empty string for "site.navigation.topNav[].label.${language}" when provided.`,
+    'site-navigation-top-nav-label-language-required',
+    'Provide at least one localized top navigation label value.',
+  );
+}
+
+function validatePageTemplateLabel(input: unknown, templateId: string): ProjectLocalizedLabel {
+  return validateLocalizedLabel(
+    input,
+    { templateId },
+    'authoring-page-template-label-string',
+    'Use a non-empty string or language-keyed object for "authoring.pageTemplates[].label".',
+    'authoring-page-template-label-object',
+    'Use a string or language-keyed object for "authoring.pageTemplates[].label".',
+    'authoring-page-template-label-language-string',
+    (language) => `Use a non-empty string for "authoring.pageTemplates[].label.${language}" when provided.`,
+    'authoring-page-template-label-language-required',
+    'Provide at least one localized template label value.',
+  );
+}
+
+function validatePageMetadataFieldLabel(input: unknown, templateId: string, fieldId: string): ProjectLocalizedLabel {
+  return validateLocalizedLabel(
+    input,
+    { templateId, fieldId },
+    'authoring-page-template-field-label-string',
+    'Use a non-empty string or language-keyed object for "authoring.pageTemplates[].metadataSchema.fields[].label".',
+    'authoring-page-template-field-label-object',
+    'Use a string or language-keyed object for "authoring.pageTemplates[].metadataSchema.fields[].label".',
+    'authoring-page-template-field-label-language-string',
+    (language) =>
+      `Use a non-empty string for "authoring.pageTemplates[].metadataSchema.fields[].label.${language}" when provided.`,
+    'authoring-page-template-field-label-language-required',
+    'Provide at least one localized metadata field label value.',
+  );
+}
+
+function validatePageTemplateSection(input: unknown, templateId: string, index: number) {
+  if (!isRecord(input)) {
+    throw makeValidationError(
+      'authoring-page-template-section-object',
+      'Use an object for each entry in "authoring.pageTemplates[].defaultSections".',
+      { templateId, index, received: input },
+    );
+  }
+
+  const title = normalizeOptionalTrimmedString(
+    input.title,
+    'authoring-page-template-section-title-string',
+    'Use a non-empty string for "authoring.pageTemplates[].defaultSections[].title".',
+  );
+  if (!title) {
+    throw makeValidationError(
+      'authoring-page-template-section-title-required',
+      'Provide a non-empty title for each default section.',
+      { templateId, index, received: input.title },
+    );
+  }
+
+  const body = normalizeOptionalTrimmedString(
+    input.body,
+    'authoring-page-template-section-body-string',
+    'Use a string for "authoring.pageTemplates[].defaultSections[].body" when provided.',
+  );
+
+  return {
+    title,
+    ...(body ? { body } : {}),
+  };
+}
+
+function validatePageTemplateMetadataField(
+  input: unknown,
+  templateId: string,
+  index: number,
+): ProjectPageTemplateMetadataField {
+  if (!isRecord(input)) {
+    throw makeValidationError(
+      'authoring-page-template-field-object',
+      'Use an object for each metadata field definition.',
+      { templateId, index, received: input },
+    );
+  }
+
+  const id = typeof input.id === 'string' ? input.id.trim() : '';
+  if (!id || !isSlugLikeId(id)) {
+    throw makeValidationError(
+      'authoring-page-template-field-id',
+      'Use a lowercase slug-like id for each metadata field definition.',
+      { templateId, index, received: input.id },
+    );
+  }
+
+  const label = validatePageMetadataFieldLabel(input.label, templateId, id);
+  const type = input.type;
+  if (typeof type !== 'string' || !PROJECT_PAGE_METADATA_FIELD_TYPES.includes(type as ProjectPageMetadataFieldType)) {
+    throw makeValidationError(
+      'authoring-page-template-field-type',
+      `Use one of: ${PROJECT_PAGE_METADATA_FIELD_TYPES.join(', ')} for metadata field types.`,
+      { templateId, fieldId: id, received: type },
+    );
+  }
+
+  if (input.required != null && typeof input.required !== 'boolean') {
+    throw makeValidationError(
+      'authoring-page-template-field-required-boolean',
+      'Use a boolean for "required" on metadata field definitions.',
+      { templateId, fieldId: id, received: input.required },
+    );
+  }
+
+  if (
+    input.visibility != null
+    && (typeof input.visibility !== 'string'
+      || !PROJECT_PAGE_METADATA_VISIBILITIES.includes(input.visibility as ProjectPageMetadataVisibility))
+  ) {
+    throw makeValidationError(
+      'authoring-page-template-field-visibility',
+      `Use one of: ${PROJECT_PAGE_METADATA_VISIBILITIES.join(', ')} for metadata field visibility.`,
+      { templateId, fieldId: id, received: input.visibility },
+    );
+  }
+
+  const rawOptions = input.options;
+  if (type === 'enum') {
+    if (!Array.isArray(rawOptions) || rawOptions.length === 0 || rawOptions.some((option) => typeof option !== 'string')) {
+      throw makeValidationError(
+        'authoring-page-template-field-options-required',
+        'Provide a non-empty string array for "options" on enum metadata fields.',
+        { templateId, fieldId: id, received: rawOptions },
+      );
+    }
+  } else if (rawOptions != null) {
+    throw makeValidationError(
+      'authoring-page-template-field-options-unsupported',
+      'Use "options" only on enum metadata fields.',
+      { templateId, fieldId: id, received: rawOptions },
+    );
+  }
+
+  const options = Array.isArray(rawOptions) ? rawOptions.map((option) => option.trim()).filter(Boolean) : [];
+  if (type === 'enum' && options.length === 0) {
+    throw makeValidationError(
+      'authoring-page-template-field-options-required',
+      'Provide at least one non-empty option for enum metadata fields.',
+      { templateId, fieldId: id, received: rawOptions },
+    );
+  }
+
+  const optionIds = new Set<string>();
+  for (const option of options) {
+    if (!isSlugLikeId(option)) {
+      throw makeValidationError(
+        'authoring-page-template-field-option-id',
+        'Use lowercase slug-like ids for enum metadata field options.',
+        { templateId, fieldId: id, received: option },
+      );
+    }
+    if (optionIds.has(option)) {
+      throw makeValidationError(
+        'authoring-page-template-field-option-id-unique',
+        'Use unique option ids within each enum metadata field.',
+        { templateId, fieldId: id, optionId: option },
+      );
+    }
+    optionIds.add(option);
+  }
+
+  return {
+    id,
+    label,
+    type: type as ProjectPageMetadataFieldType,
+    ...(typeof input.required === 'boolean' ? { required: input.required } : {}),
+    ...(typeof input.visibility === 'string'
+      ? { visibility: input.visibility as ProjectPageMetadataVisibility }
+      : {}),
+    ...(options.length > 0 ? { options } : {}),
+  };
+}
+
+function validatePageTemplate(input: unknown, index: number): ProjectPageTemplateDefinition {
+  if (!isRecord(input)) {
+    throw makeValidationError(
+      'authoring-page-template-object',
+      'Use an object for each entry in "authoring.pageTemplates".',
+      { index, received: input },
+    );
+  }
+
+  const id = typeof input.id === 'string' ? input.id.trim() : '';
+  if (!id || !isSlugLikeId(id)) {
+    throw makeValidationError(
+      'authoring-page-template-id',
+      'Use a lowercase slug-like id for each authoring page template.',
+      { index, received: input.id },
+    );
+  }
+
+  const label = validatePageTemplateLabel(input.label, id);
+  const description = normalizeOptionalTrimmedString(
+    input.description,
+    'authoring-page-template-description-string',
+    'Use a string for "authoring.pageTemplates[].description" when provided.',
+  );
+
+  const baseTemplate = input.baseTemplate;
+  if (
+    typeof baseTemplate !== 'string'
+    || !PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES.includes(baseTemplate as (typeof PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES)[number])
+  ) {
+    throw makeValidationError(
+      'authoring-page-template-base-template',
+      `Use one of: ${PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES.join(', ')} for "baseTemplate".`,
+      { templateId: id, received: baseTemplate },
+    );
+  }
+
+  const defaultSummary = normalizeOptionalTrimmedString(
+    input.defaultSummary,
+    'authoring-page-template-default-summary-string',
+    'Use a string for "authoring.pageTemplates[].defaultSummary" when provided.',
+  );
+
+  if (input.defaultSections != null && !Array.isArray(input.defaultSections)) {
+    throw makeValidationError(
+      'authoring-page-template-default-sections-array',
+      'Use an array for "authoring.pageTemplates[].defaultSections" when provided.',
+      { templateId: id, received: input.defaultSections },
+    );
+  }
+  const defaultSections = input.defaultSections?.map((section, sectionIndex) =>
+    validatePageTemplateSection(section, id, sectionIndex),
+  ) ?? [];
+
+  if (input.metadataSchema != null && !isRecord(input.metadataSchema)) {
+    throw makeValidationError(
+      'authoring-page-template-metadata-schema-object',
+      'Use an object for "authoring.pageTemplates[].metadataSchema" when provided.',
+      { templateId: id, received: input.metadataSchema },
+    );
+  }
+  if (input.metadataSchema?.fields != null && !Array.isArray(input.metadataSchema.fields)) {
+    throw makeValidationError(
+      'authoring-page-template-metadata-fields-array',
+      'Use an array for "authoring.pageTemplates[].metadataSchema.fields" when provided.',
+      { templateId: id, received: input.metadataSchema.fields },
+    );
+  }
+
+  const fields = input.metadataSchema?.fields?.map((field, fieldIndex) =>
+    validatePageTemplateMetadataField(field, id, fieldIndex),
+  ) ?? [];
+  const fieldIds = new Set<string>();
+  for (const field of fields) {
+    if (fieldIds.has(field.id)) {
+      throw makeValidationError(
+        'authoring-page-template-field-id-unique',
+        'Use unique metadata field ids within each page template.',
+        { templateId: id, fieldId: field.id },
+      );
+    }
+    fieldIds.add(field.id);
+  }
+
+  const template: ProjectPageTemplateDefinition = {
+    id,
+    label,
+    ...(description ? { description } : {}),
+    baseTemplate: baseTemplate as ProjectPageTemplateDefinition['baseTemplate'],
+    ...(defaultSummary ? { defaultSummary } : {}),
+    ...(defaultSections.length > 0 ? { defaultSections } : {}),
+    ...(fields.length > 0 ? { metadataSchema: { fields } } : {}),
+  };
+
+  return template;
 }
 
 function validateTopNavItem(input: unknown, index: number): ProjectSiteTopNavItem {
@@ -484,7 +791,50 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
     );
   }
 
-  return {
+  const authoring = input.authoring;
+  if (authoring != null && !isRecord(authoring)) {
+    throw makeValidationError(
+      'authoring-must-be-object',
+      'Use an object for "authoring" when specifying authoring template settings.',
+      { received: authoring },
+    );
+  }
+
+  const rawPageTemplates = authoring?.pageTemplates;
+  if (rawPageTemplates != null && !Array.isArray(rawPageTemplates)) {
+    throw makeValidationError(
+      'authoring-page-templates-array',
+      'Use an array for "authoring.pageTemplates" when specifying custom page templates.',
+      { received: rawPageTemplates },
+    );
+  }
+
+  const pageTemplates = rawPageTemplates?.map((template, index) => validatePageTemplate(template, index)) ?? [];
+  const templateIds = new Set<string>();
+  for (const template of pageTemplates) {
+    if (PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES.includes(template.id as (typeof PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES)[number])) {
+      throw makeValidationError(
+        'authoring-page-template-id-built-in-reserved',
+        `Use a custom template id other than the built-in template ids: ${PROJECT_PAGE_TEMPLATE_BASE_TEMPLATES.join(', ')}.`,
+        { templateId: template.id },
+      );
+    }
+    if (templateIds.has(template.id)) {
+      throw makeValidationError(
+        'authoring-page-template-id-unique',
+        'Use unique ids for authoring page templates.',
+        { templateId: template.id },
+      );
+    }
+
+    templateIds.add(template.id);
+  }
+
+  const normalizedAuthoring: ProjectAuthoringConfig | undefined = authoring && pageTemplates.length > 0
+    ? { pageTemplates }
+    : undefined;
+
+  const normalizedConfig: ProjectConfig = {
     version: 1,
     projectId,
     name: name.trim(),
@@ -535,6 +885,9 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
       },
       ...(topNav.length > 0 ? { navigation: { topNav } } : {}),
     },
+    ...(normalizedAuthoring ? { authoring: normalizedAuthoring } : {}),
     ...(typeof outputDir === 'string' ? { build: { outputDir: outputDir.trim() } } : {}),
   };
+
+  return normalizedConfig;
 }

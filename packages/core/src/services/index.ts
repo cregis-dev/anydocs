@@ -3,6 +3,7 @@ export * from './build-service.ts';
 export * from './init-service.ts';
 export * from './legacy-conversion-service.ts';
 export * from './legacy-import-service.ts';
+export * from './markdown-authoring-service.ts';
 export * from './page-template-service.ts';
 export * from './preview-service.ts';
 export * from './watch-service.ts';

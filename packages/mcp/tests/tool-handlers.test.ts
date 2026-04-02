@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { createPage as createCorePage, initializeProject } from '@anydocs/core';
+import { createPage as createCorePage, initializeProject, updateProjectConfig } from '@anydocs/core';
 
 import { navigationTools } from '../src/tools/navigation-tools.ts';
 import { pageTools } from '../src/tools/page-tools.ts';
@@ -72,7 +72,13 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
         allowedBlockTypes: string[];
         allowedMarks: string[];
         guidance: string[];
-        templates: Array<{ id: string; recommendedInputs: string[] }>;
+        templates: Array<{
+          id: string;
+          baseTemplate: string;
+          builtIn: boolean;
+          recommendedInputs: string[];
+          metadataSchema?: { fields: Array<{ id: string; visibility?: string }> };
+        }>;
         resources: Array<{ uri: string }>;
         resourceTemplates: Array<{ uriTemplate: string }>;
       };
@@ -92,6 +98,60 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
         (resourceTemplate) => resourceTemplate.uriTemplate === 'anydocs://templates/{templateId}',
       ),
     );
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('project_open returns custom templates alongside built-ins', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            defaultSummary: 'Document the architectural decision.',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  visibility: 'public',
+                  options: ['proposed', 'accepted'],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    const success = expectSuccess<{
+      authoring: {
+        templates: Array<{
+          id: string;
+          baseTemplate: string;
+          builtIn: boolean;
+          defaultSummary?: string;
+          metadataSchema?: { fields: Array<{ id: string; visibility?: string }> };
+        }>;
+      };
+    }>(await invokeTool('project_open', { projectRoot }));
+
+    const customTemplate = success.data.authoring.templates.find((template) => template.id === 'adr');
+    assert.equal(customTemplate?.baseTemplate, 'reference');
+    assert.equal(customTemplate?.builtIn, false);
+    assert.equal(customTemplate?.defaultSummary, 'Document the architectural decision.');
+    assert.equal(customTemplate?.metadataSchema?.fields[0]?.id, 'decision-status');
+    assert.equal(customTemplate?.metadataSchema?.fields[0]?.visibility, 'public');
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -128,6 +188,7 @@ test('page_list and page_find return summarized page metadata with file paths', 
         id: 'guide',
         slug: 'guide',
         title: 'Guide',
+        template: 'reference',
         tags: ['GUIDE'],
         content: createYooptaContent(),
       },
@@ -135,16 +196,20 @@ test('page_list and page_find return summarized page metadata with file paths', 
 
     const listResult = expectSuccess<{
       count: number;
-      pages: Array<{ id: string; file: string }>;
+      pages: Array<{ id: string; file: string; template?: string; metadata?: Record<string, unknown> }>;
     }>(await invokeTool('page_list', { projectRoot, lang: 'en' }));
     assert.equal(listResult.data.count, 2);
     assert.ok(listResult.data.pages.some((page) => page.id === 'guide' && /pages\/en\/guide\.json$/.test(page.file)));
+    assert.equal(listResult.data.pages.find((page) => page.id === 'guide')?.template, 'reference');
+    assert.equal('metadata' in (listResult.data.pages.find((page) => page.id === 'guide') ?? {}), false);
 
     const findResult = expectSuccess<{
-      matches: Array<{ id: string }>;
+      matches: Array<{ id: string; template?: string; metadata?: Record<string, unknown> }>;
     }>(await invokeTool('page_find', { projectRoot, lang: 'en', slug: 'guide' }));
     assert.equal(findResult.data.matches.length, 1);
     assert.equal(findResult.data.matches[0]?.id, 'guide');
+    assert.equal(findResult.data.matches[0]?.template, 'reference');
+    assert.equal('metadata' in (findResult.data.matches[0] ?? {}), false);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -200,6 +265,121 @@ test('page_create writes a canonical page through the shared authoring service',
     }));
     assert.equal(result.data.page.id, 'guide');
     assert.match(result.data.filePath, /pages\/en\/guide\.json$/);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_create accepts template and metadata for project-defined templates', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  options: ['proposed', 'accepted'],
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    const result = expectSuccess<{
+      filePath: string;
+      page: { template?: string; metadata?: Record<string, unknown> };
+    }>(await invokeTool('page_create', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'adr-001',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'accepted',
+        author: '  shawn  ',
+      },
+      content: createYooptaContent(),
+    }));
+
+    assert.equal(result.data.page.template, 'adr');
+    assert.deepEqual(result.data.page.metadata, {
+      'decision-status': 'accepted',
+      author: 'shawn',
+    });
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_create_from_markdown infers document fields and returns conversion warnings', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = expectSuccess<{
+      page: {
+        id: string;
+        title: string;
+        description?: string;
+        tags?: string[];
+        render?: { markdown?: string };
+      };
+      conversion: {
+        title?: string;
+        warnings: Array<{ code: string }>;
+      };
+    }>(await invokeTool('page_create_from_markdown', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'legacy-guide',
+      slug: 'legacy-guide',
+      format: 'markdown',
+      sourcePath: 'legacy/guide.md',
+      markdown: [
+        '---',
+        'description: Imported from markdown',
+        'tags: [guide, migration]',
+        'customField: preserve-me',
+        '---',
+        '',
+        '# Legacy Guide',
+        '',
+        '- bullet item',
+        '',
+        'Imported body copy',
+      ].join('\n'),
+    }));
+
+    assert.equal(result.data.page.id, 'legacy-guide');
+    assert.equal(result.data.page.title, 'Legacy Guide');
+    assert.equal(result.data.page.description, 'Imported from markdown');
+    assert.deepEqual(result.data.page.tags, ['guide', 'migration']);
+    assert.match(result.data.page.render?.markdown ?? '', /# Legacy Guide/);
+    assert.ok(result.data.conversion.warnings.some((warning) => warning.code === 'markdown-frontmatter-unmapped'));
+    assert.ok(
+      result.data.conversion.warnings.some((warning) => warning.code === 'markdown-construct-review-required'),
+    );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -389,6 +569,179 @@ test('page_update can regenerate render output from content when requested', asy
     }));
     assert.equal(result.data.page.render?.markdown, '## Updated Section\n\nUpdated body copy');
     assert.equal(result.data.page.render?.plainText, 'Updated Section\n\nUpdated body copy');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_update_from_markdown replaces a page from document markdown and can infer the title', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createCorePage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Before',
+        content: createYooptaContent('Before body'),
+      },
+    });
+
+    const result = expectSuccess<{
+      page: {
+        title: string;
+        description?: string;
+        tags?: string[];
+        render?: { markdown?: string };
+      };
+      conversion: {
+        warnings: Array<{ code: string }>;
+      };
+    }>(await invokeTool('page_update_from_markdown', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'guide',
+      inputMode: 'document',
+      markdown: ['---', 'description: Replaced description', 'tags: [updated]', '---', '', '# Replaced Title', '', 'Body copy'].join('\n'),
+    }));
+
+    assert.equal(result.data.page.title, 'Replaced Title');
+    assert.equal(result.data.page.description, 'Replaced description');
+    assert.deepEqual(result.data.page.tags, ['updated']);
+    assert.equal(result.data.page.render?.markdown, '# Replaced Title\n\nBody copy');
+    assert.deepEqual(result.data.conversion.warnings, []);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_update_from_markdown appends fragment markdown without overwriting existing render', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await createCorePage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent('Existing body'),
+        render: {
+          markdown: '# Guide\n\nExisting body',
+          plainText: 'Guide\n\nExisting body',
+        },
+      },
+    });
+
+    const result = expectSuccess<{
+      page: {
+        title: string;
+        render?: { markdown?: string; plainText?: string };
+        content: Record<string, unknown>;
+      };
+      conversion: {
+        warnings: Array<{ code: string }>;
+      };
+    }>(await invokeTool('page_update_from_markdown', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'guide',
+      operation: 'append',
+      inputMode: 'fragment',
+      markdown: ['## New Section', '', '- appended item'].join('\n'),
+    }));
+
+    assert.equal(result.data.page.title, 'Guide');
+    assert.equal(result.data.page.render?.markdown, '# Guide\n\nExisting body\n\n## New Section\n\n- appended item');
+    assert.equal(result.data.page.render?.plainText, 'Guide\n\nExisting body\n\nNew Section - appended item');
+    assert.equal(Object.keys(result.data.page.content).length, 3);
+    assert.ok(
+      result.data.conversion.warnings.some((warning) => warning.code === 'markdown-construct-review-required'),
+    );
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_update replaces metadata as a whole object for templated pages', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  options: ['proposed', 'accepted'],
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    const created = expectSuccess<{
+      filePath: string;
+    }>(await invokeTool('page_create', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'adr-001',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'proposed',
+        author: 'shawn',
+      },
+      content: createYooptaContent(),
+    }));
+
+    const result = expectSuccess<{
+      page: { template?: string; metadata?: Record<string, unknown> };
+    }>(await invokeTool('page_update', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'adr-001',
+      patch: {
+        metadata: {
+          'decision-status': 'accepted',
+        },
+      },
+    }));
+
+    assert.equal(result.data.page.template, 'adr');
+    assert.deepEqual(result.data.page.metadata, {
+      'decision-status': 'accepted',
+    });
+
+    const persisted = JSON.parse(await readFile(created.data.filePath, 'utf8')) as {
+      metadata?: Record<string, unknown>;
+    };
+    assert.deepEqual(persisted.metadata, {
+      'decision-status': 'accepted',
+    });
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

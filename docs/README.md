@@ -1,15 +1,24 @@
 # Anydocs Docs Index
 
-当前 `docs/` 目录只保留运行文档与集成说明。BMAD 相关规划、实现与测试产物已迁移到 `../artifacts/bmad/`，与普通文档分开维护。
+当前 `docs/` 目录只保留仍然有独立维护价值的运行文档、模板和内部流程说明。通用的 agent 集成说明已并回根 [README](../README.md)；BMAD 相关规划、实现与测试产物继续放在 `../artifacts/bmad/`。
 
-## Runtime Docs
+## Start Here
 
-- [04-usage-manual.md](04-usage-manual.md): 详细操作手册，覆盖启动、编辑、构建、预览、导入和部署
-- [05-dev-guide.md](05-dev-guide.md): 面向开发者的开发与验证指南
-- [06-classic-docs-theme-config.md](06-classic-docs-theme-config.md): `classic-docs` 阅读主题配置说明
-- [07-agent-integration.md](07-agent-integration.md): Codex / Claude Code 与 Anydocs MCP 的集成方式
-- [08-ai-first-ci.md](08-ai-first-ci.md): 面向公司内部的 AI-First CI 与外部 AI reviewer 落地指南
-- [skill.md](skill.md): 项目内 agent guide 模板，指导 agent 通过 MCP 使用 Anydocs
+- [usage-manual.md](usage-manual.md): 日常使用入口，覆盖初始化、Studio、build、preview、导入与 Markdown 迁移
+- [developer-guide.md](developer-guide.md): 面向仓库维护者的开发、验证和调试指南
+- [agent.md](agent.md): 项目根最小 agent guide 模板
+
+## Product Docs
+
+- [classic-docs-theme-config.md](classic-docs-theme-config.md): `classic-docs` 阅读主题配置说明
+
+## Templates
+
+- [claude-code-commands/](claude-code-commands): Claude Code slash command 模板
+
+## Internal
+
+- [ai-first-ci.md](ai-first-ci.md): 面向公司内部的 AI-First CI 与外部 AI reviewer 落地指南
 
 ## BMAD Artifacts
 
@@ -24,4 +33,5 @@
 ## Notes
 
 - 旧的 `00-index.md`、`01-project-status.md`、`02-editor-spec.md`、`03-repositioning.md` 已移除。
+- 已删除单独的 `agent-integration.md`；必要的 MCP 接入说明现在以更短形式放在根 `README.md`。
 - 规划与实现上下文现在主要由 `../artifacts/bmad/planning-artifacts/architecture.md`、`../artifacts/bmad/planning-artifacts/prd.md`、`../artifacts/bmad/planning-artifacts/epics.md` 承接。

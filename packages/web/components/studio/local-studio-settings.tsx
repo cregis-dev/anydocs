@@ -1,6 +1,10 @@
 'use client';
 
-import type { ProjectSiteTopNavItem } from '@anydocs/core';
+import type {
+  ProjectLocalizedLabel,
+  ProjectSiteTopNavItem,
+  ResolvedProjectPageTemplateDefinition,
+} from '@anydocs/core';
 import { ArrowDown, ArrowUp, Link2, Plus, Trash2 } from 'lucide-react';
 
 import type { ApiSourceDoc, DocsLang } from '@/lib/docs/types';
@@ -37,6 +41,7 @@ type ProjectSettingsValue = {
   sidebarActiveForegroundColor: string;
   codeTheme: 'github-light' | 'github-dark';
   topNavItems: ProjectSiteTopNavItem[];
+  authoringTemplates: ResolvedProjectPageTemplateDefinition[];
   apiSources: ApiSourceDoc[];
   outputDir: string;
 };
@@ -68,6 +73,36 @@ function parseTags(raw: string) {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function parseCommaSeparatedValues(raw: string) {
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function getLocalizedLabel(label: ProjectLocalizedLabel, lang: DocsLang): string {
+  if (typeof label === 'string') {
+    return label;
+  }
+
+  return label[lang] ?? Object.values(label).find((value) => typeof value === 'string' && value.trim().length > 0) ?? '';
+}
+
+function metadataFieldTestId(fieldId: string) {
+  return `studio-page-metadata-${fieldId}`;
+}
+
+function getPageTemplateById(
+  templates: ResolvedProjectPageTemplateDefinition[],
+  templateId: string | undefined,
+) {
+  if (!templateId) {
+    return null;
+  }
+
+  return templates.find((template) => template.id === templateId) ?? null;
 }
 
 function getReviewSourceLabel(review: PageReview): string {
@@ -877,11 +912,13 @@ function ProjectSettingsContent({
 
 function PageSettingsContent({
   page,
+  templates,
   onChange,
   onDeletePage,
   onSetReviewApproval,
 }: {
   page: PageDoc | null;
+  templates: ResolvedProjectPageTemplateDefinition[];
   onChange: (patch: Partial<PageDoc>) => void;
   onDeletePage: () => void;
   onSetReviewApproval: (approved: boolean) => void;
@@ -889,6 +926,10 @@ function PageSettingsContent({
   if (!page) {
     return <div className="text-sm text-fd-muted-foreground">Select a page, then use Edit to open page settings.</div>;
   }
+
+  const selectedTemplate = getPageTemplateById(templates, page.template);
+  const metadataFields = selectedTemplate?.metadataSchema?.fields ?? [];
+  const metadata = page.metadata ?? {};
 
   return (
     <div className="space-y-4">
@@ -921,7 +962,163 @@ function PageSettingsContent({
             data-testid="studio-page-description-input"
           />
         </div>
+
+        <div>
+          <div className="mb-1 text-xs text-fd-muted-foreground">Template</div>
+          <Select
+            value={page.template ?? '__none__'}
+            onValueChange={(value) =>
+              onChange({
+                template: value === '__none__' ? undefined : value,
+                metadata: undefined,
+              })
+            }
+          >
+            <SelectTrigger data-testid="studio-page-template-trigger">
+              <SelectValue placeholder="No template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No template</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {getLocalizedLabel(template.label, page.lang)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedTemplate ? (
+            <div className="mt-2 space-y-1 text-xs text-fd-muted-foreground">
+              <div>{selectedTemplate.description ?? 'No template description.'}</div>
+              {!selectedTemplate.builtIn ? <div>Base template: {selectedTemplate.baseTemplate}</div> : null}
+            </div>
+          ) : (
+            <div className="mt-2 text-xs text-fd-muted-foreground">Optional. Select a template to attach structured metadata.</div>
+          )}
+        </div>
       </SettingsSection>
+
+      {selectedTemplate ? (
+        <SettingsSection
+          title="Structured Metadata"
+          description="Typed fields defined by the selected page template."
+        >
+          {metadataFields.length > 0 ? (
+            <div className="space-y-3">
+              {metadataFields.map((field) => {
+                const label = getLocalizedLabel(field.label, page.lang);
+                const value = metadata[field.id];
+                const nextMetadata = (nextValue: unknown) => {
+                  const baseMetadata = { ...(page.metadata ?? {}) };
+                  if (
+                    nextValue == null ||
+                    nextValue === '' ||
+                    (Array.isArray(nextValue) && nextValue.length === 0)
+                  ) {
+                    delete baseMetadata[field.id];
+                  } else {
+                    baseMetadata[field.id] = nextValue;
+                  }
+
+                  onChange({
+                    metadata: Object.keys(baseMetadata).length > 0 ? baseMetadata : undefined,
+                  });
+                };
+
+                return (
+                  <div key={field.id}>
+                    <div className="mb-1 flex items-center gap-2 text-xs text-fd-muted-foreground">
+                      <span>{label}</span>
+                      {field.required ? <Badge variant="secondary">Required</Badge> : null}
+                      <Badge variant="default">{field.visibility === 'public' ? 'Public' : 'Internal'}</Badge>
+                    </div>
+
+                    {field.type === 'text' ? (
+                      <textarea
+                        value={typeof value === 'string' ? value : ''}
+                        onChange={(e) => nextMetadata(e.target.value)}
+                        className="min-h-24 w-full resize-none rounded-md border border-fd-border bg-fd-background px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--color-fd-ring)]"
+                        data-testid={metadataFieldTestId(field.id)}
+                      />
+                    ) : null}
+
+                    {field.type === 'string' ? (
+                      <Input
+                        value={typeof value === 'string' ? value : ''}
+                        onChange={(e) => nextMetadata(e.target.value)}
+                        data-testid={metadataFieldTestId(field.id)}
+                      />
+                    ) : null}
+
+                    {field.type === 'enum' ? (
+                      <Select
+                        value={typeof value === 'string' ? value : '__none__'}
+                        onValueChange={(next) => nextMetadata(next === '__none__' ? undefined : next)}
+                      >
+                        <SelectTrigger data-testid={metadataFieldTestId(field.id)}>
+                          <SelectValue placeholder="Select value" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">No value</SelectItem>
+                          {(field.options ?? []).map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : null}
+
+                    {field.type === 'boolean' ? (
+                      <label className="flex items-center justify-between gap-3 rounded-md border border-fd-border px-3 py-2 text-sm">
+                        <span>{typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : 'Disabled'}</span>
+                        <input
+                          type="checkbox"
+                          checked={value === true}
+                          onChange={(e) => nextMetadata(e.target.checked)}
+                          data-testid={metadataFieldTestId(field.id)}
+                        />
+                      </label>
+                    ) : null}
+
+                    {field.type === 'date' ? (
+                      <Input
+                        type="date"
+                        value={typeof value === 'string' ? value : ''}
+                        onChange={(e) => nextMetadata(e.target.value)}
+                        data-testid={metadataFieldTestId(field.id)}
+                      />
+                    ) : null}
+
+                    {field.type === 'string[]' ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {Array.isArray(value) && value.length > 0 ? (
+                            value.map((item) => (
+                              <Badge key={`${field.id}-${item}`} variant="secondary">
+                                {item}
+                              </Badge>
+                            ))
+                          ) : (
+                            <div className="text-sm text-fd-muted-foreground">No values</div>
+                          )}
+                        </div>
+                        <Input
+                          value={Array.isArray(value) ? value.join(', ') : ''}
+                          onChange={(e) => nextMetadata(parseCommaSeparatedValues(e.target.value))}
+                          placeholder="alice, bob, platform-team"
+                          data-testid={metadataFieldTestId(field.id)}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-fd-muted-foreground">This template does not define structured metadata fields.</div>
+          )}
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection title="Publishing" description="Workflow state and content taxonomy.">
         <div>
@@ -1081,6 +1278,7 @@ export function LocalStudioSettings({
       ) : (
         <PageSettingsContent
           page={page}
+          templates={project?.authoringTemplates ?? []}
           onChange={onChange}
           onDeletePage={onDeletePage}
           onSetReviewApproval={onSetReviewApproval}

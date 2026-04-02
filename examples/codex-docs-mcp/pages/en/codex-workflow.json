@@ -9,10 +9,10 @@
     "workflow"
   ],
   "status": "published",
-  "updatedAt": "2026-03-18T17:26:48.717Z",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
   "content": {},
   "render": {
-    "markdown": "# How Codex and Anydocs Work Together\n\nIn Anydocs, Codex works best when it:\n\n- reads the project contract first\n- inspects current page state\n- uses `page_create` or `page_update` for explicit changes\n- uses `page_set_status` as a separate workflow action\n\nThe main idea is not to have Codex edit `pages/*.json` directly, but to keep it on MCP tools.",
-    "plainText": "How Codex and Anydocs Work Together In Anydocs, Codex works best when it: - reads the project contract first - inspects current page state - uses page_create or page_update for explicit changes - uses page_set_status as a separate workflow action The main idea is not to have Codex edit pages/ .json directly, but to keep it on MCP tools."
+    "markdown": "# How Codex and Anydocs Work Together\n\nIn Anydocs, Codex works best when it:\n\n- reads the project contract first with `project_open`\n- checks `project_open.authoring` for templates, resources, and metadata schemas\n- reads `anydocs://authoring/guidance` when the task needs the full workflow\n- inspects current page state before choosing create versus update\n- uses `page_create_from_template`, `page_create`, or `page_update` for explicit changes\n- treats `page_set_status` as a separate workflow action\n- uses navigation MCP tools instead of rewriting navigation by hand\n\nThe main idea is not to have Codex edit `pages/*.json` directly, but to keep it on MCP tools.",
+    "plainText": "Codex works best when it starts with project_open, checks authoring templates and metadata schemas, reads anydocs://authoring/guidance when needed, and uses page and nav MCP tools for explicit changes. The goal is to avoid direct edits to pages JSON and navigation JSON."
   }
 }

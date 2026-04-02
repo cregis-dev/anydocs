@@ -1,11 +1,29 @@
 import { ValidationError } from '../errors/validation-error.ts';
+export {
+  findResolvedProjectPageTemplate,
+  listResolvedProjectPageTemplates,
+  PAGE_TEMPLATE_DEFINITIONS,
+  PAGE_TEMPLATE_KINDS,
+  type PageTemplateKind,
+  type ResolvedProjectPageTemplateDefinition,
+} from '../templates/page-template-definitions.ts';
+import {
+  findResolvedProjectPageTemplate,
+  PAGE_TEMPLATE_DEFINITIONS,
+  PAGE_TEMPLATE_KINDS,
+  type PageTemplateKind,
+} from '../templates/page-template-definitions.ts';
 import type { DocsLang, PageStatus, PageReview } from '../types/docs.ts';
+import type {
+  PageDoc,
+} from '../types/docs.ts';
+import type {
+  ProjectConfig,
+  ProjectPageTemplateDefinition,
+  ProjectPageTemplateMetadataField,
+} from '../types/project.ts';
 import type { AuthoringPageResult, CreatePageInput, UpdatePagePatch } from './authoring-service.ts';
 import { createPage, updatePage } from './authoring-service.ts';
-
-export const PAGE_TEMPLATE_KINDS = ['concept', 'how_to', 'reference'] as const;
-
-export type PageTemplateKind = (typeof PAGE_TEMPLATE_KINDS)[number];
 
 export type PageTemplateCalloutTheme = 'info' | 'warning' | 'success';
 
@@ -62,32 +80,6 @@ export type UpdatePageFromTemplateInput = {
   callouts?: PageTemplateCalloutInput[];
 };
 
-export const PAGE_TEMPLATE_DEFINITIONS = [
-  {
-    id: 'concept',
-    label: 'Concept',
-    description: 'Explain an idea, architecture, or mental model with sectioned prose and supporting callouts.',
-    recommendedInputs: ['summary', 'sections'],
-  },
-  {
-    id: 'how_to',
-    label: 'How-To',
-    description: 'Teach a procedure with ordered steps, optional code examples, and final guidance.',
-    recommendedInputs: ['summary', 'steps'],
-  },
-  {
-    id: 'reference',
-    label: 'Reference',
-    description: 'Capture stable facts, options, APIs, and operational details in scan-friendly sections.',
-    recommendedInputs: ['summary', 'sections'],
-  },
-] as const satisfies ReadonlyArray<{
-  id: PageTemplateKind;
-  label: string;
-  description: string;
-  recommendedInputs: readonly string[];
-}>;
-
 type PageTemplateComposition = {
   content: Record<string, unknown>;
   render: {
@@ -112,6 +104,217 @@ function normalizeText(value: string | undefined, key: string): string | undefin
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function createProjectPageValidationError(
+  rule: string,
+  remediation: string,
+  metadata?: Record<string, unknown>,
+): ValidationError {
+  return new ValidationError(`Page authoring contract validation failed for rule "${rule}".`, {
+    entity: 'page-doc',
+    rule,
+    remediation,
+    metadata,
+  });
+}
+
+function normalizeMetadataFieldValue(
+  field: ProjectPageTemplateMetadataField,
+  value: unknown,
+  pageMetadata: Record<string, unknown>,
+): unknown {
+  if (value == null) {
+    return undefined;
+  }
+
+  switch (field.type) {
+    case 'string':
+    case 'text': {
+      if (typeof value !== 'string') {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-type',
+          `Use a string for metadata field "${field.id}".`,
+          { fieldId: field.id, fieldType: field.type, received: value, metadata: pageMetadata },
+        );
+      }
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }
+    case 'enum': {
+      if (typeof value !== 'string') {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-type',
+          `Use a string option id for enum metadata field "${field.id}".`,
+          { fieldId: field.id, fieldType: field.type, received: value, metadata: pageMetadata },
+        );
+      }
+      const trimmed = value.trim();
+      if (!field.options?.includes(trimmed)) {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-option-known',
+          `Use one of the configured option ids for enum metadata field "${field.id}".`,
+          { fieldId: field.id, options: field.options ?? [], received: value, metadata: pageMetadata },
+        );
+      }
+      return trimmed;
+    }
+    case 'boolean': {
+      if (typeof value !== 'boolean') {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-type',
+          `Use a boolean for metadata field "${field.id}".`,
+          { fieldId: field.id, fieldType: field.type, received: value, metadata: pageMetadata },
+        );
+      }
+      return value;
+    }
+    case 'date': {
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-date-format',
+          `Use "YYYY-MM-DD" for date metadata field "${field.id}".`,
+          { fieldId: field.id, received: value, metadata: pageMetadata },
+        );
+      }
+      return value.trim();
+    }
+    case 'string[]': {
+      if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+        throw createProjectPageValidationError(
+          'page-template-metadata-field-type',
+          `Use an array of strings for metadata field "${field.id}".`,
+          { fieldId: field.id, fieldType: field.type, received: value, metadata: pageMetadata },
+        );
+      }
+      const normalized = value.map((item) => item.trim()).filter(Boolean);
+      return [...new Set(normalized)];
+    }
+    default:
+      return value;
+  }
+}
+
+export function validatePageAgainstProjectTemplates<TContent = unknown>(
+  page: PageDoc<TContent>,
+  config: ProjectConfig,
+): PageDoc<TContent> {
+  const templateId = page.template?.trim();
+  const metadata = page.metadata;
+
+  if (metadata && !templateId) {
+    throw createProjectPageValidationError(
+      'page-metadata-requires-template',
+      'Set "template" before storing page metadata.',
+      { pageId: page.id, lang: page.lang },
+    );
+  }
+
+  if (!templateId) {
+    return page;
+  }
+
+  const resolvedTemplate = findResolvedProjectPageTemplate(config, templateId);
+  if (!resolvedTemplate) {
+    throw createProjectPageValidationError(
+      'page-template-must-exist',
+      'Use a built-in template id or define the custom template in anydocs.config.json.',
+      { pageId: page.id, lang: page.lang, templateId },
+    );
+  }
+
+  const metadataFields = resolvedTemplate.metadataSchema?.fields ?? [];
+  if (metadataFields.length === 0) {
+    if (metadata) {
+      throw createProjectPageValidationError(
+        'page-template-metadata-not-allowed',
+        'Omit "metadata" when the selected template does not define metadata fields.',
+        { pageId: page.id, lang: page.lang, templateId },
+      );
+    }
+
+    return {
+      ...page,
+      template: templateId,
+    };
+  }
+
+  if (metadata != null && !isRecord(metadata)) {
+    throw createProjectPageValidationError(
+      'page-template-metadata-object',
+      'Use an object for page metadata when the selected template defines metadata fields.',
+      { pageId: page.id, lang: page.lang, templateId, received: metadata },
+    );
+  }
+
+  const rawMetadata = metadata ?? {};
+  const knownFieldIds = new Set(metadataFields.map((field) => field.id));
+  for (const key of Object.keys(rawMetadata)) {
+    if (!knownFieldIds.has(key)) {
+      throw createProjectPageValidationError(
+        'page-template-metadata-field-known',
+        'Use only metadata fields defined by the selected template.',
+        { pageId: page.id, lang: page.lang, templateId, fieldId: key },
+      );
+    }
+  }
+
+  const normalizedMetadata: Record<string, unknown> = {};
+  for (const field of metadataFields) {
+    const normalizedValue = normalizeMetadataFieldValue(field, rawMetadata[field.id], rawMetadata);
+    const isMissing =
+      normalizedValue == null || (Array.isArray(normalizedValue) && normalizedValue.length === 0);
+
+    if (field.required && isMissing) {
+      throw createProjectPageValidationError(
+        'page-template-metadata-field-required',
+        `Provide a value for required metadata field "${field.id}".`,
+        { pageId: page.id, lang: page.lang, templateId, fieldId: field.id },
+      );
+    }
+
+    if (!isMissing) {
+      normalizedMetadata[field.id] = normalizedValue;
+    }
+  }
+
+  return {
+    ...page,
+    template: templateId,
+    ...(Object.keys(normalizedMetadata).length > 0 ? { metadata: normalizedMetadata } : {}),
+  };
+}
+
+export function filterPublicPageMetadata<TContent = unknown>(
+  page: PageDoc<TContent>,
+  config: ProjectConfig,
+): Record<string, unknown> | undefined {
+  if (!page.template || !page.metadata) {
+    return undefined;
+  }
+
+  const resolvedTemplate = findResolvedProjectPageTemplate(config, page.template);
+  if (!resolvedTemplate?.metadataSchema?.fields?.length) {
+    return undefined;
+  }
+
+  const publicMetadataEntries = resolvedTemplate.metadataSchema.fields
+    .filter(
+      (field) =>
+        field.visibility === 'public' && Object.prototype.hasOwnProperty.call(page.metadata ?? {}, field.id),
+    )
+    .map((field) => [field.id, page.metadata?.[field.id]] as const)
+    .filter((entry) => entry[1] != null);
+
+  if (publicMetadataEntries.length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(publicMetadataEntries);
 }
 
 function normalizeStringList(values: string[] | undefined, key: string): string[] {

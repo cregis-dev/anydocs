@@ -243,6 +243,88 @@ test('published artifacts preserve inline code text in chunk content', async () 
   }
 });
 
+test('published pages artifacts serialize template and only public metadata', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const update = await updateProjectConfig(repoRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  visibility: 'public',
+                  options: ['proposed', 'accepted'],
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                  visibility: 'internal',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(update.ok, true);
+
+    const repository = createDocsRepository(repoRoot);
+    await savePage(repository, 'en', {
+      id: 'adr-001',
+      lang: 'en',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'accepted',
+        author: 'shawn',
+      },
+      status: 'published',
+      content: {},
+      render: {
+        plainText: 'Decision record body.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const pagesArtifact = JSON.parse(
+      await readFile(path.join(contract.paths.machineReadableRoot, 'pages.en.json'), 'utf8'),
+    ) as {
+      pages: Array<{
+        id: string;
+        template?: string;
+        metadata?: Record<string, unknown>;
+      }>;
+    };
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as { docs: Array<Record<string, unknown>> };
+    const llmsFull = await readFile(path.join(contract.paths.artifactRoot, 'llms-full.txt'), 'utf8');
+    const adrPage = pagesArtifact.pages.find((page) => page.id === 'adr-001');
+
+    assert.equal(adrPage?.id, 'adr-001');
+    assert.equal(adrPage?.template, 'adr');
+    assert.deepEqual(adrPage?.metadata, {
+      'decision-status': 'accepted',
+    });
+    assert.equal(searchIndex.docs.every((doc) => !('metadata' in doc)), true);
+    assert.doesNotMatch(llmsFull, /shawn/);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('runBuildWorkflow keeps an empty-state docs shell when there are no published pages', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 

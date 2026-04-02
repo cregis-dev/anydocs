@@ -7,6 +7,42 @@ export const DEFAULT_DOCS_CODE_THEME = 'github-dark';
 
 export type DocsLanguage = DocsLang;
 export type DocsCodeTheme = (typeof SUPPORTED_DOCS_CODE_THEMES)[number];
+export type ProjectLocalizedLabel = string | Partial<Record<DocsLanguage, string>>;
+export type ProjectPageTemplateBaseTemplate = 'concept' | 'how_to' | 'reference';
+export type ProjectPageMetadataFieldType = 'string' | 'text' | 'enum' | 'boolean' | 'date' | 'string[]';
+export type ProjectPageMetadataVisibility = 'public' | 'internal';
+
+export type ProjectPageTemplateMetadataField = {
+  id: string;
+  label: ProjectLocalizedLabel;
+  type: ProjectPageMetadataFieldType;
+  required?: boolean;
+  visibility?: ProjectPageMetadataVisibility;
+  options?: string[];
+};
+
+export type ProjectPageTemplateMetadataSchema = {
+  fields: ProjectPageTemplateMetadataField[];
+};
+
+export type ProjectPageTemplateSection = {
+  title: string;
+  body?: string;
+};
+
+export type ProjectPageTemplateDefinition = {
+  id: string;
+  label: ProjectLocalizedLabel;
+  description?: string;
+  baseTemplate: ProjectPageTemplateBaseTemplate;
+  defaultSummary?: string;
+  defaultSections?: ProjectPageTemplateSection[];
+  metadataSchema?: ProjectPageTemplateMetadataSchema;
+};
+
+export type ProjectAuthoringConfig = {
+  pageTemplates?: ProjectPageTemplateDefinition[];
+};
 
 export type ProjectSiteThemeBranding = {
   siteTitle?: string;
@@ -36,7 +72,7 @@ export type ProjectSiteTheme = {
   codeTheme?: DocsCodeTheme;
 };
 
-export type ProjectSiteTopNavLabel = string | Partial<Record<DocsLanguage, string>>;
+export type ProjectSiteTopNavLabel = ProjectLocalizedLabel;
 
 export type ProjectSiteTopNavItem =
   | {
@@ -70,6 +106,7 @@ export type ProjectConfig = {
   defaultLanguage: DocsLanguage;
   languages: DocsLanguage[];
   site: ProjectSiteConfig;
+  authoring?: ProjectAuthoringConfig;
   build?: {
     outputDir?: string;
   };

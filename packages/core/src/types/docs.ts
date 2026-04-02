@@ -37,6 +37,8 @@ export type PageDoc<TContent = unknown> = {
   slug: string;
   title: string;
   description?: string;
+  template?: string;
+  metadata?: Record<string, unknown>;
   tags?: string[];
   status: PageStatus;
   updatedAt?: string;

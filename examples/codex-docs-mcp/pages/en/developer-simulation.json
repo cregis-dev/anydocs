@@ -9,10 +9,10 @@
     "demo"
   ],
   "status": "published",
-  "updatedAt": "2026-03-18T17:26:48.729Z",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
   "content": {},
   "render": {
-    "markdown": "# A Developer Simulation of Building the Site\n\nThe demo flow for this project was:\n\n1. initialize the project with `anydocs init --agent codex`\n2. call `project_open` and `project_validate` from an MCP client\n3. update the welcome page with `page_update`\n4. create Codex-focused pages with `page_create`\n5. verify the result with `page_list`\n\nThe current MCP v1 slice does not include navigation mutation yet, so navigation authoring is still deferred to a later MCP slice or manual editing.",
-    "plainText": "A Developer Simulation of Building the Site The demo flow for this project was: 1. initialize the project with anydocs init --agent codex 2. call project_open and project_validate from an MCP client 3. update the welcome page with page_update 4. create Codex-focused pages with page_create 5. verify the result with page_list The current MCP v1 slice does not include navigation mutation yet, so navigation authoring is still deferred to a later MCP slice or manual editing."
+    "markdown": "# A Developer Simulation of Building the Site\n\nThe demo flow for this project was:\n\n1. initialize the project with `anydocs init --agent codex`\n2. call `project_open` and inspect `project_open.authoring`\n3. read `anydocs://authoring/guidance` before multi-step edits\n4. update the welcome page with `page_update`\n5. create Codex-focused pages with `page_create_from_template` or `page_create`\n6. set template metadata only when the selected template's `metadataSchema` allows it\n7. verify the result with `page_list` and `nav_get`, then use navigation mutation tools when structure changes are needed\n",
+    "plainText": "A developer simulation of building the site now starts with project_open and authoring discovery, reads anydocs://authoring/guidance for the detailed workflow, then creates or updates pages through MCP. Template metadata is only written when the selected template's metadataSchema allows it, and navigation changes use nav tools."
   }
 }

@@ -1,6 +1,6 @@
 # Anydocs 详细操作手册
 
-本文是面向项目维护者、内容编辑者和 CLI 使用者的详细操作手册。根 `README` 优先解决“如何快速启动”和“如何进入 agent 写作流程”，这里则展开说明本地开发、项目初始化、构建发布和旧文档导入的完整操作方式。
+本文面向文档项目使用者、内容编辑者和 CLI 使用者，聚焦“如何使用 Anydocs 管理与发布文档项目”。根 `README` 优先解决“如何快速启动”和“如何进入 agent 写作流程”，这里则展开说明项目初始化、Studio 使用、构建发布、旧文档导入与 Markdown 快速迁移。若你要开发 Anydocs 仓库本身，请改看 [developer-guide.md](developer-guide.md)。
 
 ## 1. 你可以用 Anydocs 做什么
 
@@ -190,11 +190,12 @@ npx @anydocs/cli init ./my-docs-project
 
 - `anydocs.config.json`
 - `anydocs.workflow.json`
+- `skill.md`，或按 `--agent` 生成 `AGENTS.md` / `CLAUDE.md`
+- Claude Code 项目还会额外生成 `.claude/commands/anydocs-new-page.md` 与 `.claude/commands/anydocs-publish-page.md`
 - `navigation/zh.json`
 - `navigation/en.json`
 - `pages/zh/welcome.json`
 - `pages/en/welcome.json`
-- `.gitignore`（忽略 `dist/` 和 `.anydocs/`）
 
 初始化特点：
 
@@ -202,8 +203,32 @@ npx @anydocs/cli init ./my-docs-project
 - 默认启用 `zh` 和 `en`
 - 自动创建欢迎页和起始导航
 - 生成的项目是独立的，可以在任何位置
+- 如果不传 `--project-id` 和 `--name`，会根据目标目录名自动推导项目 ID 和显示名称
+- 生成的 `anydocs.config.json` 会显式写出常用项目字段，例如 `site.theme.branding.siteTitle` 和 `build.outputDir`
+- 根 guide 文件只保留最小约束；详细 authoring 流程通过 `anydocs://authoring/guidance` 按需读取
 
 如果目标目录下已经存在 `anydocs.config.json`，初始化会失败，避免覆盖已有项目。
+
+### 6.3a 页面 template 与 metadata
+
+Anydocs 的页面除了正文 `content`，还支持 template 驱动的结构化 metadata。
+
+典型页面字段现在包括：
+
+- `template`：页面使用的模板 id
+- `metadata`：模板定义的结构化字段值
+- `review`：内容审核状态与来源信息
+
+关于 `metadata` 的关键约束：
+
+- 只有设置了 `template`，页面才能保存 `metadata`
+- `metadata` 不是自由对象，字段集合由项目模板的 `metadataSchema` 决定
+- 当前支持的 metadata 字段类型包括：`string`、`text`、`enum`、`boolean`、`date`、`string[]`
+- 未在 schema 中声明的 metadata 字段会被拒绝
+- required metadata 字段缺失时会返回校验错误
+- 发布后的 `mcp/pages.<lang>.json` 只会暴露 visibility 为 `public` 的 metadata；`internal` 字段不会进入公开机器可读产物
+
+如果你通过 MCP 让 agent 写页面，建议先查看 `project_open.authoring.templates` 返回的 template 定义；其中会包含可用模板及其 `metadataSchema`。
 
 ### 6.4 构建公开产物
 
@@ -329,6 +354,17 @@ npx @anydocs/cli convert-import <importId> ./my-docs-project
 2. 检查 `manifest.json`
 3. `convert-import` 生成草稿
 4. 在 Studio 中逐页审核后再发布
+
+如果你是通过外部 agent 或 MCP 直接把历史 Markdown 写入 Anydocs，而不是先走目录级导入，也可以使用：
+
+- `page_create_from_markdown`：把整份 Markdown/MDX 文档直接创建为新页面
+- `page_update_from_markdown`：把 Markdown 内容替换或追加到现有页面
+
+推荐用法：
+
+- 整页迁移使用 `inputMode: "document"`，这样会解析 frontmatter，并尽量推断 `title`、`description`、`tags`
+- 局部补录使用 `inputMode: "fragment"`；追加到现有页面时配合 `operation: "append"`
+- 转换完成后检查返回的 `conversion.warnings`，尤其是 MDX、未映射 frontmatter，以及列表、代码块、表格、链接、图片、引用块这类会被简化的结构
 
 ## 7. 典型工作流
 
@@ -496,6 +532,10 @@ vercel --prod
 - 阅读站搜索是 `Find`，用于快速找到页面、章节和导航路径，不负责给出 AI 答案。
 - `llms.txt` 和 `llms-full.txt` 是给外部 agent 的文本型输入。
 - `mcp/*.json` 是给外部 agent 的结构化输入，其中 `chunks.<lang>.json` 最适合做按需内容读取。
+
+### 9.1b 为什么 `mcp/pages.<lang>.json` 里看不到某些 metadata
+
+先检查页面 template 的 `metadataSchema`。只有 visibility 标记为 `public` 的 metadata 字段会进入公开机器可读产物；`internal` 字段只保留在 canonical page source 中。
 
 ### 9.2 为什么 `preview` 没有打开浏览器
 

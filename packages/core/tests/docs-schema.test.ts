@@ -9,6 +9,10 @@ test('validatePageDoc accepts a canonical page document', () => {
     lang: 'en',
     slug: 'getting-started/welcome',
     title: 'Welcome',
+    template: 'adr',
+    metadata: {
+      decisionStatus: 'accepted',
+    },
     status: 'draft',
     content: { blocks: [] },
     tags: ['intro'],
@@ -32,6 +36,8 @@ test('validatePageDoc accepts a canonical page document', () => {
   assert.equal(page.id, 'welcome');
   assert.equal(page.lang, 'en');
   assert.equal(page.status, 'draft');
+  assert.equal(page.template, 'adr');
+  assert.deepEqual(page.metadata, { decisionStatus: 'accepted' });
   assert.deepEqual(page.tags, ['intro']);
   assert.equal(page.review?.sourceType, 'legacy-import');
 });
@@ -48,6 +54,23 @@ test('validatePageDoc rejects an unsupported status', () => {
         content: {},
       }),
     /page-status-invalid/,
+  );
+});
+
+test('validatePageDoc rejects non-object metadata values', () => {
+  assert.throws(
+    () =>
+      validatePageDoc({
+        id: 'welcome',
+        lang: 'en',
+        slug: 'getting-started/welcome',
+        title: 'Welcome',
+        template: 'adr',
+        metadata: ['bad'],
+        status: 'draft',
+        content: {},
+      }),
+    /page-metadata-object/,
   );
 });
 

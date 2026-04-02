@@ -100,5 +100,5 @@ node --experimental-strip-types ../packages/cli/src/index.ts build .
 See [Anydocs documentation](../../docs/README.md) for more information:
 - [Architecture](../../artifacts/bmad/planning-artifacts/architecture.md)
 - [PRD](../../artifacts/bmad/planning-artifacts/prd.md)
-- [Usage Manual](../../docs/04-usage-manual.md)
-- [Dev Guide](../../docs/05-dev-guide.md)
+- [Usage Manual](../../docs/usage-manual.md)
+- [Dev Guide](../../docs/developer-guide.md)

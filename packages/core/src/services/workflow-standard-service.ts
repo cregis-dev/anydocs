@@ -461,9 +461,9 @@ export function createWorkflowStandardDefinition(
     sourceFiles: createSourceFiles(contract),
     generatedArtifacts: createGeneratedArtifacts(contract),
     contentModel: {
-      projectConfigFields: ['version', 'projectId', 'name', 'defaultLanguage', 'languages', 'site', 'build'],
+      projectConfigFields: ['version', 'projectId', 'name', 'defaultLanguage', 'languages', 'site', 'authoring', 'build'],
       pageRequiredFields: ['id', 'lang', 'slug', 'title', 'status', 'content'],
-      pageOptionalFields: ['description', 'tags', 'updatedAt', 'render'],
+      pageOptionalFields: ['description', 'template', 'metadata', 'tags', 'updatedAt', 'render'],
       navigationRequiredFields: ['version', 'items'],
     },
     orchestration: {

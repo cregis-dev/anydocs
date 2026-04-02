@@ -7,6 +7,7 @@ export const ANYDOCS_CONFIG_FILE = 'anydocs.config.json';
 export const ANYDOCS_WORKFLOW_FILE = 'anydocs.workflow.json';
 export const DEFAULT_PROJECT_ID = 'default';
 export const DEFAULT_PROJECT_NAME = 'Anydocs Project';
+export const DEFAULT_BUILD_OUTPUT_DIR = './dist';
 export const DEFAULT_PROJECT_LANGUAGES = ['en'] as const;
 
 const PROJECT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -16,25 +17,31 @@ export function createDefaultProjectConfig(
 ): ProjectConfig {
   const defaultLanguage = overrides.defaultLanguage ?? 'en';
   const languages = overrides.languages ?? [defaultLanguage];
+  const projectName = overrides.name ?? DEFAULT_PROJECT_NAME;
 
   return {
     version: 1,
     projectId: overrides.projectId ?? DEFAULT_PROJECT_ID,
-    name: overrides.name ?? DEFAULT_PROJECT_NAME,
+    name: projectName,
     defaultLanguage,
     languages,
     site: {
       ...(overrides.site?.url ? { url: overrides.site.url } : {}),
       theme: {
         id: overrides.site?.theme?.id ?? DEFAULT_DOCS_THEME_ID,
-        ...(overrides.site?.theme?.branding ? { branding: overrides.site.theme.branding } : {}),
+        branding: overrides.site?.theme?.branding ?? {
+          siteTitle: projectName,
+        },
         ...(overrides.site?.theme?.chrome ? { chrome: overrides.site.theme.chrome } : {}),
         ...(overrides.site?.theme?.colors ? { colors: overrides.site.theme.colors } : {}),
         codeTheme: overrides.site?.theme?.codeTheme ?? DEFAULT_DOCS_CODE_THEME,
       },
       ...(overrides.site?.navigation ? { navigation: overrides.site.navigation } : {}),
     },
-    ...(overrides.build ? { build: overrides.build } : {}),
+    ...(overrides.authoring ? { authoring: overrides.authoring } : {}),
+    build: overrides.build ?? {
+      outputDir: DEFAULT_BUILD_OUTPUT_DIR,
+    },
   };
 }
 

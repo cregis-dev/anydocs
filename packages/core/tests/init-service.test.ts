@@ -14,7 +14,7 @@ async function createTempRepoRoot(): Promise<string> {
 }
 
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
-const REPO_SKILL_GUIDE = path.join(REPO_ROOT, 'docs', 'skill.md');
+const REPO_AGENT_GUIDE = path.join(REPO_ROOT, 'docs', 'agent.md');
 
 test('initializeProject creates the canonical project structure and starter content', async () => {
   const repoRoot = await createTempRepoRoot();
@@ -24,23 +24,37 @@ test('initializeProject creates the canonical project structure and starter cont
     const projectRoot = repoRoot;
 
     assert.equal(result.contract.paths.projectRoot, projectRoot);
-    assert.deepEqual(result.contract.config.languages, ['en']);
+    assert.equal(result.contract.config.defaultLanguage, 'zh');
+    assert.deepEqual(result.contract.config.languages, ['zh', 'en']);
     assert.equal(result.contract.config.site.theme.id, 'classic-docs');
     assert.equal(result.contract.config.site.theme.codeTheme, 'github-dark');
-    assert.equal(result.contract.config.site.theme.branding, undefined);
+    assert.deepEqual(result.contract.config.site.theme.branding, {
+      siteTitle: 'Anydocs Project',
+    });
     assert.equal(result.contract.config.site.theme.chrome, undefined);
     assert.equal(result.contract.config.site.theme.colors, undefined);
+    assert.deepEqual(result.contract.config.build, {
+      outputDir: './dist',
+    });
 
     await access(path.join(projectRoot, ANYDOCS_CONFIG_FILE));
     await access(path.join(projectRoot, ANYDOCS_WORKFLOW_FILE));
+    await access(path.join(projectRoot, 'navigation', 'zh.json'));
     await access(path.join(projectRoot, 'navigation', 'en.json'));
+    await access(path.join(projectRoot, 'pages', 'zh', 'welcome.json'));
     await access(path.join(projectRoot, 'pages', 'en', 'welcome.json'));
     await access(path.join(projectRoot, 'skill.md'));
     await access(path.join(projectRoot, 'imports'));
     await access(path.join(repoRoot, 'dist'));
     await access(path.join(repoRoot, 'dist', 'mcp'));
 
-    const page = JSON.parse(
+    const zhPage = JSON.parse(
+      await readFile(path.join(projectRoot, 'pages', 'zh', 'welcome.json'), 'utf8'),
+    ) as { status: string; slug: string; title: string };
+    const zhNavigation = JSON.parse(
+      await readFile(path.join(projectRoot, 'navigation', 'zh.json'), 'utf8'),
+    ) as { items: Array<{ type: string; title?: string }> };
+    const enPage = JSON.parse(
       await readFile(path.join(projectRoot, 'pages', 'en', 'welcome.json'), 'utf8'),
     ) as { status: string; slug: string; title: string };
     const config = JSON.parse(
@@ -50,26 +64,39 @@ test('initializeProject creates the canonical project structure and starter cont
         theme?: {
           id?: string;
           codeTheme?: string;
-          branding?: unknown;
+          branding?: { siteTitle?: string };
           chrome?: unknown;
           colors?: unknown;
         };
       };
+      build?: {
+        outputDir?: string;
+      };
     };
     const skillGuide = await readFile(path.join(projectRoot, 'skill.md'), 'utf8');
-    const sourceSkillGuide = await readFile(REPO_SKILL_GUIDE, 'utf8');
+    const sourceSkillGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
 
-    assert.equal(page.status, 'published');
-    assert.equal(page.slug, 'welcome');
-    assert.equal(page.title, 'Welcome');
+    assert.equal(zhPage.status, 'published');
+    assert.equal(zhPage.slug, 'welcome');
+    assert.equal(zhPage.title, '欢迎');
+    assert.equal(zhNavigation.items[0]?.title, '开始使用');
+    assert.equal(enPage.status, 'published');
+    assert.equal(enPage.slug, 'welcome');
+    assert.equal(enPage.title, 'Welcome');
     assert.equal(skillGuide, sourceSkillGuide);
     assert.equal(config.site?.theme?.id, 'classic-docs');
     assert.equal(config.site?.theme?.codeTheme, 'github-dark');
-    assert.equal(config.site?.theme?.branding, undefined);
+    assert.deepEqual(config.site?.theme?.branding, {
+      siteTitle: 'Anydocs Project',
+    });
     assert.equal(config.site?.theme?.chrome, undefined);
     assert.equal(config.site?.theme?.colors, undefined);
+    assert.equal(config.build?.outputDir, './dist');
     assert.ok(
       result.createdFiles.some((filePath) => filePath.endsWith(ANYDOCS_WORKFLOW_FILE)),
+    );
+    assert.ok(
+      result.createdFiles.some((filePath) => filePath.endsWith(path.join('pages', 'zh', 'welcome.json'))),
     );
     assert.ok(
       result.createdFiles.some((filePath) => filePath.endsWith(path.join('pages', 'en', 'welcome.json'))),
@@ -90,7 +117,7 @@ test('initializeProject can generate a Codex-specific AGENTS.md guide instead of
     await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
 
     const agentGuide = await readFile(path.join(repoRoot, 'AGENTS.md'), 'utf8');
-    const sourceSkillGuide = await readFile(REPO_SKILL_GUIDE, 'utf8');
+    const sourceSkillGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
 
     assert.equal(agentGuide, sourceSkillGuide);
     assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('AGENTS.md')));
@@ -100,20 +127,32 @@ test('initializeProject can generate a Codex-specific AGENTS.md guide instead of
   }
 });
 
-test('initializeProject can generate a Claude.md guide for Claude Code', async () => {
+test('initializeProject can generate a CLAUDE.md guide and bundled slash commands for Claude Code', async () => {
   const repoRoot = await createTempRepoRoot();
 
   try {
     const result = await initializeProject({ repoRoot, agent: 'claude-code' });
 
-    await access(path.join(repoRoot, 'Claude.md'));
+    await access(path.join(repoRoot, 'CLAUDE.md'));
+    await access(path.join(repoRoot, '.claude', 'commands', 'anydocs-new-page.md'));
+    await access(path.join(repoRoot, '.claude', 'commands', 'anydocs-publish-page.md'));
     await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
 
-    const agentGuide = await readFile(path.join(repoRoot, 'Claude.md'), 'utf8');
-    const sourceSkillGuide = await readFile(REPO_SKILL_GUIDE, 'utf8');
+    const agentGuide = await readFile(path.join(repoRoot, 'CLAUDE.md'), 'utf8');
+    const sourceClaudeGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
 
-    assert.equal(agentGuide, sourceSkillGuide);
-    assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('Claude.md')));
+    assert.equal(agentGuide, sourceClaudeGuide);
+    assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('CLAUDE.md')));
+    assert.ok(
+      result.createdFiles.some((filePath) =>
+        filePath.endsWith(path.join('.claude', 'commands', 'anydocs-new-page.md')),
+      ),
+    );
+    assert.ok(
+      result.createdFiles.some((filePath) =>
+        filePath.endsWith(path.join('.claude', 'commands', 'anydocs-publish-page.md')),
+      ),
+    );
     assert.ok(!result.createdFiles.some((filePath) => filePath.endsWith('skill.md')));
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

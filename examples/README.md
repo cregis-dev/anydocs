@@ -76,5 +76,5 @@ my-docs-project/
 
 - [Anydocs Documentation](../docs/README.md)
 - [Architecture](../artifacts/bmad/planning-artifacts/architecture.md)
-- [Usage Manual](../docs/04-usage-manual.md)
+- [Usage Manual](../docs/usage-manual.md)
 - [Main README](../README.md)

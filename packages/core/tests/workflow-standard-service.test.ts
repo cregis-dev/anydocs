@@ -43,7 +43,16 @@ test('createWorkflowStandardDefinition describes the canonical phase 1 content m
       'defaultLanguage',
       'languages',
       'site',
+      'authoring',
       'build',
+    ]);
+    assert.deepEqual(definition.contentModel.pageOptionalFields, [
+      'description',
+      'template',
+      'metadata',
+      'tags',
+      'updatedAt',
+      'render',
     ]);
 
     assert.ok(definition.sourceFiles.some((file) => file.id === 'projectConfig'));

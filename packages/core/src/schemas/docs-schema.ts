@@ -396,6 +396,24 @@ export function validatePageDoc<TContent = unknown>(
     );
   }
 
+  if (input.template != null && (typeof input.template !== 'string' || input.template.trim().length === 0)) {
+    throw createDocsValidationError(
+      'page-doc',
+      'page-template-string',
+      'Use a non-empty string for "template" when the field is present.',
+      { received: input.template },
+    );
+  }
+
+  if (input.metadata != null && !isRecord(input.metadata)) {
+    throw createDocsValidationError(
+      'page-doc',
+      'page-metadata-object',
+      'Use an object for "metadata" when page metadata is present.',
+      { received: input.metadata },
+    );
+  }
+
   assertOptionalStringArray(
     input.tags,
     'page-doc',
@@ -477,6 +495,8 @@ export function validatePageDoc<TContent = unknown>(
     slug: input.slug.trim(),
     title: input.title.trim(),
     ...(typeof input.description === 'string' ? { description: input.description } : {}),
+    ...(typeof input.template === 'string' ? { template: input.template.trim() } : {}),
+    ...(isRecord(input.metadata) ? { metadata: input.metadata } : {}),
     ...(Array.isArray(input.tags) ? { tags: input.tags } : {}),
     status: input.status,
     ...(typeof input.updatedAt === 'string' ? { updatedAt: input.updatedAt } : {}),

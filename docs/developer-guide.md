@@ -1,6 +1,6 @@
 # Anydocs 开发指南
 
-本文面向 Anydocs 项目开发者，说明如何在开发阶段调用 CLI 命令、启动 Studio，以及如何验证 Docs Site 构建结果。
+本文面向 Anydocs 仓库维护者与功能开发者，聚焦源码开发、调试和验证流程。文档项目的日常使用、CLI 命令语义、初始化、导入和 Markdown 迁移，请优先查看 [usage-manual.md](usage-manual.md)。
 
 ## 1. 环境准备
 
@@ -55,187 +55,55 @@ pnpm dev:desktop
 
 这将启动 Electron 应用的开发模式。
 
-## 3. 使用 CLI 命令
+## 3. 从源码调用 CLI
 
-### 3.1 CLI 调用方式
+### 3.1 调用方式
 
-在开发阶段，有两种方式调用 CLI。CLI 的核心职责是构建 Docs Site，其他命令用于初始化项目、检查预览入口和导入历史内容：
+仓库开发阶段推荐两种调用方式：
 
-**方式一：通过 pnpm workspace（推荐）**
+**方式一：通过 pnpm workspace**
 ```bash
 pnpm --filter @anydocs/cli cli <command> [options]
 ```
 
-**方式二：直接使用 Node.js（更快）**
+**方式二：直接使用 Node.js**
 ```bash
 node --experimental-strip-types packages/cli/src/index.ts <command> [options]
 ```
 
-下文示例统一使用方式二。
+下面示例统一使用第二种方式。若你要查 `init`、`import`、`convert-import`、Markdown 迁移工具的用户侧行为，请直接看 [usage-manual.md](usage-manual.md)。
 
-### 3.2 初始化新项目
+### 3.2 常用验证入口
 
-```bash
-# 在指定目录初始化新项目
-node --experimental-strip-types packages/cli/src/index.ts init ./my-docs-project
-
-# 查看初始化结果
-ls -la ./my-docs-project
-```
-
-生成的项目包含：
-- `anydocs.config.json` - 项目配置
-- `anydocs.workflow.json` - 工作流定义
-- `pages/` - 页面内容目录
-- `navigation/` - 导航树文件
-- `.gitignore` - 忽略 dist/ 和 .anydocs/
-
-项目配置约束：
-- Docs Site 主题应作为项目级显式配置存在于 `anydocs.config.json`
-- 一个项目只能选择一个主题
-- 主题配置推荐使用 `site.theme.id`
-
-推荐形态：
-
-```json
-{
-  "version": 1,
-  "projectId": "default",
-  "name": "My Docs",
-  "defaultLanguage": "zh",
-  "languages": ["zh", "en"],
-  "site": {
-    "theme": {
-      "id": "classic-docs"
-    }
-  }
-}
-```
-
-### 3.3 构建示例项目
-
-以下示例使用仓库内置的 `examples/demo-docs`。如果你要验证自己的文档项目，请把它替换成项目目录，例如 `./my-docs-project`。
+仓库内最常用的验证项目是 `examples/demo-docs`：
 
 ```bash
-# 构建到默认位置（examples/demo-docs/dist/）
+# 验证静态构建
 node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
 
-# 查看构建产物
+# 验证本地动态阅读站
+node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
+
+# 内容或构建链路联调时持续观察输出
+node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
+```
+
+开发者关注点：
+- `build` 是否能稳定产出 `dist/`、搜索索引、`llms.txt` 和 `mcp/*.json`
+- `preview` 是否只暴露 `published` 页面，并正确解析默认语言入口
+- `build --watch` 是否在内容变更后持续刷新公开产物
+
+### 3.3 快速检查构建结果
+
+```bash
 ls -la examples/demo-docs/dist/
 cat examples/demo-docs/dist/build-manifest.json
-cat examples/demo-docs/dist/llms-full.txt
 cat examples/demo-docs/dist/mcp/index.json
-cat examples/demo-docs/dist/mcp/chunks.en.json
+cat examples/demo-docs/dist/search-index.zh.json
+cat examples/demo-docs/dist/llms.txt
 ```
 
-**构建产物说明：**
-```text
-dist/
-├── index.html                       # 站点入口
-├── docs/index.html                  # 默认语言 docs 入口
-├── zh/docs/.../index.html           # 语言阅读页
-├── en/docs/.../index.html
-├── _next/                           # Next 导出的静态资源
-├── build-manifest.json              # 构建元信息
-├── llms.txt                         # 轻量 AI 索引入口
-├── llms-full.txt                    # 全站 AI fallback 文本导出
-├── mcp/                             # 机器可读产物
-│   ├── index.json
-│   ├── navigation.zh.json
-│   ├── navigation.en.json
-│   ├── chunks.zh.json
-│   ├── chunks.en.json
-│   ├── pages.zh.json
-│   └── pages.en.json
-├── search-index.zh.json             # 搜索索引
-└── search-index.en.json
-```
-
-补充约束：
-- 最终 `dist/` 只保留 deployable docs-site 内容，不应出现 `studio/`、`admin/`、`projects/`。
-- Next export 的内部辅助产物会被清理，例如 `_not-found/` 和调试用 `.txt` 文件。
-- `llms.txt` 和 `llms-full.txt` 是预期保留的 `.txt` 产物。
-
-**Reader Search 与 AI 产物分工：**
-- `search-index.<lang>.json` 只服务阅读站里的 `Find` 场景，目标是帮助人快速找到页面或章节。
-- 外部 agent 推荐优先读取 `mcp/index.json`、`pages.<lang>.json`、`navigation.<lang>.json` 和 `chunks.<lang>.json`。
-- `llms-full.txt` 只作为全站粗粒度 fallback，不应替代结构化 JSON artifact。
-
-### 3.4 自定义输出目录
-
-```bash
-# 构建到自定义位置
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output ./build-output
-
-# 或使用短参数
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs -o ./build-output
-```
-
-### 3.5 监听模式（Watch）
-
-```bash
-# 监听内容变化并自动重新构建
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
-
-# 监听并输出到自定义目录
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --output ./build-output --watch
-```
-
-适用场景：
-- 内容编辑时持续验证构建产物
-- 调试搜索索引生成
-- 验证 `llms.txt`、`llms-full.txt` 与 `mcp/chunks.<lang>.json` 输出
-
-### 3.6 启动本地动态阅读站
-
-```bash
-# 启动项目的本地阅读站
-node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
-```
-
-输出示例：
-```
-Preview server started for project "default".
-Preview URL: http://127.0.0.1:<port>/zh/docs/welcome
-Published pages: 1
-```
-
-这个命令会：
-1. 验证项目结构
-2. 读取默认语言配置
-3. 找到第一个已发布页面
-4. 启动本地阅读站服务并输出最终 URL
-5. 在服务运行期间反映已发布内容的磁盘变更
-
-**注意**:
-- `preview` 是长驻命令，会一直运行到你按 `Ctrl+C`
-- `preview --watch` 仍可使用，但当前只是兼容旧用法的保留参数；live preview 默认已开启
-- `published` 之外的页面不会进入阅读站
-
-### 3.7 导入旧文档
-
-**第一步：导入到暂存区**
-```bash
-# 从 Markdown/MDX 目录导入
-node --experimental-strip-types packages/cli/src/index.ts import ./legacy-docs examples/demo-docs zh
-
-# 查看导入清单
-cat examples/demo-docs/imports/<importId>/manifest.json
-```
-
-**第二步：转换为正式页面**
-```bash
-# 转换导入的内容
-node --experimental-strip-types packages/cli/src/index.ts convert-import <importId> examples/demo-docs
-
-# 查看转换报告
-cat examples/demo-docs/imports/<importId>/conversion-report.json
-```
-
-转换后：
-- 在 `pages/{lang}/` 生成草稿页
-- 在导航树末尾添加导入分组
-- 生成包含 slug 冲突等信息的转换报告
+这里不再重复完整产物结构与命令语义；这类信息以 [usage-manual.md](usage-manual.md) 为准。
 
 ## 4. 典型开发场景
 
@@ -258,7 +126,7 @@ pnpm dev
 # 启动开发服务器
 pnpm dev
 
-# 编辑 packages/web/app/[lang]/docs/ 下的文件
+# 编辑 packages/web/app/[lang]/[...slug]/ 下的文件
 # 或编辑 packages/web/components/docs/ 下的组件
 # 保存后通过 build / production 上下文验证
 ```
@@ -309,7 +177,7 @@ packages/web/
 4. 在 reader 根布局中读取项目配置的 `site.theme.id`，委托给对应主题的 `reader-layout.tsx`。
 5. 在目标文档项目的 `anydocs.config.json` 中设置唯一主题，例如 `"site.theme.id": "classic-docs"`。
 6. 如果需要项目级品牌覆盖，使用 `site.theme.branding.siteTitle` / `homeLabel` 和 `site.theme.codeTheme`，不要把这些站点展示配置混入页面或导航内容。
-6. 运行 `preview` 与 `build`，确认同一主题在动态预览和静态产物中表现一致。
+7. 运行 `preview` 与 `build`，确认同一主题在动态预览和静态产物中表现一致。
 
 实现约束建议：
 - 不要在运行时为同一个项目提供主题切换 UI
@@ -390,9 +258,6 @@ pnpm --filter @anydocs/web typecheck
 ```bash
 # ESLint 检查
 pnpm lint
-
-# 完整检查（类型 + lint）
-pnpm check
 ```
 
 ### 5.3 运行测试
@@ -408,7 +273,11 @@ pnpm test:web
 pnpm test:full
 ```
 
-## 6. 构建生产版本
+提交前最小门槛：
+- 一般仓库代码变更至少运行 `pnpm test`
+- 若改动影响 `packages/web`、Studio、reader、local API、build/preview 或其他用户可见行为，再补跑 `pnpm test:acceptance`
+
+## 6. 构建仓库产物
 
 ### 6.1 构建所有包
 
@@ -473,7 +342,7 @@ node --experimental-strip-types packages/cli/src/index.ts <command>
 2. 检查文件权限
 3. 查看浏览器控制台和终端日志
 
-### 7.3 构建产物未生成
+### 7.3 示例项目构建产物未生成
 
 **问题**: 执行 build 命令后找不到 dist/ 目录
 
@@ -555,7 +424,9 @@ pnpm typecheck && pnpm lint
 ```bash
 # 完整验证流程
 pnpm install
-pnpm check
+pnpm typecheck
+pnpm lint
+pnpm test
 pnpm build
 node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
 pnpm dev
@@ -569,13 +440,14 @@ pnpm dev
 |------|------|
 | 安装依赖 | `pnpm install` |
 | 启动开发 | `pnpm dev` |
+| 启动桌面端开发 | `pnpm dev:desktop` |
 | 类型检查 | `pnpm typecheck` |
 | 代码检查 | `pnpm lint` |
+| 运行最小提交门槛测试 | `pnpm test` |
 | 完整构建 | `pnpm build` |
-| 初始化项目 | `node --experimental-strip-types packages/cli/src/index.ts init <dir>` |
-| 构建产物 | `node --experimental-strip-types packages/cli/src/index.ts build <dir>` |
-| 监听构建 | `node --experimental-strip-types packages/cli/src/index.ts build <dir> --watch` |
-| 本地阅读站预览 | `node --experimental-strip-types packages/cli/src/index.ts preview <dir>` |
+| 验证示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs` |
+| 监听示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch` |
+| 预览示例项目阅读站 | `node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs` |
 
 ### 9.2 快捷脚本（可选）
 
@@ -602,9 +474,9 @@ pnpm cli:watch
 ## 10. 相关文档
 
 - [文档索引](README.md) - 当前 `docs/` 目录入口
+- [使用手册](usage-manual.md) - 文档项目使用、CLI 语义、导入与 Markdown 迁移
 - [BMAD 产物索引](../artifacts/bmad/README.md) - 规划、实现与测试产物入口
 - [架构文档](../artifacts/bmad/planning-artifacts/architecture.md) - 架构设计与技术边界
 - [PRD](../artifacts/bmad/planning-artifacts/prd.md) - 产品需求定义
 - [Epics](../artifacts/bmad/planning-artifacts/epics.md) - Epic 与 Story 拆分
-- [使用手册](04-usage-manual.md) - 详细操作指南
 - [README](../README.md) - 项目概览

@@ -1,6 +1,7 @@
 import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { filterPublicPageMetadata } from '../services/page-template-service.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
 import type { NavItem, PageDoc } from '../types/docs.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
@@ -23,6 +24,8 @@ type MachineReadablePageDoc = {
   href: string;
   title: string;
   description: string;
+  template?: string;
+  metadata?: Record<string, unknown>;
   tags: string[];
   updatedAt: string | null;
   breadcrumbs: string[];
@@ -597,16 +600,22 @@ export async function writePublishedArtifacts(
     const pagesArtifact = {
       lang: site.lang,
       generatedAt,
-      pages: site.content.pages.map((page): MachineReadablePageDoc => ({
-        id: page.id,
-        slug: page.slug,
-        href: `/${site.lang}/${page.slug}`,
-        title: page.title,
-        description: page.description ?? '',
-        tags: page.tags ?? [],
-        updatedAt: page.updatedAt ?? null,
-        breadcrumbs: breadcrumbsById.get(page.id) ?? [],
-      })),
+      pages: site.content.pages.map((page): MachineReadablePageDoc => {
+        const publicMetadata = filterPublicPageMetadata(page, contract.config);
+
+        return {
+          id: page.id,
+          slug: page.slug,
+          href: `/${site.lang}/${page.slug}`,
+          title: page.title,
+          description: page.description ?? '',
+          ...(page.template ? { template: page.template } : {}),
+          ...(publicMetadata ? { metadata: publicMetadata } : {}),
+          tags: page.tags ?? [],
+          updatedAt: page.updatedAt ?? null,
+          breadcrumbs: breadcrumbsById.get(page.id) ?? [],
+        };
+      }),
     };
 
     await writeJson(languagePaths.searchIndexFile, searchIndex);
