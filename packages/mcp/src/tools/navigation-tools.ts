@@ -148,6 +148,7 @@ export const navigationTools: ToolDefinition[] = [
         lang: { type: 'string' },
         items: {
           type: 'array',
+          items: { type: 'object' },
           description: 'The replacement top-level navigation item array.',
         },
       },
