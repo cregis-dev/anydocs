@@ -364,7 +364,7 @@ npx @anydocs/cli convert-import <importId> ./my-docs-project
 
 - 整页迁移使用 `inputMode: "document"`，这样会解析 frontmatter，并尽量推断 `title`、`description`、`tags`
 - 局部补录使用 `inputMode: "fragment"`；追加到现有页面时配合 `operation: "append"`
-- 转换完成后检查返回的 `conversion.warnings`，尤其是 MDX、未映射 frontmatter，以及列表、代码块、表格、链接、图片、引用块这类会被简化的结构
+- 转换完成后检查返回的 `conversion.warnings`，尤其是 MDX、未映射 frontmatter，以及代码块、链接、图片、引用块这类仍可能被简化的结构
 
 ## 7. 典型工作流
 

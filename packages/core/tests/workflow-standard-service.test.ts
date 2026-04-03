@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -11,6 +11,7 @@ import { initializeProject } from '../src/services/init-service.ts';
 import { convertImportedLegacyContent } from '../src/services/legacy-conversion-service.ts';
 import { importLegacyDocumentation } from '../src/services/legacy-import-service.ts';
 import { assessWorkflowForwardCompatibility } from '../src/services/workflow-compatibility-service.ts';
+import { syncWorkflowStandard } from '../src/services/workflow-sync-service.ts';
 import {
   assertWorkflowStandardMatchesContract,
   createWorkflowStandardDefinition,
@@ -189,5 +190,39 @@ test('assessWorkflowForwardCompatibility stays green after import, conversion, a
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
     await rm(sourceRoot, { recursive: true, force: true });
+  }
+});
+
+test('syncWorkflowStandard returns a diff for stale workflow definitions and applies the canonical contract', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    const initResult = await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const workflowFile = initResult.contract.paths.workflowFile;
+    const persisted = JSON.parse(await readFile(workflowFile, 'utf8')) as Record<string, unknown>;
+    const persistedContentModel = persisted.contentModel as Record<string, unknown>;
+    persisted.contentModel = {
+      ...persistedContentModel,
+      pageOptionalFields: ['description'],
+    };
+    await writeFile(workflowFile, `${JSON.stringify(persisted, null, 2)}\n`, 'utf8');
+
+    const dryRun = await syncWorkflowStandard(repoRoot);
+    assert.equal(dryRun.applied, false);
+    assert.ok(dryRun.diff.some((entry) => entry.path === 'contentModel.pageOptionalFields'));
+
+    const apply = await syncWorkflowStandard(repoRoot, { apply: true });
+    assert.equal(apply.applied, true);
+    const synced = await readWorkflowStandardDefinition(workflowFile);
+    assert.deepEqual(synced.contentModel.pageOptionalFields, [
+      'description',
+      'template',
+      'metadata',
+      'tags',
+      'updatedAt',
+      'render',
+    ]);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
   }
 });

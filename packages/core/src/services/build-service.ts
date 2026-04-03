@@ -11,11 +11,14 @@ import {
 import { writePublishedArtifacts } from '../publishing/build-artifacts.ts';
 import { writePublishedOpenApiArtifacts } from '../publishing/build-openapi-artifacts.ts';
 import type { DocsLanguage } from '../types/project.ts';
+import type { WorkflowStandardFile } from '../types/workflow-standard.ts';
+import { createWorkflowStandardDefinition } from './workflow-standard-service.ts';
 
 export type BuildWorkflowOptions = {
   repoRoot: string;
   projectId?: string;
   outputDir?: string;
+  dryRun?: boolean;
 };
 
 export type BuildWorkflowLanguageSummary = {
@@ -44,6 +47,8 @@ export type BuildWorkflowResult = {
   entryHtmlFile: string;
   defaultDocsPath: string;
   languages: BuildWorkflowLanguageSummary[];
+  artifacts: WorkflowStandardFile[];
+  dryRun: boolean;
 };
 
 function countNavigationItems(items: Array<{ children?: unknown[] } | Record<string, unknown>>): number {
@@ -68,17 +73,21 @@ export async function runBuildWorkflow(options: BuildWorkflowOptions): Promise<B
   const defaultLanguageSite = siteArtifacts.find((entry) => entry.lang === contract.config.defaultLanguage);
   const firstPublishedRoute = defaultLanguageSite?.content.routes[0] ?? null;
   const languages = siteArtifacts.map((entry) => entry.summary);
-  const { assertSafeArtifactRoot, exportDocsSite } = await import('./web-runtime-bridge.ts');
+  const artifacts = createWorkflowStandardDefinition(contract).generatedArtifacts;
 
-  assertSafeArtifactRoot(contract.paths);
-  await mkdir(contract.paths.artifactRoot, { recursive: true });
-  await exportDocsSite({
-    projectRoot: contract.paths.projectRoot,
-    outputRoot: contract.paths.artifactRoot,
-  });
-  await mkdir(contract.paths.machineReadableRoot, { recursive: true });
-  await writePublishedArtifacts(contract, siteArtifacts);
-  await writePublishedOpenApiArtifacts(contract);
+  if (!options.dryRun) {
+    const { assertSafeArtifactRoot, exportDocsSite } = await import('./web-runtime-bridge.ts');
+
+    assertSafeArtifactRoot(contract.paths);
+    await mkdir(contract.paths.artifactRoot, { recursive: true });
+    await exportDocsSite({
+      projectRoot: contract.paths.projectRoot,
+      outputRoot: contract.paths.artifactRoot,
+    });
+    await mkdir(contract.paths.machineReadableRoot, { recursive: true });
+    await writePublishedArtifacts(contract, siteArtifacts);
+    await writePublishedOpenApiArtifacts(contract);
+  }
 
   return {
     projectId: contract.config.projectId,
@@ -87,6 +96,8 @@ export async function runBuildWorkflow(options: BuildWorkflowOptions): Promise<B
     entryHtmlFile: path.join(contract.paths.artifactRoot, 'index.html'),
     defaultDocsPath: firstPublishedRoute?.href ?? `/${contract.config.defaultLanguage}`,
     languages,
+    artifacts,
+    dryRun: Boolean(options.dryRun),
   };
 }
 

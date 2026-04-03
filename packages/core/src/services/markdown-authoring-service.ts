@@ -83,9 +83,6 @@ const SUPPORTED_FRONTMATTER_KEYS = new Set(['title', 'description', 'tags']);
 const MARKDOWN_REVIEW_PATTERNS: Array<{ code: string; label: string; pattern: RegExp }> = [
   { code: 'code-fence', label: 'code fences', pattern: /^```/m },
   { code: 'blockquote', label: 'blockquotes', pattern: /^>\s+/m },
-  { code: 'bulleted-list', label: 'bulleted lists', pattern: /^\s*[-*+]\s+/m },
-  { code: 'numbered-list', label: 'numbered lists', pattern: /^\s*\d+\.\s+/m },
-  { code: 'table', label: 'tables', pattern: /^\|.+\|$/m },
   { code: 'link', label: 'markdown links', pattern: /\[[^\]]+\]\([^)]+\)/m },
   { code: 'image', label: 'images', pattern: /!\[[^\]]*\]\([^)]+\)/m },
 ];
@@ -281,47 +278,218 @@ function toYooptaHeadingBlock(
   };
 }
 
+function toYooptaListBlock(
+  blockId: string,
+  elementId: string,
+  text: string,
+  blockType: 'BulletedList' | 'NumberedList' | 'TodoList',
+  elementType: 'bulleted-list' | 'numbered-list' | 'todo-list',
+  order: number,
+  checked?: boolean,
+) {
+  return {
+    [blockId]: {
+      id: blockId,
+      type: blockType,
+      value: [
+        {
+          id: elementId,
+          type: elementType,
+          children: [{ text }],
+          props: {
+            nodeType: 'block',
+            ...(checked == null ? {} : { checked }),
+          },
+        },
+      ],
+      meta: { order, depth: 0 },
+    },
+  };
+}
+
+function toYooptaTableBlock(
+  blockId: string,
+  elementId: string,
+  rows: string[][],
+  order: number,
+) {
+  return {
+    [blockId]: {
+      id: blockId,
+      type: 'Table',
+      value: [
+        {
+          id: elementId,
+          type: 'table',
+          children: rows.map((row, rowIndex) => ({
+            id: `${elementId}-row-${rowIndex + 1}`,
+            type: 'table-row',
+            children: row.map((cell, cellIndex) => ({
+              id: `${elementId}-cell-${rowIndex + 1}-${cellIndex + 1}`,
+              type: 'table-cell',
+              children: [{ text: cell }],
+              props: { nodeType: 'block' },
+            })),
+            props: { nodeType: 'block' },
+          })),
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order, depth: 0 },
+    },
+  };
+}
+
+function normalizeMarkdownParagraphText(lines: string[]): string {
+  return lines.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function splitMarkdownTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownTableRow(line: string): boolean {
+  return /^\s*\|.*\|\s*$/.test(line.trim());
+}
+
+function isMarkdownTableSeparator(line: string): boolean {
+  if (!isMarkdownTableRow(line)) {
+    return false;
+  }
+
+  return splitMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
 function createEditableMarkdownContent(markdown: string): Record<string, unknown> {
   const trimmed = markdown.trim();
   if (!trimmed) {
     return toYooptaParagraphBlock('block-1', 'element-1', '', 0);
   }
 
-  const chunks = trimmed
-    .split(/\n\s*\n/)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
+  const lines = trimmed.replace(/\r\n/g, '\n').split('\n');
+  const content: Record<string, unknown> = {};
+  let blockOrder = 0;
+  let nextIndex = 1;
+  let paragraphLines: string[] = [];
 
-  return chunks.reduce<Record<string, unknown>>((content, chunk, index) => {
-    const blockId = `block-${index + 1}`;
-    const elementId = `element-${index + 1}`;
+  const pushBlock = (block: Record<string, unknown>) => {
+    Object.assign(content, block);
+    blockOrder += 1;
+    nextIndex += 1;
+  };
 
-    if (chunk.startsWith('# ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(2).trim(), 'HeadingOne', 'h1', index),
-      };
+  const flushParagraph = () => {
+    const text = normalizeMarkdownParagraphText(paragraphLines);
+    paragraphLines = [];
+    if (!text) {
+      return;
     }
 
-    if (chunk.startsWith('## ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(3).trim(), 'HeadingTwo', 'h2', index),
-      };
+    pushBlock(toYooptaParagraphBlock(`block-${nextIndex}`, `element-${nextIndex}`, text, blockOrder));
+  };
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? '';
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      flushParagraph();
+      continue;
     }
 
-    if (chunk.startsWith('### ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(4).trim(), 'HeadingThree', 'h3', index),
-      };
+    const headingMatch = /^(#{1,3})\s+(.+)$/.exec(line);
+    if (headingMatch) {
+      flushParagraph();
+      const headingLevel = headingMatch[1]?.length ?? 0;
+      const headingText = headingMatch[2]?.trim() ?? '';
+      if (!headingText) {
+        continue;
+      }
+
+      if (headingLevel === 1) {
+        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingOne', 'h1', blockOrder));
+      } else if (headingLevel === 2) {
+        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingTwo', 'h2', blockOrder));
+      } else {
+        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingThree', 'h3', blockOrder));
+      }
+      continue;
     }
 
-    return {
-      ...content,
-      ...toYooptaParagraphBlock(blockId, elementId, chunk.replace(/\n+/g, ' ').trim(), index),
-    };
-  }, {});
+    const todoMatch = /^\s*[-*+]\s+\[( |x|X)\]\s+(.+)$/.exec(line);
+    if (todoMatch) {
+      flushParagraph();
+      const checked = todoMatch[1]?.toLowerCase() === 'x';
+      const todoText = todoMatch[2]?.trim() ?? '';
+      if (todoText) {
+        pushBlock(
+          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, todoText, 'TodoList', 'todo-list', blockOrder, checked),
+        );
+      }
+      continue;
+    }
+
+    const bulletMatch = /^\s*[-*+]\s+(.+)$/.exec(line);
+    if (bulletMatch) {
+      flushParagraph();
+      const bulletText = bulletMatch[1]?.trim() ?? '';
+      if (bulletText) {
+        pushBlock(
+          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, bulletText, 'BulletedList', 'bulleted-list', blockOrder),
+        );
+      }
+      continue;
+    }
+
+    const numberedMatch = /^\s*\d+\.\s+(.+)$/.exec(line);
+    if (numberedMatch) {
+      flushParagraph();
+      const numberedText = numberedMatch[1]?.trim() ?? '';
+      if (numberedText) {
+        pushBlock(
+          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, numberedText, 'NumberedList', 'numbered-list', blockOrder),
+        );
+      }
+      continue;
+    }
+
+    if (isMarkdownTableRow(line) && lineIndex + 1 < lines.length && isMarkdownTableSeparator(lines[lineIndex + 1] ?? '')) {
+      flushParagraph();
+
+      const rows: string[][] = [splitMarkdownTableRow(line)];
+      lineIndex += 2;
+
+      while (lineIndex < lines.length) {
+        const tableLine = lines[lineIndex] ?? '';
+        if (!tableLine.trim()) {
+          lineIndex -= 1;
+          break;
+        }
+        if (!isMarkdownTableRow(tableLine) || isMarkdownTableSeparator(tableLine)) {
+          lineIndex -= 1;
+          break;
+        }
+
+        rows.push(splitMarkdownTableRow(tableLine));
+        lineIndex += 1;
+      }
+
+      if (rows.length > 0) {
+        pushBlock(toYooptaTableBlock(`block-${nextIndex}`, `element-${nextIndex}`, rows, blockOrder));
+      }
+      continue;
+    }
+
+    paragraphLines.push(trimmedLine);
+  }
+
+  flushParagraph();
+  return content;
 }
 
 function collectMarkdownWarnings(
@@ -359,7 +527,7 @@ function collectMarkdownWarnings(
     warnings.push({
       code: 'markdown-construct-review-required',
       message: `Markdown conversion${sourcePath ? ` for "${sourcePath}"` : ''} contains constructs that are simplified in editable Yoopta content.`,
-      remediation: 'Review lists, code blocks, tables, links, blockquotes, and images after conversion and restore structured blocks when fidelity matters.',
+      remediation: 'Review code fences, links, blockquotes, and images after conversion and restore structured blocks when fidelity matters.',
       metadata: {
         sourcePath: sourcePath ?? null,
         constructs: detectedConstructs.map((entry) => ({
@@ -461,6 +629,7 @@ export function convertMarkdownToPageContent(options: {
       ? parseFrontmatter(options.markdown, sourcePath ?? 'inline-markdown')
       : { body: options.markdown, frontmatter: {} };
   const normalizedBody = parsed.body.trim();
+  const content = createEditableMarkdownContent(normalizedBody);
 
   return {
     mode,
@@ -471,7 +640,7 @@ export function convertMarkdownToPageContent(options: {
     ...(mode === 'document' ? { title: inferTitle(normalizedBody, parsed.frontmatter, sourcePath) } : {}),
     ...(mode === 'document' ? { description: inferDescription(parsed.frontmatter) } : {}),
     ...(mode === 'document' ? { tags: inferTags(parsed.frontmatter) } : {}),
-    content: createEditableMarkdownContent(normalizedBody),
+    content,
     render: {
       markdown: normalizedBody,
       plainText: stripMarkdown(normalizedBody),

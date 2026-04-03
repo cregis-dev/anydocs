@@ -1,0 +1,18 @@
+export const DOCS_YOOPTA_ALLOWED_TYPES: string[] = [
+  'Paragraph',
+  'HeadingOne',
+  'HeadingTwo',
+  'HeadingThree',
+  'BulletedList',
+  'NumberedList',
+  'TodoList',
+  'Blockquote',
+  'Code',
+  'CodeGroup',
+  'Divider',
+  'Callout',
+  'Image',
+  'Table',
+  'Link',
+  'Mermaid',
+];

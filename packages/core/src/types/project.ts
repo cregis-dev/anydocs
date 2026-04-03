@@ -93,6 +93,20 @@ export type ProjectSiteNavigation = {
   topNav?: ProjectSiteTopNavItem[];
 };
 
+export type ProjectThemeCapabilities = {
+  supportedBlockTypes: string[];
+  unsupportedBlockTypes: string[];
+  navigation: {
+    topNav: boolean;
+    topNavGroupSwitching: boolean;
+  };
+  features: {
+    search: boolean;
+    i18nSwitcher: boolean;
+    darkMode: boolean;
+  };
+};
+
 export type ProjectSiteConfig = {
   url?: string;
   theme: ProjectSiteTheme;

@@ -73,3 +73,19 @@ export type WorkflowCompatibilityAssessment = {
   externalAutomationReady: true;
   validatedAt: string;
 };
+
+export type WorkflowSyncDiffAction = 'add' | 'remove' | 'replace';
+
+export type WorkflowSyncDiffEntry = {
+  path: string;
+  action: WorkflowSyncDiffAction;
+  expected?: unknown;
+  received?: unknown;
+};
+
+export type WorkflowSyncResult = {
+  applied: boolean;
+  filePath: string;
+  diff: WorkflowSyncDiffEntry[];
+  workflow: WorkflowStandardDefinition;
+};

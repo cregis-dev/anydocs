@@ -175,6 +175,22 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
   }
 });
 
+test('runBuildWorkflow dryRun returns planned artifacts without creating files', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const result = await runBuildWorkflow({ repoRoot, dryRun: true });
+
+    assert.equal(result.dryRun, true);
+    assert.ok(result.artifacts.some((artifact) => artifact.id === 'machineReadableIndex'));
+    await assert.rejects(() => access(path.join(repoRoot, 'dist', 'index.html')));
+    await assert.rejects(() => access(path.join(repoRoot, 'dist', 'mcp', 'index.json')));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('published artifacts emit a fallback chunk for published pages without headings', async () => {
   const repoRoot = await createTempRepoRoot();
 

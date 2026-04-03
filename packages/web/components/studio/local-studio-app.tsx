@@ -59,6 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { listResolvedProjectPageTemplates } from '@/lib/page-templates';
 import { docsThemeRegistry } from '@/lib/themes/registry';
 import {
   filterNavigationToGroup,
@@ -67,7 +68,6 @@ import {
   resolveTopNavLabel,
 } from '@/lib/themes/atlas-nav';
 import { cn } from '@/lib/utils';
-import { listResolvedProjectPageTemplates } from '../../../core/src/templates/page-template-definitions.ts';
 
 type LoadState = { nav: NavigationDoc | null; pages: PageDoc[]; loading: boolean; error: string | null };
 type ProjectState = {
@@ -702,7 +702,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     [topNavEntries],
   );
   const showStudioTopNav = !!(
-    currentTheme?.capabilities.topNav &&
+    currentTheme?.capabilities.navigation.topNav &&
     topNavEntries.length > 0
   );
   const activePageTopNavGroupId = useMemo(() => {

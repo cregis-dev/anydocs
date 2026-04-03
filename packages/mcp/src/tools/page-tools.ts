@@ -1,12 +1,14 @@
 import {
   PAGE_TEMPLATE_KINDS,
   ValidationError,
+  clonePageToLanguage,
   createPagesBatch,
   createPage,
   createPageFromMarkdown,
   createPageFromTemplate,
   deleteAuthoredPage,
   findPageBySlug,
+  listTranslationStatus,
   listPages,
   loadPage,
   setPageStatusesBatch,
@@ -479,6 +481,86 @@ export const pageTools: ToolDefinition[] = [
           matches,
         };
       });
+    },
+  },
+  {
+    name: 'page_clone_to_language',
+    description:
+      'Clone a page into another enabled language as a draft skeleton, with optional content copying but no translation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        sourceLang: { type: 'string' },
+        targetLang: { type: 'string' },
+        sourcePageId: { type: 'string' },
+        includeContent: { type: 'boolean' },
+      },
+      required: ['projectRoot', 'sourceLang', 'targetLang', 'sourcePageId'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_clone_to_language', argumentsValue);
+      const projectRoot = requireStringArgument('page_clone_to_language', args, 'projectRoot');
+      const sourceLang = requireStringArgument('page_clone_to_language', args, 'sourceLang');
+      const targetLang = requireStringArgument('page_clone_to_language', args, 'targetLang');
+      const sourcePageId = requireStringArgument('page_clone_to_language', args, 'sourcePageId');
+      const includeContent = optionalBooleanArgument('page_clone_to_language', args, 'includeContent');
+
+      return executeTool(
+        'page_clone_to_language',
+        { projectRoot, sourceLang, targetLang, sourcePageId },
+        async () => {
+          await loadProjectContext('page_clone_to_language', projectRoot, sourceLang);
+          await loadProjectContext('page_clone_to_language', projectRoot, targetLang);
+          return clonePageToLanguage({
+            projectRoot,
+            sourceLang: sourceLang as 'en' | 'zh',
+            targetLang: targetLang as 'en' | 'zh',
+            sourcePageId,
+            ...(includeContent !== undefined ? { includeContent } : {}),
+          });
+        },
+      );
+    },
+  },
+  {
+    name: 'page_list_translation_status',
+    description:
+      'List page pairing status between two enabled languages without invoking translation or changing content.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        sourceLang: { type: 'string' },
+        targetLang: { type: 'string' },
+      },
+      required: ['projectRoot', 'sourceLang', 'targetLang'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_list_translation_status', argumentsValue);
+      const projectRoot = requireStringArgument('page_list_translation_status', args, 'projectRoot');
+      const sourceLang = requireStringArgument('page_list_translation_status', args, 'sourceLang');
+      const targetLang = requireStringArgument('page_list_translation_status', args, 'targetLang');
+
+      return executeTool(
+        'page_list_translation_status',
+        { projectRoot, sourceLang, targetLang },
+        async () => {
+          await loadProjectContext('page_list_translation_status', projectRoot, sourceLang);
+          await loadProjectContext('page_list_translation_status', projectRoot, targetLang);
+          const pages = await listTranslationStatus(
+            projectRoot,
+            sourceLang as 'en' | 'zh',
+            targetLang as 'en' | 'zh',
+          );
+          return {
+            count: pages.length,
+            pages,
+          };
+        },
+      );
     },
   },
   {

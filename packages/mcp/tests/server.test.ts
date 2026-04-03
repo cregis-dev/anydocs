@@ -81,6 +81,7 @@ test('stdio server registers tools plus read-only resource capabilities', async 
       'page_batch_create',
       'page_batch_set_status',
       'page_batch_update',
+      'page_clone_to_language',
       'page_create',
       'page_create_from_markdown',
       'page_create_from_template',
@@ -88,12 +89,16 @@ test('stdio server registers tools plus read-only resource capabilities', async 
       'page_find',
       'page_get',
       'page_list',
+      'page_list_translation_status',
       'page_set_status',
       'page_update',
       'page_update_from_markdown',
       'page_update_from_template',
+      'project_build',
       'project_open',
       'project_set_languages',
+      'project_sync_workflow',
+      'project_update_config',
       'project_validate',
     ]);
 
@@ -179,6 +184,10 @@ test('stdio server executes representative tool calls over MCP', async () => {
         resources: Array<{ uri: string }>;
         resourceTemplates: Array<{ uriTemplate: string }>;
       };
+      themeCapabilities: {
+        navigation: { topNav: boolean };
+        features: { search: boolean };
+      };
     }>(
       await client.callTool({
         name: 'project_open',
@@ -188,6 +197,8 @@ test('stdio server executes representative tool calls over MCP', async () => {
     assert.equal(projectOpenEnvelope.ok, true);
     assert.equal(projectOpenEnvelope.data?.config?.projectId, 'default');
     assert.equal(projectOpenEnvelope.data?.authoring?.contentFormat, 'yoopta');
+    assert.equal(projectOpenEnvelope.data?.themeCapabilities?.navigation.topNav, false);
+    assert.equal(projectOpenEnvelope.data?.themeCapabilities?.features.search, true);
     assert.ok(projectOpenEnvelope.data?.authoring?.allowedBlockTypes?.includes('CodeGroup'));
     assert.ok(projectOpenEnvelope.data?.authoring?.templates?.some((template) => template.id === 'reference'));
     assert.ok(projectOpenEnvelope.data?.authoring?.resources?.some((resource) => resource.uri === 'anydocs://authoring/guidance'));
@@ -213,6 +224,22 @@ test('stdio server executes representative tool calls over MCP', async () => {
     assert.equal(pageGetEnvelope.ok, true);
     assert.equal(pageGetEnvelope.data?.page?.id, 'welcome');
     assert.match(String(pageGetEnvelope.data?.file), /pages\/en\/welcome\.json$/);
+
+    const dryRunEnvelope = parseEnvelope<{
+      dryRun: boolean;
+      artifacts: Array<{ id: string; path: string }>;
+    }>(
+      await client.callTool({
+        name: 'project_build',
+        arguments: {
+          projectRoot,
+          dryRun: true,
+        },
+      }),
+    );
+    assert.equal(dryRunEnvelope.ok, true);
+    assert.equal(dryRunEnvelope.data?.dryRun, true);
+    assert.ok(dryRunEnvelope.data?.artifacts?.some((artifact) => artifact.id === 'llms'));
 
     const pageBatchCreateEnvelope = parseEnvelope<{
       count: number;

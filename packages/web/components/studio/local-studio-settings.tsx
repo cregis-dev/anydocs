@@ -191,7 +191,7 @@ function ProjectSettingsContent({
   }
 
   const selectedTheme = docsThemes.find((theme) => theme.id === project.themeId) ?? null;
-  const topNavSupported = selectedTheme?.capabilities.topNav ?? false;
+  const topNavSupported = selectedTheme?.capabilities.navigation.topNav ?? false;
 
   return (
     <div className="space-y-4">

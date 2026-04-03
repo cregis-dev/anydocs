@@ -11,6 +11,7 @@ import {
 } from '../src/config/project-config.ts';
 import { loadProjectContract } from '../src/fs/content-repository.ts';
 import { updateProjectConfig } from '../src/fs/content-repository.ts';
+import { getProjectThemeCapabilities } from '../src/services/theme-capabilities-service.ts';
 import { createWorkflowStandardDefinition } from '../src/services/workflow-standard-service.ts';
 import { createProjectPathContract } from '../src/fs/project-paths.ts';
 
@@ -342,6 +343,18 @@ test('loadProjectContract accepts custom authoring page templates in project con
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }
+});
+
+test('getProjectThemeCapabilities returns the registered project-surface capabilities for known themes', () => {
+  const atlas = getProjectThemeCapabilities('atlas-docs');
+  const classic = getProjectThemeCapabilities('classic-docs');
+
+  assert.equal(atlas.navigation.topNav, true);
+  assert.equal(atlas.navigation.topNavGroupSwitching, true);
+  assert.equal(atlas.features.search, true);
+  assert.equal(classic.navigation.topNav, false);
+  assert.equal(classic.features.i18nSwitcher, true);
+  assert.ok(classic.supportedBlockTypes.includes('Mermaid'));
 });
 
 test('loadProjectContract rejects invalid authoring page template metadata schema', async () => {

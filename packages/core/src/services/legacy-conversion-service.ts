@@ -22,6 +22,7 @@ import type {
   LegacyImportWarning,
 } from '../types/legacy-import.ts';
 import { isDocsLang } from '../types/docs.ts';
+import { createMarkdownYooptaContent, stripMarkdownToPlainText } from '../utils/index.ts';
 import { assertValidPageId, normalizeSlug } from '../utils/slug.ts';
 
 export type ConvertImportedLegacyContentOptions = {
@@ -40,9 +41,6 @@ const SUPPORTED_FRONTMATTER_KEYS = new Set(['title', 'description', 'tags']);
 const MARKDOWN_REVIEW_PATTERNS: Array<{ code: string; label: string; pattern: RegExp }> = [
   { code: 'code-fence', label: 'code fences', pattern: /^```/m },
   { code: 'blockquote', label: 'blockquotes', pattern: /^>\s+/m },
-  { code: 'bulleted-list', label: 'bulleted lists', pattern: /^\s*[-*+]\s+/m },
-  { code: 'numbered-list', label: 'numbered lists', pattern: /^\s*\d+\.\s+/m },
-  { code: 'table', label: 'tables', pattern: /^\|.+\|$/m },
   { code: 'link', label: 'markdown links', pattern: /\[[^\]]+\]\([^)]+\)/m },
   { code: 'image', label: 'images', pattern: /!\[[^\]]*\]\([^)]+\)/m },
 ];
@@ -359,110 +357,12 @@ function validateImportItem(input: unknown, expectedItemId: string): LegacyImpor
   };
 }
 
-function stripMarkdown(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/[#>*_~]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function toTitleCase(segment: string): string {
   return segment
     .split('-')
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
-}
-
-function toYooptaParagraphBlock(blockId: string, elementId: string, text: string, order: number) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: 'Paragraph',
-      value: [
-        {
-          id: elementId,
-          type: 'paragraph',
-          children: [{ text }],
-          props: { nodeType: 'block' },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function toYooptaHeadingBlock(
-  blockId: string,
-  elementId: string,
-  text: string,
-  headingType: 'HeadingOne' | 'HeadingTwo' | 'HeadingThree',
-  elementType: 'h1' | 'h2' | 'h3',
-  order: number,
-) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: headingType,
-      value: [
-        {
-          id: elementId,
-          type: elementType,
-          children: [{ text }],
-          props: { nodeType: 'block' },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function createEditableLegacyContent(markdown: string): Record<string, unknown> {
-  const trimmed = markdown.trim();
-  if (!trimmed) {
-    return toYooptaParagraphBlock('block-1', 'element-1', '', 0);
-  }
-
-  const chunks = trimmed
-    .split(/\n\s*\n/)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
-
-  return chunks.reduce<Record<string, unknown>>((content, chunk, index) => {
-    const blockId = `block-${index + 1}`;
-    const elementId = `element-${index + 1}`;
-
-    if (chunk.startsWith('# ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(2).trim(), 'HeadingOne', 'h1', index),
-      };
-    }
-
-    if (chunk.startsWith('## ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(3).trim(), 'HeadingTwo', 'h2', index),
-      };
-    }
-
-    if (chunk.startsWith('### ')) {
-      return {
-        ...content,
-        ...toYooptaHeadingBlock(blockId, elementId, chunk.slice(4).trim(), 'HeadingThree', 'h3', index),
-      };
-    }
-
-    const paragraphText = chunk.replace(/\n+/g, ' ').trim();
-    return {
-      ...content,
-      ...toYooptaParagraphBlock(blockId, elementId, paragraphText, index),
-    };
-  }, {});
 }
 
 function createUniquePageId(baseId: string, existingPageIds: Set<string>): { value: string; warning?: LegacyImportWarning } {
@@ -558,7 +458,7 @@ function collectItemWarnings(item: LegacyImportItem): LegacyImportWarning[] {
       itemId: item.id,
       code: 'legacy-import-markdown-construct-review-required',
       message: `Imported "${item.sourcePath}" contains markdown constructs that are preserved as markdown/render output but simplified in the editable Studio content.`,
-      remediation: 'Review the converted draft page and restore any lists, code blocks, tables, links, or quotes that should remain structured after import.',
+      remediation: 'Review the converted draft page and restore any code blocks, links, images, or quotes that should remain structured after import.',
       metadata: {
         sourcePath: item.sourcePath,
         constructs: detectedConstructs.map((entry) => ({
@@ -589,10 +489,10 @@ function createConvertedPage(
     ...(item.tags ? { tags: item.tags } : {}),
     status: 'draft',
     updatedAt: convertedAt,
-    content: createEditableLegacyContent(item.body),
+    content: createMarkdownYooptaContent(item.body),
     render: {
       markdown: item.body,
-      plainText: stripMarkdown(item.body),
+      plainText: stripMarkdownToPlainText(item.body),
     },
     review: {
       required: true,

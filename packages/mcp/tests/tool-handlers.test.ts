@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -67,6 +67,11 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
       config: { projectId: string };
       enabledLanguages: string[];
       paths: { projectRoot: string };
+      themeCapabilities: {
+        navigation: { topNav: boolean; topNavGroupSwitching: boolean };
+        features: { search: boolean; i18nSwitcher: boolean; darkMode: boolean };
+        supportedBlockTypes: string[];
+      };
       authoring: {
         contentFormat: string;
         allowedBlockTypes: string[];
@@ -87,6 +92,9 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
     assert.equal(success.data.config.projectId, 'default');
     assert.deepEqual(success.data.enabledLanguages, ['en']);
     assert.equal(success.data.paths.projectRoot, projectRoot);
+    assert.equal(success.data.themeCapabilities.navigation.topNav, false);
+    assert.equal(success.data.themeCapabilities.features.search, true);
+    assert.ok(success.data.themeCapabilities.supportedBlockTypes.includes('CodeGroup'));
     assert.equal(success.data.authoring.contentFormat, 'yoopta');
     assert.ok(success.data.authoring.allowedBlockTypes.includes('Callout'));
     assert.ok(success.data.authoring.allowedMarks.includes('bold'));
@@ -98,6 +106,114 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
         (resourceTemplate) => resourceTemplate.uriTemplate === 'anydocs://templates/{templateId}',
       ),
     );
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('project_update_config writes supported project fields through the canonical config path', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = expectSuccess<{
+      filePath: string;
+      config: {
+        name: string;
+        build?: { outputDir?: string };
+        site: {
+          url?: string;
+          theme: { id: string; codeTheme?: string; branding?: { siteTitle?: string } };
+          navigation?: { topNav?: Array<{ id: string }> };
+        };
+      };
+    }>(await invokeTool('project_update_config', {
+      projectRoot,
+      patch: {
+        name: 'Updated Docs',
+        build: { outputDir: './public-docs' },
+        site: {
+          url: 'https://docs.example.com',
+          theme: {
+            id: 'atlas-docs',
+            codeTheme: 'github-light',
+            branding: { siteTitle: 'Updated Docs' },
+          },
+          navigation: {
+            topNav: [
+              {
+                id: 'guides',
+                type: 'external',
+                href: 'https://example.com/start',
+                label: 'Start',
+              },
+            ],
+          },
+        },
+      },
+    }));
+
+    assert.match(result.data.filePath, /anydocs\.config\.json$/);
+    assert.equal(result.data.config.name, 'Updated Docs');
+    assert.equal(result.data.config.build?.outputDir, './public-docs');
+    assert.equal(result.data.config.site.url, 'https://docs.example.com/');
+    assert.equal(result.data.config.site.theme.id, 'atlas-docs');
+    assert.equal(result.data.config.site.theme.codeTheme, 'github-light');
+    assert.equal(result.data.config.site.theme.branding?.siteTitle, 'Updated Docs');
+    assert.equal(result.data.config.site.navigation?.topNav?.[0]?.id, 'guides');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('project_build dryRun returns planned artifact metadata without writing files', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = expectSuccess<{
+      dryRun: boolean;
+      artifactRoot: string;
+      artifacts: Array<{ id: string; path: string }>;
+    }>(await invokeTool('project_build', { projectRoot, dryRun: true }));
+
+    assert.equal(result.data.dryRun, true);
+    assert.match(result.data.artifactRoot, /dist$/);
+    assert.ok(result.data.artifacts.some((artifact) => artifact.id === 'machineReadableIndex'));
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('project_sync_workflow returns a diff for stale workflow files and can apply it', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const workflowFile = path.join(projectRoot, 'anydocs.workflow.json');
+    const persisted = JSON.parse(await readFile(workflowFile, 'utf8')) as Record<string, unknown>;
+    const persistedContentModel = persisted.contentModel as Record<string, unknown>;
+    persisted.contentModel = {
+      ...persistedContentModel,
+      pageOptionalFields: ['description'],
+    };
+    await writeFile(workflowFile, `${JSON.stringify(persisted, null, 2)}\n`, 'utf8');
+
+    const dryRun = expectSuccess<{
+      applied: boolean;
+      diff: Array<{ path: string; action: string }>;
+    }>(await invokeTool('project_sync_workflow', { projectRoot }));
+    assert.equal(dryRun.data.applied, false);
+    assert.ok(dryRun.data.diff.some((entry) => entry.path === 'contentModel.pageOptionalFields'));
+
+    const applied = expectSuccess<{
+      applied: boolean;
+      diff: Array<{ path: string; action: string }>;
+    }>(await invokeTool('project_sync_workflow', { projectRoot, mode: 'apply' }));
+    assert.equal(applied.data.applied, true);
+    assert.ok(applied.data.diff.some((entry) => entry.path === 'contentModel.pageOptionalFields'));
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -246,6 +362,72 @@ test('page_get returns the canonical page document and file path', async () => {
   }
 });
 
+test('page_clone_to_language creates a draft skeleton and page_list_translation_status reports missing pairs', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en', 'zh'], defaultLanguage: 'en' });
+    await createCorePage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'guide',
+        slug: 'guide',
+        title: 'Guide',
+        content: createYooptaContent('English body'),
+      },
+    });
+
+    const cloneResult = expectSuccess<{
+      page: { id: string; lang: string; status: string; content: Record<string, unknown> };
+    }>(await invokeTool('page_clone_to_language', {
+      projectRoot,
+      sourceLang: 'en',
+      targetLang: 'zh',
+      sourcePageId: 'guide',
+    }));
+    assert.equal(cloneResult.data.page.id, 'guide');
+    assert.equal(cloneResult.data.page.lang, 'zh');
+    assert.equal(cloneResult.data.page.status, 'draft');
+    assert.deepEqual(cloneResult.data.page.content, {});
+
+    await createCorePage({
+      projectRoot,
+      lang: 'zh',
+      page: {
+        id: 'target-only',
+        slug: 'target-only',
+        title: 'Target Only',
+        content: createYooptaContent('Only in target'),
+      },
+    });
+
+    const statusResult = expectSuccess<{
+      count: number;
+      pages: Array<{ pageId: string; relation: string; sourceStatus?: string; targetStatus?: string }>;
+    }>(await invokeTool('page_list_translation_status', {
+      projectRoot,
+      sourceLang: 'en',
+      targetLang: 'zh',
+    }));
+
+    assert.equal(statusResult.data.count, 3);
+    assert.ok(
+      statusResult.data.pages.some(
+        (page) => page.pageId === 'guide' && page.relation === 'matched' && page.targetStatus === 'draft',
+      ),
+    );
+    assert.ok(
+      statusResult.data.pages.some(
+        (page) => page.pageId === 'target-only' && page.relation === 'missing_source' && page.targetStatus === 'draft',
+      ),
+    );
+    assert.ok(statusResult.data.pages.some((page) => page.pageId === 'welcome' && page.relation === 'matched'));
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('page_create writes a canonical page through the shared authoring service', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -343,6 +525,7 @@ test('page_create_from_markdown infers document fields and returns conversion wa
         title: string;
         description?: string;
         tags?: string[];
+        content: Record<string, { type: string }>;
         render?: { markdown?: string };
       };
       conversion: {
@@ -375,10 +558,16 @@ test('page_create_from_markdown infers document fields and returns conversion wa
     assert.equal(result.data.page.title, 'Legacy Guide');
     assert.equal(result.data.page.description, 'Imported from markdown');
     assert.deepEqual(result.data.page.tags, ['guide', 'migration']);
+    assert.deepEqual(Object.values(result.data.page.content).map((block) => block.type), [
+      'HeadingOne',
+      'BulletedList',
+      'Paragraph',
+    ]);
     assert.match(result.data.page.render?.markdown ?? '', /# Legacy Guide/);
     assert.ok(result.data.conversion.warnings.some((warning) => warning.code === 'markdown-frontmatter-unmapped'));
-    assert.ok(
+    assert.equal(
       result.data.conversion.warnings.some((warning) => warning.code === 'markdown-construct-review-required'),
+      false,
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -659,10 +848,12 @@ test('page_update_from_markdown appends fragment markdown without overwriting ex
     assert.equal(result.data.page.title, 'Guide');
     assert.equal(result.data.page.render?.markdown, '# Guide\n\nExisting body\n\n## New Section\n\n- appended item');
     assert.equal(result.data.page.render?.plainText, 'Guide\n\nExisting body\n\nNew Section - appended item');
-    assert.equal(Object.keys(result.data.page.content).length, 3);
-    assert.ok(
-      result.data.conversion.warnings.some((warning) => warning.code === 'markdown-construct-review-required'),
-    );
+    assert.deepEqual(Object.values(result.data.page.content).map((block) => (block as { type: string }).type), [
+      'Paragraph',
+      'HeadingTwo',
+      'BulletedList',
+    ]);
+    assert.deepEqual(result.data.conversion.warnings, []);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

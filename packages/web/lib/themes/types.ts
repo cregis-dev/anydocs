@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ProjectSiteNavigation, ProjectSiteTheme } from '@anydocs/core';
+import type { ProjectSiteNavigation, ProjectSiteTheme, ProjectThemeCapabilities } from '@anydocs/core';
 
 import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
 
@@ -21,10 +21,7 @@ export type DocsThemeManifest = {
   description: string;
   tone: string;
   recommendedFor: string;
-  capabilities: {
-    topNav: boolean;
-    topNavGroupSwitching: boolean;
-  };
+  capabilities: ProjectThemeCapabilities;
 };
 
 export type DocsThemeDefinition = DocsThemeManifest & {

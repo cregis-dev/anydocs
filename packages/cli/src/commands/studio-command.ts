@@ -19,7 +19,7 @@ type StudioCommandOptions = {
   json?: boolean;
 };
 
-const STUDIO_READY_TIMEOUT_MS = 60_000;
+const STUDIO_READY_TIMEOUT_MS = 120_000;
 const require = createRequire(import.meta.url);
 const CLI_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../../package.json', import.meta.url)));
 
