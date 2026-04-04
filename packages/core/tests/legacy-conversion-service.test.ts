@@ -13,6 +13,7 @@ import {
 import { convertImportedLegacyContent } from '../src/services/legacy-conversion-service.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { importLegacyDocumentation } from '../src/services/legacy-import-service.ts';
+import { validateDocContentV1 } from '../src/utils/index.ts';
 
 async function createTempRepoRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-legacy-convert-repo-'));
@@ -86,13 +87,14 @@ test('convertImportedLegacyContent converts staged imports into draft pages and 
     assert.equal(guidePage.slug, 'guide');
     assert.match(guidePage.render?.markdown ?? '', /# Guide/);
     assert.match(guidePage.render?.markdown ?? '', /- \[ \] follow up item/);
-    assert.deepEqual(Object.values(guidePage.content).map((block) => (block as { type: string }).type), [
-      'HeadingOne',
-      'BulletedList',
-      'NumberedList',
-      'TodoList',
-      'Table',
-      'Paragraph',
+    assert.equal(validateDocContentV1(guidePage.content).ok, true);
+    assert.deepEqual(guidePage.content.blocks.map((block) => block.type), [
+      'heading',
+      'list',
+      'list',
+      'list',
+      'table',
+      'paragraph',
     ]);
     assert.equal(guidePage.review?.sourceType, 'legacy-import');
     assert.equal(guidePage.review?.sourceId, importResult.importId);

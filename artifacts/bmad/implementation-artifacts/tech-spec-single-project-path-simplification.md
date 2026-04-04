@@ -18,7 +18,7 @@ files_to_modify:
   - 'packages/web/lib/docs/fs.ts'
   - 'packages/core/tests/project-contract.test.ts'
   - 'packages/core/tests/build-preview-service.test.ts'
-  - 'examples/demo-docs/**'
+  - 'examples/starter-docs/**'
   - 'docs/04-usage-manual.md'
   - 'docs/05-dev-guide.md'
 code_patterns:
@@ -157,7 +157,7 @@ Redefine the canonical single-project contract so the repository root itself is 
   - Notes: Ensure the docs match the actual manual validation flow used in this feature.
 
 - [x] Task 12: Refresh example project fixtures to the flattened canonical layout
-  - File: `examples/demo-docs/**`
+  - File: `examples/starter-docs/**`
   - Action: Update example project structure, generated artifact references, and any checked-in fixture files so they reflect repo-root content and flat `dist/`.
   - Notes: Avoid leaving old nested examples in the repo, since they would contradict the new canonical contract.
 

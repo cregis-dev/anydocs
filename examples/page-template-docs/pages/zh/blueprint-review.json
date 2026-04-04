@@ -1,0 +1,195 @@
+{
+  "id": "blueprint-review",
+  "lang": "zh",
+  "slug": "blueprint-review",
+  "title": "蓝图评审",
+  "description": "用于 PRD 和技术方案的内部评审模板示例。",
+  "tags": [
+    "template",
+    "internal",
+    "review"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-03T00:00:00.000Z",
+  "template": "blueprint-review",
+  "metadata": {
+    "doc-type": "prd",
+    "review-state": "draft",
+    "owner": "平台组",
+    "reviewer": "产品与研发",
+    "due-date": "2026-04-10"
+  },
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "蓝图评审"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "使用这个模板来在实现前评审一份 PRD 或技术方案。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Context"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-4",
+        "children": [
+          {
+            "type": "text",
+            "text": "说明这份文档为什么存在，以及这次评审的触发原因。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-5",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Problem"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-6",
+        "children": [
+          {
+            "type": "text",
+            "text": "描述要解决的用户、产品或技术问题。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Proposal"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-8",
+        "children": [
+          {
+            "type": "text",
+            "text": "概括推荐方案，以及它带来的主要变化。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-9",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Tradeoffs"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-10",
+        "children": [
+          {
+            "type": "text",
+            "text": "说明这个方案刻意没有解决或没有优化的部分。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Risks"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "列出产品、技术和协作风险，并给出缓解思路。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-13",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Open Questions"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-14",
+        "children": [
+          {
+            "type": "text",
+            "text": "记录在批准前必须回答的未决问题。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Decision"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-16",
+        "children": [
+          {
+            "type": "text",
+            "text": "记录评审结论、负责人和后续动作。"
+          }
+        ]
+      }
+    ]
+  }
+}

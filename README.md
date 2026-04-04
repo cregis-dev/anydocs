@@ -29,19 +29,41 @@ anydocs-mcp
 
 ### 方式 A：先跑示例项目
 
+先启动 Studio：
+
 ```bash
 pnpm install
 pnpm dev
-pnpm --filter @anydocs/cli cli preview examples/demo-docs
 ```
+
+然后按你要理解的主题，选一个 example 跑 `preview`：
+
+```bash
+pnpm --filter @anydocs/cli cli preview examples/starter-docs
+pnpm --filter @anydocs/cli cli preview examples/page-template-docs
+pnpm --filter @anydocs/cli cli preview examples/openapi-reference-docs
+pnpm --filter @anydocs/cli cli preview examples/import-staging-docs
+pnpm --filter @anydocs/cli cli preview examples/codex-authoring-docs
+pnpm --filter @anydocs/cli cli preview examples/codex-mcp-docs
+```
+
+怎么选：
+
+- 想先看最小工程骨架：`examples/starter-docs`
+- 想看页面模板和 metadata：`examples/page-template-docs`
+- 想看 OpenAPI / reference 路由：`examples/openapi-reference-docs`
+- 想看导入暂存和 `convert-import`：`examples/import-staging-docs`
+- 想看 Codex 的完整写作站点：`examples/codex-authoring-docs`
+- 想只看 Codex + MCP 接入：`examples/codex-mcp-docs`
 
 然后：
 
 - 打开 `http://localhost:3000/studio`
-- 在 Studio 里选择 `examples/demo-docs`
+- 在 Studio 里选择你刚才 preview 的 example 路径
 - 终端里的 `preview` 会输出阅读站 URL，用来查看已发布页面
 
-这个路径适合先理解 Anydocs 的编辑方式、页面结构和发布边界。
+如果你只想先跑一个，默认从 `examples/starter-docs` 开始。
+完整索引见 [examples/README.md](examples/README.md)。
 
 ### 方式 B：创建你自己的文档项目
 
@@ -177,6 +199,7 @@ my-docs-project/
 说明：
 
 - `pages/` 和 `navigation/` 是 canonical source
+- 页面文件里的 `content` 使用 canonical `DocContentV1`；`render.markdown` 和 `render.plainText` 是派生输出
 - `dist/` 是构建产物
 - 只有 `published` 页面会进入 Reader、搜索索引、`llms.txt` 和 `mcp/*.json`
 

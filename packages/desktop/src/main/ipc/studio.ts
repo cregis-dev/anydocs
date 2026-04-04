@@ -4,6 +4,7 @@ import {
   createApiSourceRepository,
   createDocsRepository,
   createDefaultProjectConfig,
+  docContentToYoopta,
   deleteApiSource,
   deletePage,
   DEFAULT_PROJECT_ID,
@@ -21,6 +22,8 @@ import {
   saveNavigation,
   savePage,
   updateProjectConfig,
+  validateDocContentV1,
+  yooptaToDocContent,
   type ApiSourceDoc,
   type ApiSourceRepository,
   type BuildWorkflowResult,
@@ -118,6 +121,22 @@ function derivePageIdFromSlug(slug: string): string {
   return safe || fallback
 }
 
+function toStudioPageDoc(page: PageDoc<unknown>): PageDoc {
+  const canonical = validateDocContentV1(page.content)
+
+  return {
+    ...page,
+    content: canonical.ok ? docContentToYoopta(page.content as Parameters<typeof docContentToYoopta>[0]) : page.content
+  }
+}
+
+function toStoredPageDoc(page: PageDoc): PageDoc<unknown> {
+  return {
+    ...page,
+    content: yooptaToDocContent(page.content)
+  }
+}
+
 function getPreviewRegistryKey(projectRoot: string): string {
   return path.resolve(projectRoot)
 }
@@ -181,10 +200,10 @@ export async function getPages(
   customPath?: string
 ): Promise<{ pages: PageDoc[] }> {
   return {
-    pages: await listPages(
+    pages: (await listPages(
       await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath),
       lang
-    )
+    )).map((page) => toStudioPageDoc(page))
   }
 }
 
@@ -203,7 +222,7 @@ export async function getPage(
     throw new Error(`Page "${pageId}" not found.`)
   }
 
-  return page
+  return toStudioPageDoc(page)
 }
 
 export async function putPage(
@@ -212,7 +231,13 @@ export async function putPage(
   projectId = '',
   customPath?: string
 ): Promise<PageDoc> {
-  return savePage(await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath), lang, page)
+  const saved = await savePage(
+    await getDocsRepository(projectId || DEFAULT_PROJECT_ID, customPath),
+    lang,
+    toStoredPageDoc(page)
+  )
+
+  return toStudioPageDoc(saved)
 }
 
 export async function postPage(
@@ -230,12 +255,15 @@ export async function postPage(
     slug: normalizedSlug,
     title,
     status: 'draft',
-    content: {},
+    content: {
+      version: 1,
+      blocks: []
+    },
     render: {
       markdown: `# ${title}`,
       plainText: title
     }
-  })
+  }).then((page) => toStudioPageDoc(page))
 }
 
 export async function removePage(

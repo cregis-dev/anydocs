@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   createApiSourceRepository,
   createDocsRepository,
+  docContentToYoopta,
   deleteApiSource as deleteApiSourceFromRepository,
   deletePage as deletePageFromRepository,
   findPageBySlug as findPageBySlugInRepository,
@@ -21,7 +22,10 @@ import {
   saveApiSource as saveApiSourceToRepository,
   saveNavigation as saveNavigationToRepository,
   savePage as savePageToRepository,
+  validateDocContentV1,
+  yooptaToDocContent,
   type ApiSourceDoc,
+  type PageDoc as CorePageDoc,
   type ProjectConfig,
   type ProjectSiteTopNavItem,
   updateProjectConfig,
@@ -128,6 +132,31 @@ function derivePageIdFromSlug(slug: string): string {
   return safe || fallback;
 }
 
+function assertValidStoredPageContent(value: unknown): void {
+  const canonical = validateDocContentV1(value);
+  if (canonical.ok) {
+    return;
+  }
+
+  assertValidYooptaContentValue(value);
+}
+
+function toStudioPageDoc(page: CorePageDoc<unknown>): PageDoc {
+  const canonical = validateDocContentV1(page.content);
+
+  return {
+    ...page,
+    content: canonical.ok ? docContentToYoopta(page.content as Parameters<typeof docContentToYoopta>[0]) : page.content,
+  } as PageDoc;
+}
+
+function toStoredPageDoc(page: PageDoc): CorePageDoc<unknown> {
+  return {
+    ...page,
+    content: yooptaToDocContent(page.content),
+  };
+}
+
 // 根据文件夹名称获取完整项目路径
 export async function getProjectPathByFolderName(folderName: string): Promise<string> {
   const config = await loadConfig();
@@ -164,7 +193,7 @@ export async function saveNavigation(lang: DocsLang, nav: NavigationDoc, project
   const repository = await getDocsRepository(projectId, customPath);
   const contract = await resolveCanonicalProject(projectId || DEFAULT_PROJECT_ID, customPath);
   const pages = await listPagesInRepository(repository, lang, {
-    validateContent: assertValidYooptaContentValue,
+    validateContent: assertValidStoredPageContent,
   });
   const requiredTopLevelGroupIds = (contract.config.site.navigation?.topNav ?? [])
     .filter((item): item is Extract<ProjectSiteTopNavItem, { type: 'nav-group' }> => item.type === 'nav-group')
@@ -176,21 +205,53 @@ export async function saveNavigation(lang: DocsLang, nav: NavigationDoc, project
 }
 
 export async function listPages(lang: DocsLang, projectId: string = '', customPath?: string): Promise<PageDoc[]> {
+  const pages = await listPagesInRepository(await getDocsRepository(projectId, customPath), lang, {
+    validateContent: assertValidStoredPageContent,
+  });
+
+  return pages.map((page) => toStudioPageDoc(page));
+}
+
+export async function listPublishedPagesRaw(
+  lang: DocsLang,
+  projectId: string = '',
+  customPath?: string,
+): Promise<CorePageDoc<unknown>[]> {
   return listPagesInRepository(await getDocsRepository(projectId, customPath), lang, {
-    validateContent: assertValidYooptaContentValue,
+    validateContent: assertValidStoredPageContent,
   });
 }
 
 export async function loadPage(lang: DocsLang, pageId: string, projectId: string = '', customPath?: string): Promise<PageDoc | null> {
+  const page = await loadPageFromRepository(await getDocsRepository(projectId, customPath), lang, pageId, {
+    validateContent: assertValidStoredPageContent,
+  });
+
+  return page ? toStudioPageDoc(page) : null;
+}
+
+export async function loadPublishedPageRaw(
+  lang: DocsLang,
+  pageId: string,
+  projectId: string = '',
+  customPath?: string,
+): Promise<CorePageDoc<unknown> | null> {
   return loadPageFromRepository(await getDocsRepository(projectId, customPath), lang, pageId, {
-    validateContent: assertValidYooptaContentValue,
+    validateContent: assertValidStoredPageContent,
   });
 }
 
 export async function savePage(lang: DocsLang, page: PageDoc, projectId: string = '', customPath?: string) {
-  return savePageToRepository(await getDocsRepository(projectId, customPath), lang, page, {
-    validateContent: assertValidYooptaContentValue,
-  });
+  const saved = await savePageToRepository(
+    await getDocsRepository(projectId, customPath),
+    lang,
+    toStoredPageDoc(page),
+    {
+      validateContent: assertValidStoredPageContent,
+    },
+  );
+
+  return toStudioPageDoc(saved);
 }
 
 export async function deletePage(lang: DocsLang, pageId: string, projectId: string = '', customPath?: string) {
@@ -218,16 +279,19 @@ export async function createPage(
       slug: normalizedSlug,
       title,
       status: 'draft',
-      content: {},
+      content: {
+        version: 1,
+        blocks: [],
+      },
       render: {
         markdown: `# ${title}`,
         plainText: title,
       },
     },
     {
-      validateContent: assertValidYooptaContentValue,
+      validateContent: assertValidStoredPageContent,
     },
-  );
+  ).then((page) => toStudioPageDoc(page));
 }
 
 export async function updateStudioProjectSettings(
@@ -346,8 +410,21 @@ export async function replaceStudioApiSources(
 }
 
 export async function findPageBySlug(lang: DocsLang, slug: string, projectId: string = '', customPath?: string): Promise<PageDoc | null> {
+  const page = await findPageBySlugInRepository(await getDocsRepository(projectId, customPath), lang, slug, {
+    validateContent: assertValidStoredPageContent,
+  });
+
+  return page ? toStudioPageDoc(page) : null;
+}
+
+export async function findPublishedPageBySlugRaw(
+  lang: DocsLang,
+  slug: string,
+  projectId: string = '',
+  customPath?: string,
+): Promise<CorePageDoc<unknown> | null> {
   return findPageBySlugInRepository(await getDocsRepository(projectId, customPath), lang, slug, {
-    validateContent: assertValidYooptaContentValue,
+    validateContent: assertValidStoredPageContent,
   });
 }
 

@@ -64,7 +64,7 @@ anydocs/                     # 工具仓库
 │   └── web/                # Next.js Studio & 阅读站
 │
 ├── examples/               # 示例项目
-│   └── demo-docs/          # 演示项目（独立的文档项目）
+│   └── starter-docs/          # 演示项目（独立的文档项目）
 │       ├── anydocs.config.json
 │       ├── anydocs.workflow.json
 │       ├── pages/
@@ -95,7 +95,7 @@ anydocs/                     # 工具仓库
 **重要说明：**
 
 - **工具代码**：`packages/` 目录包含编辑器、CLI 和构建系统
-- **文档项目**：独立存在（如 `examples/demo-docs/`），可以在任何位置
+- **文档项目**：独立存在（如 `examples/starter-docs/`），可以在任何位置
 - **构建产物**：默认输出到项目的 `dist/` 目录（可通过 `--output` 自定义）
 - **项目结构**：当前 canonical 结构是单工程目录，项目根目录直接包含 `anydocs.config.json`
 - 只有 `status = "published"` 的页面会出现在 Docs Site、搜索索引、`llms.txt`、`llms-full.txt` 和机器可读产物中
@@ -213,6 +213,8 @@ npx @anydocs/cli init ./my-docs-project
 
 Anydocs 的页面除了正文 `content`，还支持 template 驱动的结构化 metadata。
 
+这里的 `content` 现在使用 canonical `DocContentV1`，是页面唯一事实来源；`render.markdown` 与 `render.plainText` 属于阅读站和构建链路使用的派生输出。
+
 典型页面字段现在包括：
 
 - `template`：页面使用的模板 id
@@ -303,7 +305,7 @@ npx @anydocs/cli preview ./my-docs-project
 监听模式：
 
 ```bash
-npx @anydocs/cli preview examples/demo-docs --watch
+npx @anydocs/cli preview examples/starter-docs --watch
 ```
 
 说明：
@@ -373,8 +375,8 @@ npx @anydocs/cli convert-import <importId> ./my-docs-project
 ```bash
 pnpm install
 pnpm dev
-# 在 Studio 中编辑仓库内置示例项目 examples/demo-docs
-npx @anydocs/cli build examples/demo-docs
+# 在 Studio 中编辑仓库内置示例项目 examples/starter-docs
+npx @anydocs/cli build examples/starter-docs
 ```
 
 适合场景：
@@ -561,10 +563,10 @@ pnpm install
 pnpm dev
 
 # 构建示例项目
-npx @anydocs/cli build examples/demo-docs
+npx @anydocs/cli build examples/starter-docs
 
 # 启动本地预览
-npx @anydocs/cli preview examples/demo-docs
+npx @anydocs/cli preview examples/starter-docs
 
 # 创建新项目
 npx @anydocs/cli init ./my-docs-project

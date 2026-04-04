@@ -1,0 +1,147 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "OpenAPI Reference Example",
+  "description": "Shows how to connect a local OpenAPI file to Anydocs API reference support.",
+  "tags": [
+    "openapi",
+    "reference",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "OpenAPI Reference Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This example shows how to connect a repository-local OpenAPI file to Anydocs."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to verify the shape of `api-sources/*.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to publish `/reference/*` routes"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to inspect `dist/mcp/openapi/*` and `llms-openapi.txt`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a local `openapi/petstore.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a published `api-sources/petstore.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "navigation that links to `/en/reference/petstore`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Run It"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-12",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/openapi-reference-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/openapi-reference-docs"
+      }
+    ]
+  }
+}

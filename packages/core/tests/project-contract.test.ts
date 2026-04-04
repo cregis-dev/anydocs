@@ -354,7 +354,7 @@ test('getProjectThemeCapabilities returns the registered project-surface capabil
   assert.equal(atlas.features.search, true);
   assert.equal(classic.navigation.topNav, false);
   assert.equal(classic.features.i18nSwitcher, true);
-  assert.ok(classic.supportedBlockTypes.includes('Mermaid'));
+  assert.ok(classic.supportedBlockTypes.includes('mermaid'));
 });
 
 test('loadProjectContract rejects invalid authoring page template metadata schema', async () => {

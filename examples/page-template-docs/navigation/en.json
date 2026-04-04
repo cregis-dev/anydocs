@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Templates",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "blueprint-review"
+        }
+      ]
+    }
+  ]
+}

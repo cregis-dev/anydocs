@@ -1,0 +1,228 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Codex Authoring Site Example",
+  "description": "A fuller sample project that shows how Codex can create and maintain an Anydocs docs site.",
+  "tags": [
+    "codex",
+    "authoring",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex Authoring Site Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This example shows a fuller Codex authoring path instead of a single isolated feature."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to see how Codex maintains a real docs site"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want page writing, navigation changes, and publishing rhythm in one example"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want a Codex-oriented information architecture to copy from"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "an overview of Codex's role"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP setup steps"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a first-site simulation"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a daily authoring workflow"
+              }
+            ]
+          },
+          {
+            "id": "element-12-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a guardrails and troubleshooting page"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-13",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Run It"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-14",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/codex-authoring-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/codex-authoring-docs"
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Recommended Reading Order"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-16",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`What Codex Is Good At`"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Connect the Anydocs MCP Server to Codex`"
+              }
+            ]
+          },
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Simulation: A Developer Uses Codex to Create a Docs Site`"
+              }
+            ]
+          },
+          {
+            "id": "element-19-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`The Daily Authoring Workflow`"
+              }
+            ]
+          },
+          {
+            "id": "element-20-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Guardrails and Troubleshooting`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

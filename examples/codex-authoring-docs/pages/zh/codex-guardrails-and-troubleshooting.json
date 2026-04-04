@@ -1,0 +1,145 @@
+{
+  "id": "codex-guardrails-and-troubleshooting",
+  "lang": "zh",
+  "slug": "codex-guardrails-and-troubleshooting",
+  "title": "约束与排错",
+  "description": "使用 Codex + Anydocs MCP 时最常见的约束与故障排查点。",
+  "tags": [
+    "reference",
+    "troubleshooting"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "约束与排错"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "最常见的几条约束："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`projectRoot` 必须显式传入"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`lang` 必须是项目已启用语言"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_update` 不能改 `status`"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "如果页面发布需要审批，`page_set_status` 到 `published` 可能被拒绝"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-7",
+        "children": [
+          {
+            "type": "text",
+            "text": "遇到报错时的处理方式："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先保留错误原文，尤其是 `rule` 与 `remediation`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "回到 `project_open` 或 `project_validate` 确认项目状态"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_get` / `page_find` 确认目标页面是否真的存在"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "不要为了“先做完”而绕过 MCP 直接修改 JSON"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "如果你把这些规则写进 `AGENTS.md`，Codex 的行为会稳定很多。"
+          }
+        ]
+      }
+    ]
+  }
+}

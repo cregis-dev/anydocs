@@ -1759,7 +1759,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">UTF-8</div>
-          <div className="flex items-center gap-1">JSON + Yoopta</div>
+          <div className="flex items-center gap-1">JSON + DocContentV1</div>
         </div>
       </footer>
     </div>

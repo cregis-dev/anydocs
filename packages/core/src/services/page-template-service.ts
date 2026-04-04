@@ -13,7 +13,8 @@ import {
   PAGE_TEMPLATE_KINDS,
   type PageTemplateKind,
 } from '../templates/page-template-definitions.ts';
-import type { DocsLang, PageStatus, PageReview } from '../types/docs.ts';
+import type { DocsLang, PageRender, PageStatus, PageReview } from '../types/docs.ts';
+import type { DocBlock, DocContentV1, InlineNode, ListItem } from '../types/content.ts';
 import type {
   PageDoc,
 } from '../types/docs.ts';
@@ -22,6 +23,7 @@ import type {
   ProjectPageTemplateDefinition,
   ProjectPageTemplateMetadataField,
 } from '../types/project.ts';
+import { renderPageContent } from '../utils/index.ts';
 import type { AuthoringPageResult, CreatePageInput, UpdatePagePatch } from './authoring-service.ts';
 import { createPage, updatePage } from './authoring-service.ts';
 
@@ -81,11 +83,8 @@ export type UpdatePageFromTemplateInput = {
 };
 
 type PageTemplateComposition = {
-  content: Record<string, unknown>;
-  render: {
-    markdown: string;
-    plainText: string;
-  };
+  content: DocContentV1;
+  render: PageRender;
 };
 
 function normalizeText(value: string | undefined, key: string): string | undefined {
@@ -450,80 +449,103 @@ function normalizeSteps(steps: PageTemplateStepInput[] | undefined): PageTemplat
   });
 }
 
-class YooptaTemplateBuilder {
-  private readonly content: Record<string, unknown> = {};
-  private readonly markdownBlocks: string[] = [];
-  private readonly plainTextBlocks: string[] = [];
-  private blockOrder = 0;
+function textChildren(text: string): InlineNode[] {
+  return [{ type: 'text', text }];
+}
+
+class CanonicalTemplateBuilder {
+  private readonly blocks: DocBlock[] = [];
   private idCounter = 1;
 
   paragraph(text: string): void {
     const normalized = text.trim();
     if (!normalized) return;
-    this.pushBlock('Paragraph', 'paragraph', [{ text: normalized }], { nodeType: 'block' });
-    this.markdownBlocks.push(normalized);
-    this.plainTextBlocks.push(normalized);
+    this.blocks.push({
+      type: 'paragraph',
+      id: this.nextId('block'),
+      children: textChildren(normalized),
+    });
   }
 
   heading(level: 2 | 3, text: string): void {
     const normalized = text.trim();
     if (!normalized) return;
-    const type = level === 2 ? 'HeadingTwo' : 'HeadingThree';
-    const elementType = level === 2 ? 'heading-two' : 'heading-three';
-    this.pushBlock(type, elementType, [{ text: normalized }], { nodeType: 'block' });
-    this.markdownBlocks.push(`${'#'.repeat(level)} ${normalized}`);
-    this.plainTextBlocks.push(normalized);
+    this.blocks.push({
+      type: 'heading',
+      id: this.nextId('block'),
+      level,
+      children: textChildren(normalized),
+    });
   }
 
   bulletedList(items: string[]): void {
-    for (const item of items.map((value) => value.trim()).filter(Boolean)) {
-      this.pushBlock('BulletedList', 'bulleted-list', [{ text: item }], { nodeType: 'block' });
-      this.markdownBlocks.push(`- ${item}`);
-      this.plainTextBlocks.push(item);
-    }
+    const normalizedItems = items
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map<ListItem>((item, index) => ({
+        id: this.nextId(`list-item-${index + 1}`),
+        children: textChildren(item),
+      }));
+
+    if (normalizedItems.length === 0) return;
+    this.blocks.push({
+      type: 'list',
+      id: this.nextId('block'),
+      style: 'bulleted',
+      items: normalizedItems,
+    });
   }
 
   numberedList(items: string[]): void {
-    items
+    const normalizedItems = items
       .map((value) => value.trim())
       .filter(Boolean)
-      .forEach((item, index) => {
-        this.pushBlock('NumberedList', 'numbered-list', [{ text: item }], { nodeType: 'block' });
-        this.markdownBlocks.push(`${index + 1}. ${item}`);
-        this.plainTextBlocks.push(item);
-      });
+      .map<ListItem>((item, index) => ({
+        id: this.nextId(`list-item-${index + 1}`),
+        children: textChildren(item),
+      }));
+
+    if (normalizedItems.length === 0) return;
+    this.blocks.push({
+      type: 'list',
+      id: this.nextId('block'),
+      style: 'numbered',
+      items: normalizedItems,
+    });
   }
 
   code(code: string, language?: string): void {
     const normalized = code.trim();
     if (!normalized) return;
-    this.pushBlock('Code', 'code', [{ text: normalized }], {
-      nodeType: 'void',
+    this.blocks.push({
+      type: 'codeBlock',
+      id: this.nextId('block'),
+      code: normalized,
       ...(language ? { language } : {}),
     });
-    this.markdownBlocks.push(`\`\`\`${language ?? ''}\n${normalized}\n\`\`\``);
-    this.plainTextBlocks.push(normalized);
   }
 
   callout(callout: PageTemplateCalloutInput): void {
-    const parts = [callout.title?.trim(), callout.body.trim()].filter(Boolean);
-    const text = parts.join(': ');
-    if (!text) return;
-    this.pushBlock('Callout', 'callout', [{ text }], {
-      nodeType: 'block',
-      theme: callout.theme ?? 'info',
+    const body = callout.body.trim();
+    if (!body) return;
+    this.blocks.push({
+      type: 'callout',
+      id: this.nextId('block'),
+      tone: callout.theme ?? 'info',
+      ...(callout.title?.trim() ? { title: callout.title.trim() } : {}),
+      children: textChildren(body),
     });
-    this.markdownBlocks.push(`> ${text}`);
-    this.plainTextBlocks.push(text);
   }
 
   build(): PageTemplateComposition {
+    const content: DocContentV1 = {
+      version: 1,
+      blocks: this.blocks,
+    };
+
     return {
-      content: this.content,
-      render: {
-        markdown: this.markdownBlocks.join('\n\n'),
-        plainText: this.plainTextBlocks.join('\n\n'),
-      },
+      content,
+      render: renderPageContent(content),
     };
   }
 
@@ -531,30 +553,6 @@ class YooptaTemplateBuilder {
     const value = `${prefix}-${this.idCounter}`;
     this.idCounter += 1;
     return value;
-  }
-
-  private pushBlock(
-    type: string,
-    elementType: string,
-    children: Array<Record<string, unknown>>,
-    props: Record<string, unknown>,
-  ): void {
-    const blockId = this.nextId('block');
-    const elementId = this.nextId('element');
-    this.content[blockId] = {
-      id: blockId,
-      type,
-      value: [
-        {
-          id: elementId,
-          type: elementType,
-          children,
-          props,
-        },
-      ],
-      meta: { order: this.blockOrder, depth: 0 },
-    };
-    this.blockOrder += 1;
   }
 }
 
@@ -582,7 +580,7 @@ export function composePageFromTemplate(input: Omit<CreatePageFromTemplateInput,
     });
   }
 
-  const builder = new YooptaTemplateBuilder();
+  const builder = new CanonicalTemplateBuilder();
 
   if (summary) {
     builder.paragraph(summary);
@@ -615,7 +613,7 @@ export function composePageFromTemplate(input: Omit<CreatePageFromTemplateInput,
 
 export async function createPageFromTemplate(
   input: CreatePageFromTemplateInput,
-): Promise<AuthoringPageResult<Record<string, unknown>>> {
+): Promise<AuthoringPageResult<DocContentV1>> {
   const composition = composePageFromTemplate({
     template: input.template,
     summary: input.summary,
@@ -632,12 +630,12 @@ export async function createPageFromTemplate(
       content: composition.content,
       render: composition.render,
     },
-  } satisfies CreatePageInput<Record<string, unknown>>);
+  } satisfies CreatePageInput<DocContentV1>);
 }
 
 export async function updatePageFromTemplate(
   input: UpdatePageFromTemplateInput,
-): Promise<AuthoringPageResult<Record<string, unknown>>> {
+): Promise<AuthoringPageResult<DocContentV1>> {
   const composition = composePageFromTemplate({
     template: input.template,
     summary: input.summary,

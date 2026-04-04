@@ -1,0 +1,145 @@
+{
+  "id": "daily-authoring-workflow",
+  "lang": "en",
+  "slug": "daily-authoring-workflow",
+  "title": "The Daily Authoring Workflow",
+  "description": "A practical rhythm for using Codex in ongoing documentation work.",
+  "tags": [
+    "workflow",
+    "authoring"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "The Daily Authoring Workflow"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "Once your docs site already exists, use Codex in this rhythm:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "read first, do not write immediately"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "identify the target page before deciding whether to create or update"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "make small, explicit, reviewable page changes"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "treat status transitions as a separate action through `page_set_status`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-7",
+        "children": [
+          {
+            "type": "text",
+            "text": "A good developer prompt usually includes:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "the exact `projectRoot`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "the target language such as `zh` or `en`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "which page to work on: `pageId` or `slug`"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "the intended outcome: create content, revise content, or change status"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "That makes it much easier for Codex to stay on the correct MCP workflow."
+          }
+        ]
+      }
+    ]
+  }
+}

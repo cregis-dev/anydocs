@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "API Reference",
+      "children": [
+        {
+          "type": "link",
+          "title": "Petstore API",
+          "href": "/en/reference/petstore"
+        }
+      ]
+    }
+  ]
+}

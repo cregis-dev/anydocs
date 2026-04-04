@@ -1,0 +1,13 @@
+{
+  "id": "getting-started",
+  "sourcePath": "getting-started.md",
+  "lang": "en",
+  "slug": "getting-started",
+  "title": "Imported Getting Started",
+  "format": "markdown",
+  "importedAt": "2026-04-04T00:00:00.000Z",
+  "rawContent": "# Imported Getting Started\n\nThis markdown file represents the legacy source before conversion.\n\nIt is intentionally simple so the staged item JSON is easy to inspect.\n",
+  "body": "# Imported Getting Started\n\nThis markdown file represents the legacy source before conversion.\n\nIt is intentionally simple so the staged item JSON is easy to inspect.\n",
+  "frontmatter": {},
+  "status": "staged"
+}

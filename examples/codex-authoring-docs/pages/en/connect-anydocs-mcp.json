@@ -1,0 +1,172 @@
+{
+  "id": "connect-anydocs-mcp",
+  "lang": "en",
+  "slug": "connect-anydocs-mcp",
+  "title": "Connect the Anydocs MCP Server to Codex",
+  "description": "Give Codex a safe way to read and write Anydocs projects.",
+  "tags": [
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Connect the Anydocs MCP Server to Codex"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "A practical setup looks like this:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "Register `@anydocs/mcp` in Codex as a `stdio` MCP server"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "Make sure Codex reads the project's minimal `AGENTS.md`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "Let Codex treat `anydocs://authoring/guidance` as the detailed workflow source"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-6",
+        "children": [
+          {
+            "type": "text",
+            "text": "A good default workflow is:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-7",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "inspect `project_open.authoring.templates`, `resources`, and `resourceTemplates`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "if a page uses `template` / `metadata`, inspect that template's `metadataSchema`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "read `anydocs://authoring/guidance` when the task needs workflow detail or canonical examples"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_list` / `page_find` / `page_get`"
+              }
+            ]
+          },
+          {
+            "id": "element-12-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_create_from_template` or `page_create`"
+              }
+            ]
+          },
+          {
+            "id": "element-13-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_update` / `page_set_status`"
+              }
+            ]
+          },
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`nav_get` / `nav_insert` / `nav_delete` / `nav_move`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-15",
+        "children": [
+          {
+            "type": "text",
+            "text": "This keeps page mutations inside Anydocs domain validation, preserves publish rules, and makes agent behavior much more predictable."
+          }
+        ]
+      }
+    ]
+  }
+}

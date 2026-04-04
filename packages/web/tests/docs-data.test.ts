@@ -16,8 +16,8 @@ test('sanitizeCookieDocsSource strips parent-directory cookie paths', () => {
 });
 
 test('sanitizeCookieDocsSource keeps safe relative cookie paths', () => {
-  assert.deepEqual(sanitizeCookieDocsSource('default', 'workspace/demo-docs'), {
+  assert.deepEqual(sanitizeCookieDocsSource('default', 'workspace/starter-docs'), {
     projectId: 'default',
-    customPath: 'workspace/demo-docs',
+    customPath: 'workspace/starter-docs',
   });
 });

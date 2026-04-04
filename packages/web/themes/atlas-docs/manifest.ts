@@ -1,4 +1,4 @@
-import { DOCS_YOOPTA_ALLOWED_TYPES } from '@/lib/themes/yoopta-content';
+import { DOCS_CANONICAL_BLOCK_TYPES } from '@/lib/themes/content-schema';
 
 export const ATLAS_DOCS_THEME_ID = 'atlas-docs';
 export const ATLAS_DOCS_THEME_CLASS_NAME = 'theme-atlas-docs';
@@ -11,7 +11,7 @@ export const atlasDocsThemeManifest = {
   tone: 'structured / product docs',
   recommendedFor: 'Documentation sets split into clear knowledge domains such as guides, APIs, SDKs, and references.',
   capabilities: {
-    supportedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
+    supportedBlockTypes: [...DOCS_CANONICAL_BLOCK_TYPES],
     unsupportedBlockTypes: [],
     navigation: {
       topNav: true,

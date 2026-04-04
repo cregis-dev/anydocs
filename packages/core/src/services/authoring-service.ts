@@ -21,10 +21,12 @@ import type { ProjectConfig } from '../types/project.ts';
 import {
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
+  validateDocContentV1,
   assertValidYooptaContentValue,
   normalizeSlug,
-  renderYooptaContent,
+  renderPageContent,
 } from '../utils/index.ts';
+import { DOC_CONTENT_BLOCK_TYPES, DOC_CONTENT_TEXT_MARKS } from '../types/content.ts';
 
 export type CreatePageInput<TContent = unknown> = {
   projectRoot: string;
@@ -179,19 +181,28 @@ function currentTimestamp(): string {
 }
 
 function assertValidAuthoringContent(content: unknown, pageId?: string): void {
+  const canonicalResult = validateDocContentV1(content);
+  if (canonicalResult.ok) {
+    return;
+  }
+
   try {
     assertValidYooptaContentValue(content);
+    return;
   } catch (error: unknown) {
-    throw new ValidationError('Page content must use the supported Yoopta block structure.', {
+    throw new ValidationError('Page content must use the canonical docs content schema or supported legacy Yoopta structure.', {
       entity: 'page-doc',
-      rule: 'page-content-must-be-valid-yoopta',
+      rule: 'page-content-must-be-valid-doc-content',
       remediation:
-        'Provide content as a Yoopta block map using supported block types, block ids, block value arrays, and numeric meta.order/meta.depth fields.',
+        'Provide content as canonical DocContentV1, or use the supported legacy Yoopta block map during migration.',
       metadata: {
         pageId: pageId ?? null,
-        cause: error instanceof Error ? error.message : String(error),
-        allowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
-        allowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
+        canonicalError: `${canonicalResult.path}: ${canonicalResult.error}`,
+        legacyYooptaError: error instanceof Error ? error.message : String(error),
+        allowedCanonicalBlockTypes: [...DOC_CONTENT_BLOCK_TYPES],
+        allowedMarks: [...DOC_CONTENT_TEXT_MARKS],
+        legacyAllowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
+        legacyAllowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
       },
     });
   }
@@ -514,7 +525,7 @@ function resolveNextRender<TContent>(
   }
 
   const nextContent = 'content' in patch ? patch.content : existingPage.content;
-  return renderYooptaContent(nextContent);
+  return renderPageContent(nextContent);
 }
 
 function assertSlugAvailableInPageMap<TContent>(

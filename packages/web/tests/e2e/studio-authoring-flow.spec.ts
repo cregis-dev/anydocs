@@ -16,6 +16,7 @@ test('studio authoring flow persists template and structured metadata @p0', asyn
   await expect(page.getByTestId('studio-settings-sidebar')).toBeVisible();
 
   await page.getByTestId('studio-page-template-trigger').click();
+  await expect(page.getByRole('option', { name: 'Blueprint Review' })).toBeVisible();
   await page.getByRole('option', { name: 'ADR' }).click();
 
   await page.getByTestId('studio-page-metadata-decision-status').click();

@@ -9,8 +9,15 @@ import type {
   PageReview,
   PageStatus,
 } from '../types/docs.ts';
+import type { DocBlock, DocContentV1 } from '../types/content.ts';
 import type { LegacyImportFrontmatterValue } from '../types/legacy-import.ts';
-import { renderYooptaContent } from '../utils/index.ts';
+import {
+  createMarkdownYooptaContent,
+  normalizeDocContent,
+  renderPageContent,
+  validateDocContentV1,
+  yooptaToDocContent,
+} from '../utils/index.ts';
 import type {
   AuthoringPageResult,
   CreatePageInput,
@@ -38,7 +45,7 @@ export type MarkdownConversionResult = {
   title?: string;
   description?: string;
   tags?: string[];
-  content: Record<string, unknown>;
+  content: DocContentV1;
   render: PageRender;
   warnings: MarkdownConversionWarning[];
 };
@@ -75,7 +82,7 @@ export type UpdatePageFromMarkdownInput = {
   patch?: Omit<UpdatePagePatch<Record<string, unknown>>, 'content' | 'render'>;
 };
 
-export type MarkdownAuthoringResult = AuthoringPageResult<Record<string, unknown>> & {
+export type MarkdownAuthoringResult = AuthoringPageResult<DocContentV1> & {
   conversion: MarkdownConversionResult;
 };
 
@@ -104,10 +111,6 @@ function createMarkdownValidationError(
     remediation,
     metadata,
   });
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function parseFrontmatter(rawContent: string, sourcePath: string): ParsedFrontmatter {
@@ -224,272 +227,8 @@ function inferTags(frontmatter: Record<string, LegacyImportFrontmatterValue>): s
   return undefined;
 }
 
-function stripMarkdown(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/[#>*_~]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function toYooptaParagraphBlock(blockId: string, elementId: string, text: string, order: number) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: 'Paragraph',
-      value: [
-        {
-          id: elementId,
-          type: 'paragraph',
-          children: [{ text }],
-          props: { nodeType: 'block' },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function toYooptaHeadingBlock(
-  blockId: string,
-  elementId: string,
-  text: string,
-  headingType: 'HeadingOne' | 'HeadingTwo' | 'HeadingThree',
-  elementType: 'h1' | 'h2' | 'h3',
-  order: number,
-) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: headingType,
-      value: [
-        {
-          id: elementId,
-          type: elementType,
-          children: [{ text }],
-          props: { nodeType: 'block' },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function toYooptaListBlock(
-  blockId: string,
-  elementId: string,
-  text: string,
-  blockType: 'BulletedList' | 'NumberedList' | 'TodoList',
-  elementType: 'bulleted-list' | 'numbered-list' | 'todo-list',
-  order: number,
-  checked?: boolean,
-) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: blockType,
-      value: [
-        {
-          id: elementId,
-          type: elementType,
-          children: [{ text }],
-          props: {
-            nodeType: 'block',
-            ...(checked == null ? {} : { checked }),
-          },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function toYooptaTableBlock(
-  blockId: string,
-  elementId: string,
-  rows: string[][],
-  order: number,
-) {
-  return {
-    [blockId]: {
-      id: blockId,
-      type: 'Table',
-      value: [
-        {
-          id: elementId,
-          type: 'table',
-          children: rows.map((row, rowIndex) => ({
-            id: `${elementId}-row-${rowIndex + 1}`,
-            type: 'table-row',
-            children: row.map((cell, cellIndex) => ({
-              id: `${elementId}-cell-${rowIndex + 1}-${cellIndex + 1}`,
-              type: 'table-cell',
-              children: [{ text: cell }],
-              props: { nodeType: 'block' },
-            })),
-            props: { nodeType: 'block' },
-          })),
-          props: { nodeType: 'block' },
-        },
-      ],
-      meta: { order, depth: 0 },
-    },
-  };
-}
-
-function normalizeMarkdownParagraphText(lines: string[]): string {
-  return lines.join(' ').replace(/\s+/g, ' ').trim();
-}
-
-function splitMarkdownTableRow(line: string): string[] {
-  return line
-    .trim()
-    .replace(/^\|/, '')
-    .replace(/\|$/, '')
-    .split('|')
-    .map((cell) => cell.trim());
-}
-
-function isMarkdownTableRow(line: string): boolean {
-  return /^\s*\|.*\|\s*$/.test(line.trim());
-}
-
-function isMarkdownTableSeparator(line: string): boolean {
-  if (!isMarkdownTableRow(line)) {
-    return false;
-  }
-
-  return splitMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
-}
-
-function createEditableMarkdownContent(markdown: string): Record<string, unknown> {
-  const trimmed = markdown.trim();
-  if (!trimmed) {
-    return toYooptaParagraphBlock('block-1', 'element-1', '', 0);
-  }
-
-  const lines = trimmed.replace(/\r\n/g, '\n').split('\n');
-  const content: Record<string, unknown> = {};
-  let blockOrder = 0;
-  let nextIndex = 1;
-  let paragraphLines: string[] = [];
-
-  const pushBlock = (block: Record<string, unknown>) => {
-    Object.assign(content, block);
-    blockOrder += 1;
-    nextIndex += 1;
-  };
-
-  const flushParagraph = () => {
-    const text = normalizeMarkdownParagraphText(paragraphLines);
-    paragraphLines = [];
-    if (!text) {
-      return;
-    }
-
-    pushBlock(toYooptaParagraphBlock(`block-${nextIndex}`, `element-${nextIndex}`, text, blockOrder));
-  };
-
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-    const line = lines[lineIndex] ?? '';
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine) {
-      flushParagraph();
-      continue;
-    }
-
-    const headingMatch = /^(#{1,3})\s+(.+)$/.exec(line);
-    if (headingMatch) {
-      flushParagraph();
-      const headingLevel = headingMatch[1]?.length ?? 0;
-      const headingText = headingMatch[2]?.trim() ?? '';
-      if (!headingText) {
-        continue;
-      }
-
-      if (headingLevel === 1) {
-        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingOne', 'h1', blockOrder));
-      } else if (headingLevel === 2) {
-        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingTwo', 'h2', blockOrder));
-      } else {
-        pushBlock(toYooptaHeadingBlock(`block-${nextIndex}`, `element-${nextIndex}`, headingText, 'HeadingThree', 'h3', blockOrder));
-      }
-      continue;
-    }
-
-    const todoMatch = /^\s*[-*+]\s+\[( |x|X)\]\s+(.+)$/.exec(line);
-    if (todoMatch) {
-      flushParagraph();
-      const checked = todoMatch[1]?.toLowerCase() === 'x';
-      const todoText = todoMatch[2]?.trim() ?? '';
-      if (todoText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, todoText, 'TodoList', 'todo-list', blockOrder, checked),
-        );
-      }
-      continue;
-    }
-
-    const bulletMatch = /^\s*[-*+]\s+(.+)$/.exec(line);
-    if (bulletMatch) {
-      flushParagraph();
-      const bulletText = bulletMatch[1]?.trim() ?? '';
-      if (bulletText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, bulletText, 'BulletedList', 'bulleted-list', blockOrder),
-        );
-      }
-      continue;
-    }
-
-    const numberedMatch = /^\s*\d+\.\s+(.+)$/.exec(line);
-    if (numberedMatch) {
-      flushParagraph();
-      const numberedText = numberedMatch[1]?.trim() ?? '';
-      if (numberedText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, numberedText, 'NumberedList', 'numbered-list', blockOrder),
-        );
-      }
-      continue;
-    }
-
-    if (isMarkdownTableRow(line) && lineIndex + 1 < lines.length && isMarkdownTableSeparator(lines[lineIndex + 1] ?? '')) {
-      flushParagraph();
-
-      const rows: string[][] = [splitMarkdownTableRow(line)];
-      lineIndex += 2;
-
-      while (lineIndex < lines.length) {
-        const tableLine = lines[lineIndex] ?? '';
-        if (!tableLine.trim()) {
-          lineIndex -= 1;
-          break;
-        }
-        if (!isMarkdownTableRow(tableLine) || isMarkdownTableSeparator(tableLine)) {
-          lineIndex -= 1;
-          break;
-        }
-
-        rows.push(splitMarkdownTableRow(tableLine));
-        lineIndex += 1;
-      }
-
-      if (rows.length > 0) {
-        pushBlock(toYooptaTableBlock(`block-${nextIndex}`, `element-${nextIndex}`, rows, blockOrder));
-      }
-      continue;
-    }
-
-    paragraphLines.push(trimmedLine);
-  }
-
-  flushParagraph();
-  return content;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function collectMarkdownWarnings(
@@ -526,7 +265,7 @@ function collectMarkdownWarnings(
   if (detectedConstructs.length > 0) {
     warnings.push({
       code: 'markdown-construct-review-required',
-      message: `Markdown conversion${sourcePath ? ` for "${sourcePath}"` : ''} contains constructs that are simplified in editable Yoopta content.`,
+      message: `Markdown conversion${sourcePath ? ` for "${sourcePath}"` : ''} contains constructs that are simplified in editable docs content.`,
       remediation: 'Review code fences, links, blockquotes, and images after conversion and restore structured blocks when fidelity matters.',
       metadata: {
         sourcePath: sourcePath ?? null,
@@ -539,14 +278,6 @@ function collectMarkdownWarnings(
   }
 
   return warnings;
-}
-
-function getBlockOrder(value: unknown): number {
-  if (!isRecord(value) || !isRecord(value.meta) || typeof value.meta.order !== 'number') {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return value.meta.order;
 }
 
 function cloneWithGeneratedIds(value: unknown, prefix: string, counter: { value: number }): unknown {
@@ -576,43 +307,33 @@ function appendRenderedText(existing: string, appended: string): string {
   return parts.join('\n\n');
 }
 
+function normalizeToDocContent(value: unknown): DocContentV1 {
+  const canonical = validateDocContentV1(value);
+  if (canonical.ok) {
+    return normalizeDocContent(value as DocContentV1);
+  }
+
+  return normalizeDocContent(yooptaToDocContent(value));
+}
+
 function deriveExistingRender(page: PageDoc<unknown>): PageRender {
-  const rendered = renderYooptaContent(page.content);
+  const rendered = renderPageContent(page.content);
   return {
     markdown: typeof page.render?.markdown === 'string' ? page.render.markdown : rendered.markdown,
     plainText: typeof page.render?.plainText === 'string' ? page.render.plainText : rendered.plainText,
   };
 }
 
-function appendYooptaContent(existingContent: unknown, appendedContent: Record<string, unknown>): Record<string, unknown> {
-  const existing = isRecord(existingContent) ? { ...existingContent } : {};
-  const nextOrderBase = Object.values(existing)
-    .filter(isRecord)
-    .reduce((maxOrder, block) => Math.max(maxOrder, getBlockOrder(block)), -1) + 1;
+function appendDocContent(existingContent: unknown, appendedContent: DocContentV1): DocContentV1 {
+  const existing = normalizeToDocContent(existingContent);
+  const appendedBlocks = appendedContent.blocks.map((block, index) =>
+    cloneWithGeneratedIds(block, `appended-block-${existing.blocks.length + index + 1}`, { value: 1 }) as DocBlock,
+  );
 
-  const appendedBlocks = Object.values(appendedContent)
-    .filter(isRecord)
-    .sort((left, right) => getBlockOrder(left) - getBlockOrder(right));
-
-  appendedBlocks.forEach((block, index) => {
-    const blockId = `block-${nextOrderBase + index + 1}`;
-    const clonedBlock = cloneWithGeneratedIds(block, `${blockId}-node`, { value: 1 });
-    if (!isRecord(clonedBlock)) {
-      return;
-    }
-
-    existing[blockId] = {
-      ...clonedBlock,
-      id: blockId,
-      meta: {
-        ...(isRecord(clonedBlock.meta) ? clonedBlock.meta : {}),
-        order: nextOrderBase + index,
-        depth: isRecord(clonedBlock.meta) && typeof clonedBlock.meta.depth === 'number' ? clonedBlock.meta.depth : 0,
-      },
-    };
-  });
-
-  return existing;
+  return {
+    version: 1,
+    blocks: [...existing.blocks, ...appendedBlocks],
+  };
 }
 
 export function convertMarkdownToPageContent(options: {
@@ -629,7 +350,7 @@ export function convertMarkdownToPageContent(options: {
       ? parseFrontmatter(options.markdown, sourcePath ?? 'inline-markdown')
       : { body: options.markdown, frontmatter: {} };
   const normalizedBody = parsed.body.trim();
-  const content = createEditableMarkdownContent(normalizedBody);
+  const content = normalizeDocContent(yooptaToDocContent(createMarkdownYooptaContent(normalizedBody)));
 
   return {
     mode,
@@ -641,10 +362,7 @@ export function convertMarkdownToPageContent(options: {
     ...(mode === 'document' ? { description: inferDescription(parsed.frontmatter) } : {}),
     ...(mode === 'document' ? { tags: inferTags(parsed.frontmatter) } : {}),
     content,
-    render: {
-      markdown: normalizedBody,
-      plainText: stripMarkdown(normalizedBody),
-    },
+    render: renderPageContent(content),
     warnings: collectMarkdownWarnings(normalizedBody, format, sourcePath, parsed.frontmatter),
   };
 }
@@ -693,7 +411,7 @@ export async function createPageFromMarkdown(
       render: conversion.render,
       review: input.page.review,
     },
-  });
+  } satisfies CreatePageInput<DocContentV1>);
 
   return {
     ...result,
@@ -727,13 +445,13 @@ export async function updatePageFromMarkdown(
   }
 
   const operation = input.operation ?? 'replace';
-  const patch: UpdatePagePatch<Record<string, unknown>> = {
+  const patch: UpdatePagePatch<DocContentV1> = {
     ...(input.patch ?? {}),
   };
 
   if (operation === 'append') {
     const existingRender = deriveExistingRender(existingPage);
-    patch.content = appendYooptaContent(existingPage.content, conversion.content);
+    patch.content = appendDocContent(existingPage.content, conversion.content);
     patch.render = {
       markdown: appendRenderedText(existingRender.markdown ?? '', conversion.render.markdown ?? ''),
       plainText: appendRenderedText(existingRender.plainText ?? '', conversion.render.plainText ?? ''),
@@ -760,7 +478,7 @@ export async function updatePageFromMarkdown(
     lang: input.lang,
     pageId: input.pageId,
     patch,
-  });
+  } satisfies UpdatePageInput<DocContentV1>);
 
   return {
     ...result,

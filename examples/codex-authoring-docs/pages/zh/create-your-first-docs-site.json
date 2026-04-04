@@ -1,0 +1,268 @@
+{
+  "id": "create-your-first-docs-site",
+  "lang": "zh",
+  "slug": "create-your-first-docs-site",
+  "title": "模拟：开发者如何让 Codex 创建文档站",
+  "description": "从初始化项目到写入内容的一个最小流程。",
+  "tags": [
+    "workflow",
+    "simulation"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "模拟：开发者如何让 Codex 创建文档站"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "下面是一条典型流程："
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "第一步：初始化项目"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-4",
+        "children": [
+          {
+            "type": "text",
+            "text": "开发者先创建一个空项目："
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-5",
+        "language": "bash",
+        "code": "pnpm --filter @anydocs/cli cli init ./workspace/codex-authoring-docs --agent codex"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-6",
+        "children": [
+          {
+            "type": "text",
+            "text": "这一步会生成："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-7",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`anydocs.config.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`anydocs.workflow.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "一份最小化的 `AGENTS.md`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "初始欢迎页和导航文件"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "第二步：让 Codex 读取项目状态"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "开发者会要求 Codex："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-13",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-13-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先调用 `project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "确认默认语言和启用语言"
+              }
+            ]
+          },
+          {
+            "id": "element-15-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "查看 `project_open.authoring.templates`"
+              }
+            ]
+          },
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "需要完整流程时再读取 `anydocs://authoring/guidance`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-17",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "第三步：开始写内容"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-18",
+        "children": [
+          {
+            "type": "text",
+            "text": "接着，Codex 可以："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-19",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-19-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_create_from_template` 生成 richer 初稿"
+              }
+            ]
+          },
+          {
+            "id": "element-20-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_create` 或 `page_update` 做明确页面变更"
+              }
+            ]
+          },
+          {
+            "id": "element-21-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "只有在选定 template 且 `metadataSchema` 允许时才写入 `metadata`"
+              }
+            ]
+          },
+          {
+            "id": "element-22-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_set_status` 把页面推进到合适状态"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-23",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "第四步：检查导航"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-24",
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex 会先 `nav_get` 查看导航树，需要改结构时再用 `nav_insert` / `nav_move`。"
+          }
+        ]
+      }
+    ]
+  }
+}

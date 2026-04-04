@@ -9,6 +9,7 @@ import { createDocsRepository, loadPage } from '../src/fs/docs-repository.ts';
 import { createDefaultProjectConfig } from '../src/config/project-config.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { createPage } from '../src/services/authoring-service.ts';
+import { validateDocContentV1 } from '../src/utils/index.ts';
 import {
   composePageFromTemplate,
   createPageFromTemplate,
@@ -40,9 +41,10 @@ test('composePageFromTemplate builds structured how-to content and render output
     callouts: [{ body: 'Keep page status changes separate from content changes.', theme: 'warning' }],
   });
 
-  assert.equal(Object.keys(result.content).length > 0, true);
+  assert.equal(validateDocContentV1(result.content).ok, true);
   assert.match(result.render.markdown, /^Use this workflow/m);
   assert.match(result.render.markdown, /## Steps/);
+  assert.match(result.render.markdown, /1\. Open the project/);
   assert.match(result.render.markdown, /### Open the project/);
   assert.match(result.render.markdown, /```bash/);
   assert.match(result.render.plainText, /Keep page status changes separate/);
@@ -80,7 +82,7 @@ test('createPageFromTemplate writes a canonical page with generated content and 
     const persisted = await loadPage(createDocsRepository(projectRoot), 'en', 'publish-guide');
     assert.equal(persisted?.title, 'Publish Guide');
     assert.match(persisted?.render?.plainText ?? '', /Published pages only appear/);
-    assert.equal(typeof persisted?.content, 'object');
+    assert.equal(validateDocContentV1(persisted?.content).ok, true);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

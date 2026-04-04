@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "开始使用",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    }
+  ]
+}

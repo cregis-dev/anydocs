@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "projectId": "page-template-docs",
+  "name": "Page Template Docs",
+  "defaultLanguage": "zh",
+  "languages": [
+    "zh",
+    "en"
+  ],
+  "site": {
+    "theme": {
+      "id": "classic-docs",
+      "branding": {
+        "siteTitle": "Page Template Docs",
+        "homeLabel": "Page Templates"
+      },
+      "codeTheme": "github-dark"
+    }
+  },
+  "authoring": {
+    "pageTemplates": [
+      {
+        "id": "blueprint-review",
+        "label": {
+          "en": "Blueprint Review",
+          "zh": "蓝图评审"
+        },
+        "description": "Structured internal template for PRDs, technical specs, and review notes.",
+        "baseTemplate": "reference",
+        "defaultSummary": "Capture the decision, scope, and review outcome in a format that is easy to scan.",
+        "defaultSections": [
+          {
+            "title": "Context",
+            "body": "Explain why this document exists and what prompted the review."
+          },
+          {
+            "title": "Problem",
+            "body": "Describe the user, product, or technical problem that needs to be solved."
+          },
+          {
+            "title": "Proposal",
+            "body": "Summarize the recommended direction and the main changes it introduces."
+          },
+          {
+            "title": "Tradeoffs",
+            "body": "Call out what the proposal deliberately does not solve or optimize."
+          },
+          {
+            "title": "Risks",
+            "body": "List product, technical, and coordination risks together with mitigation ideas."
+          },
+          {
+            "title": "Open Questions",
+            "body": "Capture the unresolved items that must be answered before approval."
+          },
+          {
+            "title": "Decision",
+            "body": "Record the review outcome, owners, and next actions."
+          }
+        ],
+        "metadataSchema": {
+          "fields": [
+            {
+              "id": "doc-type",
+              "label": {
+                "en": "Doc Type",
+                "zh": "文档类型"
+              },
+              "type": "enum",
+              "required": true,
+              "visibility": "public",
+              "options": [
+                "prd",
+                "tech-spec",
+                "review-note"
+              ]
+            },
+            {
+              "id": "review-state",
+              "label": {
+                "en": "Review State",
+                "zh": "评审状态"
+              },
+              "type": "enum",
+              "required": true,
+              "visibility": "public",
+              "options": [
+                "draft",
+                "in-review",
+                "approved",
+                "blocked"
+              ]
+            },
+            {
+              "id": "owner",
+              "label": {
+                "en": "Owner",
+                "zh": "负责人"
+              },
+              "type": "string",
+              "visibility": "internal"
+            },
+            {
+              "id": "reviewer",
+              "label": {
+                "en": "Reviewer",
+                "zh": "评审人"
+              },
+              "type": "string",
+              "visibility": "internal"
+            },
+            {
+              "id": "due-date",
+              "label": {
+                "en": "Due Date",
+                "zh": "截止日期"
+              },
+              "type": "date",
+              "visibility": "internal"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

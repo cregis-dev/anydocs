@@ -1,11 +1,11 @@
-import { DOCS_YOOPTA_ALLOWED_TYPES } from '../utils/index.ts';
+import { DOC_CONTENT_BLOCK_TYPES } from '../types/content.ts';
 import {
   DEFAULT_DOCS_THEME_ID,
   type ProjectThemeCapabilities,
 } from '../types/project.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 
-const SHARED_THEME_BLOCK_TYPES = [...DOCS_YOOPTA_ALLOWED_TYPES];
+const SHARED_THEME_BLOCK_TYPES = [...DOC_CONTENT_BLOCK_TYPES];
 
 const THEME_CAPABILITY_REGISTRY: Record<string, ProjectThemeCapabilities> = {
   'classic-docs': {

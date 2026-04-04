@@ -5,6 +5,7 @@ import { filterPublicPageMetadata } from '../services/page-template-service.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
 import type { NavItem, PageDoc } from '../types/docs.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
+import { renderPageContent } from '../utils/render-page-content.ts';
 
 type SearchIndexDoc = {
   id: string;
@@ -255,8 +256,12 @@ function countNavigationItems(items: NavItem[]): number {
 }
 
 function getPageText(page: PageDoc) {
-  const markdown = page.render?.markdown ?? '';
-  const plainText = page.render?.plainText ?? stripMarkdown(markdown);
+  const derivedRender =
+    typeof page.render?.markdown === 'string' && typeof page.render?.plainText === 'string'
+      ? page.render
+      : renderPageContent(page.content);
+  const markdown = page.render?.markdown ?? derivedRender.markdown ?? '';
+  const plainText = page.render?.plainText ?? derivedRender.plainText ?? stripMarkdown(markdown);
 
   return {
     markdown,

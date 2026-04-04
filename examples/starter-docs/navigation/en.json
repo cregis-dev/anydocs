@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "Getting Started",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    }
+  ]
+}

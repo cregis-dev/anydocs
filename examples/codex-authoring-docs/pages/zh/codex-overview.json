@@ -1,0 +1,102 @@
+{
+  "id": "codex-overview",
+  "lang": "zh",
+  "slug": "codex-overview",
+  "title": "Codex 适合做什么",
+  "description": "理解 Codex 在 Anydocs 工作流中的角色。",
+  "tags": [
+    "codex",
+    "overview"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex 适合做什么"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex 更适合承担“有明确工具边界和结果产物”的工作，而不是自由发挥地改一堆 JSON 文件。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-3",
+        "children": [
+          {
+            "type": "text",
+            "text": "在 Anydocs 场景里，最适合交给 Codex 的任务包括："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "检查项目 contract 和语言配置"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "按页面 ID / slug 查找现有内容"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "新建文档页、更新文档页、推进页面状态"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "在改动前后读取导航与页面状态做确认"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-8",
+        "children": [
+          {
+            "type": "text",
+            "text": "最关键的原则是：**让 Codex 调用 MCP 工具，而不是猜测文件结构后直接落盘。**"
+          }
+        ]
+      }
+    ]
+  }
+}

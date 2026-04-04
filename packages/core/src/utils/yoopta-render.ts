@@ -74,6 +74,37 @@ function getBooleanProp(value: unknown, key: string): boolean | undefined {
   return value.props[key] as boolean;
 }
 
+function renderListMarkdown(blockEntry: Record<string, unknown>, type: 'BulletedList' | 'NumberedList' | 'TodoList'): string {
+  const children = Array.isArray(blockEntry.children) ? blockEntry.children.filter(isRecord) : [];
+  const listItems = children.filter((child) => child.type === 'list-item');
+  if (listItems.length === 0) {
+    const text = normalizeWhitespace(extractText(blockEntry.children ?? []));
+    if (!text) {
+      return type === 'NumberedList' ? '1.' : type === 'TodoList' ? '- [ ]' : '-';
+    }
+    if (type === 'BulletedList') return `- ${text}`;
+    if (type === 'NumberedList') return `1. ${text}`;
+    const checked = getBooleanProp(blockEntry, 'checked') === true;
+    return `- [${checked ? 'x' : ' '}] ${text}`;
+  }
+
+  return listItems
+    .map((item, index) => {
+      const text = normalizeWhitespace(extractText(item.children ?? []));
+      if (type === 'BulletedList') return `- ${text}`;
+      if (type === 'NumberedList') return `${index + 1}. ${text}`;
+      const checked = getBooleanProp(item, 'checked') === true;
+      return `- [${checked ? 'x' : ' '}] ${text}`;
+    })
+    .join('\n');
+}
+
+function renderCalloutText(blockEntry: Record<string, unknown> | null): string {
+  const title = getStringProp(blockEntry, 'title');
+  const body = normalizeWhitespace(extractText(blockEntry?.children ?? []));
+  return [title?.trim(), body].filter(Boolean).join(': ');
+}
+
 function renderCodeGroupMarkdown(blockEntry: Record<string, unknown>): string {
   if (!Array.isArray(blockEntry.children)) {
     return '```text\n\n```';
@@ -137,16 +168,18 @@ function renderBlockMarkdown(block: Record<string, unknown>): string {
     case 'HeadingThree':
       return text ? `### ${text}` : '###';
     case 'BulletedList':
-      return text ? `- ${text}` : '-';
+      return valueEntry ? renderListMarkdown(valueEntry, 'BulletedList') : '-';
     case 'NumberedList':
-      return text ? `1. ${text}` : '1.';
+      return valueEntry ? renderListMarkdown(valueEntry, 'NumberedList') : '1.';
     case 'TodoList': {
-      const checked = getBooleanProp(valueEntry, 'checked') === true;
-      return `- [${checked ? 'x' : ' '}] ${text}`;
+      return valueEntry ? renderListMarkdown(valueEntry, 'TodoList') : '- [ ]';
     }
     case 'Blockquote':
-    case 'Callout':
       return text ? `> ${text}` : '>';
+    case 'Callout': {
+      const calloutText = renderCalloutText(valueEntry);
+      return calloutText ? `> ${calloutText}` : '>';
+    }
     case 'Code': {
       const language = getStringProp(valueEntry, 'language') ?? '';
       const code = extractText(valueEntry?.children ?? []).trim();
@@ -154,6 +187,10 @@ function renderBlockMarkdown(block: Record<string, unknown>): string {
     }
     case 'CodeGroup':
       return valueEntry ? renderCodeGroupMarkdown(valueEntry) : '```text\n\n```';
+    case 'Mermaid': {
+      const code = getStringProp(valueEntry, 'code') ?? extractText(valueEntry?.children ?? []).trim();
+      return `\`\`\`mermaid\n${code}\n\`\`\``;
+    }
     case 'Divider':
       return '---';
     case 'Image': {
@@ -173,6 +210,28 @@ function renderBlockMarkdown(block: Record<string, unknown>): string {
   }
 }
 
+function renderBlockPlainText(block: Record<string, unknown>): string {
+  const type = typeof block.type === 'string' ? block.type : '';
+  const valueEntry = getFirstValueEntry(block);
+
+  switch (type) {
+    case 'BulletedList':
+    case 'NumberedList':
+    case 'TodoList': {
+      const listMarkdown = valueEntry ? renderListMarkdown(valueEntry, type) : '';
+      return listMarkdown
+        .split('\n')
+        .map((line) => normalizeWhitespace(line.replace(/^\d+\.\s+/, '').replace(/^- \[[ x]\]\s+/, '').replace(/^- /, '')))
+        .filter(Boolean)
+        .join('\n');
+    }
+    case 'Callout':
+      return renderCalloutText(valueEntry);
+    default:
+      return normalizeWhitespace(extractText(block.value));
+  }
+}
+
 export function renderYooptaContent(value: unknown): YooptaRenderResult {
   assertValidYooptaContentValue(value);
 
@@ -182,9 +241,7 @@ export function renderYooptaContent(value: unknown): YooptaRenderResult {
 
   const blocks = Object.values(value).filter(isRecord).sort((left, right) => getBlockOrder(left) - getBlockOrder(right));
   const markdownBlocks = blocks.map(renderBlockMarkdown).map((block) => block.trim()).filter(Boolean);
-  const plainTextBlocks = blocks
-    .map((block) => normalizeWhitespace(extractText(block.value)))
-    .filter(Boolean);
+  const plainTextBlocks = blocks.map(renderBlockPlainText).filter(Boolean);
 
   return {
     markdown: markdownBlocks.join('\n\n'),

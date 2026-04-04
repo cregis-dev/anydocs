@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { ChevronRight } from 'lucide-react';
 
-import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavItem, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
 import { SearchPanel } from '@/components/docs/search-panel';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
-function findPage(pages: PageDoc[], pageId: string) {
+function findPage(pages: PublishedPageDoc[], pageId: string) {
   return pages.find((p) => p.id === pageId) ?? null;
 }
 
@@ -44,6 +45,103 @@ function normalizeRoutePath(pathname: string) {
   return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
 }
 
+function containsActivePage(item: NavItem, activePageId: string | null): boolean {
+  if (!activePageId) {
+    return false;
+  }
+
+  if (item.type === 'page') {
+    return item.pageId === activePageId;
+  }
+
+  if (item.type === 'link') {
+    return false;
+  }
+
+  return item.children.some((child) => containsActivePage(child, activePageId));
+}
+
+function NavGroup({
+  title,
+  children,
+  depth,
+  defaultOpen,
+  isActiveBranch,
+  groupSummaryClassName,
+  nestedGroupSummaryClassName,
+  groupTitleClassName,
+  groupBranchClassName,
+}: {
+  title: string;
+  children: React.ReactNode;
+  depth: number;
+  defaultOpen: boolean;
+  isActiveBranch: boolean;
+  groupSummaryClassName?: string;
+  nestedGroupSummaryClassName?: string;
+  groupTitleClassName?: string;
+  groupBranchClassName?: string;
+}) {
+  const isTopLevel = depth === 0;
+
+  return (
+    <details
+      className={cn(
+        'group [&_summary::-webkit-details-marker]:hidden',
+        isTopLevel ? 'mt-2.5 first:mt-0' : 'mt-1.5',
+      )}
+      open={defaultOpen}
+    >
+      <summary
+        className={cn(
+          'flex cursor-pointer list-none items-center gap-2 rounded-xl transition',
+          isTopLevel
+            ? 'px-2 py-2 hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] group-open:bg-[color:var(--docs-sidebar-group-background,var(--docs-sidebar-hover,var(--fd-muted)))]'
+            : 'px-3 py-2 hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]',
+          isActiveBranch &&
+            'bg-[color:var(--docs-sidebar-group-background,var(--docs-sidebar-hover,var(--fd-muted)))]',
+          isTopLevel ? groupSummaryClassName : nestedGroupSummaryClassName,
+        )}
+      >
+        <ChevronRight
+          className={cn(
+            'shrink-0 text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] transition-transform duration-200 group-open:rotate-90',
+            isTopLevel ? 'h-3.5 w-3.5' : 'h-4 w-4',
+            isActiveBranch && 'text-[color:var(--docs-sidebar-group-accent,var(--fd-primary))]',
+          )}
+        />
+        <span
+          className={cn(
+            'min-w-0 truncate',
+            isTopLevel
+              ? 'text-[14px] font-medium tracking-[-0.01em] text-[color:var(--docs-sidebar-link,var(--fd-foreground))] group-open:text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]'
+              : 'text-[14px] leading-5 text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))]',
+            isActiveBranch &&
+              'text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]',
+            groupTitleClassName,
+          )}
+        >
+          {title}
+        </span>
+      </summary>
+
+      <div
+        className={cn(
+          isTopLevel
+            ? 'ml-3 mt-2 space-y-1 border-l pl-3'
+            : 'ml-4 mt-2 space-y-1 border-l pl-3',
+          isActiveBranch &&
+            'border-[color:color-mix(in_srgb,var(--docs-sidebar-group-accent,var(--fd-primary))_22%,white)]',
+          groupBranchClassName,
+        )}
+        data-docs-divider
+      >
+        {children}
+      </div>
+    </details>
+  );
+}
+
 function NavNode({
   lang,
   item,
@@ -51,21 +149,44 @@ function NavNode({
   activePageId,
   depth,
   rootFolderDisplay,
+  groupSummaryClassName,
+  nestedGroupSummaryClassName,
+  groupTitleClassName,
+  groupBranchClassName,
+  sectionHeadingClassName,
+  linkClassName,
+  activeLinkClassName,
+  inactiveLinkClassName,
 }: {
   lang: DocsLang;
   item: NavItem;
-  pages: PageDoc[];
+  pages: PublishedPageDoc[];
   activePageId: string | null;
   depth: number;
   rootFolderDisplay: 'collapsible' | 'section';
+  groupSummaryClassName?: string;
+  nestedGroupSummaryClassName?: string;
+  groupTitleClassName?: string;
+  groupBranchClassName?: string;
+  sectionHeadingClassName?: string;
+  linkClassName?: string;
+  activeLinkClassName?: string;
+  inactiveLinkClassName?: string;
 }) {
   if (item.type === 'section') {
+    const isActiveBranch = containsActivePage(item, activePageId);
     return (
-      <div className="mt-6 first:mt-0">
-        <div className="px-1 pb-3 text-[11px] font-semibold tracking-[0.01em] text-[color:var(--docs-sidebar-section,var(--fd-muted-foreground))]">
-          {item.title}
-        </div>
-        <div className="space-y-1">
+      <NavGroup
+        title={item.title}
+        depth={depth}
+        defaultOpen={isActiveBranch}
+        isActiveBranch={isActiveBranch}
+        groupSummaryClassName={groupSummaryClassName}
+        nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+        groupTitleClassName={groupTitleClassName}
+        groupBranchClassName={groupBranchClassName}
+      >
+        <>
           {item.children.map((c, idx) => (
             <NavNode
               key={`${item.title}-${idx}`}
@@ -75,10 +196,18 @@ function NavNode({
               activePageId={activePageId}
               depth={depth + 1}
               rootFolderDisplay={rootFolderDisplay}
+              groupSummaryClassName={groupSummaryClassName}
+              nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+              groupTitleClassName={groupTitleClassName}
+              groupBranchClassName={groupBranchClassName}
+              sectionHeadingClassName={sectionHeadingClassName}
+              linkClassName={linkClassName}
+              activeLinkClassName={activeLinkClassName}
+              inactiveLinkClassName={inactiveLinkClassName}
             />
           ))}
-        </div>
-      </div>
+        </>
+      </NavGroup>
     );
   }
 
@@ -86,7 +215,12 @@ function NavNode({
     if (rootFolderDisplay === 'section' && depth === 0) {
       return (
         <div className="mt-8 first:mt-0">
-          <div className="px-2 pb-3 text-[15px] font-semibold tracking-[-0.02em] text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]">
+          <div
+            className={cn(
+              'px-2 pb-3 text-[15px] font-semibold tracking-[-0.02em] text-[color:var(--docs-sidebar-group-title,var(--fd-foreground))]',
+              sectionHeadingClassName,
+            )}
+          >
             {item.title}
           </div>
           <div className="space-y-1">
@@ -99,6 +233,14 @@ function NavNode({
                 activePageId={activePageId}
                 depth={depth + 1}
                 rootFolderDisplay={rootFolderDisplay}
+                groupSummaryClassName={groupSummaryClassName}
+                nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+                groupTitleClassName={groupTitleClassName}
+                groupBranchClassName={groupBranchClassName}
+                sectionHeadingClassName={sectionHeadingClassName}
+                linkClassName={linkClassName}
+                activeLinkClassName={activeLinkClassName}
+                inactiveLinkClassName={inactiveLinkClassName}
               />
             ))}
           </div>
@@ -106,12 +248,19 @@ function NavNode({
       );
     }
 
+    const isActiveBranch = containsActivePage(item, activePageId);
     return (
-      <details className="group" open>
-        <summary className="cursor-pointer select-none rounded-lg px-3 py-2 text-[14px] leading-5 text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]">
-          {item.title}
-        </summary>
-        <div className="ml-4 mt-2 space-y-1 border-l border-fd-border pl-3">
+      <NavGroup
+        title={item.title}
+        depth={depth}
+        defaultOpen={isActiveBranch}
+        isActiveBranch={isActiveBranch}
+        groupSummaryClassName={groupSummaryClassName}
+        nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+        groupTitleClassName={groupTitleClassName}
+        groupBranchClassName={groupBranchClassName}
+      >
+        <>
           {item.children.map((c, idx) => (
             <NavNode
               key={`${item.title}-${idx}`}
@@ -121,10 +270,18 @@ function NavNode({
               activePageId={activePageId}
               depth={depth + 1}
               rootFolderDisplay={rootFolderDisplay}
+              groupSummaryClassName={groupSummaryClassName}
+              nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+              groupTitleClassName={groupTitleClassName}
+              groupBranchClassName={groupBranchClassName}
+              sectionHeadingClassName={sectionHeadingClassName}
+              linkClassName={linkClassName}
+              activeLinkClassName={activeLinkClassName}
+              inactiveLinkClassName={inactiveLinkClassName}
             />
           ))}
-        </div>
-      </details>
+        </>
+      </NavGroup>
     );
   }
 
@@ -134,7 +291,11 @@ function NavNode({
         href={item.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-lg px-3 py-2 text-[14px] leading-5 text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]"
+        className={cn(
+          'block rounded-lg px-3 py-2 text-[14px] leading-5 text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]',
+          linkClassName,
+          inactiveLinkClassName,
+        )}
       >
         {item.title}
       </a>
@@ -148,18 +309,20 @@ function NavNode({
   return (
     <Link
       href={`/${lang}/${page.slug}`}
-      className={
-        (rootFolderDisplay === 'section'
-          ? 'block rounded-md border border-transparent px-3 py-2 text-[13px] leading-5 transition '
-          : 'block rounded-r-md rounded-l-none px-3 py-2 text-[14px] leading-5 transition ') +
-        (active
+      className={cn(
+        rootFolderDisplay === 'section'
+          ? 'block rounded-lg border border-transparent px-3 py-2 text-[13px] leading-5 transition'
+          : 'block rounded-r-md rounded-l-none px-3 py-2 text-[14px] leading-5 transition',
+        active
           ? rootFolderDisplay === 'section'
-            ? 'border-l-2 border-l-[color:var(--docs-sidebar-active-border,var(--fd-foreground))] bg-[color:var(--docs-sidebar-active-background,var(--fd-muted))] font-medium text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
+            ? 'border-[color:color-mix(in_srgb,var(--docs-sidebar-group-accent,var(--fd-primary))_18%,white)] bg-[color:var(--docs-sidebar-active-background)] font-medium text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
             : 'border-l-4 border-[color:var(--docs-sidebar-active-border,var(--fd-foreground))] bg-[color:var(--docs-sidebar-active-background,var(--fd-muted))] font-medium text-[color:var(--docs-sidebar-active-foreground,var(--fd-foreground))]'
           : rootFolderDisplay === 'section'
             ? 'text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]'
-            : 'border-l-4 border-transparent text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]')
-      }
+            : 'border-l-4 border-transparent text-[color:var(--docs-sidebar-link-subtle,var(--fd-muted-foreground))] hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-[color:var(--docs-sidebar-link,var(--fd-foreground))]',
+        linkClassName,
+        active ? activeLinkClassName : inactiveLinkClassName,
+      )}
       aria-current={active ? 'page' : undefined}
     >
       {title}
@@ -170,7 +333,7 @@ function NavNode({
 type DocsSidebarProps = {
   lang: DocsLang;
   nav: NavigationDoc;
-  pages: PageDoc[];
+  pages: PublishedPageDoc[];
   homeLabel?: string;
   showHomeLink?: boolean;
   showSearch?: boolean;
@@ -192,6 +355,18 @@ type DocsSidebarProps = {
   navWrapperClassName?: string;
   navListClassName?: string;
   footerClassName?: string;
+  brandTitleClassName?: string;
+  groupSummaryClassName?: string;
+  nestedGroupSummaryClassName?: string;
+  groupTitleClassName?: string;
+  groupBranchClassName?: string;
+  sectionHeadingClassName?: string;
+  linkClassName?: string;
+  activeLinkClassName?: string;
+  inactiveLinkClassName?: string;
+  languageTriggerClassName?: string;
+  languageContentClassName?: string;
+  languageItemClassName?: string;
 };
 
 export function DocsSidebar({
@@ -215,6 +390,18 @@ export function DocsSidebar({
   navWrapperClassName,
   navListClassName,
   footerClassName,
+  brandTitleClassName,
+  groupSummaryClassName,
+  nestedGroupSummaryClassName,
+  groupTitleClassName,
+  groupBranchClassName,
+  sectionHeadingClassName,
+  linkClassName,
+  activeLinkClassName,
+  inactiveLinkClassName,
+  languageTriggerClassName,
+  languageContentClassName,
+  languageItemClassName,
 }: DocsSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -233,15 +420,17 @@ export function DocsSidebar({
   const showBranding = hasLogo || hasTitle;
   const showLanguageLinks = showLanguageSwitcher && availableLanguages.length > 1;
   const activeLanguageMeta = getLanguageMeta(lang);
+  const showFooter = showLanguageLinks;
 
   return (
     <aside
       aria-label={copy.sidebar.navigationLabel}
       className={cn(
-        'flex min-h-0 flex-col overflow-hidden border-r border-fd-border bg-fd-card',
+        'flex min-h-0 flex-col overflow-hidden border-r bg-fd-card',
         fillHeight && 'h-full',
         className,
       )}
+      data-docs-divider
     >
       {showBranding ? (
         <Link
@@ -272,7 +461,12 @@ export function DocsSidebar({
 
           {hasTitle ? (
             <span className={cn('min-w-0', !hasLogo && 'block')}>
-              <span className="block break-words text-[20px] font-bold leading-7 tracking-[-0.025em] text-fd-foreground">
+              <span
+                className={cn(
+                  'block break-words text-[20px] font-bold leading-7 tracking-[-0.025em] text-fd-foreground',
+                  brandTitleClassName,
+                )}
+              >
                 {siteTitle}
               </span>
             </span>
@@ -290,7 +484,7 @@ export function DocsSidebar({
               searchInputClassName,
             )}
             resultsClassName={cn(
-              'rounded-xl border-fd-border bg-fd-background shadow-lg',
+              'rounded-xl border-[color:var(--docs-search-border,var(--fd-border))] bg-fd-background shadow-lg',
               searchResultsClassName,
             )}
           />
@@ -315,27 +509,36 @@ export function DocsSidebar({
               activePageId={activePageId}
               depth={0}
               rootFolderDisplay={rootFolderDisplay}
+              groupSummaryClassName={groupSummaryClassName}
+              nestedGroupSummaryClassName={nestedGroupSummaryClassName}
+              groupTitleClassName={groupTitleClassName}
+              groupBranchClassName={groupBranchClassName}
+              sectionHeadingClassName={sectionHeadingClassName}
+              linkClassName={linkClassName}
+              activeLinkClassName={activeLinkClassName}
+              inactiveLinkClassName={inactiveLinkClassName}
             />
           ))}
         </div>
       </div>
 
-      <div
-        className={cn(
-          'space-y-4 border-t border-fd-border px-6 py-6 text-xs text-fd-muted-foreground',
-          insetClassName,
-          footerClassName,
-        )}
-      >
-        {showHomeLink ? (
-          <div className="flex items-center justify-between gap-3">
-            <Link href={`/${lang}`} className="font-medium text-fd-foreground transition hover:text-fd-primary">
-              {homeLabel ?? copy.sidebar.homeLabel}
-            </Link>
-          </div>
-        ) : null}
+      {showFooter ? (
+        <div
+          className={cn(
+            'space-y-4 border-t px-6 py-6 text-xs text-fd-muted-foreground',
+            insetClassName,
+            footerClassName,
+          )}
+          data-docs-divider
+        >
+          {showHomeLink ? (
+            <div className="flex items-center justify-between gap-3">
+              <Link href={`/${lang}`} className="font-medium text-fd-foreground transition hover:text-fd-primary">
+                {homeLabel ?? copy.sidebar.homeLabel}
+              </Link>
+            </div>
+          ) : null}
 
-        {showLanguageLinks ? (
           <div>
             <Select
               value={lang}
@@ -347,10 +550,20 @@ export function DocsSidebar({
                 router.push(buildLanguageHref(pathname, lang, nextLang));
               }}
             >
-              <SelectTrigger className="inline-flex h-10 w-full min-w-0 rounded-xl border-fd-border bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none">
+              <SelectTrigger
+                className={cn(
+                  'inline-flex h-10 w-full min-w-0 rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none',
+                  languageTriggerClassName,
+                )}
+              >
                 <span className="truncate pr-2">{activeLanguageMeta.label}</span>
               </SelectTrigger>
-              <SelectContent className="min-w-[12rem] rounded-[1.25rem] border-fd-border bg-fd-popover p-2 shadow-lg">
+              <SelectContent
+                className={cn(
+                  'min-w-[12rem] rounded-[1.25rem] border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg',
+                  languageContentClassName,
+                )}
+              >
                 {availableLanguages.map((language) => {
                   const languageMeta = getLanguageMeta(language);
 
@@ -358,7 +571,10 @@ export function DocsSidebar({
                     <SelectItem
                       key={language}
                       value={language}
-                      className="rounded-xl py-3 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
+                      className={cn(
+                        'rounded-xl py-3 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]',
+                        languageItemClassName,
+                      )}
                     >
                       <span>{languageMeta.label}</span>
                     </SelectItem>
@@ -367,8 +583,8 @@ export function DocsSidebar({
               </SelectContent>
             </Select>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

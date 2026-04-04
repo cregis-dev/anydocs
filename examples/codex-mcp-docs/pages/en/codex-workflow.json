@@ -1,0 +1,119 @@
+{
+  "id": "codex-workflow",
+  "lang": "en",
+  "slug": "codex-workflow",
+  "title": "How Codex and Anydocs Work Together",
+  "description": "Put Codex inside an MCP-driven docs workflow.",
+  "tags": [
+    "codex",
+    "workflow"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "How Codex and Anydocs Work Together"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "In Anydocs, Codex works best when it:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "reads the project contract first with `project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "checks `project_open.authoring` for templates, resources, and metadata schemas"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "reads `anydocs://authoring/guidance` when the task needs the full workflow"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "inspects current page state before choosing create versus update"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "uses `page_create_from_template`, `page_create`, or `page_update` for explicit changes"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "treats `page_set_status` as a separate workflow action"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "uses navigation MCP tools instead of rewriting navigation by hand"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-10",
+        "children": [
+          {
+            "type": "text",
+            "text": "The main idea is not to have Codex edit `pages/*.json` directly, but to keep it on MCP tools."
+          }
+        ]
+      }
+    ]
+  }
+}

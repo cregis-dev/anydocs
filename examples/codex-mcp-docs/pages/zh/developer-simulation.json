@@ -1,0 +1,109 @@
+{
+  "id": "developer-simulation",
+  "lang": "zh",
+  "slug": "developer-simulation",
+  "title": "开发者的一次真实建站流程",
+  "description": "模拟开发者让 Codex 通过 MCP 创建站点。",
+  "tags": [
+    "simulation",
+    "demo"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "开发者的一次真实建站流程"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "这次示例流程是："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "开发者先运行 `anydocs init --agent codex` 创建项目"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP client 调用 `project_open` 并检查 `project_open.authoring`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "在执行多步写入前先读取 `anydocs://authoring/guidance`"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "再调用 `page_update` 更新欢迎页"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_create_from_template` 或 `page_create` 逐页写入内容"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "只有在 template 的 `metadataSchema` 允许时才写入页面 `metadata`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "最后调用 `page_list`、`nav_get` 验证结果，必要时再用导航写入工具调整结构"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

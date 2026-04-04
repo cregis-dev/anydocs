@@ -1,0 +1,111 @@
+{
+  "id": "connect-mcp-in-codex",
+  "lang": "zh",
+  "slug": "connect-mcp-in-codex",
+  "title": "在 Codex 中接入 Anydocs MCP",
+  "description": "让 Codex 能真正调用 Anydocs 的领域工具。",
+  "tags": [
+    "codex",
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "在 Codex 中接入 Anydocs MCP"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "典型做法是把 `@anydocs/mcp` 注册成一个 `stdio` MCP server，然后在项目根目录放一份最小化的 `AGENTS.md`。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-3",
+        "children": [
+          {
+            "type": "text",
+            "text": "这样 Codex 在进入项目后就会知道："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先 `project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先看 `project_open.authoring` 里的 templates、resources 和 resourceTemplates"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "需要详细流程时读取 `anydocs://authoring/guidance`"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "如果页面会用到 `template` / `metadata`，先检查 template 的 `metadataSchema`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_list`、`page_find`、`page_get` 读取内容"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "用 `page_create_from_template`、`page_create`、`page_update`、`page_set_status` 和导航工具进行写操作"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Starter Docs Example",
+  "description": "The smallest Anydocs example project, built to explain the project skeleton.",
+  "tags": [
+    "starter",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Starter Docs Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This is the smallest and cleanest docs project in the Anydocs repository."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to understand the Anydocs project shape for the first time"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to inspect the most basic page and navigation layout"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want a fast target for `build`, `preview`, and Studio project selection"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "bilingual pages"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a single-level navigation tree"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a minimal `anydocs.config.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "published content that can be built and previewed immediately"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-12",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Run It"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-13",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-14",
+        "children": [
+          {
+            "type": "text",
+            "text": "In Studio, select `examples/starter-docs` as the project path."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What To Read Next"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-16",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "for page templates and metadata, go to `examples/page-template-docs`"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "for a fuller Codex authoring site, go to `examples/codex-authoring-docs`"
+              }
+            ]
+          },
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "for MCP setup and workflow, go to `examples/codex-mcp-docs`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

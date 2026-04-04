@@ -66,7 +66,10 @@ test('clonePageToLanguage creates a draft skeleton unless content copying is req
       sourcePageId: 'guide',
     });
     assert.equal(skeleton.page.status, 'draft');
-    assert.deepEqual(skeleton.page.content, {});
+    assert.deepEqual(skeleton.page.content, {
+      version: 1,
+      blocks: [],
+    });
 
     const copied = await clonePageToLanguage({
       projectRoot,

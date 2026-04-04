@@ -1,0 +1,116 @@
+.theme-blueprint-review {
+  --blueprint-page: #f6f2eb;
+  --blueprint-sidebar: #faf8f3;
+  --blueprint-panel: #ffffff;
+  --blueprint-border: #e6dfd3;
+  --blueprint-foreground: #1f2937;
+  --blueprint-copy: #253044;
+  --blueprint-muted: #f2efe9;
+  --blueprint-muted-foreground: #6b7280;
+  --blueprint-accent: #185f67;
+  --blueprint-accent-soft: color-mix(in srgb, var(--blueprint-accent) 10%, white);
+  --blueprint-ring: color-mix(in srgb, var(--blueprint-accent) 30%, white);
+  --blueprint-divider: color-mix(in srgb, var(--blueprint-border) 82%, white);
+  --blueprint-surface: color-mix(in srgb, white 84%, var(--blueprint-page));
+  --blueprint-surface-muted: color-mix(in srgb, var(--blueprint-sidebar) 82%, white);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  --background: var(--blueprint-page);
+  --foreground: var(--blueprint-foreground);
+
+  --fd-background: var(--blueprint-page);
+  --fd-foreground: var(--blueprint-foreground);
+  --fd-muted: var(--blueprint-muted);
+  --fd-muted-foreground: var(--blueprint-muted-foreground);
+  --fd-popover: var(--blueprint-panel);
+  --fd-popover-foreground: var(--blueprint-foreground);
+  --fd-card: var(--blueprint-panel);
+  --fd-card-foreground: var(--blueprint-foreground);
+  --fd-border: var(--blueprint-border);
+  --fd-primary: var(--blueprint-accent);
+  --fd-primary-foreground: #ffffff;
+  --fd-secondary: var(--blueprint-panel);
+  --fd-secondary-foreground: var(--blueprint-foreground);
+  --fd-accent: var(--blueprint-accent-soft);
+  --fd-accent-foreground: var(--blueprint-foreground);
+  --fd-ring: var(--blueprint-ring);
+  --fd-overlay: color-mix(in srgb, black 42%, transparent);
+  --fd-info: var(--blueprint-accent);
+  --fd-warning: #b45309;
+  --fd-error: #b42318;
+  --fd-success: #1f6f43;
+  --fd-idea: #5f4ae0;
+
+  --docs-sidebar-active: var(--blueprint-accent);
+  --docs-sidebar-active-foreground: var(--blueprint-foreground);
+  --docs-sidebar-active-background: color-mix(in srgb, var(--blueprint-accent) 8%, white);
+  --docs-sidebar-active-border: transparent;
+  --docs-sidebar-hover: color-mix(in srgb, var(--blueprint-accent) 5%, white);
+  --docs-sidebar-brand-surface: var(--blueprint-surface);
+  --docs-sidebar-section: #64748b;
+  --docs-sidebar-group-background: var(--blueprint-surface-muted);
+  --docs-sidebar-group-title: var(--blueprint-foreground);
+  --docs-sidebar-group-accent: var(--blueprint-accent);
+  --docs-sidebar-link: var(--blueprint-copy);
+  --docs-sidebar-link-subtle: var(--blueprint-muted-foreground);
+
+  --docs-body-copy: var(--blueprint-copy);
+  --docs-body-copy-subtle: var(--blueprint-muted-foreground);
+
+  --docs-search-background: color-mix(in srgb, var(--blueprint-sidebar) 72%, white);
+  --docs-search-border: color-mix(in srgb, var(--blueprint-border) 86%, white);
+  --docs-search-placeholder: var(--blueprint-muted-foreground);
+  --docs-search-results-background: var(--blueprint-panel);
+  --docs-search-hover: color-mix(in srgb, var(--blueprint-accent) 6%, white);
+  --docs-divider: var(--blueprint-divider);
+}
+
+.theme-blueprint-review {
+  background: linear-gradient(180deg, #f7f4ee 0%, #f3efe8 100%);
+}
+
+.theme-blueprint-review [data-docs-divider] {
+  border-color: var(--docs-divider);
+}
+
+.theme-blueprint-review [data-blueprint-divider] {
+  border-color: var(--blueprint-divider);
+}
+
+.theme-blueprint-review .prose {
+  color: var(--docs-body-copy);
+  font-size: 0.96875rem;
+  line-height: 1.85;
+}
+
+.theme-blueprint-review .prose a {
+  color: var(--blueprint-accent);
+  font-weight: 500;
+  text-decoration-color: color-mix(in srgb, var(--blueprint-accent) 34%, white);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.theme-blueprint-review .prose a:hover {
+  color: color-mix(in srgb, var(--blueprint-accent) 82%, black);
+  text-decoration-color: currentcolor;
+}
+
+.theme-blueprint-review .prose h2 {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  font-weight: 650;
+  color: var(--blueprint-foreground);
+}
+
+.theme-blueprint-review .prose h3 {
+  font-size: 0.96875rem;
+  line-height: 1.55;
+  font-weight: 650;
+  color: var(--blueprint-foreground);
+}

@@ -106,8 +106,8 @@ test('stdio server registers tools plus read-only resource capabilities', async 
     const resourceUris = resources.resources.map((resource) => resource.uri).sort();
     assert.deepEqual(resourceUris, [
       'anydocs://authoring/guidance',
+      'anydocs://content/allowed-types',
       'anydocs://templates/index',
-      'anydocs://yoopta/allowed-types',
     ]);
 
     const resourceTemplates = await client.listResourceTemplates();
@@ -153,11 +153,20 @@ test('stdio server executes representative tool calls over MCP', async () => {
     assert.match(String(templateText), /"template":/);
     assert.match(String(templateText), /"how_to"/);
 
-    const blockResource = await client.readResource({ uri: 'anydocs://blocks/Callout/example' });
+    const allowedTypesResource = await client.readResource({ uri: 'anydocs://content/allowed-types' });
+    const allowedTypesText = allowedTypesResource.contents[0] && 'text' in allowedTypesResource.contents[0]
+      ? allowedTypesResource.contents[0].text
+      : '';
+    assert.match(String(allowedTypesText), /"format": "doc-content-v1"/);
+    assert.match(String(allowedTypesText), /"callout"/);
+    assert.match(String(allowedTypesText), /"codeGroup"/);
+    assert.match(String(allowedTypesText), /"bold"/);
+
+    const blockResource = await client.readResource({ uri: 'anydocs://blocks/callout/example' });
     const blockText = blockResource.contents[0] && 'text' in blockResource.contents[0]
       ? blockResource.contents[0].text
       : '';
-    assert.match(String(blockText), /"blockType": "Callout"/);
+    assert.match(String(blockText), /"blockType": "callout"/);
     assert.match(String(blockText), /"exampleContent"/);
 
     await assert.rejects(
@@ -180,6 +189,7 @@ test('stdio server executes representative tool calls over MCP', async () => {
         allowedBlockTypes: string[];
         allowedMarks: string[];
         guidance: string[];
+        legacyContentFormat: string;
         templates: Array<{ id: string }>;
         resources: Array<{ uri: string }>;
         resourceTemplates: Array<{ uriTemplate: string }>;
@@ -196,10 +206,11 @@ test('stdio server executes representative tool calls over MCP', async () => {
     );
     assert.equal(projectOpenEnvelope.ok, true);
     assert.equal(projectOpenEnvelope.data?.config?.projectId, 'default');
-    assert.equal(projectOpenEnvelope.data?.authoring?.contentFormat, 'yoopta');
+    assert.equal(projectOpenEnvelope.data?.authoring?.contentFormat, 'doc-content-v1');
+    assert.equal(projectOpenEnvelope.data?.authoring?.legacyContentFormat, 'yoopta');
     assert.equal(projectOpenEnvelope.data?.themeCapabilities?.navigation.topNav, false);
     assert.equal(projectOpenEnvelope.data?.themeCapabilities?.features.search, true);
-    assert.ok(projectOpenEnvelope.data?.authoring?.allowedBlockTypes?.includes('CodeGroup'));
+    assert.ok(projectOpenEnvelope.data?.authoring?.allowedBlockTypes?.includes('codeGroup'));
     assert.ok(projectOpenEnvelope.data?.authoring?.templates?.some((template) => template.id === 'reference'));
     assert.ok(projectOpenEnvelope.data?.authoring?.resources?.some((resource) => resource.uri === 'anydocs://authoring/guidance'));
     assert.ok(

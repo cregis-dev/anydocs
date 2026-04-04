@@ -1,4 +1,7 @@
 import {
+  DOC_CONTENT_AUTHORING_GUIDANCE,
+  DOC_CONTENT_BLOCK_TYPES,
+  DOC_CONTENT_TEXT_MARKS,
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
   DOCS_YOOPTA_AUTHORING_GUIDANCE,
@@ -243,10 +246,14 @@ export const projectTools: ToolDefinition[] = [
           enabledLanguages: contract.config.languages,
           themeCapabilities: getProjectThemeCapabilities(contract.config.site.theme.id),
           authoring: {
-            contentFormat: 'yoopta',
-            allowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
-            allowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
-            guidance: [...DOCS_YOOPTA_AUTHORING_GUIDANCE],
+            contentFormat: 'doc-content-v1',
+            allowedBlockTypes: [...DOC_CONTENT_BLOCK_TYPES],
+            allowedMarks: [...DOC_CONTENT_TEXT_MARKS],
+            guidance: [...DOC_CONTENT_AUTHORING_GUIDANCE],
+            legacyContentFormat: 'yoopta',
+            legacyAllowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
+            legacyAllowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
+            legacyGuidance: [...DOCS_YOOPTA_AUTHORING_GUIDANCE],
             templates: listResolvedProjectPageTemplates(contract.config).map((template) => ({
               id: template.id,
               label: template.label,

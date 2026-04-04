@@ -42,39 +42,55 @@ export function ClassicDocsReaderLayout({
   const siteTitle = configuredSiteTitle ?? projectName?.trim() ?? (!logoSrc ? 'Anydocs Docs' : '');
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const themeStyle = getClassicDocsThemeStyle(siteTheme);
+  const classicSidebarProps = {
+    lang,
+    nav,
+    pages,
+    homeLabel,
+    showHomeLink: false,
+    showSearch,
+    availableLanguages,
+    showLanguageSwitcher: true,
+    branding: {
+      siteTitle,
+      logoSrc,
+      logoAlt,
+    },
+    brandTitleClassName: 'text-[18px] font-semibold leading-6 tracking-[-0.02em]',
+    searchInputClassName: 'h-9 rounded-md border bg-fd-background px-3.5 text-[13px]',
+    searchResultsClassName: 'rounded-lg',
+    groupSummaryClassName: 'rounded-md px-2 py-1.5',
+    nestedGroupSummaryClassName: 'rounded-md px-2.5 py-1.5',
+    groupTitleClassName: 'text-[13px] font-medium tracking-normal',
+    groupBranchClassName: 'ml-2.5 mt-1.5 pl-2.5',
+    linkClassName: 'px-2.5 py-1.5 text-[13px]',
+    activeLinkClassName: 'rounded-none border-l-[3px] bg-transparent px-2.5 py-1.5 text-[13px]',
+    inactiveLinkClassName: 'rounded-none border-l-[3px] px-2.5 py-1.5 text-[13px]',
+    languageTriggerClassName: 'h-9 rounded-md px-3.5 text-[13px]',
+    languageContentClassName: 'rounded-lg p-1.5',
+    languageItemClassName: 'rounded-md py-2.5 pl-8 pr-3.5 text-[13px] font-medium',
+  } as const;
 
   return (
     <div
-      className={`${CLASSIC_DOCS_THEME_CLASS_NAME} min-h-dvh bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] text-fd-foreground`}
+      className={`${CLASSIC_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`}
       style={themeStyle}
     >
       <div className="lg:grid lg:min-h-dvh lg:grid-cols-[288px_minmax(0,1fr)]">
         <div className="hidden lg:col-start-1 lg:!block">
           <DocsSidebar
-            lang={lang}
-            nav={nav}
-            pages={pages}
-            homeLabel={homeLabel}
-            showHomeLink={false}
-            showSearch={showSearch}
-            availableLanguages={availableLanguages}
-            showLanguageSwitcher
-            branding={{
-              siteTitle,
-              logoSrc,
-              logoAlt,
-            }}
+            {...classicSidebarProps}
             className="sticky top-0 h-dvh"
           />
         </div>
 
-        <div className="min-w-0 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] lg:col-start-2">
-          <div className="sticky top-0 z-30 border-b border-fd-border/70 bg-fd-background/90 backdrop-blur-xl lg:hidden">
-            <div className="flex items-center justify-between px-4 py-3.5">
+        <div className="min-w-0 bg-fd-background lg:col-start-2">
+          <div className="sticky top-0 z-30 border-b border-fd-border bg-fd-background lg:hidden">
+            <div className="flex items-center justify-between px-4 py-3">
               <Link href={`/${lang}`} className="min-w-0">
                 <span className="flex min-w-0 items-center gap-3">
                   {logoSrc ? (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-fd-border bg-fd-card">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-fd-border bg-fd-card">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={logoSrc}
@@ -84,35 +100,29 @@ export function ClassicDocsReaderLayout({
                     </span>
                   ) : null}
                   {siteTitle ? (
-                    <span className="truncate text-base font-semibold leading-none text-fd-foreground">{siteTitle}</span>
+                    <span className="truncate text-[15px] font-semibold leading-none tracking-[-0.01em] text-fd-foreground">
+                      {siteTitle}
+                    </span>
                   ) : null}
                 </span>
               </Link>
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="secondary" size="icon" className="rounded-xl border-fd-border bg-fd-card shadow-sm">
-                    <Menu className="h-4 w-4" />
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-8 rounded-md border-fd-border bg-fd-background shadow-none"
+                  >
+                    <Menu className="h-3.5 w-3.5" />
                     <span className="sr-only">{copy.common.openNavigation}</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="left-0 top-0 h-dvh max-w-[23rem] translate-x-0 translate-y-0 rounded-none border-r border-fd-border bg-fd-background p-0 shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+                <DialogContent className="left-0 top-0 h-dvh max-w-[21rem] translate-x-0 translate-y-0 rounded-none border-r border-fd-border bg-fd-background p-0 shadow-none">
                   <DialogTitle className="sr-only">{copy.common.documentationNavigation}</DialogTitle>
                   <DialogDescription className="sr-only">{copy.common.navigationDialogDescription}</DialogDescription>
                   <DocsSidebar
-                    lang={lang}
-                    nav={nav}
-                    pages={pages}
-                    homeLabel={homeLabel}
-                    showHomeLink={false}
-                    showSearch={showSearch}
-                    availableLanguages={availableLanguages}
-                    showLanguageSwitcher
-                    branding={{
-                      siteTitle,
-                      logoSrc,
-                      logoAlt,
-                    }}
+                    {...classicSidebarProps}
                     className="h-full border-r-0 bg-fd-card"
                   />
                 </DialogContent>

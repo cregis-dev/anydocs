@@ -1,0 +1,210 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "Starter Docs 示例",
+  "description": "Anydocs 的最小入门示例工程，专门用于理解项目骨架。",
+  "tags": [
+    "starter",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Starter Docs 示例"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "这是 Anydocs 仓库里最小、最干净的文档项目样例。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "适合什么场景"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "第一次理解 Anydocs 项目结构"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看最基本的页面与导航文件布局"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想快速验证 `build`、`preview` 和 Studio 选择项目流程"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例包含什么"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "双语页面"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "单层导航树"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "最小 `anydocs.config.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "可直接构建和预览的 published 内容"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-12",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "如何运行"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-13",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-14",
+        "children": [
+          {
+            "type": "text",
+            "text": "Studio 中请直接选择 `examples/starter-docs`。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "接下来读什么"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-16",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看页面模板和 metadata：去 `examples/page-template-docs`"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看 Codex 写作站点：去 `examples/codex-authoring-docs`"
+              }
+            ]
+          },
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看 MCP 接入流程：去 `examples/codex-mcp-docs`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

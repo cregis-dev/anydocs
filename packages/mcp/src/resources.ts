@@ -1,4 +1,7 @@
 import {
+  DOC_CONTENT_AUTHORING_GUIDANCE,
+  DOC_CONTENT_BLOCK_TYPES,
+  DOC_CONTENT_TEXT_MARKS,
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
   DOCS_YOOPTA_AUTHORING_GUIDANCE,
@@ -16,7 +19,7 @@ const STATIC_RESOURCES: Resource[] = [
     uri: 'anydocs://authoring/guidance',
     name: 'authoring-guidance',
     title: 'Anydocs Authoring Guidance',
-    description: 'Read-only guidance for agent-safe Anydocs authoring workflows and Yoopta usage.',
+    description: 'Read-only guidance for agent-safe Anydocs authoring workflows and canonical content usage.',
     mimeType: JSON_MIME_TYPE,
   },
   {
@@ -27,10 +30,10 @@ const STATIC_RESOURCES: Resource[] = [
     mimeType: JSON_MIME_TYPE,
   },
   {
-    uri: 'anydocs://yoopta/allowed-types',
-    name: 'yoopta-allowed-types',
-    title: 'Allowed Yoopta Types',
-    description: 'Supported Anydocs Yoopta block types, marks, and authoring guidance.',
+    uri: 'anydocs://content/allowed-types',
+    name: 'content-allowed-types',
+    title: 'Allowed Content Types',
+    description: 'Supported Anydocs canonical block types, marks, and authoring guidance.',
     mimeType: JSON_MIME_TYPE,
   },
 ];
@@ -45,9 +48,9 @@ const RESOURCE_TEMPLATES: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'anydocs://blocks/{blockType}/example',
-    name: 'yoopta-block-example',
-    title: 'Yoopta Block Example',
-    description: 'Canonical minimal example for an allowed Yoopta block type in Anydocs.',
+    name: 'content-block-example',
+    title: 'Content Block Example',
+    description: 'Canonical minimal example for an allowed DocContentV1 block type in Anydocs.',
     mimeType: JSON_MIME_TYPE,
   },
 ];
@@ -216,173 +219,29 @@ function createTemplateExample(templateId: (typeof PAGE_TEMPLATE_DEFINITIONS)[nu
 }
 
 function createBlockExample(blockType: string): Record<string, unknown> {
-  const blockId = 'block-1';
-  const elementId = 'element-1';
-  const meta = { order: 0, depth: 0 };
-
   switch (blockType) {
-    case 'Paragraph':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'paragraph', children: [{ text: 'Body copy' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'HeadingOne':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'heading-one', children: [{ text: 'Internal Page Heading' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'HeadingTwo':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'heading-two', children: [{ text: 'Section Title' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'HeadingThree':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'heading-three', children: [{ text: 'Subsection Title' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'BulletedList':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'bulleted-list', children: [{ text: 'List item' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'NumberedList':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'numbered-list', children: [{ text: 'First step' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'TodoList':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'todo-list', children: [{ text: 'Follow up item' }], props: { nodeType: 'block', checked: false } }],
-          meta,
-        },
-      };
-    case 'Blockquote':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'blockquote', children: [{ text: 'Quoted guidance or supporting evidence.' }], props: { nodeType: 'block' } }],
-          meta,
-        },
-      };
-    case 'Code':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'code', children: [{ text: 'npx -y @anydocs/mcp' }], props: { nodeType: 'void', language: 'bash' } }],
-          meta,
-        },
-      };
-    case 'CodeGroup':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [
-            {
-              id: elementId,
-              type: 'code-group',
-              children: [
-                { id: 'tab-1', type: 'code', children: [{ text: 'pnpm install' }], props: { language: 'bash', title: 'pnpm', nodeType: 'void' } },
-                { id: 'tab-2', type: 'code', children: [{ text: 'npm install' }], props: { language: 'bash', title: 'npm', nodeType: 'void' } },
-              ],
-              props: { nodeType: 'block' },
-            },
-          ],
-          meta,
-        },
-      };
-    case 'Divider':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'divider', children: [{ text: '' }], props: { nodeType: 'void' } }],
-          meta,
-        },
-      };
-    case 'Callout':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'callout', children: [{ text: 'Important note for the reader.' }], props: { nodeType: 'block', theme: 'info' } }],
-          meta,
-        },
-      };
-    case 'Image':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'image', children: [{ text: '' }], props: { nodeType: 'void', src: 'https://example.com/image.png', alt: 'Example image' } }],
-          meta,
-        },
-      };
-    case 'Table':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [
-            {
-              id: elementId,
-              type: 'table',
-              children: [
-                {
-                  id: 'row-1',
-                  type: 'table-row',
-                  children: [
-                    { id: 'cell-1', type: 'table-cell', children: [{ text: 'Header' }], props: { nodeType: 'block' } },
-                    { id: 'cell-2', type: 'table-cell', children: [{ text: 'Value' }], props: { nodeType: 'block' } },
-                  ],
-                  props: { nodeType: 'block' },
-                },
-              ],
-              props: { nodeType: 'block' },
-            },
-          ],
-          meta,
-        },
-      };
-    case 'Link':
-      return {
-        [blockId]: {
-          id: blockId,
-          type: blockType,
-          value: [{ id: elementId, type: 'link', children: [{ text: 'Read the full guide' }], props: { nodeType: 'block', href: 'https://example.com/docs' } }],
-          meta,
-        },
-      };
+    case 'paragraph':
+      return { version: 1, blocks: [{ type: 'paragraph', id: 'block-1', children: [{ type: 'text', text: 'Body copy' }] }] };
+    case 'heading':
+      return { version: 1, blocks: [{ type: 'heading', id: 'block-1', level: 2, children: [{ type: 'text', text: 'Section Title' }] }] };
+    case 'list':
+      return { version: 1, blocks: [{ type: 'list', id: 'block-1', style: 'bulleted', items: [{ id: 'item-1', children: [{ type: 'text', text: 'List item' }] }] }] };
+    case 'blockquote':
+      return { version: 1, blocks: [{ type: 'blockquote', id: 'block-1', children: [{ type: 'text', text: 'Quoted guidance or supporting evidence.' }] }] };
+    case 'codeBlock':
+      return { version: 1, blocks: [{ type: 'codeBlock', id: 'block-1', language: 'bash', code: 'npx -y @anydocs/mcp' }] };
+    case 'codeGroup':
+      return { version: 1, blocks: [{ type: 'codeGroup', id: 'block-1', items: [{ id: 'tab-1', language: 'bash', title: 'pnpm', code: 'pnpm install' }, { id: 'tab-2', language: 'bash', title: 'npm', code: 'npm install' }] }] };
+    case 'callout':
+      return { version: 1, blocks: [{ type: 'callout', id: 'block-1', tone: 'info', title: 'Note', children: [{ type: 'text', text: 'Important note for the reader.' }] }] };
+    case 'table':
+      return { version: 1, blocks: [{ type: 'table', id: 'block-1', rows: [{ id: 'row-1', cells: [{ id: 'cell-1', header: true, children: [{ type: 'text', text: 'Header' }] }, { id: 'cell-2', children: [{ type: 'text', text: 'Value' }] }] }] }] };
+    case 'image':
+      return { version: 1, blocks: [{ type: 'image', id: 'block-1', src: 'https://example.com/image.png', alt: 'Example image', caption: [{ type: 'text', text: 'Optional caption' }] }] };
+    case 'divider':
+      return { version: 1, blocks: [{ type: 'divider', id: 'block-1' }] };
+    case 'mermaid':
+      return { version: 1, blocks: [{ type: 'mermaid', id: 'block-1', code: 'flowchart LR\nA-->B' }] };
     default:
       throw new Error(`Unsupported block type "${blockType}".`);
   }
@@ -456,7 +315,7 @@ export function readResource(uri: string): TextResourceContents {
       ],
       pageAuthoring: [
         'Use page_find or page_get to confirm whether the page already exists before choosing create versus update.',
-        'Prefer structured template inputs over hand-assembling large Yoopta payloads when the page matches concept, how_to, or reference patterns.',
+        'Prefer structured template inputs over hand-assembling large canonical content payloads when the page matches concept, how_to, or reference patterns.',
         'Avoid empty content placeholders such as content: {} or content: { blocks: [] } when the user expects a real draft.',
         'Separate content edits from publication steps so workflow errors stay easier to diagnose.',
       ],
@@ -481,7 +340,14 @@ export function readResource(uri: string): TextResourceContents {
           purpose: 'Publish an existing page through page_set_status with the usual read, validate, and re-read guardrails.',
         },
       ],
-      yoopta: {
+      content: {
+        format: 'doc-content-v1',
+        allowedBlockTypes: [...DOC_CONTENT_BLOCK_TYPES],
+        allowedMarks: [...DOC_CONTENT_TEXT_MARKS],
+        guidance: [...DOC_CONTENT_AUTHORING_GUIDANCE],
+      },
+      legacyYoopta: {
+        format: 'yoopta',
         allowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
         allowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
         guidance: [...DOCS_YOOPTA_AUTHORING_GUIDANCE],
@@ -506,11 +372,12 @@ export function readResource(uri: string): TextResourceContents {
     });
   }
 
-  if (host === 'yoopta' && path === 'allowed-types') {
+  if ((host === 'content' && path === 'allowed-types') || (host === 'yoopta' && path === 'allowed-types')) {
     return asJsonResource(uri, {
-      allowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
-      allowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
-      guidance: [...DOCS_YOOPTA_AUTHORING_GUIDANCE],
+      format: host === 'content' ? 'doc-content-v1' : 'yoopta',
+      allowedBlockTypes: host === 'content' ? [...DOC_CONTENT_BLOCK_TYPES] : [...DOCS_YOOPTA_ALLOWED_TYPES],
+      allowedMarks: host === 'content' ? [...DOC_CONTENT_TEXT_MARKS] : [...DOCS_YOOPTA_ALLOWED_MARKS],
+      guidance: host === 'content' ? [...DOC_CONTENT_AUTHORING_GUIDANCE] : [...DOCS_YOOPTA_AUTHORING_GUIDANCE],
     });
   }
 
@@ -534,7 +401,7 @@ export function readResource(uri: string): TextResourceContents {
 
   if (host === 'blocks' && path.endsWith('/example')) {
     const blockType = decodeURIComponent(path.slice(0, -'/example'.length));
-    if (!DOCS_YOOPTA_ALLOWED_TYPES.includes(blockType as (typeof DOCS_YOOPTA_ALLOWED_TYPES)[number])) {
+    if (!DOC_CONTENT_BLOCK_TYPES.includes(blockType as (typeof DOC_CONTENT_BLOCK_TYPES)[number])) {
       throw createResourceNotFoundError(uri, 'unknown-block-example');
     }
 

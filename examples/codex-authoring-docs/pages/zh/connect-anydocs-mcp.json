@@ -1,0 +1,215 @@
+{
+  "id": "connect-anydocs-mcp",
+  "lang": "zh",
+  "slug": "connect-anydocs-mcp",
+  "title": "把 Anydocs MCP 接入 Codex",
+  "description": "让 Codex 能够安全地读取和写入 Anydocs 项目。",
+  "tags": [
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "把 Anydocs MCP 接入 Codex"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "典型配置思路："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "在 Codex 中注册 `@anydocs/mcp` 为一个 `stdio` MCP server"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "让 Codex 在进入项目时读取项目根目录里的最小化 `AGENTS.md`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "把 `anydocs://authoring/guidance` 当成详细工作流说明的来源"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-6",
+        "children": [
+          {
+            "type": "text",
+            "text": "推荐默认顺序是："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-7",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "查看 `project_open.authoring.templates`、`resources`、`resourceTemplates`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "如果页面会用到 `template` / `metadata`，先确认对应 template 的 `metadataSchema`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "需要详细 guidance 或 canonical 示例时，再读取 `anydocs://authoring/guidance`"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_list` / `page_find` / `page_get`"
+              }
+            ]
+          },
+          {
+            "id": "element-12-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_create_from_template` 或 `page_create`"
+              }
+            ]
+          },
+          {
+            "id": "element-13-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`page_update` / `page_set_status`"
+              }
+            ]
+          },
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`nav_get` / `nav_insert` / `nav_delete` / `nav_move`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-15",
+        "children": [
+          {
+            "type": "text",
+            "text": "这样做的好处是："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-16",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "页面写入会经过 Anydocs 的 domain validation"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "template metadata 会遵守 schema 约束"
+              }
+            ]
+          },
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "页面发布仍然遵守发布审批规则"
+              }
+            ]
+          },
+          {
+            "id": "element-19-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "agent 行为更稳定，也更容易复现"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

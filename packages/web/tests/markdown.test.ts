@@ -61,3 +61,28 @@ Extra context
     { depth: 3, title: 'Quick Start', id: 'quick-start' },
   ]);
 });
+
+test('extractTocFromMarkdown deduplicates repeated heading ids', () => {
+  const markdown = normalizeMarkdownForRendering(`
+## POST /register
+
+### 请求参数
+
+### 请求示例
+
+## POST /verify
+
+### 请求参数
+
+### 请求示例
+`);
+
+  assert.deepEqual(extractTocFromMarkdown(markdown), [
+    { depth: 2, title: 'POST /register', id: 'post-register' },
+    { depth: 3, title: '请求参数', id: '请求参数' },
+    { depth: 3, title: '请求示例', id: '请求示例' },
+    { depth: 2, title: 'POST /verify', id: 'post-verify' },
+    { depth: 3, title: '请求参数', id: '请求参数-2' },
+    { depth: 3, title: '请求示例', id: '请求示例-2' },
+  ]);
+});

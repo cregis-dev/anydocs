@@ -75,32 +75,33 @@ node --experimental-strip-types packages/cli/src/index.ts <command> [options]
 
 ### 3.2 常用验证入口
 
-仓库内最常用的验证项目是 `examples/demo-docs`：
+仓库内最常用的验证项目是 `examples/starter-docs`：
 
 ```bash
 # 验证静态构建
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 
 # 验证本地动态阅读站
-node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs
 
 # 内容或构建链路联调时持续观察输出
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs --watch
 ```
 
 开发者关注点：
 - `build` 是否能稳定产出 `dist/`、搜索索引、`llms.txt` 和 `mcp/*.json`
 - `preview` 是否只暴露 `published` 页面，并正确解析默认语言入口
 - `build --watch` 是否在内容变更后持续刷新公开产物
+- 页面 `content` 是否仍保持 canonical `DocContentV1`，并能稳定导出 `render.markdown` / `render.plainText`
 
 ### 3.3 快速检查构建结果
 
 ```bash
-ls -la examples/demo-docs/dist/
-cat examples/demo-docs/dist/build-manifest.json
-cat examples/demo-docs/dist/mcp/index.json
-cat examples/demo-docs/dist/search-index.zh.json
-cat examples/demo-docs/dist/llms.txt
+ls -la examples/starter-docs/dist/
+cat examples/starter-docs/dist/build-manifest.json
+cat examples/starter-docs/dist/mcp/index.json
+cat examples/starter-docs/dist/search-index.zh.json
+cat examples/starter-docs/dist/llms.txt
 ```
 
 这里不再重复完整产物结构与命令语义；这类信息以 [usage-manual.md](usage-manual.md) 为准。
@@ -135,11 +136,11 @@ pnpm dev
 - 阅读站路由在普通开发模式下默认不会对外开放
 - 如果需要验证阅读站，请运行：
   ```bash
-  node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
+  node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs
   ```
 - 如果需要验证静态部署产物，请运行：
   ```bash
-  node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+  node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
   ```
 - 生成产物后，可检查 `dist/index.html`、`dist/<lang>/docs/.../index.html`、`dist/search-index.*.json`、`dist/llms.txt`、`dist/llms-full.txt` 与 `dist/mcp/*.json`
 
@@ -189,18 +190,18 @@ packages/web/
 
 ```bash
 # 修改示例项目内容
-vim examples/demo-docs/pages/zh/welcome.json
+vim examples/starter-docs/pages/zh/welcome.json
 
 # 重新构建
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 
 # 验证构建产物
-cat examples/demo-docs/dist/search-index.zh.json
-cat examples/demo-docs/dist/llms.txt
-cat examples/demo-docs/dist/llms-full.txt
-cat examples/demo-docs/dist/mcp/index.json
-cat examples/demo-docs/dist/mcp/chunks.zh.json
-ls examples/demo-docs/dist/en/docs
+cat examples/starter-docs/dist/search-index.zh.json
+cat examples/starter-docs/dist/llms.txt
+cat examples/starter-docs/dist/llms-full.txt
+cat examples/starter-docs/dist/mcp/index.json
+cat examples/starter-docs/dist/mcp/chunks.zh.json
+ls examples/starter-docs/dist/en/docs
 ```
 
 ### 4.4 场景四：调试 Core 库
@@ -212,7 +213,7 @@ ls examples/demo-docs/dist/en/docs
 vim packages/core/src/fs/content-repository.ts
 
 # CLI 自动使用最新的 Core 代码（workspace link）
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 
 # 如果需要类型检查
 pnpm --filter @anydocs/core typecheck
@@ -227,16 +228,16 @@ pnpm dev
 # 2. 在 Studio 中编辑内容
 #    http://localhost:3000/studio
 
-# 3. 保存后，内容写入 examples/demo-docs/pages/
+# 3. 保存后，内容写入 examples/starter-docs/pages/
 
 # 4. 启动本地动态阅读站（新终端）
-node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs
 
 # 5. 打开终端输出的 Preview URL，并确认页面可访问
 #    例如：http://127.0.0.1:3000/zh/docs/welcome
 
 # 6. 如需验证静态部署产物，再执行一次构建
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 ```
 
 ## 5. 验证和测试
@@ -315,7 +316,7 @@ ls -la packages/cli/dist/
 ls -la packages/web/.next/
 
 # 测试 CLI 构建版本
-node packages/cli/dist/index.js build examples/demo-docs
+node packages/cli/dist/index.js build examples/starter-docs
 ```
 
 ## 7. 常见问题
@@ -349,10 +350,10 @@ node --experimental-strip-types packages/cli/src/index.ts <command>
 **排查**:
 ```bash
 # 检查项目是否有 anydocs.config.json
-ls examples/demo-docs/anydocs.config.json
+ls examples/starter-docs/anydocs.config.json
 
 # 查看构建日志
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 
 # 检查是否有错误输出
 echo $?  # 应该返回 0
@@ -393,10 +394,10 @@ pnpm typecheck
 pnpm dev
 
 # 终端 2：动态阅读站预览
-node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs
 
 # 终端 3：如果你还要持续验证静态产物，再开 watch build
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs --watch
 ```
 
 ### 8.2 保持增量构建
@@ -428,7 +429,7 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs
+node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
 pnpm dev
 ```
 
@@ -445,9 +446,9 @@ pnpm dev
 | 代码检查 | `pnpm lint` |
 | 运行最小提交门槛测试 | `pnpm test` |
 | 完整构建 | `pnpm build` |
-| 验证示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs` |
-| 监听示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch` |
-| 预览示例项目阅读站 | `node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs` |
+| 验证示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs` |
+| 监听示例项目构建 | `node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs --watch` |
+| 预览示例项目阅读站 | `node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs` |
 
 ### 9.2 快捷脚本（可选）
 
@@ -456,16 +457,16 @@ pnpm dev
 {
   "scripts": {
     "cli": "node --experimental-strip-types packages/cli/src/index.ts",
-    "cli:build": "node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs",
-    "cli:preview": "node --experimental-strip-types packages/cli/src/index.ts preview examples/demo-docs",
-    "cli:watch": "node --experimental-strip-types packages/cli/src/index.ts build examples/demo-docs --watch"
+    "cli:build": "node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs",
+    "cli:preview": "node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs",
+    "cli:watch": "node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs --watch"
   }
 }
 ```
 
 使用：
 ```bash
-pnpm cli build examples/demo-docs
+pnpm cli build examples/starter-docs
 pnpm cli:build
 pnpm cli:preview
 pnpm cli:watch

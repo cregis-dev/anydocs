@@ -697,7 +697,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_create_from_template',
     description:
-      'Create a canonical Anydocs page from a structured rich-content template, generating both Yoopta content and render output.',
+      'Create a canonical Anydocs page from a structured rich-content template, generating DocContentV1 and render output.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -763,7 +763,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_update_from_template',
     description:
-      'Update an existing canonical Anydocs page from a structured rich-content template, regenerating both Yoopta content and render output.',
+      'Update an existing canonical Anydocs page from a structured rich-content template, regenerating DocContentV1 and render output.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -888,7 +888,7 @@ export const pageTools: ToolDefinition[] = [
         regenerateRender: {
           type: 'boolean',
           description:
-            'When true and patch.render is omitted, regenerate render.markdown/plainText from the resulting Yoopta content.',
+            'When true and patch.render is omitted, regenerate render.markdown/plainText from the resulting canonical content.',
         },
       },
       required: ['projectRoot', 'lang', 'pageId', 'patch'],

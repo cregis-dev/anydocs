@@ -1,6 +1,6 @@
 import type { ProjectSiteTopNavItem, ProjectSiteTopNavLabel } from '@anydocs/core';
 
-import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavItem, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
 
 export function normalizeRoutePath(pathname: string) {
   if (!pathname || pathname === '/') {
@@ -104,7 +104,7 @@ export function buildTopNavHref(
   item: ProjectSiteTopNavItem,
   lang: DocsLang,
   nav: NavigationDoc,
-  pages: PageDoc[],
+  pages: PublishedPageDoc[],
 ) {
   if (item.type === 'external') {
     return item.href;

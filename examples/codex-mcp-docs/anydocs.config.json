@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "projectId": "codex-mcp-docs",
+  "name": "Codex MCP Docs",
+  "defaultLanguage": "zh",
+  "languages": [
+    "zh",
+    "en"
+  ],
+  "site": {
+    "theme": {
+      "id": "classic-docs",
+      "branding": {
+        "siteTitle": "Codex MCP Docs",
+        "homeLabel": "Codex MCP"
+      },
+      "codeTheme": "github-dark"
+    }
+  }
+}

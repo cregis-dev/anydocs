@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "importId": "legacy-2026-04-04-demo",
+  "projectId": "import-staging-docs",
+  "sourceRoot": "/Users/shawn/workspace/code/anydocs/examples/import-staging-docs/legacy-docs",
+  "importedAt": "2026-04-04T00:00:00.000Z",
+  "itemCount": 1,
+  "status": "staged",
+  "items": [
+    {
+      "id": "getting-started",
+      "sourcePath": "getting-started.md",
+      "lang": "en",
+      "slug": "getting-started",
+      "title": "Imported Getting Started",
+      "format": "markdown",
+      "status": "staged"
+    }
+  ]
+}

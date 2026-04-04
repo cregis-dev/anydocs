@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { createPage as createCorePage, initializeProject, updateProjectConfig } from '@anydocs/core';
+import { createPage as createCorePage, initializeProject, updateProjectConfig, validateDocContentV1 } from '@anydocs/core';
 
 import { navigationTools } from '../src/tools/navigation-tools.ts';
 import { pageTools } from '../src/tools/page-tools.ts';
@@ -77,6 +77,7 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
         allowedBlockTypes: string[];
         allowedMarks: string[];
         guidance: string[];
+        legacyContentFormat: string;
         templates: Array<{
           id: string;
           baseTemplate: string;
@@ -94,9 +95,10 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
     assert.equal(success.data.paths.projectRoot, projectRoot);
     assert.equal(success.data.themeCapabilities.navigation.topNav, false);
     assert.equal(success.data.themeCapabilities.features.search, true);
-    assert.ok(success.data.themeCapabilities.supportedBlockTypes.includes('CodeGroup'));
-    assert.equal(success.data.authoring.contentFormat, 'yoopta');
-    assert.ok(success.data.authoring.allowedBlockTypes.includes('Callout'));
+    assert.ok(success.data.themeCapabilities.supportedBlockTypes.includes('codeGroup'));
+    assert.equal(success.data.authoring.contentFormat, 'doc-content-v1');
+    assert.equal(success.data.authoring.legacyContentFormat, 'yoopta');
+    assert.ok(success.data.authoring.allowedBlockTypes.includes('callout'));
     assert.ok(success.data.authoring.allowedMarks.includes('bold'));
     assert.ok(success.data.authoring.guidance.length > 0);
     assert.ok(success.data.authoring.templates.some((template) => template.id === 'how_to'));
@@ -389,7 +391,10 @@ test('page_clone_to_language creates a draft skeleton and page_list_translation_
     assert.equal(cloneResult.data.page.id, 'guide');
     assert.equal(cloneResult.data.page.lang, 'zh');
     assert.equal(cloneResult.data.page.status, 'draft');
-    assert.deepEqual(cloneResult.data.page.content, {});
+    assert.deepEqual(cloneResult.data.page.content, {
+      version: 1,
+      blocks: [],
+    });
 
     await createCorePage({
       projectRoot,
@@ -525,7 +530,7 @@ test('page_create_from_markdown infers document fields and returns conversion wa
         title: string;
         description?: string;
         tags?: string[];
-        content: Record<string, { type: string }>;
+        content: { version: number; blocks: Array<{ type: string }> };
         render?: { markdown?: string };
       };
       conversion: {
@@ -558,10 +563,11 @@ test('page_create_from_markdown infers document fields and returns conversion wa
     assert.equal(result.data.page.title, 'Legacy Guide');
     assert.equal(result.data.page.description, 'Imported from markdown');
     assert.deepEqual(result.data.page.tags, ['guide', 'migration']);
-    assert.deepEqual(Object.values(result.data.page.content).map((block) => block.type), [
-      'HeadingOne',
-      'BulletedList',
-      'Paragraph',
+    assert.equal(validateDocContentV1(result.data.page.content).ok, true);
+    assert.deepEqual(result.data.page.content.blocks.map((block) => block.type), [
+      'heading',
+      'list',
+      'paragraph',
     ]);
     assert.match(result.data.page.render?.markdown ?? '', /# Legacy Guide/);
     assert.ok(result.data.conversion.warnings.some((warning) => warning.code === 'markdown-frontmatter-unmapped'));
@@ -582,7 +588,7 @@ test('page_create_from_template writes a richer canonical page through template 
 
     const result = expectSuccess<{
       filePath: string;
-      page: { id: string; render?: { markdown?: string }; content: Record<string, unknown> };
+      page: { id: string; render?: { markdown?: string }; content: { version: number; blocks: unknown[] } };
     }>(await invokeTool('page_create_from_template', {
       projectRoot,
       lang: 'en',
@@ -604,7 +610,8 @@ test('page_create_from_template writes a richer canonical page through template 
     }));
     assert.equal(result.data.page.id, 'publish-guide');
     assert.match(result.data.page.render?.markdown ?? '', /## Steps/);
-    assert.equal(Object.keys(result.data.page.content).length > 3, true);
+    assert.equal(validateDocContentV1(result.data.page.content).ok, true);
+    assert.equal(result.data.page.content.blocks.length > 3, true);
     assert.match(result.data.filePath, /pages\/en\/publish-guide\.json$/);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -651,7 +658,7 @@ test('page_update_from_template rewrites an existing page through template compo
   }
 });
 
-test('page_create returns a structured validation error for invalid Yoopta content payloads', async () => {
+test('page_create returns a structured validation error for invalid content payloads', async () => {
   const projectRoot = await createTempProjectRoot();
 
   try {
@@ -669,7 +676,7 @@ test('page_create returns a structured validation error for invalid Yoopta conte
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.code, 'VALIDATION_ERROR');
-      assert.equal(result.error.rule, 'page-content-must-be-valid-yoopta');
+      assert.equal(result.error.rule, 'page-content-must-be-valid-doc-content');
     }
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -831,7 +838,7 @@ test('page_update_from_markdown appends fragment markdown without overwriting ex
       page: {
         title: string;
         render?: { markdown?: string; plainText?: string };
-        content: Record<string, unknown>;
+        content: { version: number; blocks: Array<{ type: string }> };
       };
       conversion: {
         warnings: Array<{ code: string }>;
@@ -847,11 +854,12 @@ test('page_update_from_markdown appends fragment markdown without overwriting ex
 
     assert.equal(result.data.page.title, 'Guide');
     assert.equal(result.data.page.render?.markdown, '# Guide\n\nExisting body\n\n## New Section\n\n- appended item');
-    assert.equal(result.data.page.render?.plainText, 'Guide\n\nExisting body\n\nNew Section - appended item');
-    assert.deepEqual(Object.values(result.data.page.content).map((block) => (block as { type: string }).type), [
-      'Paragraph',
-      'HeadingTwo',
-      'BulletedList',
+    assert.equal(result.data.page.render?.plainText, 'Guide\n\nExisting body\n\nNew Section\n\nappended item');
+    assert.equal(validateDocContentV1(result.data.page.content).ok, true);
+    assert.deepEqual(result.data.page.content.blocks.map((block) => block.type), [
+      'paragraph',
+      'heading',
+      'list',
     ]);
     assert.deepEqual(result.data.conversion.warnings, []);
   } finally {

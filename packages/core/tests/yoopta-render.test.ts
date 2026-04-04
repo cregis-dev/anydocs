@@ -41,3 +41,27 @@ test('renderYooptaContent plainText ignores block props and preserves block sepa
   assert.equal(result.plainText, 'Authentication API auth-123\n\nAuthentication flow auth-123-body');
   assert.doesNotMatch(result.plainText, /Ignored title metadata|Ignored paragraph metadata/);
 });
+
+test('renderYooptaContent serializes Mermaid blocks as mermaid fences', () => {
+  const result = renderYooptaContent({
+    diagram: {
+      id: 'diagram',
+      type: 'Mermaid',
+      value: [
+        {
+          id: 'diagram-value',
+          type: 'mermaid',
+          children: [{ text: 'sequenceDiagram\n    A->>B: Hi' }],
+          props: {
+            nodeType: 'block',
+            code: 'sequenceDiagram\n    A->>B: Hi',
+          },
+        },
+      ],
+      meta: { order: 0, depth: 0 },
+    },
+  });
+
+  assert.equal(result.markdown, '```mermaid\nsequenceDiagram\n    A->>B: Hi\n```');
+  assert.equal(result.plainText, 'sequenceDiagram A->>B: Hi');
+});

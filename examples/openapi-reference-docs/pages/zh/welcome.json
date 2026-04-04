@@ -1,0 +1,147 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "OpenAPI 参考示例",
+  "description": "展示如何把本地 OpenAPI 文件接入 Anydocs 的 API 参考能力。",
+  "tags": [
+    "openapi",
+    "reference",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "OpenAPI 参考示例"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例演示如何把一个仓库内的 OpenAPI 文件接入 Anydocs。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "适合什么场景"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想验证 `api-sources/*.json` 的写法"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想产出 `/reference/*` 路由"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想检查 `dist/mcp/openapi/*` 和 `llms-openapi.txt`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例包含什么"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "本地 `openapi/petstore.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "一个 published 的 `api-sources/petstore.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "导向 `/zh/reference/petstore` 的导航入口"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "如何运行"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-12",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/openapi-reference-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/openapi-reference-docs"
+      }
+    ]
+  }
+}

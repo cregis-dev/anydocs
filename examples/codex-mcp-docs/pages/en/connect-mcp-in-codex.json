@@ -1,0 +1,111 @@
+{
+  "id": "connect-mcp-in-codex",
+  "lang": "en",
+  "slug": "connect-mcp-in-codex",
+  "title": "Connect the Anydocs MCP Server in Codex",
+  "description": "Give Codex real access to Anydocs domain tools.",
+  "tags": [
+    "codex",
+    "mcp",
+    "setup"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Connect the Anydocs MCP Server in Codex"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "A practical setup is to register `@anydocs/mcp` as a `stdio` MCP server and keep a minimal `AGENTS.md` file in the project root."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-3",
+        "children": [
+          {
+            "type": "text",
+            "text": "That tells Codex to:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "call `project_open` first"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "inspect `project_open.authoring` for templates, resources, and resource templates"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "read `anydocs://authoring/guidance` when it needs the detailed workflow"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "inspect a template's `metadataSchema` before writing `template` / `metadata`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "read with `page_list`, `page_find`, and `page_get`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "write with `page_create_from_template`, `page_create`, `page_update`, `page_set_status`, and navigation tools"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

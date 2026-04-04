@@ -20,6 +20,24 @@ function toYooptaParagraphBlock(blockId: string, elementId: string, text: string
   };
 }
 
+function toYooptaBlockquoteBlock(blockId: string, elementId: string, text: string, order: number) {
+  return {
+    [blockId]: {
+      id: blockId,
+      type: 'Blockquote',
+      value: [
+        {
+          id: elementId,
+          type: 'blockquote',
+          children: [{ text }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order, depth: 0 },
+    },
+  };
+}
+
 function toYooptaHeadingBlock(
   blockId: string,
   elementId: string,
@@ -48,12 +66,25 @@ function toYooptaHeadingBlock(
 function toYooptaListBlock(
   blockId: string,
   elementId: string,
-  text: string,
+  items: MarkdownParsedListItem[],
   blockType: 'BulletedList' | 'NumberedList' | 'TodoList',
   elementType: 'bulleted-list' | 'numbered-list' | 'todo-list',
   order: number,
-  checked?: boolean,
 ) {
+  const toYooptaListItems = (entries: MarkdownParsedListItem[], prefix: string): Array<Record<string, unknown>> =>
+    entries.map((item, index) => ({
+      id: `${prefix}-item-${index + 1}`,
+      type: 'list-item',
+      children: [
+        { text: item.text },
+        ...toYooptaListItems(item.items ?? [], `${prefix}-item-${index + 1}`),
+      ],
+      props: {
+        nodeType: 'block',
+        ...(item.checked == null ? {} : { checked: item.checked }),
+      },
+    }));
+
   return {
     [blockId]: {
       id: blockId,
@@ -62,10 +93,34 @@ function toYooptaListBlock(
         {
           id: elementId,
           type: elementType,
-          children: [{ text }],
+          children: toYooptaListItems(items, elementId),
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order, depth: 0 },
+    },
+  };
+}
+
+function toYooptaCodeBlock(
+  blockId: string,
+  elementId: string,
+  code: string,
+  order: number,
+  language?: string,
+) {
+  return {
+    [blockId]: {
+      id: blockId,
+      type: 'Code',
+      value: [
+        {
+          id: elementId,
+          type: 'code',
+          children: [{ text: code }],
           props: {
-            nodeType: 'block',
-            ...(checked == null ? {} : { checked }),
+            nodeType: 'void',
+            ...(language ? { language } : {}),
           },
         },
       ],
@@ -88,7 +143,7 @@ function toYooptaTableBlock(blockId: string, elementId: string, rows: string[][]
             type: 'table-row',
             children: row.map((cell, cellIndex) => ({
               id: `${elementId}-cell-${rowIndex + 1}-${cellIndex + 1}`,
-              type: 'table-cell',
+              type: 'table-data-cell',
               children: [{ text: cell }],
               props: { nodeType: 'block' },
             })),
@@ -125,6 +180,134 @@ function isMarkdownTableSeparator(line: string): boolean {
   }
 
   return splitMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function normalizeMarkdownBlockquoteText(lines: string[]): string {
+  return lines
+    .map((line) => line.replace(/^\s*>\s?/, '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+type MarkdownListStyle = 'bulleted' | 'numbered' | 'todo';
+
+type MarkdownListItem = {
+  indent: number;
+  style: MarkdownListStyle;
+  text: string;
+  checked?: boolean;
+};
+
+type MarkdownParsedListItem = {
+  text: string;
+  checked?: boolean;
+  items?: MarkdownParsedListItem[];
+};
+
+function getMarkdownIndentWidth(value: string): number {
+  let width = 0;
+  for (const char of value) {
+    width += char === '\t' ? 4 : 1;
+  }
+  return width;
+}
+
+function parseMarkdownListItem(line: string): MarkdownListItem | null {
+  const indent = getMarkdownIndentWidth((/^\s*/.exec(line)?.[0] ?? ''));
+  const todoMatch = /^\s*[-*+]\s+\[( |x|X)\]\s+(.+)$/.exec(line);
+  if (todoMatch) {
+    const text = todoMatch[2]?.trim() ?? '';
+    if (!text) {
+      return null;
+    }
+
+    return {
+      indent,
+      style: 'todo',
+      text,
+      checked: todoMatch[1]?.toLowerCase() === 'x',
+    };
+  }
+
+  const bulletMatch = /^\s*[-*+]\s+(.+)$/.exec(line);
+  if (bulletMatch) {
+    const text = bulletMatch[1]?.trim() ?? '';
+    if (!text) {
+      return null;
+    }
+
+    return {
+      indent,
+      style: 'bulleted',
+      text,
+    };
+  }
+
+  const numberedMatch = /^\s*\d+\.\s+(.+)$/.exec(line);
+  if (numberedMatch) {
+    const text = numberedMatch[1]?.trim() ?? '';
+    if (!text) {
+      return null;
+    }
+
+    return {
+      indent,
+      style: 'numbered',
+      text,
+    };
+  }
+
+  return null;
+}
+
+function parseMarkdownListSequence(
+  lines: string[],
+  startIndex: number,
+  style: MarkdownListStyle,
+  indent: number,
+): { items: MarkdownParsedListItem[]; nextLineIndex: number } {
+  const items: MarkdownParsedListItem[] = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index] ?? '';
+    if (!line.trim()) {
+      break;
+    }
+
+    const item = parseMarkdownListItem(line);
+    if (!item) {
+      break;
+    }
+
+    if (item.indent < indent || item.style !== style) {
+      break;
+    }
+
+    if (item.indent > indent) {
+      if (items.length === 0) {
+        break;
+      }
+
+      const nested = parseMarkdownListSequence(lines, index, style, item.indent);
+      items[items.length - 1] = {
+        ...items[items.length - 1],
+        items: nested.items,
+      };
+      index = nested.nextLineIndex;
+      continue;
+    }
+
+    items.push({
+      text: item.text,
+      checked: item.checked,
+    });
+    index += 1;
+  }
+
+  return { items, nextLineIndex: index };
 }
 
 export function stripMarkdownToPlainText(markdown: string): string {
@@ -194,40 +377,66 @@ export function createMarkdownYooptaContent(markdown: string): Record<string, un
       continue;
     }
 
-    const todoMatch = /^\s*[-*+]\s+\[( |x|X)\]\s+(.+)$/.exec(line);
-    if (todoMatch) {
+    const codeFenceMatch = /^```([^`]*)$/.exec(trimmedLine);
+    if (codeFenceMatch) {
       flushParagraph();
-      const checked = todoMatch[1]?.toLowerCase() === 'x';
-      const todoText = todoMatch[2]?.trim() ?? '';
-      if (todoText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, todoText, 'TodoList', 'todo-list', blockOrder, checked),
-        );
+      const language = codeFenceMatch[1]?.trim() || undefined;
+      const codeLines: string[] = [];
+      lineIndex += 1;
+
+      while (lineIndex < lines.length) {
+        const codeLine = lines[lineIndex] ?? '';
+        if (codeLine.trim() === '```') {
+          break;
+        }
+
+        codeLines.push(codeLine);
+        lineIndex += 1;
+      }
+
+      pushBlock(
+        toYooptaCodeBlock(
+          `block-${nextIndex}`,
+          `element-${nextIndex}`,
+          codeLines.join('\n'),
+          blockOrder,
+          language,
+        ),
+      );
+      continue;
+    }
+
+    if (/^\s*>/.test(line)) {
+      flushParagraph();
+      const quoteLines = [line];
+      while (lineIndex + 1 < lines.length && /^\s*>/.test(lines[lineIndex + 1] ?? '')) {
+        lineIndex += 1;
+        quoteLines.push(lines[lineIndex] ?? '');
+      }
+
+      const quoteText = normalizeMarkdownBlockquoteText(quoteLines);
+      if (quoteText) {
+        pushBlock(toYooptaBlockquoteBlock(`block-${nextIndex}`, `element-${nextIndex}`, quoteText, blockOrder));
       }
       continue;
     }
 
-    const bulletMatch = /^\s*[-*+]\s+(.+)$/.exec(line);
-    if (bulletMatch) {
+    const listItem = parseMarkdownListItem(line);
+    if (listItem) {
       flushParagraph();
-      const bulletText = bulletMatch[1]?.trim() ?? '';
-      if (bulletText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, bulletText, 'BulletedList', 'bulleted-list', blockOrder),
-        );
-      }
-      continue;
-    }
+      const parsed = parseMarkdownListSequence(lines, lineIndex, listItem.style, listItem.indent);
 
-    const numberedMatch = /^\s*\d+\.\s+(.+)$/.exec(line);
-    if (numberedMatch) {
-      flushParagraph();
-      const numberedText = numberedMatch[1]?.trim() ?? '';
-      if (numberedText) {
-        pushBlock(
-          toYooptaListBlock(`block-${nextIndex}`, `element-${nextIndex}`, numberedText, 'NumberedList', 'numbered-list', blockOrder),
-        );
-      }
+      pushBlock(
+        toYooptaListBlock(
+          `block-${nextIndex}`,
+          `element-${nextIndex}`,
+          parsed.items,
+          listItem.style === 'bulleted' ? 'BulletedList' : listItem.style === 'numbered' ? 'NumberedList' : 'TodoList',
+          listItem.style === 'bulleted' ? 'bulleted-list' : listItem.style === 'numbered' ? 'numbered-list' : 'todo-list',
+          blockOrder,
+        ),
+      );
+      lineIndex = parsed.nextLineIndex - 1;
       continue;
     }
 

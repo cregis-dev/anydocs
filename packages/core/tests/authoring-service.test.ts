@@ -50,6 +50,18 @@ function createYooptaContent(text: string = 'Body copy') {
   };
 }
 
+function createDocContent(text: string = 'Body copy') {
+  return {
+    version: 1 as const,
+    blocks: [
+      {
+        type: 'paragraph' as const,
+        children: [{ type: 'text' as const, text }],
+      },
+    ],
+  };
+}
+
 test('createPage writes a canonical page file and returns the created page metadata', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -186,7 +198,30 @@ test('createPage rejects duplicate slugs with a stable validation error', async 
   }
 });
 
-test('createPage rejects content that is not valid Yoopta structure', async () => {
+test('createPage accepts canonical docs content', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'canonical-guide',
+        slug: 'canonical-guide',
+        title: 'Canonical Guide',
+        content: createDocContent('Canonical body'),
+      },
+    });
+
+    assert.deepEqual(result.page.content, createDocContent('Canonical body'));
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('createPage rejects content that is neither canonical nor valid legacy Yoopta', async () => {
   const projectRoot = await createTempProjectRoot();
 
   try {
@@ -208,7 +243,7 @@ test('createPage rejects content that is not valid Yoopta structure', async () =
         }),
       (error: unknown) =>
         error instanceof ValidationError &&
-        error.details.rule === 'page-content-must-be-valid-yoopta',
+        error.details.rule === 'page-content-must-be-valid-doc-content',
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });

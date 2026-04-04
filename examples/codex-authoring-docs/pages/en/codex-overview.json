@@ -1,0 +1,111 @@
+{
+  "id": "codex-overview",
+  "lang": "en",
+  "slug": "codex-overview",
+  "title": "What Codex Is Good At",
+  "description": "Understand the role Codex plays in an Anydocs authoring workflow.",
+  "tags": [
+    "codex",
+    "overview"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "What Codex Is Good At"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex works best when the task has a clear tool boundary and a concrete output, instead of free-form edits across raw JSON files."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-3",
+        "children": [
+          {
+            "type": "text",
+            "text": "In Anydocs, good Codex tasks include:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "validating the project contract and enabled languages"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "finding pages by page id or slug"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "creating and updating pages"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "changing page status in a controlled way"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "checking navigation and page state before and after changes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-9",
+        "children": [
+          {
+            "type": "text",
+            "text": "The main rule is simple: **have Codex call MCP tools instead of guessing the source-file layout and editing JSON directly.**"
+          }
+        ]
+      }
+    ]
+  }
+}

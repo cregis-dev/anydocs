@@ -24,7 +24,7 @@ type SearchIndex = {
 
 export function SearchPanel({
   lang,
-  placeholder = 'Find pages...',
+  placeholder,
   className,
   inputClassName,
   resultsClassName,
@@ -38,7 +38,7 @@ export function SearchPanel({
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState<SearchIndex | null>(null);
   const copy = getDocsUiCopy(lang);
-  const resolvedPlaceholder = placeholder;
+  const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
 
   useEffect(() => {
     let cancelled = false;

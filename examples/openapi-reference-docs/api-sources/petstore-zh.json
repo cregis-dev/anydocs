@@ -1,0 +1,20 @@
+{
+  "id": "petstore-zh",
+  "type": "openapi",
+  "lang": "zh",
+  "status": "published",
+  "source": {
+    "kind": "file",
+    "path": "openapi/petstore.json"
+  },
+  "display": {
+    "title": "Petstore API",
+    "groupId": "reference"
+  },
+  "runtime": {
+    "routeBase": "/zh/reference/petstore-zh",
+    "tryIt": {
+      "enabled": false
+    }
+  }
+}

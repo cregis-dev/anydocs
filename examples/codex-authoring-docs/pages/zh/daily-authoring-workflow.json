@@ -1,0 +1,145 @@
+{
+  "id": "daily-authoring-workflow",
+  "lang": "zh",
+  "slug": "daily-authoring-workflow",
+  "title": "日常写作工作流",
+  "description": "让 Codex 参与真实文档维护时的推荐节奏。",
+  "tags": [
+    "workflow",
+    "authoring"
+  ],
+  "status": "published",
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "日常写作工作流"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "当站点已经存在时，推荐这样让 Codex 参与工作："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-3",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-3-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先读，不要一上来就写"
+              }
+            ]
+          },
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "先找目标页面，再决定是创建还是更新"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "对已有页面做局部、明确、可解释的改动"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "需要发布时单独调用 `page_set_status`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-7",
+        "children": [
+          {
+            "type": "text",
+            "text": "一个好的开发者提示通常会包含："
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "明确的 `projectRoot`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "目标语言，例如 `zh` 或 `en`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想改哪一页：`pageId` 或 `slug`"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "预期结果：新增页面、改写内容、还是只调整状态"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "这样 Codex 更容易稳定地把工作落在正确的工具上。"
+          }
+        ]
+      }
+    ]
+  }
+}

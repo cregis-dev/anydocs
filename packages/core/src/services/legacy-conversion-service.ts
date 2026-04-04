@@ -11,6 +11,7 @@ import {
 } from '../fs/docs-repository.ts';
 import { loadProjectContract } from '../fs/content-repository.ts';
 import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '../types/docs.ts';
+import type { DocContentV1 } from '../types/content.ts';
 import type {
   LegacyImportConversionItem,
   LegacyImportConversionReport,
@@ -22,7 +23,7 @@ import type {
   LegacyImportWarning,
 } from '../types/legacy-import.ts';
 import { isDocsLang } from '../types/docs.ts';
-import { createMarkdownYooptaContent, stripMarkdownToPlainText } from '../utils/index.ts';
+import { createMarkdownYooptaContent, renderPageContent, yooptaToDocContent } from '../utils/index.ts';
 import { assertValidPageId, normalizeSlug } from '../utils/slug.ts';
 
 export type ConvertImportedLegacyContentOptions = {
@@ -32,7 +33,7 @@ export type ConvertImportedLegacyContentOptions = {
 };
 
 type ConversionPlan = {
-  page: PageDoc<Record<string, unknown>>;
+  page: PageDoc<DocContentV1>;
   entry: LegacyImportConversionItem;
   updatedItem: LegacyImportItem;
 };
@@ -479,7 +480,9 @@ function createConvertedPage(
   pageId: string,
   slug: string,
   warnings: LegacyImportWarning[],
-): PageDoc<Record<string, unknown>> {
+): PageDoc<DocContentV1> {
+  const content = yooptaToDocContent(createMarkdownYooptaContent(item.body));
+
   return {
     id: pageId,
     lang: item.lang,
@@ -489,11 +492,8 @@ function createConvertedPage(
     ...(item.tags ? { tags: item.tags } : {}),
     status: 'draft',
     updatedAt: convertedAt,
-    content: createMarkdownYooptaContent(item.body),
-    render: {
-      markdown: item.body,
-      plainText: stripMarkdownToPlainText(item.body),
-    },
+    content,
+    render: renderPageContent(content),
     review: {
       required: true,
       sourceType: 'legacy-import',
