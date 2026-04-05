@@ -102,7 +102,7 @@ anydocs/
 │   ├── desktop/
 │   └── web/
 ├── examples/
-│   └── demo-docs/
+│   └── starter-docs/
 │       ├── anydocs.config.json
 │       ├── anydocs.workflow.json
 │       ├── pages/
@@ -146,13 +146,23 @@ anydocs/
   "status": "draft" | "in_review" | "published",
   "tags": ["GUIDE"],
   "updatedAt": "2026-03-18T00:00:00.000Z",
-  "content": {},
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "paragraph",
+        "children": [{ "type": "text", "text": "Welcome" }]
+      }
+    ]
+  },
   "render": {
     "markdown": "# Welcome",
     "plainText": "Welcome"
   }
 }
 ```
+
+`content` is the canonical source of truth and uses `DocContentV1`. `render.markdown` and `render.plainText` are derived reader/build outputs.
 
 **Navigation JSON**
 
@@ -264,7 +274,7 @@ pnpm install
 pnpm dev
 ```
 
-Then open `http://localhost:3000/studio` and select `examples/demo-docs` as the demo project path.
+Then open `http://localhost:3000/studio` and select `examples/starter-docs` as the demo project path.
 
 ### Create a New Project
 

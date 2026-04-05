@@ -224,8 +224,8 @@ Supported node types: `section`, `folder`, `page`, `link`
 - **Architecture**: `artifacts/bmad/planning-artifacts/architecture.md` (planning and architectural decisions)
 - **PRD**: `artifacts/bmad/planning-artifacts/prd.md` (product requirements)
 - **Epics**: `artifacts/bmad/planning-artifacts/epics.md` (delivery breakdown)
-- **Usage Manual**: `docs/04-usage-manual.md` (detailed operational guide)
-- **Dev Guide**: `docs/05-dev-guide.md` (developer workflow guide)
+- **Usage Manual**: `docs/usage-manual.md` (detailed operational guide)
+- **Dev Guide**: `docs/developer-guide.md` (developer workflow guide)
 - **Data Layer**:
   - `packages/core/src/lib/docs/fs.ts` - Local read/write with validation
   - `packages/core/src/lib/docs/data.ts` - Published-only data layer

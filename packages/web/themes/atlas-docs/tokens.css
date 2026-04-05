@@ -2,36 +2,36 @@
   --atlas-background: #ffffff;
   --atlas-foreground: #111827;
   --atlas-panel: #ffffff;
-  --atlas-panel-subtle: #f8fafc;
-  --atlas-header: rgba(255, 255, 255, 0.96);
-  --atlas-border: #e5e7eb;
+  --atlas-panel-subtle: #f7f9fc;
+  --atlas-header: rgba(255, 255, 255, 0.88);
+  --atlas-border: #e8edf3;
   --atlas-muted: #f8fafc;
-  --atlas-muted-foreground: #667085;
-  --atlas-copy: #334155;
-  --atlas-copy-subtle: #6b7280;
+  --atlas-muted-foreground: #697586;
+  --atlas-copy: #344256;
+  --atlas-copy-subtle: #5f6c7e;
   --atlas-primary: #111827;
   --atlas-primary-foreground: #ffffff;
-  --atlas-accent: #f3f4f6;
+  --atlas-accent: #f5f7fa;
   --atlas-accent-foreground: #111827;
   --atlas-sidebar-active: #111827;
   --atlas-sidebar-active-foreground: #111827;
-  --atlas-sidebar-active-background: #f3f4f6;
-  --atlas-sidebar-active-border: transparent;
+  --atlas-sidebar-active-background: #f6f8fb;
+  --atlas-sidebar-active-border: #d7dee8;
   --atlas-sidebar-hover: #f8fafc;
-  --atlas-top-nav-active-background: #f3f4f6;
-  --atlas-top-nav-active-border: #e5e7eb;
-  --atlas-top-nav-link: #4b5563;
+  --atlas-top-nav-active-background: #f6f8fb;
+  --atlas-top-nav-active-border: #dde4ed;
+  --atlas-top-nav-link: #2f3d50;
   --atlas-ring: color-mix(in srgb, var(--atlas-foreground) 16%, white);
-  --atlas-sidebar-surface: #ffffff;
-  --atlas-body-background: #ffffff;
-  --atlas-content-border: #e5e7eb;
-  --atlas-content-shadow: rgba(15, 23, 42, 0.03);
+  --atlas-sidebar-surface: #fcfcfd;
+  --atlas-body-background: #fcfcfd;
+  --atlas-content-border: #e7edf3;
+  --atlas-content-shadow: rgba(15, 23, 42, 0.05);
   --atlas-toc-background: transparent;
-  --atlas-toc-border: #eaecf0;
-  --atlas-toc-divider: #f0f2f5;
-  --atlas-toc-active-background: #f8fafc;
-  --atlas-search-background: #f8fafc;
-  --atlas-search-border: #e5e7eb;
+  --atlas-toc-border: #edf1f5;
+  --atlas-toc-divider: #eef2f6;
+  --atlas-toc-active-background: #f7f9fc;
+  --atlas-search-background: #fbfcfe;
+  --atlas-search-border: #e3e8ef;
 
   --background: var(--atlas-background);
   --foreground: var(--atlas-foreground);
@@ -66,7 +66,9 @@
   --docs-sidebar-hover: var(--atlas-sidebar-hover);
   --docs-sidebar-brand-surface: var(--atlas-search-background);
   --docs-sidebar-section: var(--atlas-copy-subtle);
+  --docs-sidebar-group-background: var(--atlas-sidebar-hover);
   --docs-sidebar-group-title: var(--atlas-foreground);
+  --docs-sidebar-group-accent: var(--atlas-foreground);
   --docs-sidebar-link: var(--atlas-copy);
   --docs-sidebar-link-subtle: var(--atlas-muted-foreground);
   --docs-body-copy: var(--atlas-copy);
@@ -76,6 +78,7 @@
   --docs-search-placeholder: var(--atlas-muted-foreground);
   --docs-search-results-background: var(--atlas-panel);
   --docs-search-hover: var(--atlas-sidebar-hover);
+  --docs-divider: var(--atlas-border);
   --docs-toc-background: var(--atlas-toc-background);
   --docs-toc-border: var(--atlas-toc-border);
   --docs-toc-divider: var(--atlas-toc-divider);
@@ -88,32 +91,38 @@
 
 .theme-atlas-docs {
   background:
-    linear-gradient(180deg, #ffffff 0, #ffffff 60px, var(--atlas-body-background) 60px, var(--atlas-body-background) 100%);
+    linear-gradient(180deg, #ffffff 0, #ffffff 112px, var(--atlas-body-background) 112px, var(--atlas-body-background) 100%);
+}
+
+.theme-atlas-docs [data-docs-divider] {
+  border-color: var(--docs-divider);
 }
 
 .theme-atlas-docs .prose {
   color: var(--docs-body-copy);
-  font-size: 0.9375rem;
-  line-height: 1.8;
+  font-size: 0.95rem;
+  line-height: 1.78;
 }
 
 .theme-atlas-docs .prose a {
-  color: var(--atlas-foreground);
-  text-decoration-color: color-mix(in srgb, var(--atlas-foreground) 18%, white);
+  color: var(--atlas-primary);
+  text-decoration-color: color-mix(in srgb, var(--atlas-primary) 24%, white);
   text-underline-offset: 0.18em;
 }
 
 .theme-atlas-docs .prose h2 {
-  font-size: 1.375rem;
-  line-height: 1.35;
-  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.28;
+  font-weight: 650;
+  letter-spacing: -0.025em;
   color: var(--atlas-foreground);
 }
 
 .theme-atlas-docs .prose h3 {
-  font-size: 1rem;
-  line-height: 1.55;
+  font-size: 1.0625rem;
+  line-height: 1.5;
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--atlas-foreground);
 }
 
@@ -139,10 +148,12 @@
   overflow: hidden;
   border-radius: 0.75rem;
   border: 1px solid var(--atlas-content-border);
+  background: var(--atlas-panel);
+  box-shadow: 0 10px 24px var(--atlas-content-shadow);
 }
 
 .theme-atlas-docs .prose thead {
-  background: #fafafa;
+  background: color-mix(in srgb, var(--atlas-panel-subtle) 82%, white);
 }
 
 .theme-atlas-docs .prose td,
@@ -152,11 +163,11 @@
 
 .theme-atlas-docs .prose code {
   border: 1px solid color-mix(in srgb, var(--atlas-foreground) 8%, white);
-  background: color-mix(in srgb, var(--atlas-foreground) 4%, white);
+  background: color-mix(in srgb, var(--atlas-foreground) 3%, white);
   color: var(--atlas-foreground);
 }
 
 .theme-atlas-docs .prose pre {
   border-color: color-mix(in srgb, var(--atlas-foreground) 8%, var(--atlas-content-border));
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
 }

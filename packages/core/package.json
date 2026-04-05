@@ -16,7 +16,7 @@
   },
   "files": [
     "dist",
-    "docs/skill.md"
+    "docs"
   ],
   "publishConfig": {
     "access": "public"

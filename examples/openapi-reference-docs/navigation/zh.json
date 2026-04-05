@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "type": "section",
+      "title": "开始使用",
+      "children": [
+        {
+          "type": "page",
+          "pageId": "welcome"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "API 参考",
+      "children": [
+        {
+          "type": "link",
+          "title": "Petstore API",
+          "href": "/zh/reference/petstore-zh"
+        }
+      ]
+    }
+  ]
+}

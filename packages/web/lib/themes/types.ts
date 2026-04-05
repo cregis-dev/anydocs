@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
-import type { ProjectSiteNavigation, ProjectSiteTheme } from '@anydocs/core';
+import type { ProjectSiteNavigation, ProjectSiteTheme, ProjectThemeCapabilities } from '@anydocs/core';
 
-import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
 
 export type DocsThemeReaderLayoutProps = {
   children: ReactNode;
   lang: DocsLang;
   availableLanguages: DocsLang[];
   nav: NavigationDoc;
-  pages: PageDoc[];
+  pages: PublishedPageDoc[];
   projectName?: string;
   siteTheme: ProjectSiteTheme;
   siteNavigation?: ProjectSiteNavigation;
@@ -21,10 +21,7 @@ export type DocsThemeManifest = {
   description: string;
   tone: string;
   recommendedFor: string;
-  capabilities: {
-    topNav: boolean;
-    topNavGroupSwitching: boolean;
-  };
+  capabilities: ProjectThemeCapabilities;
 };
 
 export type DocsThemeDefinition = DocsThemeManifest & {

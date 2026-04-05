@@ -7,6 +7,7 @@
 @import "@yoopta/themes-shadcn/variables.css";
 @import "../themes/classic-docs/tokens.css";
 @import "../themes/atlas-docs/tokens.css";
+@import "../themes/blueprint-review/tokens.css";
 
 @theme inline {
   --color-background: var(--background);

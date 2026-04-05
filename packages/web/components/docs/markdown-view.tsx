@@ -1,35 +1,65 @@
-import { isValidElement, type ComponentPropsWithoutRef } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { createHeadingIdGenerator } from '@/lib/docs/markdown';
 import { cn } from '@/lib/utils';
 
-function toText(node: unknown): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(toText).join('');
-  if (isValidElement<{ children?: unknown }>(node)) {
-    return toText(node.props.children);
+function extractHeadingText(node: unknown): string {
+  if (!node || typeof node !== 'object') {
+    return '';
   }
-  return '';
+
+  const value = 'value' in node && typeof node.value === 'string' ? node.value : '';
+  const children = 'children' in node && Array.isArray(node.children) ? node.children : [];
+  return `${value}${children.map(extractHeadingText).join('')}`;
 }
 
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+function remarkDeduplicateHeadingIds() {
+  return (tree: unknown) => {
+    const nextHeadingId = createHeadingIdGenerator();
+
+    const visit = (node: unknown) => {
+      if (!node || typeof node !== 'object') {
+        return;
+      }
+
+      const depth = 'depth' in node && typeof node.depth === 'number' ? node.depth : null;
+      if ('type' in node && node.type === 'heading' && depth && depth >= 2 && depth <= 4) {
+        const title = extractHeadingText(node).replace(/`/g, '').trim();
+        const id = nextHeadingId(title);
+        if (id) {
+          const data =
+            'data' in node && node.data && typeof node.data === 'object'
+              ? (node.data as Record<string, unknown>)
+              : {};
+          const hProperties =
+            data.hProperties && typeof data.hProperties === 'object'
+              ? (data.hProperties as Record<string, unknown>)
+              : {};
+
+          hProperties.id = id;
+          data.hProperties = hProperties;
+          (node as Record<string, unknown>).data = data;
+        }
+      }
+
+      const children = 'children' in node && Array.isArray(node.children) ? node.children : [];
+      for (const child of children) {
+        visit(child);
+      }
+    };
+
+    visit(tree);
+  };
 }
 
-function withHeadingId(tag: 'h2' | 'h3' | 'h4') {
+function withHeadingClass(tag: 'h2' | 'h3' | 'h4') {
   return function Heading(props: ComponentPropsWithoutRef<'h2'>) {
-    const title = toText(props.children);
-    const id = slugify(title);
     const className = ['scroll-mt-24', props.className].filter(Boolean).join(' ');
-    if (tag === 'h2') return <h2 {...props} id={id} className={className} />;
-    if (tag === 'h3') return <h3 {...props} id={id} className={className} />;
-    return <h4 {...props} id={id} className={className} />;
+    if (tag === 'h2') return <h2 {...props} className={className} />;
+    if (tag === 'h3') return <h3 {...props} className={className} />;
+    return <h4 {...props} className={className} />;
   };
 }
 
@@ -42,11 +72,11 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
       )}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkDeduplicateHeadingIds]}
         components={{
-          h2: withHeadingId('h2'),
-          h3: withHeadingId('h3'),
-          h4: withHeadingId('h4'),
+          h2: withHeadingClass('h2'),
+          h3: withHeadingClass('h3'),
+          h4: withHeadingClass('h4'),
         }}
       >
         {markdown}

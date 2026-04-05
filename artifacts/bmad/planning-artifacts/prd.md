@@ -218,14 +218,14 @@ editHistory:
 |------|------|
 | **开场** | Sarah 面对数百个 Markdown 文件，发愁如何迁移 |
 | **探索** | 发现 Anydocs 支持旧文档导入功能 |
-| **导入** | 运行导入命令，自动转换 Markdown 为 Yoopta JSON |
+| **导入** | 运行导入命令，自动转换 Markdown 为 canonical content |
 | **审核** | 在编辑器中审核转换结果，AI 辅助修正格式问题 |
 | **构建** | 一键构建，多语言站点生成 |
 | **结局** | 迁移完成，Sarah 有时间优化内容而不是手动搬运 |
 
 **旅程揭示的能力需求：**
 - ✅ Markdown 导入和解析
-- ✅ Markdown → Yoopta JSON 转换
+- ✅ Markdown → canonical content 转换
 - ✅ 批量处理能力
 - ✅ 格式校验和修正
 

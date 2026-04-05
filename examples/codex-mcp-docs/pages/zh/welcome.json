@@ -1,0 +1,192 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "Codex MCP 接入示例",
+  "description": "一个专门展示 Codex 如何通过 Anydocs MCP 工作的示例项目。",
+  "tags": [
+    "codex",
+    "mcp",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex MCP 接入示例"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例只关注一件事：Codex 如何通过 Anydocs MCP 安全地读写项目。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "适合什么场景"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想先搞懂 Codex 与 MCP 的协作边界"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看 MCP-first 的最小工作流"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "不需要完整作者站点，只需要接入参考"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例包含什么"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP 接入步骤"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "Codex / MCP 协作方式说明"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "一次开发者建站模拟流程"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "如何运行"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-12",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/codex-mcp-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/codex-mcp-docs"
+      },
+      {
+        "type": "heading",
+        "id": "block-13",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "建议阅读顺序"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-14",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`在 Codex 中接入 Anydocs MCP`"
+              }
+            ]
+          },
+          {
+            "id": "element-15-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Codex 与 Anydocs 的协作方式`"
+              }
+            ]
+          },
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`开发者的一次真实建站流程`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -48,7 +48,7 @@ This is a medium-complexity brownfield developer-tooling project. The product is
 
 ### Technical Constraints & Dependencies
 
-The repository is a pnpm monorepo with four primary packages: `@anydocs/web`, `@anydocs/desktop`, `@anydocs/cli`, and `@anydocs/core`. The strongest brownfield baseline exists in `@anydocs/web`, which already includes a Next.js-based reading site, Studio-related UI, local file-system document persistence, generated public search assets, and AI-facing artifacts such as `llms.txt` and MCP JSON outputs. The web package currently uses React 19, Next.js 16, Tailwind 4, Radix/shadcn-style UI primitives, Yoopta-based editing, and MiniSearch-based local search indexing.
+The repository is a pnpm monorepo with four primary packages: `@anydocs/web`, `@anydocs/desktop`, `@anydocs/cli`, and `@anydocs/core`. The strongest brownfield baseline exists in `@anydocs/web`, which already includes a Next.js-based reading site, Studio-related UI, local file-system document persistence, generated public search assets, and AI-facing artifacts such as `llms.txt` and MCP JSON outputs. The web package currently uses React 19, Next.js 16, Tailwind 4, Radix/shadcn-style UI primitives, Yoopta-based Studio editing over a shared canonical content model, and MiniSearch-based local search indexing.
 
 The current legacy project documents describe a broader target shape than the PRD, including multi-project workspace behavior, richer multilingual support, and stronger first-class AI output requirements. For architecture purposes, those documents should be treated as implementation context and migration background, not as the source of current scope. The PRD is the authoritative source for target-state architecture decisions.
 

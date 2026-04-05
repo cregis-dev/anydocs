@@ -59,6 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { listResolvedProjectPageTemplates } from '@/lib/page-templates';
 import { docsThemeRegistry } from '@/lib/themes/registry';
 import {
   filterNavigationToGroup,
@@ -88,6 +89,7 @@ type ProjectState = {
   sidebarActiveForegroundColor: string;
   codeTheme: 'github-light' | 'github-dark';
   topNavItems: ProjectSiteTopNavItem[];
+  authoringTemplates: ReturnType<typeof listResolvedProjectPageTemplates>;
   apiSources: ApiSourceDoc[];
   outputDir: string;
 } | null;
@@ -551,6 +553,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         sidebarActiveForegroundColor: project.config.site.theme.colors?.sidebarActiveForeground ?? '',
         codeTheme: project.config.site.theme.codeTheme ?? 'github-dark',
         topNavItems: project.config.site.navigation?.topNav ?? [],
+        authoringTemplates: listResolvedProjectPageTemplates(project.config),
         apiSources: apiSources.sources,
         outputDir: project.config.build?.outputDir ?? '',
       });
@@ -699,7 +702,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     [topNavEntries],
   );
   const showStudioTopNav = !!(
-    currentTheme?.capabilities.topNav &&
+    currentTheme?.capabilities.navigation.topNav &&
     topNavEntries.length > 0
   );
   const activePageTopNavGroupId = useMemo(() => {
@@ -898,6 +901,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               sidebarActiveForegroundColor: response.config.site.theme.colors?.sidebarActiveForeground ?? '',
               codeTheme: response.config.site.theme.codeTheme ?? 'github-dark',
               topNavItems: response.config.site.navigation?.topNav ?? [],
+              authoringTemplates: listResolvedProjectPageTemplates(response.config),
               apiSources: apiSourcesResponse.sources,
               outputDir: response.config.build?.outputDir ?? '',
             }
@@ -1755,7 +1759,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">UTF-8</div>
-          <div className="flex items-center gap-1">JSON + Yoopta</div>
+          <div className="flex items-center gap-1">JSON + DocContentV1</div>
         </div>
       </footer>
     </div>

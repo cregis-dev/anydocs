@@ -1,0 +1,195 @@
+{
+  "id": "blueprint-review",
+  "lang": "en",
+  "slug": "blueprint-review",
+  "title": "Blueprint Review",
+  "description": "Internal review template example for PRDs and technical specs.",
+  "tags": [
+    "template",
+    "internal",
+    "review"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-03T00:00:00.000Z",
+  "template": "blueprint-review",
+  "metadata": {
+    "doc-type": "prd",
+    "review-state": "draft",
+    "owner": "Platform",
+    "reviewer": "Product + Engineering",
+    "due-date": "2026-04-10"
+  },
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Blueprint Review"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "Use this template to review a PRD or technical spec before implementation."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Context"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-4",
+        "children": [
+          {
+            "type": "text",
+            "text": "Explain why this document exists and what prompted the review."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-5",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Problem"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-6",
+        "children": [
+          {
+            "type": "text",
+            "text": "Describe the user, product, or technical problem that needs to be solved."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Proposal"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-8",
+        "children": [
+          {
+            "type": "text",
+            "text": "Summarize the recommended direction and the main changes it introduces."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-9",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Tradeoffs"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-10",
+        "children": [
+          {
+            "type": "text",
+            "text": "Call out what the proposal deliberately does not solve or optimize."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Risks"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-12",
+        "children": [
+          {
+            "type": "text",
+            "text": "List product, technical, and coordination risks together with mitigation ideas."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-13",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Open Questions"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-14",
+        "children": [
+          {
+            "type": "text",
+            "text": "Capture the unresolved items that must be answered before approval."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Decision"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-16",
+        "children": [
+          {
+            "type": "text",
+            "text": "Record the review outcome, owners, and next actions."
+          }
+        ]
+      }
+    ]
+  }
+}

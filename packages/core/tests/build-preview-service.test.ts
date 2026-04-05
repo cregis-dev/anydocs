@@ -17,6 +17,20 @@ async function createTempRepoRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-build-preview-'));
 }
 
+function isListenPermissionError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const nodeError = error as NodeJS.ErrnoException;
+  const message = error.message ?? '';
+  return (
+    nodeError.code === 'EPERM' ||
+    nodeError.code === 'EACCES' ||
+    /listen EPERM|listen EACCES|operation not permitted 127\.0\.0\.1/.test(message)
+  );
+}
+
 async function waitForPreviewText(url: string, expectedText: string, timeoutMs = 15_000): Promise<string> {
   const startedAt = Date.now();
 
@@ -175,6 +189,22 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
   }
 });
 
+test('runBuildWorkflow dryRun returns planned artifacts without creating files', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const result = await runBuildWorkflow({ repoRoot, dryRun: true });
+
+    assert.equal(result.dryRun, true);
+    assert.ok(result.artifacts.some((artifact) => artifact.id === 'machineReadableIndex'));
+    await assert.rejects(() => access(path.join(repoRoot, 'dist', 'index.html')));
+    await assert.rejects(() => access(path.join(repoRoot, 'dist', 'mcp', 'index.json')));
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('published artifacts emit a fallback chunk for published pages without headings', async () => {
   const repoRoot = await createTempRepoRoot();
 
@@ -243,6 +273,144 @@ test('published artifacts preserve inline code text in chunk content', async () 
   }
 });
 
+test('published artifacts derive text from canonical content when render is omitted', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+    await savePage(repository, 'en', {
+      id: 'welcome',
+      lang: 'en',
+      slug: 'welcome',
+      title: 'Welcome',
+      status: 'published',
+      content: {
+        version: 1,
+        blocks: [
+          {
+            type: 'heading',
+            level: 1,
+            children: [{ type: 'text', text: 'Welcome' }],
+          },
+          {
+            type: 'paragraph',
+            children: [
+              { type: 'text', text: 'Canonical content drives search text and machine-readable exports.' },
+            ],
+          },
+          {
+            type: 'codeBlock',
+            language: 'bash',
+            code: 'pnpm install',
+          },
+        ],
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as { docs: Array<{ slug: string; text: string }> };
+    const chunks = JSON.parse(
+      await readFile(path.join(contract.paths.machineReadableRoot, 'chunks.en.json'), 'utf8'),
+    ) as {
+      chunks: Array<{ text: string }>;
+    };
+    const llmsFull = await readFile(path.join(contract.paths.artifactRoot, 'llms-full.txt'), 'utf8');
+
+    assert.equal(searchIndex.docs[0]?.slug, 'welcome');
+    assert.match(searchIndex.docs[0]?.text ?? '', /Canonical content drives search text/);
+    assert.match(chunks.chunks[0]?.text ?? '', /Canonical content drives search text/);
+    assert.match(llmsFull, /Canonical content drives search text/);
+    assert.match(llmsFull, /pnpm install/);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('published pages artifacts serialize template and only public metadata', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const update = await updateProjectConfig(repoRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  visibility: 'public',
+                  options: ['proposed', 'accepted'],
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                  visibility: 'internal',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(update.ok, true);
+
+    const repository = createDocsRepository(repoRoot);
+    await savePage(repository, 'en', {
+      id: 'adr-001',
+      lang: 'en',
+      slug: 'architecture/adr-001',
+      title: 'Use static search indexes',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'accepted',
+        author: 'shawn',
+      },
+      status: 'published',
+      content: {},
+      render: {
+        plainText: 'Decision record body.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const pagesArtifact = JSON.parse(
+      await readFile(path.join(contract.paths.machineReadableRoot, 'pages.en.json'), 'utf8'),
+    ) as {
+      pages: Array<{
+        id: string;
+        template?: string;
+        metadata?: Record<string, unknown>;
+      }>;
+    };
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as { docs: Array<Record<string, unknown>> };
+    const llmsFull = await readFile(path.join(contract.paths.artifactRoot, 'llms-full.txt'), 'utf8');
+    const adrPage = pagesArtifact.pages.find((page) => page.id === 'adr-001');
+
+    assert.equal(adrPage?.id, 'adr-001');
+    assert.equal(adrPage?.template, 'adr');
+    assert.deepEqual(adrPage?.metadata, {
+      'decision-status': 'accepted',
+    });
+    assert.equal(searchIndex.docs.every((doc) => !('metadata' in doc)), true);
+    assert.doesNotMatch(llmsFull, /shawn/);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('runBuildWorkflow keeps an empty-state docs shell when there are no published pages', { timeout: 120_000, concurrency: false }, async () => {
   const repoRoot = await createTempRepoRoot();
 
@@ -270,7 +438,7 @@ test('runBuildWorkflow keeps an empty-state docs shell when there are no publish
 
     assert.match(
       docsShell,
-      /Start exploring your documentation here|Select a document from the sidebar\./,
+      /Start exploring your documentation here|Select a document from the sidebar\.|Start with the pages that define the structure|Continue with the sidebar after opening a page\./,
     );
     assert.equal(searchIndex.docs.length, 0);
   } finally {
@@ -450,7 +618,7 @@ test('published artifacts serialize atlas-docs top navigation metadata', async (
   }
 });
 
-test('runPreviewWorkflow starts a live preview server and reflects published content changes', { timeout: 120_000, concurrency: false }, async () => {
+test('runPreviewWorkflow starts a live preview server and reflects published content changes', { timeout: 120_000, concurrency: false }, async (t) => {
   const repoRoot = await createTempRepoRoot();
 
   try {
@@ -462,7 +630,17 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
     });
     assert.equal(update.ok, true);
     const repository = createDocsRepository(repoRoot);
-    const result = await runPreviewWorkflow({ repoRoot, startTimeoutMs: 60_000 });
+    let result: Awaited<ReturnType<typeof runPreviewWorkflow>>;
+    try {
+      result = await runPreviewWorkflow({ repoRoot, startTimeoutMs: 60_000 });
+    } catch (error) {
+      if (isListenPermissionError(error)) {
+        t.skip(`Skipping preview workflow test in restricted runtime: ${String((error as Error).message)}`);
+        return;
+      }
+
+      throw error;
+    }
 
     try {
       assert.equal(result.projectId, 'default');

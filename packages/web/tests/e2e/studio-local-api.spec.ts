@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 import { buildLocalApiUrl } from './support/studio';
+import { isCliSingleProjectStudio } from './support/studio-mode';
 
 test.describe.configure({ mode: 'serial' });
 
 test('[P0] standalone web dev rejects local authoring endpoints @p0', async ({ request }) => {
+  test.skip(isCliSingleProjectStudio, 'Standalone-only assertion.');
+
   const response = await request.get(buildLocalApiUrl('project', {}));
 
   expect(response.status()).toBe(400);
@@ -15,6 +18,8 @@ test('[P0] standalone web dev rejects local authoring endpoints @p0', async ({ r
 });
 
 test('[P0] standalone web dev rejects local preview/build endpoints @p0', async ({ request }) => {
+  test.skip(isCliSingleProjectStudio, 'Standalone-only assertion.');
+
   const previewResponse = await request.post(buildLocalApiUrl('preview', {}));
   expect(previewResponse.status()).toBe(400);
 
@@ -23,6 +28,8 @@ test('[P0] standalone web dev rejects local preview/build endpoints @p0', async 
 });
 
 test('[P1] standalone web dev keeps the same local API policy for page reads @p1', async ({ request }) => {
+  test.skip(isCliSingleProjectStudio, 'Standalone-only assertion.');
+
   const response = await request.get(buildLocalApiUrl('page', { lang: 'en', pageId: 'missing-page' }));
 
   expect(response.status()).toBe(400);

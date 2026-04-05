@@ -1,0 +1,192 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Codex MCP Integration Example",
+  "description": "A focused sample project showing how Codex works through the Anydocs MCP server.",
+  "tags": [
+    "codex",
+    "mcp",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex MCP Integration Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This example focuses on one topic only: how Codex safely reads and writes an Anydocs project through MCP."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to understand the Codex and MCP boundary first"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want the smallest MCP-first workflow reference"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you do not need the full authoring-site example yet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP setup steps"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "an explanation of how Codex and Anydocs work together"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a developer simulation of building the site"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Run It"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-12",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/codex-mcp-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/codex-mcp-docs"
+      },
+      {
+        "type": "heading",
+        "id": "block-13",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Recommended Reading Order"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-14",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Connect the Anydocs MCP Server in Codex`"
+              }
+            ]
+          },
+          {
+            "id": "element-15-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`How Codex and Anydocs Work Together`"
+              }
+            ]
+          },
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`A Developer Simulation of Building the Site`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

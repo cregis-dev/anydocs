@@ -6,6 +6,7 @@ import test from 'node:test';
 
 import { ValidationError } from '../src/errors/validation-error.ts';
 import { createDocsRepository, loadNavigation, loadPage } from '../src/fs/docs-repository.ts';
+import { updateProjectConfig } from '../src/fs/content-repository.ts';
 import {
   createPagesBatch,
   createPage,
@@ -49,6 +50,18 @@ function createYooptaContent(text: string = 'Body copy') {
   };
 }
 
+function createDocContent(text: string = 'Body copy') {
+  return {
+    version: 1 as const,
+    blocks: [
+      {
+        type: 'paragraph' as const,
+        children: [{ type: 'text' as const, text }],
+      },
+    ],
+  };
+}
+
 test('createPage writes a canonical page file and returns the created page metadata', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -81,6 +94,67 @@ test('createPage writes a canonical page file and returns the created page metad
     assert.equal(persisted.id, 'guide');
     assert.equal(persisted.slug, 'getting-started/guide');
     assert.equal(typeof persisted.updatedAt, 'string');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('createPage persists template and normalized metadata using project authoring rules', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  options: ['proposed', 'accepted'],
+                  visibility: 'public',
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    const result = await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'adr-001',
+        slug: 'architecture/adr-001',
+        title: 'Use static search indexes',
+        template: 'adr',
+        metadata: {
+          'decision-status': 'accepted',
+          author: '  shawn  ',
+        },
+        content: createYooptaContent(),
+      },
+    });
+
+    assert.equal(result.page.template, 'adr');
+    assert.deepEqual(result.page.metadata, {
+      'decision-status': 'accepted',
+      author: 'shawn',
+    });
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -124,7 +198,30 @@ test('createPage rejects duplicate slugs with a stable validation error', async 
   }
 });
 
-test('createPage rejects content that is not valid Yoopta structure', async () => {
+test('createPage accepts canonical docs content', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const result = await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'canonical-guide',
+        slug: 'canonical-guide',
+        title: 'Canonical Guide',
+        content: createDocContent('Canonical body'),
+      },
+    });
+
+    assert.deepEqual(result.page.content, createDocContent('Canonical body'));
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('createPage rejects content that is neither canonical nor valid legacy Yoopta', async () => {
   const projectRoot = await createTempProjectRoot();
 
   try {
@@ -146,7 +243,7 @@ test('createPage rejects content that is not valid Yoopta structure', async () =
         }),
       (error: unknown) =>
         error instanceof ValidationError &&
-        error.details.rule === 'page-content-must-be-valid-yoopta',
+        error.details.rule === 'page-content-must-be-valid-doc-content',
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -192,6 +289,76 @@ test('updatePage applies a shallow patch and refreshes updatedAt', async () => {
     assert.deepEqual(result.page.tags, ['GUIDE', 'UPDATED']);
     assert.equal(result.page.render?.plainText, 'Updated Guide');
     assert.notEqual(result.page.updatedAt, created.page.updatedAt);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('updatePage replaces metadata as a whole object while preserving the selected template', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  options: ['proposed', 'accepted'],
+                },
+                {
+                  id: 'author',
+                  label: 'Author',
+                  type: 'string',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    await createPage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'adr-001',
+        slug: 'architecture/adr-001',
+        title: 'Use static search indexes',
+        template: 'adr',
+        metadata: {
+          'decision-status': 'proposed',
+          author: 'shawn',
+        },
+        content: createYooptaContent(),
+      },
+    });
+
+    const result = await updatePage({
+      projectRoot,
+      lang: 'en',
+      pageId: 'adr-001',
+      patch: {
+        metadata: {
+          'decision-status': 'accepted',
+        },
+      },
+    });
+
+    assert.equal(result.page.template, 'adr');
+    assert.deepEqual(result.page.metadata, {
+      'decision-status': 'accepted',
+    });
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

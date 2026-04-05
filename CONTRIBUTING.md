@@ -76,10 +76,10 @@ If you are working on authoring flows, it is often useful to keep these running 
 pnpm dev
 
 # Terminal 2
-pnpm --filter @anydocs/cli cli preview examples/demo-docs
+pnpm --filter @anydocs/cli cli preview examples/starter-docs
 
 # Terminal 3
-pnpm --filter @anydocs/cli cli build examples/demo-docs --watch
+pnpm --filter @anydocs/cli cli build examples/starter-docs --watch
 ```
 
 ## Validation Before Opening a PR

@@ -1,0 +1,20 @@
+{
+  "id": "petstore",
+  "type": "openapi",
+  "lang": "en",
+  "status": "published",
+  "source": {
+    "kind": "file",
+    "path": "openapi/petstore.json"
+  },
+  "display": {
+    "title": "Petstore API",
+    "groupId": "reference"
+  },
+  "runtime": {
+    "routeBase": "/en/reference/petstore",
+    "tryIt": {
+      "enabled": false
+    }
+  }
+}

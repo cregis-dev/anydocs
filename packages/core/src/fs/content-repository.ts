@@ -4,6 +4,7 @@ import path from 'node:path';
 import { assertValidProjectId, createDefaultProjectConfig, ANYDOCS_CONFIG_FILE, resolveProjectRoot } from '../config/project-config.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 import { validateProjectConfig } from '../schemas/project-schema.ts';
+import { validatePageAgainstProjectTemplates } from '../services/page-template-service.ts';
 import {
   assertWorkflowStandardMatchesContract,
   createWorkflowStandardDefinition,
@@ -14,7 +15,7 @@ import {
   assertProjectContractStructure,
   createProjectPathContract,
 } from './project-paths.ts';
-import { createDocsRepository, initializeDocsRepository, loadNavigation } from './docs-repository.ts';
+import { createDocsRepository, initializeDocsRepository, listPages, loadNavigation } from './docs-repository.ts';
 
 function collectReferencedTopNavGroupIds(config: ProjectConfig): string[] {
   return (config.site.navigation?.topNav ?? [])
@@ -71,6 +72,20 @@ async function assertTopNavGroupsExistForLanguages(config: ProjectConfig, paths:
           'Create the matching top-level section or folder id in every enabled language navigation file, or update site.navigation.topNav to reference an existing group.',
         metadata: { lang: language, groupId },
       });
+    }
+  }
+}
+
+async function assertPagesMatchProjectAuthoringTemplates(
+  config: ProjectConfig,
+  paths: ProjectContract['paths'],
+) {
+  const repository = createDocsRepository(paths.projectRoot);
+
+  for (const language of config.languages) {
+    const pages = await listPages(repository, language);
+    for (const page of pages) {
+      validatePageAgainstProjectTemplates(page, config);
     }
   }
 }
@@ -200,6 +215,7 @@ export async function loadProjectContract(
     }
 
     await assertTopNavGroupsExistForLanguages(config, paths);
+    await assertPagesMatchProjectAuthoringTemplates(config, paths);
 
     return { config, paths };
   });

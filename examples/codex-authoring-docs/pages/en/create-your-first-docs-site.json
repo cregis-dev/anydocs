@@ -1,0 +1,258 @@
+{
+  "id": "create-your-first-docs-site",
+  "lang": "en",
+  "slug": "create-your-first-docs-site",
+  "title": "Simulation: A Developer Uses Codex to Create a Docs Site",
+  "description": "A minimal end-to-end flow from project initialization to published content.",
+  "tags": [
+    "workflow",
+    "simulation"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-02T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Simulation: A Developer Uses Codex to Create a Docs Site"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "A typical flow looks like this."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Step 1: Initialize the project"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-4",
+        "language": "bash",
+        "code": "pnpm --filter @anydocs/cli cli init ./workspace/codex-authoring-docs --agent codex"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-5",
+        "children": [
+          {
+            "type": "text",
+            "text": "That creates:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-6",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`anydocs.config.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-7-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`anydocs.workflow.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a minimal `AGENTS.md`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "starter welcome pages and navigation"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-10",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Step 2: Have Codex inspect project state"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-11",
+        "children": [
+          {
+            "type": "text",
+            "text": "The developer asks Codex to:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-12",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-12-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "call `project_open`"
+              }
+            ]
+          },
+          {
+            "id": "element-13-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "confirm the default and enabled languages"
+              }
+            ]
+          },
+          {
+            "id": "element-14-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "inspect `project_open.authoring.templates`"
+              }
+            ]
+          },
+          {
+            "id": "element-15-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "read `anydocs://authoring/guidance` when the task needs the full workflow"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-16",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Step 3: Start writing"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-17",
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex can then:"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-18",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "call `page_create_from_template` for richer first drafts"
+              }
+            ]
+          },
+          {
+            "id": "element-19-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "call `page_create` or `page_update` for explicit page changes"
+              }
+            ]
+          },
+          {
+            "id": "element-20-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "set `template` and `metadata` only when the chosen template's `metadataSchema` allows those fields"
+              }
+            ]
+          },
+          {
+            "id": "element-21-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "call `page_set_status` to move pages through the workflow"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-22",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "Step 4: Check navigation"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-23",
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex uses `nav_get` to inspect the current tree and `nav_insert` / `nav_move` when navigation needs to change."
+          }
+        ]
+      }
+    ]
+  }
+}

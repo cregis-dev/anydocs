@@ -13,6 +13,21 @@ export function slugify(s: string) {
     .replace(/-+/g, '-');
 }
 
+export function createHeadingIdGenerator() {
+  const seen = new Map<string, number>();
+
+  return (title: string) => {
+    const base = slugify(title);
+    if (!base) {
+      return '';
+    }
+
+    const nextCount = (seen.get(base) ?? 0) + 1;
+    seen.set(base, nextCount);
+    return nextCount === 1 ? base : `${base}-${nextCount}`;
+  };
+}
+
 function getAttributeValue(source: string, name: string) {
   const match = new RegExp(`${name}\\s*=\\s*"([^"]*)"`, 'i').exec(source);
   return match?.[1]?.trim() ?? '';
@@ -103,19 +118,21 @@ export function normalizeMarkdownForRendering(md: string) {
 
 export function extractTocFromMarkdown(md: string): TocItem[] {
   const items: TocItem[] = [];
+  const nextHeadingId = createHeadingIdGenerator();
   const lines = String(md ?? '').split(/\r?\n/);
   for (const line of lines) {
     const m = /^(#{2,4})\s+(.+?)\s*$/.exec(line);
     if (!m) continue;
     const depth = m[1].length;
     const title = m[2].replace(/`/g, '').trim();
-    const id = slugify(title);
+    const id = nextHeadingId(title);
     items.push({ depth, title, id });
   }
   return items;
 }
 
 export function injectHeadingIds(md: string) {
+  const nextHeadingId = createHeadingIdGenerator();
   const lines = String(md ?? '').split(/\r?\n/);
   const out: string[] = [];
   for (const line of lines) {
@@ -126,7 +143,7 @@ export function injectHeadingIds(md: string) {
     }
     const hashes = m[1];
     const title = m[2].trim();
-    const id = slugify(title.replace(/`/g, '').trim());
+    const id = nextHeadingId(title.replace(/`/g, '').trim());
     out.push(`${hashes} <a id="${id}"></a>${title}`);
   }
   return out.join('\n');

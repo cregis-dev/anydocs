@@ -3,6 +3,7 @@ import path from 'node:path';
 import { ValidationError } from '../errors/validation-error.ts';
 import { isPageApprovedForPublication } from '../publishing/publication-filter.ts';
 import { validatePageDoc } from '../schemas/docs-schema.ts';
+import { validatePageAgainstProjectTemplates } from './page-template-service.ts';
 import {
   createDocsRepository,
   deletePage as deletePageFromRepository,
@@ -20,10 +21,12 @@ import type { ProjectConfig } from '../types/project.ts';
 import {
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
+  validateDocContentV1,
   assertValidYooptaContentValue,
   normalizeSlug,
-  renderYooptaContent,
+  renderPageContent,
 } from '../utils/index.ts';
+import { DOC_CONTENT_BLOCK_TYPES, DOC_CONTENT_TEXT_MARKS } from '../types/content.ts';
 
 export type CreatePageInput<TContent = unknown> = {
   projectRoot: string;
@@ -33,6 +36,8 @@ export type CreatePageInput<TContent = unknown> = {
     slug: string;
     title: string;
     description?: string;
+    template?: string;
+    metadata?: Record<string, unknown>;
     tags?: string[];
     status?: PageStatus;
     content?: TContent;
@@ -45,6 +50,8 @@ export type UpdatePagePatch<TContent = unknown> = {
   slug?: string;
   title?: string;
   description?: string;
+  template?: string;
+  metadata?: Record<string, unknown>;
   tags?: string[];
   content?: TContent;
   render?: PageRender;
@@ -174,19 +181,28 @@ function currentTimestamp(): string {
 }
 
 function assertValidAuthoringContent(content: unknown, pageId?: string): void {
+  const canonicalResult = validateDocContentV1(content);
+  if (canonicalResult.ok) {
+    return;
+  }
+
   try {
     assertValidYooptaContentValue(content);
+    return;
   } catch (error: unknown) {
-    throw new ValidationError('Page content must use the supported Yoopta block structure.', {
+    throw new ValidationError('Page content must use the canonical docs content schema or supported legacy Yoopta structure.', {
       entity: 'page-doc',
-      rule: 'page-content-must-be-valid-yoopta',
+      rule: 'page-content-must-be-valid-doc-content',
       remediation:
-        'Provide content as a Yoopta block map using supported block types, block ids, block value arrays, and numeric meta.order/meta.depth fields.',
+        'Provide content as canonical DocContentV1, or use the supported legacy Yoopta block map during migration.',
       metadata: {
         pageId: pageId ?? null,
-        cause: error instanceof Error ? error.message : String(error),
-        allowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
-        allowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
+        canonicalError: `${canonicalResult.path}: ${canonicalResult.error}`,
+        legacyYooptaError: error instanceof Error ? error.message : String(error),
+        allowedCanonicalBlockTypes: [...DOC_CONTENT_BLOCK_TYPES],
+        allowedMarks: [...DOC_CONTENT_TEXT_MARKS],
+        legacyAllowedBlockTypes: [...DOCS_YOOPTA_ALLOWED_TYPES],
+        legacyAllowedMarks: [...DOCS_YOOPTA_ALLOWED_MARKS],
       },
     });
   }
@@ -486,6 +502,15 @@ function validateAndNormalizePageCandidate<TContent>(
   return normalizedPage;
 }
 
+function validateAndNormalizeProjectPageCandidate<TContent>(
+  page: PageDoc<TContent>,
+  lang: DocsLang,
+  config: ProjectConfig,
+): PageDoc<TContent> {
+  const normalizedPage = validateAndNormalizePageCandidate(page, lang);
+  return validatePageAgainstProjectTemplates(normalizedPage, config);
+}
+
 function resolveNextRender<TContent>(
   existingPage: PageDoc<TContent>,
   patch: UpdatePagePatch<TContent>,
@@ -500,7 +525,7 @@ function resolveNextRender<TContent>(
   }
 
   const nextContent = 'content' in patch ? patch.content : existingPage.content;
-  return renderYooptaContent(nextContent);
+  return renderPageContent(nextContent);
 }
 
 function assertSlugAvailableInPageMap<TContent>(
@@ -576,17 +601,25 @@ export async function createPage<TContent = unknown>(
   );
 
   const page = await savePage<TContent>(repository, input.lang, {
-    id: input.page.id,
-    lang: input.lang,
-    slug: input.page.slug,
-    title: input.page.title,
-    description: input.page.description,
-    tags: input.page.tags,
-    status: input.page.status ?? 'draft',
-    content: (input.page.content ?? {}) as TContent,
-    render: input.page.render,
-    review: input.page.review,
-    updatedAt: currentTimestamp(),
+    ...validateAndNormalizeProjectPageCandidate<TContent>(
+      {
+        id: input.page.id,
+        lang: input.lang,
+        slug: input.page.slug,
+        title: input.page.title,
+        ...(input.page.description ? { description: input.page.description } : {}),
+        ...(input.page.template ? { template: input.page.template } : {}),
+        ...(input.page.metadata ? { metadata: input.page.metadata } : {}),
+        ...(input.page.tags ? { tags: input.page.tags } : {}),
+        status: input.page.status ?? 'draft',
+        content: (input.page.content ?? {}) as TContent,
+        ...(input.page.render ? { render: input.page.render } : {}),
+        ...(input.page.review ? { review: input.page.review } : {}),
+        updatedAt: currentTimestamp(),
+      },
+      input.lang,
+      contract.config,
+    ),
   });
 
   return {
@@ -624,13 +657,15 @@ export async function createPagesBatch<TContent = unknown>(
       });
     }
 
-    const candidate = validateAndNormalizePageCandidate<TContent>(
+    const candidate = validateAndNormalizeProjectPageCandidate<TContent>(
       {
         id: pageInput.id,
         lang: input.lang,
         slug: pageInput.slug,
         title: pageInput.title,
         ...(pageInput.description ? { description: pageInput.description } : {}),
+        ...(pageInput.template ? { template: pageInput.template } : {}),
+        ...(pageInput.metadata ? { metadata: pageInput.metadata } : {}),
         ...(pageInput.tags ? { tags: pageInput.tags } : {}),
         status: pageInput.status ?? 'draft',
         content: (pageInput.content ?? {}) as TContent,
@@ -639,6 +674,7 @@ export async function createPagesBatch<TContent = unknown>(
         updatedAt: timestamp,
       },
       input.lang,
+      contract.config,
     );
     assertSlugAvailableInPageMap(pagesById, candidate, contract.paths.projectRoot, input.lang);
     pagesById.set(candidate.id, candidate);
@@ -674,15 +710,23 @@ export async function updatePage<TContent = unknown>(
     findPageBySlug<TContent>(repository, input.lang, nextSlug),
   );
 
-  const page = await savePage<TContent>(repository, input.lang, {
-    ...existingPage,
-    ...input.patch,
-    lang: input.lang,
-    id: existingPage.id,
-    status: existingPage.status,
-    render: resolveNextRender(existingPage, input.patch, input.regenerateRender),
-    updatedAt: currentTimestamp(),
-  });
+  const page = await savePage<TContent>(
+    repository,
+    input.lang,
+    validateAndNormalizeProjectPageCandidate<TContent>(
+      {
+        ...existingPage,
+        ...input.patch,
+        lang: input.lang,
+        id: existingPage.id,
+        status: existingPage.status,
+        render: resolveNextRender(existingPage, input.patch, input.regenerateRender),
+        updatedAt: currentTimestamp(),
+      },
+      input.lang,
+      contract.config,
+    ),
+  );
 
   return {
     filePath: pageFilePath(contract.paths.projectRoot, input.lang, page.id),
@@ -722,7 +766,7 @@ export async function updatePagesBatch<TContent = unknown>(
       });
     }
 
-    const candidate = validateAndNormalizePageCandidate<TContent>(
+    const candidate = validateAndNormalizeProjectPageCandidate<TContent>(
       {
         ...existingPage,
         ...entry.patch,
@@ -733,6 +777,7 @@ export async function updatePagesBatch<TContent = unknown>(
         updatedAt: timestamp,
       },
       input.lang,
+      contract.config,
     );
     assertSlugAvailableInPageMap(pagesById, candidate, contract.paths.projectRoot, input.lang);
     pagesById.set(candidate.id, candidate);
@@ -760,11 +805,19 @@ export async function setPageStatus<TContent = unknown>(
     });
   }
 
-  const page = await savePage<TContent>(repository, input.lang, {
-    ...existingPage,
-    status: input.status,
-    updatedAt: currentTimestamp(),
-  });
+  const page = await savePage<TContent>(
+    repository,
+    input.lang,
+    validateAndNormalizeProjectPageCandidate<TContent>(
+      {
+        ...existingPage,
+        status: input.status,
+        updatedAt: currentTimestamp(),
+      },
+      input.lang,
+      contract.config,
+    ),
+  );
 
   return {
     filePath: pageFilePath(contract.paths.projectRoot, input.lang, page.id),
@@ -801,13 +854,14 @@ export async function setPageStatusesBatch<TContent = unknown>(
       });
     }
 
-    const candidate = validateAndNormalizePageCandidate<TContent>(
+    const candidate = validateAndNormalizeProjectPageCandidate<TContent>(
       {
         ...existingPage,
         status: entry.status,
         updatedAt: timestamp,
       },
       input.lang,
+      contract.config,
     );
     pagesById.set(candidate.id, candidate);
     plannedPages.push(candidate);

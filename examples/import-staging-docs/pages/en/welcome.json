@@ -1,0 +1,157 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Import Staging Example",
+  "description": "Shows the staged project state after legacy Markdown import and before conversion.",
+  "tags": [
+    "import",
+    "staging",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Import Staging Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This example is dedicated to the project state after `import` and before `convert-import`."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to inspect `imports/<importId>/manifest.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to understand which fields live in `items/*.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to demonstrate how staged content becomes canonical draft pages"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a legacy Markdown source: `legacy-docs/getting-started.md`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a staged manifest: `imports/legacy-2026-04-04-demo/manifest.json`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a staged item: `imports/legacy-2026-04-04-demo/items/getting-started.json`"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-11",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Continue Conversion"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-12",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts convert-import legacy-2026-04-04-demo examples/import-staging-docs"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-13",
+        "children": [
+          {
+            "type": "text",
+            "text": "The repository keeps this example in the pre-conversion staged state so the staged files stay easy to inspect."
+          }
+        ]
+      }
+    ]
+  }
+}

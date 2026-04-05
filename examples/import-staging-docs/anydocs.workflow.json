@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "standardId": "anydocs-phase-1",
+  "projectContractVersion": 1,
+  "localFirst": true,
+  "uiIndependent": true,
+  "supportedLanguages": [
+    "zh",
+    "en"
+  ],
+  "enabledLanguages": [
+    "zh",
+    "en"
+  ],
+  "publicationStatuses": [
+    "draft",
+    "in_review",
+    "published"
+  ],
+  "publishedStatuses": [
+    "published"
+  ],
+  "sourceFiles": [
+    {
+      "id": "projectConfig",
+      "path": "anydocs.config.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Canonical project configuration for authoring, build, and preview."
+    },
+    {
+      "id": "workflowStandard",
+      "path": "anydocs.workflow.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Reusable workflow contract for external automation and future AI-native flows."
+    },
+    {
+      "id": "navigation",
+      "path": "navigation/zh.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Navigation tree for zh."
+    },
+    {
+      "id": "page",
+      "path": "pages/zh/{pageId}.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Page document pattern for zh."
+    },
+    {
+      "id": "navigation",
+      "path": "navigation/en.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Navigation tree for en."
+    },
+    {
+      "id": "page",
+      "path": "pages/en/{pageId}.json",
+      "format": "json",
+      "required": true,
+      "writable": true,
+      "generated": false,
+      "description": "Page document pattern for en."
+    },
+    {
+      "id": "apiSource",
+      "path": "api-sources/{sourceId}.json",
+      "format": "json",
+      "required": false,
+      "writable": true,
+      "generated": false,
+      "description": "API source document pattern for OpenAPI-backed reference surfaces."
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "id": "llms",
+      "path": "dist/llms.txt",
+      "format": "text",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "AI-friendly published artifact generated from published content only."
+    },
+    {
+      "id": "llmsFull",
+      "path": "dist/llms-full.txt",
+      "format": "text",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Full-site AI-readable fallback export generated from published content only."
+    },
+    {
+      "id": "machineReadableRoot",
+      "path": "dist/mcp",
+      "format": "directory",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Machine-readable published artifacts generated from canonical publication rules."
+    },
+    {
+      "id": "machineReadableIndex",
+      "path": "dist/mcp/index.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Stable machine-readable artifact index for external AI and automation consumers."
+    },
+    {
+      "id": "searchIndex",
+      "path": "dist/search-index.zh.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Static search index for zh."
+    },
+    {
+      "id": "chunkIndex",
+      "path": "dist/mcp/chunks.zh.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Machine-readable chunk artifact for zh."
+    },
+    {
+      "id": "searchIndex",
+      "path": "dist/search-index.en.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Static search index for en."
+    },
+    {
+      "id": "chunkIndex",
+      "path": "dist/mcp/chunks.en.json",
+      "format": "json",
+      "required": false,
+      "writable": false,
+      "generated": true,
+      "description": "Machine-readable chunk artifact for en."
+    }
+  ],
+  "contentModel": {
+    "projectConfigFields": [
+      "version",
+      "projectId",
+      "name",
+      "defaultLanguage",
+      "languages",
+      "site",
+      "authoring",
+      "build"
+    ],
+    "pageRequiredFields": [
+      "id",
+      "lang",
+      "slug",
+      "title",
+      "status",
+      "content"
+    ],
+    "pageOptionalFields": [
+      "description",
+      "template",
+      "metadata",
+      "tags",
+      "updatedAt",
+      "render"
+    ],
+    "navigationRequiredFields": [
+      "version",
+      "items"
+    ]
+  },
+  "orchestration": {
+    "workflowSteps": [
+      "loadConfig",
+      "loadContent",
+      "validate",
+      "persistSources",
+      "filterPublished",
+      "generateArtifacts",
+      "reportResult"
+    ],
+    "publicationRule": "published-only",
+    "futureCompatibleWithoutReinitialization": true,
+    "externalAutomationReady": true
+  }
+}

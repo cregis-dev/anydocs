@@ -13,6 +13,7 @@ import {
 import { convertImportedLegacyContent } from '../src/services/legacy-conversion-service.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { importLegacyDocumentation } from '../src/services/legacy-import-service.ts';
+import { validateDocContentV1 } from '../src/utils/index.ts';
 
 async function createTempRepoRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-legacy-convert-repo-'));
@@ -30,7 +31,26 @@ test('convertImportedLegacyContent converts staged imports into draft pages and 
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
     await writeFile(
       path.join(sourceRoot, 'guide.md'),
-      ['---', 'title: Guide', 'customField: keep-me', '---', '', '# Guide', '', '- bullet item', '', 'Imported markdown content'].join('\n'),
+      [
+        '---',
+        'title: Guide',
+        'customField: keep-me',
+        '---',
+        '',
+        '# Guide',
+        '',
+        '- bullet item',
+        '',
+        '1. first step',
+        '',
+        '- [ ] follow up item',
+        '',
+        '| Header | Value |',
+        '| --- | --- |',
+        '| Row | Data |',
+        '',
+        'Imported markdown content',
+      ].join('\n'),
       'utf8',
     );
     await writeFile(
@@ -55,25 +75,35 @@ test('convertImportedLegacyContent converts staged imports into draft pages and 
     assert.ok(result.items.every((item) => item.status === 'draft'));
     assert.ok(result.warnings.some((warning) => warning.code === 'legacy-import-mdx-review-required'));
     assert.ok(result.warnings.some((warning) => warning.code === 'legacy-import-frontmatter-unmapped'));
-    assert.ok(result.warnings.some((warning) => warning.code === 'legacy-import-markdown-construct-review-required'));
+    assert.equal(
+      result.warnings.some((warning) => warning.code === 'legacy-import-markdown-construct-review-required'),
+      false,
+    );
 
     const repository = createDocsRepository(repoRoot);
     const guidePage = await loadPage(repository, 'en', 'guide');
     assert.ok(guidePage);
     assert.equal(guidePage.status, 'draft');
     assert.equal(guidePage.slug, 'guide');
-    assert.equal(guidePage.render?.markdown, '\n# Guide\n\n- bullet item\n\nImported markdown content');
+    assert.match(guidePage.render?.markdown ?? '', /# Guide/);
+    assert.match(guidePage.render?.markdown ?? '', /- \[ \] follow up item/);
+    assert.equal(validateDocContentV1(guidePage.content).ok, true);
+    assert.deepEqual(guidePage.content.blocks.map((block) => block.type), [
+      'heading',
+      'list',
+      'list',
+      'list',
+      'table',
+      'paragraph',
+    ]);
     assert.equal(guidePage.review?.sourceType, 'legacy-import');
     assert.equal(guidePage.review?.sourceId, importResult.importId);
     assert.equal(guidePage.review?.required, true);
     assert.ok(guidePage.review?.warnings?.some((warning) => warning.code === 'legacy-import-frontmatter-unmapped'));
-    assert.ok(guidePage.review?.warnings?.some((warning) => warning.code === 'legacy-import-markdown-construct-review-required'));
-    const markdownConstructWarning = guidePage.review?.warnings?.find(
-      (warning) => warning.code === 'legacy-import-markdown-construct-review-required',
+    assert.equal(
+      guidePage.review?.warnings?.some((warning) => warning.code === 'legacy-import-markdown-construct-review-required'),
+      false,
     );
-    assert.deepEqual(markdownConstructWarning?.metadata?.constructs, [
-      { code: 'bulleted-list', label: 'bulleted lists' },
-    ]);
 
     const navigation = await loadNavigation(repository, 'en');
     const importedSection = navigation.items.find(

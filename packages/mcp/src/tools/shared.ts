@@ -284,6 +284,7 @@ export function summarizePage(page: PageDoc, filePath: string) {
     slug: page.slug,
     title: page.title,
     description: page.description ?? '',
+    ...(page.template ? { template: page.template } : {}),
     status: page.status,
     tags: page.tags ?? [],
     updatedAt: page.updatedAt ?? null,

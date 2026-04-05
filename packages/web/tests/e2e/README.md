@@ -12,6 +12,7 @@ This directory holds the Playwright layer for repository acceptance checks. It i
 tests/e2e/
 ├── support/
 │   └── studio.ts
+├── blueprint-review-reader.spec.ts
 ├── studio.spec.ts
 ├── studio-authoring-flow.spec.ts
 ├── studio-local-api.spec.ts
@@ -58,6 +59,13 @@ Run a single spec:
 npx playwright test tests/e2e/studio-authoring-flow.spec.ts
 ```
 
+Run the Blueprint reader regression against an explicit preview:
+
+```bash
+ANYDOCS_DOCS_PROJECT_ROOT=/Users/shawn/workspace/code/anydocs/examples/starter-docs node packages/web/scripts/gen-public-assets.mjs preview --hostname 127.0.0.1 --port 4010
+STUDIO_SKIP_WEBSERVER=1 DOCS_PREVIEW_URL=http://127.0.0.1:4010/en/blueprint-review npx playwright test tests/e2e/blueprint-review-reader.spec.ts
+```
+
 Open Playwright UI:
 
 ```bash
@@ -94,3 +102,4 @@ pnpm --filter @anydocs/web test:ui
 - Browser tests intentionally avoid page-object indirection and keep assertions explicit in the spec bodies.
 - `studio-local-api.spec.ts` uses Playwright's `request` fixture so API regressions can be caught without a full browser journey.
 - By default the Playwright config starts `pnpm dev` automatically; set `STUDIO_SKIP_WEBSERVER=1` only when you are intentionally reusing an existing server.
+- `blueprint-review-reader.spec.ts` is an explicit preview smoke test for reader-only routes, so it expects `DOCS_PREVIEW_URL` to point at a running docs preview.

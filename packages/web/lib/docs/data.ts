@@ -10,10 +10,15 @@ import {
   type ProjectSiteTheme,
 } from '@anydocs/core';
 
-import { findPageBySlug, listPages, loadNavigation, loadStudioProjectContract } from '@/lib/docs/fs';
+import {
+  findPublishedPageBySlugRaw,
+  listPublishedPagesRaw,
+  loadNavigation,
+  loadStudioProjectContract,
+} from '@/lib/docs/fs';
 import { getPublishedApiSources } from '@/lib/docs/api-sources';
 import { sanitizeCookieDocsSource, type DocsRuntimeSource } from '@/lib/docs/request-source';
-import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
 export type { DocsRuntimeSource } from '@/lib/docs/request-source';
 
 export type PublishedStaticParam = {
@@ -23,7 +28,7 @@ export type PublishedStaticParam = {
 
 export type PublishedContext = {
   nav: NavigationDoc;
-  pages: PageDoc[];
+  pages: PublishedPageDoc[];
 };
 
 function normalizeOptionalString(value?: string | null): string | undefined {
@@ -171,11 +176,11 @@ export async function getPublishedSite(lang: DocsLang, projectId: string = '', c
 
 export async function getAllPages(lang: DocsLang, projectId: string = '', customPath?: string) {
   const source = resolveDataSource(projectId, customPath);
-  return listPages(lang, source.projectId, source.customPath);
+  return listPublishedPagesRaw(lang, source.projectId, source.customPath);
 }
 
 export async function getPublishedPages(lang: DocsLang, projectId: string = '', customPath?: string) {
-  return (await getPublishedSite(lang, projectId, customPath)).pages as PageDoc[];
+  return (await getPublishedSite(lang, projectId, customPath)).pages as PublishedPageDoc[];
 }
 
 export async function getPublishedNavigation(lang: DocsLang, projectId: string = '', customPath?: string) {
@@ -184,7 +189,7 @@ export async function getPublishedNavigation(lang: DocsLang, projectId: string =
 
 export async function getPublishedPageBySlug(lang: DocsLang, slug: string, projectId: string = '', customPath?: string) {
   const source = resolveDataSource(projectId, customPath);
-  const page = await findPageBySlug(lang, slug, source.projectId, source.customPath);
+  const page = await findPublishedPageBySlugRaw(lang, slug, source.projectId, source.customPath);
   if (!page) return null;
   if (!isPageApprovedForPublication(page)) return null;
   return page;
@@ -196,7 +201,7 @@ export async function getPublishedContext(
   customPath?: string,
 ): Promise<PublishedContext> {
   const site = await getPublishedSite(lang, projectId, customPath);
-  return { nav: site.navigation as NavigationDoc, pages: site.pages as PageDoc[] };
+  return { nav: site.navigation as NavigationDoc, pages: site.pages as PublishedPageDoc[] };
 }
 
 export async function getPublishedDocStaticParams(projectId: string = '', customPath?: string): Promise<PublishedStaticParam[]> {

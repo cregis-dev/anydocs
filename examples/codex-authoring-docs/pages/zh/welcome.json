@@ -1,0 +1,219 @@
+{
+  "id": "welcome",
+  "lang": "zh",
+  "slug": "welcome",
+  "title": "Codex 写作文档站示例",
+  "description": "一个模拟开发者在 Codex 中创建和维护 Anydocs 文档站的完整样例。",
+  "tags": [
+    "codex",
+    "authoring",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Codex 写作文档站示例"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例展示的是一条更完整的 Codex 文档写作路径，而不是单一功能点。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "适合什么场景"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想看 Codex 如何维护一个真实文档站"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想把页面写作、导航调整和发布节奏串起来理解"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "想找一套面向 Codex 的示例信息架构"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "这个样例包含什么"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "Codex 角色说明"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP 接入步骤"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "首次建站模拟流程"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "日常维护流程与排错页"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-12",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "如何运行"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-13",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/codex-authoring-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/codex-authoring-docs"
+      },
+      {
+        "type": "heading",
+        "id": "block-14",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "建议阅读顺序"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-15",
+        "style": "numbered",
+        "items": [
+          {
+            "id": "element-15-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`Codex 适合做什么`"
+              }
+            ]
+          },
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`把 Anydocs MCP 接入 Codex`"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`模拟：开发者如何让 Codex 创建文档站`"
+              }
+            ]
+          },
+          {
+            "id": "element-18-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`日常写作工作流`"
+              }
+            ]
+          },
+          {
+            "id": "element-19-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`约束与排错`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

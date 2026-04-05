@@ -9,7 +9,10 @@ import {
   type PageDocValidationOptions,
 } from '../schemas/docs-schema.ts';
 import type { DocsLang, NavigationDoc, PageDoc } from '../types/docs.ts';
+import { normalizeDocContent } from '../utils/doc-content-normalize.ts';
 import { assertValidPageId, normalizeSlug } from '../utils/slug.ts';
+import { validateDocContentV1 } from '../utils/content-schema.ts';
+import { yooptaToDocContent } from '../utils/doc-content-adapter.ts';
 
 export type DocsRepository = {
   projectRoot: string;
@@ -103,6 +106,19 @@ function collectNavigationPageIds(items: NavigationDoc['items'], out: string[]) 
     if (item.type === 'section' || item.type === 'folder') {
       collectNavigationPageIds(item.children, out);
     }
+  }
+}
+
+function normalizePersistedPageContent<TContent>(content: TContent): TContent {
+  const canonical = validateDocContentV1(content);
+  if (canonical.ok) {
+    return normalizeDocContent(content as Parameters<typeof normalizeDocContent>[0]) as TContent;
+  }
+
+  try {
+    return normalizeDocContent(yooptaToDocContent(content)) as TContent;
+  } catch {
+    return content;
   }
 }
 
@@ -315,6 +331,7 @@ export async function savePage<TContent = unknown>(
   const normalizedPage: PageDoc<TContent> = {
     ...validatedPage,
     slug,
+    content: normalizePersistedPageContent(validatedPage.content),
   };
 
   if (normalizedPage.status === 'published' && !isPageApprovedForPublication(normalizedPage)) {

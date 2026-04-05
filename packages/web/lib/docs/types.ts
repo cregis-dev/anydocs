@@ -12,6 +12,8 @@ import type {
 
 export type DocsLang = CoreDocsLang;
 export type PageStatus = CorePageStatus;
-export type PageDoc = CorePageDoc<YooptaContentValue>;
+export type StudioPageDoc = CorePageDoc<YooptaContentValue>;
+export type PublishedPageDoc = CorePageDoc<unknown>;
+export type PageDoc = StudioPageDoc;
 export const SUPPORTED_DOCS_LANGUAGES = ['zh', 'en'] as const satisfies readonly DocsLang[];
 export type { ApiSourceDoc, NavItem, NavigationDoc, PageRender, PageReview };

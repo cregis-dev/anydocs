@@ -16,6 +16,41 @@ export type InitCommandOptions = {
   json?: boolean;
 };
 
+function normalizeOptionalString(value?: string): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function inferProjectId(value: string): string | undefined {
+  const normalized = value
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function inferProjectName(value: string): string | undefined {
+  const words = value
+    .trim()
+    .split(/[^A-Za-z0-9]+/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  if (words.length === 0) {
+    return undefined;
+  }
+
+  return words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export async function runInitCommand(options: InitCommandOptions = {}): Promise<number> {
   const {
     targetDir,
@@ -27,12 +62,15 @@ export async function runInitCommand(options: InitCommandOptions = {}): Promise<
     json = false,
   } = options;
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
+  const inferredSource = normalizeOptionalString(projectName) ?? path.basename(repoRoot);
+  const resolvedProjectId = normalizeOptionalString(projectId) ?? inferProjectId(inferredSource);
+  const resolvedProjectName = normalizeOptionalString(projectName) ?? inferProjectName(path.basename(repoRoot));
 
   try {
     const result = await initializeProject({
       repoRoot,
-      projectId,
-      projectName,
+      projectId: resolvedProjectId,
+      projectName: resolvedProjectName,
       defaultLanguage,
       languages,
       agent,

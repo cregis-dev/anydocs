@@ -60,6 +60,117 @@ test('savePage and loadPage persist validated page content through shared reposi
   }
 });
 
+test('savePage canonicalizes legacy Yoopta content before writing page files', async () => {
+  const projectRoot = await createTempProjectRoot();
+  const repository = createDocsRepository(projectRoot);
+
+  try {
+    await initializeDocsRepository(repository, ['en']);
+    await savePage(
+      repository,
+      'en',
+      {
+        id: 'welcome',
+        lang: 'en',
+        slug: 'welcome',
+        title: 'Welcome',
+        status: 'draft',
+        content: {
+          'block-1': {
+            id: 'block-1',
+            type: 'Paragraph',
+            value: [
+              {
+                id: 'paragraph-1',
+                type: 'paragraph',
+                children: [{ text: 'Legacy body copy' }],
+                props: { nodeType: 'block' },
+              },
+            ],
+            meta: {
+              order: 0,
+              depth: 0,
+            },
+          },
+        },
+      },
+      {
+        validateContent(value) {
+          const isCanonical = typeof value === 'object' && value !== null && 'version' in (value as Record<string, unknown>);
+          if (!isCanonical) {
+            return;
+          }
+        },
+      },
+    );
+
+    const page = await loadPage(repository, 'en', 'welcome');
+    assert.deepEqual(page?.content, {
+      version: 1,
+      blocks: [
+        {
+          type: 'paragraph',
+          id: 'block-1',
+          children: [{ type: 'text', text: 'Legacy body copy' }],
+        },
+      ],
+    });
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('savePage merges adjacent canonical list blocks before persisting', async () => {
+  const projectRoot = await createTempProjectRoot();
+  const repository = createDocsRepository(projectRoot);
+
+  try {
+    await initializeDocsRepository(repository, ['en']);
+    await savePage(repository, 'en', {
+      id: 'guide',
+      lang: 'en',
+      slug: 'guide',
+      title: 'Guide',
+      status: 'draft',
+      content: {
+        version: 1,
+        blocks: [
+          {
+            type: 'list',
+            id: 'block-1',
+            style: 'bulleted',
+            items: [{ id: 'item-1', children: [{ type: 'text', text: 'First item' }] }],
+          },
+          {
+            type: 'list',
+            id: 'block-2',
+            style: 'bulleted',
+            items: [{ id: 'item-2', children: [{ type: 'text', text: 'Second item' }] }],
+          },
+        ],
+      },
+    });
+
+    const page = await loadPage(repository, 'en', 'guide');
+    assert.deepEqual(page?.content, {
+      version: 1,
+      blocks: [
+        {
+          type: 'list',
+          id: 'block-1',
+          style: 'bulleted',
+          items: [
+            { id: 'item-1', children: [{ type: 'text', text: 'First item' }] },
+            { id: 'item-2', children: [{ type: 'text', text: 'Second item' }] },
+          ],
+        },
+      ],
+    });
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('savePage rejects duplicate slugs within the same language', async () => {
   const projectRoot = await createTempProjectRoot();
   const repository = createDocsRepository(projectRoot);

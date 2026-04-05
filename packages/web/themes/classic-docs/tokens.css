@@ -1,19 +1,19 @@
 .theme-classic-docs {
-  --classic-background: #f8fafc;
-  --classic-foreground: #0f172a;
+  --classic-background: #fcfcfc;
+  --classic-foreground: #171717;
   --classic-panel: #ffffff;
   --classic-panel-elevated: #ffffff;
-  --classic-border: #dbe3ee;
-  --classic-muted: #eef2f7;
-  --classic-muted-foreground: #64748b;
-  --classic-copy: #1f2937;
-  --classic-copy-subtle: #64748b;
-  --classic-primary: #0f172a;
+  --classic-border: #e5e5e5;
+  --classic-muted: #f5f5f4;
+  --classic-muted-foreground: #666666;
+  --classic-copy: #2a2a26;
+  --classic-copy-subtle: #666666;
+  --classic-primary: #171717;
   --classic-primary-foreground: #ffffff;
-  --classic-accent: #e8eef5;
-  --classic-accent-foreground: #0f172a;
-  --classic-sidebar-active: #0f172a;
-  --classic-sidebar-active-foreground: #0f172a;
+  --classic-accent: #efefef;
+  --classic-accent-foreground: #171717;
+  --classic-sidebar-active: #171717;
+  --classic-sidebar-active-foreground: #171717;
   --classic-sidebar-active-background: color-mix(in srgb, var(--classic-sidebar-active) 5%, white);
   --classic-sidebar-hover: color-mix(in srgb, var(--classic-sidebar-active) 3%, white);
   --classic-ring: color-mix(in srgb, var(--classic-primary) 36%, white);
@@ -56,9 +56,30 @@
   --docs-sidebar-active-border: var(--classic-sidebar-active);
   --docs-sidebar-hover: var(--classic-sidebar-hover);
   --docs-sidebar-brand-surface: var(--classic-panel-elevated);
-  --docs-sidebar-section: #475569;
+  --docs-sidebar-section: #5f5f5f;
+  --docs-sidebar-group-background: var(--classic-muted);
+  --docs-sidebar-group-title: var(--classic-foreground);
+  --docs-sidebar-group-accent: var(--classic-primary);
   --docs-sidebar-link: var(--classic-copy);
   --docs-sidebar-link-subtle: var(--classic-muted-foreground);
   --docs-body-copy: var(--classic-copy);
   --docs-body-copy-subtle: var(--classic-muted-foreground);
+  --docs-search-background: var(--classic-muted);
+  --docs-search-border: var(--classic-border);
+  --docs-search-placeholder: var(--classic-muted-foreground);
+  --docs-search-results-background: var(--classic-panel-elevated);
+  --docs-search-hover: var(--classic-sidebar-hover);
+  --docs-divider: var(--classic-border);
+  --docs-toc-background: transparent;
+  --docs-toc-border: var(--classic-border);
+  --docs-toc-title: var(--classic-muted-foreground);
+  --docs-toc-divider: var(--classic-border);
+  --docs-toc-link: var(--classic-copy-subtle);
+  --docs-toc-link-hover: var(--classic-foreground);
+  --docs-toc-link-active: var(--classic-foreground);
+  --docs-toc-active-background: transparent;
+}
+
+.theme-classic-docs [data-docs-divider] {
+  border-color: var(--docs-divider);
 }

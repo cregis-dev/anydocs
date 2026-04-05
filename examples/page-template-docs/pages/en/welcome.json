@@ -1,0 +1,201 @@
+{
+  "id": "welcome",
+  "lang": "en",
+  "slug": "welcome",
+  "title": "Page Template Example",
+  "description": "A focused example for custom page templates, template binding, and metadata schemas.",
+  "tags": [
+    "template",
+    "example"
+  ],
+  "status": "published",
+  "updatedAt": "2026-04-04T00:00:00.000Z",
+  "content": {
+    "version": 1,
+    "blocks": [
+      {
+        "type": "heading",
+        "id": "block-1",
+        "level": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Page Template Example"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "id": "block-2",
+        "children": [
+          {
+            "type": "text",
+            "text": "This example is focused on Anydocs template behavior instead of the base project skeleton."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-3",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "When To Use It"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-4",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-4-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to define custom page templates"
+              }
+            ]
+          },
+          {
+            "id": "element-5-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to verify how the `template` field binds a page to a template"
+              }
+            ]
+          },
+          {
+            "id": "element-6-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "you want to test how `metadataSchema` constrains page metadata"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-7",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What This Example Includes"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-8",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-8-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "`authoring.pageTemplates`"
+              }
+            ]
+          },
+          {
+            "id": "element-9-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "a template-backed page called `blueprint-review`"
+              }
+            ]
+          },
+          {
+            "id": "element-10-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "sample metadata fields for that template"
+              }
+            ]
+          },
+          {
+            "id": "element-11-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "the rendered result of template-backed pages in build / preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-12",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "How To Run It"
+          }
+        ]
+      },
+      {
+        "type": "codeBlock",
+        "id": "block-13",
+        "language": "bash",
+        "code": "node --experimental-strip-types packages/cli/src/index.ts build examples/page-template-docs\nnode --experimental-strip-types packages/cli/src/index.ts preview examples/page-template-docs"
+      },
+      {
+        "type": "paragraph",
+        "id": "block-14",
+        "children": [
+          {
+            "type": "text",
+            "text": "In Studio, select `examples/page-template-docs` as the project path."
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "block-15",
+        "level": 2,
+        "children": [
+          {
+            "type": "text",
+            "text": "What To Read Next"
+          }
+        ]
+      },
+      {
+        "type": "list",
+        "id": "block-16",
+        "style": "bulleted",
+        "items": [
+          {
+            "id": "element-16-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "for the minimal project skeleton, go to `examples/starter-docs`"
+              }
+            ]
+          },
+          {
+            "id": "element-17-item-1",
+            "children": [
+              {
+                "type": "text",
+                "text": "for the full Codex authoring flow, go to `examples/codex-authoring-docs`"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -12,17 +12,27 @@ export function DocsToc({
   className,
   contentClassName,
   hideTitle = false,
+  hideDivider = false,
   listClassName,
   activeLinkClassName,
   inactiveLinkClassName,
+  disableDefaultDepthStyles = false,
+  disableInnerScroll = false,
+  titleClassName,
+  dividerClassName,
 }: {
   toc: TocItem[];
   className?: string;
   contentClassName?: string;
   hideTitle?: boolean;
+  hideDivider?: boolean;
   listClassName?: string;
   activeLinkClassName?: string;
   inactiveLinkClassName?: string;
+  disableDefaultDepthStyles?: boolean;
+  disableInnerScroll?: boolean;
+  titleClassName?: string;
+  dividerClassName?: string;
 }) {
   const pathname = usePathname();
   const copy = getDocsUiCopy(inferDocsLangFromPathname(pathname));
@@ -66,13 +76,30 @@ export function DocsToc({
         className,
       )}
     >
-      <div className={cn('max-h-full overflow-y-auto pr-1', contentClassName)}>
+      <div
+        className={cn(
+          disableInnerScroll ? 'pr-0' : 'max-h-full overflow-y-auto pr-1',
+          contentClassName,
+        )}
+      >
         {!hideTitle ? (
           <>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--docs-toc-title,var(--fd-foreground))]">
+            <div
+              className={cn(
+                'text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--docs-toc-title,var(--fd-foreground))]',
+                titleClassName,
+              )}
+            >
               {copy.toc.title}
             </div>
-            <div className="my-3 h-px w-full bg-[color:var(--docs-toc-divider,var(--fd-border))]" />
+            {!hideDivider ? (
+              <div
+                className={cn(
+                  'my-3 h-px w-full bg-[color:var(--docs-toc-divider,var(--fd-border))]',
+                  dividerClassName,
+                )}
+              />
+            ) : null}
           </>
         ) : null}
         <div className={cn('space-y-1', listClassName)}>
@@ -80,6 +107,7 @@ export function DocsToc({
             <a
               key={t.id}
               href={`#${t.id}`}
+              data-depth={t.depth}
               aria-current={activeId === t.id ? 'location' : undefined}
               className={cn(
                 'block rounded-r-md border-l-2 py-1.5 pl-3 text-[12px] leading-5 transition',
@@ -87,7 +115,13 @@ export function DocsToc({
                   ? 'border-[color:var(--docs-sidebar-active-border,var(--fd-foreground))] bg-[color:var(--docs-toc-active-background,var(--fd-muted))] font-medium text-[color:var(--docs-toc-link-active,var(--fd-foreground))]'
                   : 'border-transparent text-[color:var(--docs-toc-link,var(--fd-muted-foreground))] hover:border-fd-border hover:text-[color:var(--docs-toc-link-hover,var(--fd-foreground))]',
                 activeId === t.id ? activeLinkClassName : inactiveLinkClassName,
-                t.depth === 3 ? 'ml-3 text-[11px] leading-[18px]' : t.depth === 4 ? 'ml-6 text-[11px] leading-[18px]' : '',
+                !disableDefaultDepthStyles
+                  ? t.depth === 3
+                    ? 'ml-3 text-[11px] leading-[18px]'
+                    : t.depth === 4
+                      ? 'ml-6 text-[11px] leading-[18px]'
+                      : ''
+                  : '',
               )}
             >
               {t.title}
