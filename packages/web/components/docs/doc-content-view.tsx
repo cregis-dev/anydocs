@@ -29,13 +29,8 @@ export function DocContentView({
   const [preferYoopta, setPreferYoopta] = useState(false);
 
   useEffect(() => {
-    if (!legacyYooptaContent) {
-      setPreferYoopta(false);
-      return;
-    }
-
     const frame = window.requestAnimationFrame(() => {
-      setPreferYoopta(true);
+      setPreferYoopta(Boolean(legacyYooptaContent));
     });
 
     return () => window.cancelAnimationFrame(frame);
