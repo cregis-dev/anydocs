@@ -1,22 +1,24 @@
 import {
-  PAGE_TEMPLATE_KINDS,
   ValidationError,
   clonePageToLanguage,
+  composePageFromTemplate,
   createPagesBatch,
   createPage,
   createPageFromMarkdown,
-  createPageFromTemplate,
   deleteAuthoredPage,
+  findResolvedProjectPageTemplate,
   findPageBySlug,
+  listResolvedProjectPageTemplates,
   listTranslationStatus,
   listPages,
   loadPage,
   setPageStatusesBatch,
   setPageStatus,
-  updatePageFromTemplate,
+  updateProjectConfig,
   updatePagesBatch,
   updatePage,
   updatePageFromMarkdown,
+  type ProjectPageTemplateDefinition,
   type PageReview,
   type PageRender,
 } from '@anydocs/core';
@@ -46,6 +48,8 @@ const ALLOWED_PAGE_PATCH_FIELDS = new Set([
   'render',
   'review',
 ]);
+
+type ResolvedTemplate = ReturnType<typeof listResolvedProjectPageTemplates>[number];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -152,17 +156,90 @@ function requireObjectArrayArgument(
   return value as Array<Record<string, unknown>>;
 }
 
-function requireKnownTemplateKind(tool: string, value: unknown) {
-  if (typeof value !== 'string' || !PAGE_TEMPLATE_KINDS.includes(value as (typeof PAGE_TEMPLATE_KINDS)[number])) {
-    throw new ValidationError(`Tool "${tool}" requires "template" to be one of ${PAGE_TEMPLATE_KINDS.join(', ')}.`, {
+function requireTemplateId(tool: string, value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new ValidationError(`Tool "${tool}" requires "template" to be a non-empty string.`, {
       entity: 'mcp-tool',
-      rule: 'page-template-kind-must-be-supported',
-      remediation: `Provide "template" as one of: ${PAGE_TEMPLATE_KINDS.join(', ')}.`,
-      metadata: { tool, received: value, allowed: [...PAGE_TEMPLATE_KINDS] },
+      rule: 'mcp-tool-required-string-argument',
+      remediation: 'Provide "template" as a non-empty template id string.',
+      metadata: { tool, received: value },
     });
   }
 
-  return value as (typeof PAGE_TEMPLATE_KINDS)[number];
+  return value.trim();
+}
+
+function requireTemplateDefinition(
+  tool: string,
+  projectRoot: string,
+  templateId: string,
+  config: Parameters<typeof listResolvedProjectPageTemplates>[0],
+): ResolvedTemplate {
+  const resolvedTemplate = findResolvedProjectPageTemplate(config, templateId);
+  if (!resolvedTemplate) {
+    throw new ValidationError(`Template "${templateId}" is not defined for this project.`, {
+      entity: 'mcp-tool',
+      rule: 'page-template-kind-must-be-supported',
+      remediation: 'Use page_template_query to inspect available built-in and custom template ids.',
+      metadata: {
+        tool,
+        projectRoot,
+        templateId,
+        availableTemplates: listResolvedProjectPageTemplates(config).map((template) => template.id),
+      },
+    });
+  }
+
+  return resolvedTemplate;
+}
+
+function toTemplateSummary(template: ResolvedTemplate) {
+  return {
+    id: template.id,
+    label: template.label,
+    ...(template.description ? { description: template.description } : {}),
+    baseTemplate: template.baseTemplate,
+    builtIn: template.builtIn,
+    recommendedInputs: [...template.recommendedInputs],
+    ...(template.defaultSummary ? { defaultSummary: template.defaultSummary } : {}),
+    ...(template.defaultSections ? { defaultSections: template.defaultSections } : {}),
+    ...(template.metadataSchema ? { metadataSchema: template.metadataSchema } : {}),
+  };
+}
+
+function resolveTemplateSections(
+  providedSections: ReturnType<typeof parseTemplateSections>,
+  template: ResolvedTemplate,
+) {
+  if (providedSections !== undefined) {
+    return providedSections;
+  }
+
+  if (!template.defaultSections?.length) {
+    return undefined;
+  }
+
+  return template.defaultSections.map((section) => ({
+    title: section.title,
+    ...(section.body ? { body: section.body } : {}),
+  }));
+}
+
+function requireTemplatePayloadArgument(
+  tool: string,
+  args: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> {
+  const value = args[key];
+  if (!isRecord(value)) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be an object.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-object-argument',
+      remediation: `Provide "${key}" as an object.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+  return value;
 }
 
 function parsePatch(tool: string, args: Record<string, unknown>) {
@@ -564,6 +641,155 @@ export const pageTools: ToolDefinition[] = [
     },
   },
   {
+    name: 'page_template_save',
+    description:
+      'Create or update a project-defined authoring page template by id without touching unrelated project config.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        template: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            label: {
+              oneOf: [
+                { type: 'string' },
+                { type: 'object', additionalProperties: { type: 'string' } },
+              ],
+            },
+            description: { type: 'string' },
+            baseTemplate: { type: 'string', enum: ['concept', 'how_to', 'reference'] },
+            defaultSummary: { type: 'string' },
+            defaultSections: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  body: { type: 'string' },
+                },
+                required: ['title'],
+                additionalProperties: false,
+              },
+            },
+            metadataSchema: {
+              type: 'object',
+              properties: {
+                fields: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      label: {
+                        oneOf: [
+                          { type: 'string' },
+                          { type: 'object', additionalProperties: { type: 'string' } },
+                        ],
+                      },
+                      type: { type: 'string', enum: ['string', 'text', 'enum', 'boolean', 'date', 'string[]'] },
+                      required: { type: 'boolean' },
+                      visibility: { type: 'string', enum: ['public', 'internal'] },
+                      options: { type: 'array', items: { type: 'string' } },
+                    },
+                    required: ['id', 'label', 'type'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['fields'],
+              additionalProperties: false,
+            },
+          },
+          required: ['id', 'label', 'baseTemplate'],
+          additionalProperties: false,
+        },
+      },
+      required: ['projectRoot', 'template'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_template_save', argumentsValue);
+      const projectRoot = requireStringArgument('page_template_save', args, 'projectRoot');
+      const templatePayload = requireTemplatePayloadArgument('page_template_save', args, 'template');
+      const templateId = requireStringArgument('page_template_save', templatePayload, 'id');
+
+      return executeTool('page_template_save', { projectRoot, templateId }, async () => {
+        const { contract } = await loadProjectContext('page_template_save', projectRoot);
+        const existingTemplates = contract.config.authoring?.pageTemplates ?? [];
+        const existingIndex = existingTemplates.findIndex((template) => template.id === templateId);
+        const nextTemplate = {
+          ...templatePayload,
+          id: templateId,
+        } as unknown as ProjectPageTemplateDefinition;
+        const nextTemplates =
+          existingIndex >= 0
+            ? existingTemplates.map((template, index) => (index === existingIndex ? nextTemplate : template))
+            : [...existingTemplates, nextTemplate];
+
+        const updateResult = await updateProjectConfig(projectRoot, {
+          authoring: { pageTemplates: nextTemplates },
+        });
+        if (!updateResult.ok) {
+          throw updateResult.error;
+        }
+
+        const savedTemplate = requireTemplateDefinition(
+          'page_template_save',
+          projectRoot,
+          templateId,
+          updateResult.value,
+        );
+
+        return {
+          configFile: contract.paths.configFile,
+          action: existingIndex >= 0 ? 'updated' : 'created',
+          template: toTemplateSummary(savedTemplate),
+        };
+      });
+    },
+  },
+  {
+    name: 'page_template_query',
+    description: 'Query built-in and project-defined page templates, or inspect one by template id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        templateId: { type: 'string' },
+      },
+      required: ['projectRoot'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('page_template_query', argumentsValue);
+      const projectRoot = requireStringArgument('page_template_query', args, 'projectRoot');
+      const templateId = optionalStringArgument('page_template_query', args, 'templateId');
+
+      return executeTool('page_template_query', { projectRoot }, async () => {
+        const { contract } = await loadProjectContext('page_template_query', projectRoot);
+        const resolvedTemplates = listResolvedProjectPageTemplates(contract.config);
+        if (!templateId) {
+          return {
+            templates: resolvedTemplates.map((template) => toTemplateSummary(template)),
+          };
+        }
+
+        const template = requireTemplateDefinition(
+          'page_template_query',
+          projectRoot,
+          templateId,
+          contract.config,
+        );
+
+        return {
+          template: toTemplateSummary(template),
+        };
+      });
+    },
+  },
+  {
     name: 'page_create',
     description: 'Create a canonical Anydocs page document through the shared authoring service.',
     inputSchema: {
@@ -706,8 +932,9 @@ export const pageTools: ToolDefinition[] = [
         pageId: { type: 'string' },
         slug: { type: 'string' },
         title: { type: 'string' },
-        template: { type: 'string', enum: [...PAGE_TEMPLATE_KINDS] },
+        template: { type: 'string' },
         description: { type: 'string' },
+        metadata: { type: 'object' },
         tags: { type: 'array', items: { type: 'string' } },
         status: { type: 'string', enum: ['draft', 'in_review', 'published'] },
         review: { type: 'object' },
@@ -726,8 +953,9 @@ export const pageTools: ToolDefinition[] = [
       const pageId = requireStringArgument('page_create_from_template', args, 'pageId');
       const slug = requireStringArgument('page_create_from_template', args, 'slug');
       const title = requireStringArgument('page_create_from_template', args, 'title');
-      const template = requireKnownTemplateKind('page_create_from_template', args.template);
+      const templateId = requireTemplateId('page_create_from_template', args.template);
       const description = optionalStringArgument('page_create_from_template', args, 'description');
+      const metadata = optionalObjectArgument('page_create_from_template', args, 'metadata');
       const tags = optionalStringArrayArgument('page_create_from_template', args, 'tags');
       const status =
         args.status == null ? undefined : requireKnownPageStatus('page_create_from_template', args.status);
@@ -739,7 +967,23 @@ export const pageTools: ToolDefinition[] = [
 
       return executeTool('page_create_from_template', { projectRoot, lang, pageId }, async () => {
         const context = await loadProjectContext('page_create_from_template', projectRoot, lang);
-        return createPageFromTemplate({
+        const resolvedTemplate = requireTemplateDefinition(
+          'page_create_from_template',
+          projectRoot,
+          templateId,
+          context.contract.config,
+        );
+        const summaryForTemplate = summary ?? resolvedTemplate.defaultSummary;
+        const sectionsForTemplate = resolveTemplateSections(sections, resolvedTemplate);
+        const composition = composePageFromTemplate({
+          template: resolvedTemplate.baseTemplate,
+          ...(summaryForTemplate ? { summary: summaryForTemplate } : {}),
+          ...(sectionsForTemplate ? { sections: sectionsForTemplate } : {}),
+          ...(steps ? { steps } : {}),
+          ...(callouts ? { callouts } : {}),
+        });
+
+        return createPage({
           projectRoot,
           lang: context.lang!,
           page: {
@@ -747,15 +991,14 @@ export const pageTools: ToolDefinition[] = [
             slug,
             title,
             description,
+            template: resolvedTemplate.id,
+            ...(metadata ? { metadata } : {}),
             tags,
             status,
             review,
+            content: composition.content,
+            render: composition.render,
           },
-          template,
-          ...(summary ? { summary } : {}),
-          ...(sections ? { sections } : {}),
-          ...(steps ? { steps } : {}),
-          ...(callouts ? { callouts } : {}),
         });
       });
     },
@@ -770,10 +1013,11 @@ export const pageTools: ToolDefinition[] = [
         projectRoot: { type: 'string' },
         lang: { type: 'string' },
         pageId: { type: 'string' },
-        template: { type: 'string', enum: [...PAGE_TEMPLATE_KINDS] },
+        template: { type: 'string' },
         slug: { type: 'string' },
         title: { type: 'string' },
         description: { type: 'string' },
+        metadata: { type: 'object' },
         tags: { type: 'array', items: { type: 'string' } },
         review: { type: 'object' },
         summary: { type: 'string' },
@@ -789,10 +1033,11 @@ export const pageTools: ToolDefinition[] = [
       const projectRoot = requireStringArgument('page_update_from_template', args, 'projectRoot');
       const lang = requireStringArgument('page_update_from_template', args, 'lang');
       const pageId = requireStringArgument('page_update_from_template', args, 'pageId');
-      const template = requireKnownTemplateKind('page_update_from_template', args.template);
+      const templateId = requireTemplateId('page_update_from_template', args.template);
       const slug = optionalStringArgument('page_update_from_template', args, 'slug');
       const title = optionalStringArgument('page_update_from_template', args, 'title');
       const description = optionalStringArgument('page_update_from_template', args, 'description');
+      const metadata = optionalObjectArgument('page_update_from_template', args, 'metadata');
       const tags = optionalStringArrayArgument('page_update_from_template', args, 'tags');
       const review = optionalPageReview('page_update_from_template', args, 'review');
       const summary = optionalStringArgument('page_update_from_template', args, 'summary');
@@ -802,22 +1047,37 @@ export const pageTools: ToolDefinition[] = [
 
       return executeTool('page_update_from_template', { projectRoot, lang, pageId }, async () => {
         const context = await loadProjectContext('page_update_from_template', projectRoot, lang);
-        return updatePageFromTemplate({
+        const resolvedTemplate = requireTemplateDefinition(
+          'page_update_from_template',
+          projectRoot,
+          templateId,
+          context.contract.config,
+        );
+        const summaryForTemplate = summary ?? resolvedTemplate.defaultSummary;
+        const sectionsForTemplate = resolveTemplateSections(sections, resolvedTemplate);
+        const composition = composePageFromTemplate({
+          template: resolvedTemplate.baseTemplate,
+          ...(summaryForTemplate ? { summary: summaryForTemplate } : {}),
+          ...(sectionsForTemplate ? { sections: sectionsForTemplate } : {}),
+          ...(steps ? { steps } : {}),
+          ...(callouts ? { callouts } : {}),
+        });
+
+        return updatePage({
           projectRoot,
           lang: context.lang!,
           pageId,
-          template,
           patch: {
             ...(slug ? { slug } : {}),
             ...(title ? { title } : {}),
             ...(description ? { description } : {}),
+            template: resolvedTemplate.id,
+            ...(metadata ? { metadata } : {}),
             ...(tags ? { tags } : {}),
             ...(review ? { review } : {}),
+            content: composition.content,
+            render: composition.render,
           },
-          ...(summary ? { summary } : {}),
-          ...(sections ? { sections } : {}),
-          ...(steps ? { steps } : {}),
-          ...(callouts ? { callouts } : {}),
         });
       });
     },

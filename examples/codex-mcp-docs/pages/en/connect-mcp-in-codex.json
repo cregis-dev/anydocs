@@ -64,7 +64,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "inspect `project_open.authoring` for templates, resources, and resource templates"
+                "text": "inspect `project_open.authoring` for templates, resources, and resource templates; use `page_template_query` when template selection is unclear"
               }
             ]
           },
@@ -100,7 +100,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "write with `page_create_from_template`, `page_create`, `page_update`, `page_set_status`, and navigation tools"
+                "text": "use `page_template_save` when template definitions need changes, then write with `page_create_from_template`, `page_create`, `page_update`, `page_set_status`, and navigation tools"
               }
             ]
           }

@@ -97,7 +97,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "inspect `project_open.authoring.templates`, `resources`, and `resourceTemplates`"
+                "text": "inspect `project_open.authoring.templates`, `resources`, and `resourceTemplates`; use `page_template_query` when template selection is unclear"
               }
             ]
           },
@@ -133,7 +133,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "`page_create_from_template` or `page_create`"
+                "text": "if template definition changes are needed, use `page_template_save`; then use `page_create_from_template` or `page_create`"
               }
             ]
           },

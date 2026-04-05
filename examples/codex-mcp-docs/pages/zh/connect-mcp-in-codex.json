@@ -64,7 +64,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "先看 `project_open.authoring` 里的 templates、resources 和 resourceTemplates"
+                "text": "先看 `project_open.authoring` 里的 templates、resources 和 resourceTemplates；模板选择不确定时用 `page_template_query`"
               }
             ]
           },
@@ -100,7 +100,7 @@
             "children": [
               {
                 "type": "text",
-                "text": "用 `page_create_from_template`、`page_create`、`page_update`、`page_set_status` 和导航工具进行写操作"
+                "text": "模板定义要变更时先用 `page_template_save`，然后再用 `page_create_from_template`、`page_create`、`page_update`、`page_set_status` 和导航工具写入"
               }
             ]
           }

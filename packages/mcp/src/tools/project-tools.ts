@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   DOC_CONTENT_AUTHORING_GUIDANCE,
   DOC_CONTENT_BLOCK_TYPES,
@@ -7,6 +9,7 @@ import {
   DOCS_YOOPTA_AUTHORING_GUIDANCE,
   getProjectThemeCapabilities,
   listResolvedProjectPageTemplates,
+  runPreviewWorkflow,
   runBuildWorkflow,
   assessWorkflowForwardCompatibility,
   syncWorkflowStandard,
@@ -20,6 +23,7 @@ import {
   type ToolDefinition,
   executeTool,
   loadProjectContext,
+  optionalStringArgument,
   requireObjectArguments,
   requireStringArgument,
 } from './shared.ts';
@@ -52,6 +56,147 @@ function optionalBooleanArgument(
   }
 
   return value;
+}
+
+function optionalIntegerArgument(
+  tool: string,
+  args: Record<string, unknown>,
+  key: string,
+  options: { min?: number; max?: number } = {},
+): number | undefined {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be an integer when provided.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-integer-argument',
+      remediation: `Provide "${key}" as an integer, or omit it.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+
+  if (options.min != null && value < options.min) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be >= ${options.min}.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-integer-min-constraint',
+      remediation: `Provide "${key}" as an integer >= ${options.min}.`,
+      metadata: { tool, key, min: options.min, received: value },
+    });
+  }
+
+  if (options.max != null && value > options.max) {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be <= ${options.max}.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-integer-max-constraint',
+      remediation: `Provide "${key}" as an integer <= ${options.max}.`,
+      metadata: { tool, key, max: options.max, received: value },
+    });
+  }
+
+  return value;
+}
+
+type PreviewSessionRuntime = Awaited<ReturnType<typeof runPreviewWorkflow>>;
+
+type PreviewSession = {
+  id: string;
+  projectRoot: string;
+  projectId: string;
+  host: string;
+  port: number;
+  url: string;
+  docsPath: string;
+  previewUrl: string;
+  pid: number;
+  publishedPages: number;
+  startedAt: string;
+  status: 'running' | 'stopping' | 'stopped' | 'exited';
+  exitCode?: number | null;
+  signal?: NodeJS.Signals | null;
+  endedAt?: string;
+  runtime: Pick<PreviewSessionRuntime, 'stop' | 'waitUntilExit'>;
+  stopPromise?: Promise<void>;
+};
+
+const previewSessions = new Map<string, PreviewSession>();
+
+function summarizePreviewSession(session: PreviewSession) {
+  return {
+    id: session.id,
+    projectRoot: session.projectRoot,
+    projectId: session.projectId,
+    host: session.host,
+    port: session.port,
+    url: session.url,
+    docsPath: session.docsPath,
+    previewUrl: session.previewUrl,
+    pid: session.pid,
+    publishedPages: session.publishedPages,
+    startedAt: session.startedAt,
+    status: session.status,
+    ...(session.exitCode !== undefined ? { exitCode: session.exitCode } : {}),
+    ...(session.signal !== undefined ? { signal: session.signal } : {}),
+    ...(session.endedAt ? { endedAt: session.endedAt } : {}),
+  };
+}
+
+function listProjectPreviewSessions(projectRoot: string): PreviewSession[] {
+  return [...previewSessions.values()].filter((session) => session.projectRoot === projectRoot);
+}
+
+function listRunningPreviewSessions(projectRoot?: string): PreviewSession[] {
+  return [...previewSessions.values()].filter((session) =>
+    session.status === 'running' && (projectRoot == null || session.projectRoot === projectRoot)
+  );
+}
+
+function attachPreviewExitWatcher(session: PreviewSession) {
+  void session.runtime.waitUntilExit().then(({ exitCode, signal }) => {
+    if (session.status === 'stopped') {
+      return;
+    }
+
+    session.status = session.status === 'stopping' ? 'stopped' : 'exited';
+    session.exitCode = exitCode;
+    session.signal = signal;
+    session.endedAt = new Date().toISOString();
+  }).catch(() => {
+    if (session.status === 'stopped') {
+      return;
+    }
+
+    session.status = session.status === 'stopping' ? 'stopped' : 'exited';
+    session.exitCode = null;
+    session.signal = null;
+    session.endedAt = new Date().toISOString();
+  });
+}
+
+async function stopPreviewSession(session: PreviewSession): Promise<void> {
+  if (session.status === 'stopped' || session.status === 'exited') {
+    return;
+  }
+
+  if (session.stopPromise) {
+    await session.stopPromise;
+    return;
+  }
+
+  session.status = 'stopping';
+  session.stopPromise = (async () => {
+    await session.runtime.stop();
+    const exit = await session.runtime.waitUntilExit();
+    session.status = 'stopped';
+    session.exitCode = exit.exitCode;
+    session.signal = exit.signal;
+    session.endedAt = new Date().toISOString();
+  })().finally(() => {
+    session.stopPromise = undefined;
+  });
+  await session.stopPromise;
 }
 
 function parseProjectConfigPatch(
@@ -339,6 +484,206 @@ export const projectTools: ToolDefinition[] = [
           ...(dryRun !== undefined ? { dryRun } : {}),
         }),
       );
+    },
+  },
+  {
+    name: 'project_preview_start',
+    description:
+      'Start a live docs preview server session for an Anydocs project and return a session id plus preview URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description: 'Path to the Anydocs project root.',
+        },
+        host: {
+          type: 'string',
+          description: 'Optional host for the preview server (default: 127.0.0.1).',
+        },
+        port: {
+          type: 'integer',
+          description: 'Optional port for the preview server; when omitted, an available port is selected.',
+        },
+        startTimeoutMs: {
+          type: 'integer',
+          description: 'Optional startup timeout in milliseconds.',
+        },
+        stopExisting: {
+          type: 'boolean',
+          description: 'When true, stop any running preview session before starting this one.',
+        },
+      },
+      required: ['projectRoot'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('project_preview_start', argumentsValue);
+      const projectRoot = requireStringArgument('project_preview_start', args, 'projectRoot');
+      const host = optionalStringArgument('project_preview_start', args, 'host');
+      const port = optionalIntegerArgument('project_preview_start', args, 'port', { min: 1, max: 65535 });
+      const startTimeoutMs = optionalIntegerArgument('project_preview_start', args, 'startTimeoutMs', { min: 1 });
+      const stopExisting = optionalBooleanArgument('project_preview_start', args, 'stopExisting') ?? false;
+
+      return executeTool('project_preview_start', { projectRoot }, async () => {
+        const { contract } = await loadProjectContext('project_preview_start', projectRoot);
+        const canonicalProjectRoot = contract.paths.projectRoot;
+        const runningSessions = listRunningPreviewSessions();
+
+        if (runningSessions.length > 0 && !stopExisting) {
+          throw new ValidationError('A preview session is already running. Stop it first or set stopExisting=true.', {
+            entity: 'mcp-tool',
+            rule: 'project-preview-session-already-running',
+            remediation: 'Call project_preview_stop or retry project_preview_start with stopExisting: true.',
+            metadata: {
+              projectRoot: canonicalProjectRoot,
+              runningSessions: runningSessions.map((session) => summarizePreviewSession(session)),
+            },
+          });
+        }
+
+        if (runningSessions.length > 0 && stopExisting) {
+          for (const session of runningSessions) {
+            await stopPreviewSession(session);
+          }
+        }
+
+        const runtime = await runPreviewWorkflow({
+          repoRoot: canonicalProjectRoot,
+          ...(host ? { host } : {}),
+          ...(port !== undefined ? { port } : {}),
+          ...(startTimeoutMs !== undefined ? { startTimeoutMs } : {}),
+          stdio: 'pipe',
+        });
+        const sessionId = randomUUID();
+        const session: PreviewSession = {
+          id: sessionId,
+          projectRoot: canonicalProjectRoot,
+          projectId: runtime.projectId,
+          host: runtime.host,
+          port: runtime.port,
+          url: runtime.url,
+          docsPath: runtime.docsPath,
+          previewUrl: `${runtime.url}${runtime.docsPath}`,
+          pid: runtime.pid,
+          publishedPages: runtime.publishedPages,
+          startedAt: new Date().toISOString(),
+          status: 'running',
+          runtime: {
+            stop: runtime.stop,
+            waitUntilExit: runtime.waitUntilExit,
+          },
+        };
+        previewSessions.set(sessionId, session);
+        attachPreviewExitWatcher(session);
+
+        return {
+          session: summarizePreviewSession(session),
+        };
+      });
+    },
+  },
+  {
+    name: 'project_preview_status',
+    description: 'Inspect live preview session status for a project, or for one specific session id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description: 'Path to the Anydocs project root.',
+        },
+        sessionId: {
+          type: 'string',
+          description: 'Optional preview session id returned by project_preview_start.',
+        },
+      },
+      required: ['projectRoot'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('project_preview_status', argumentsValue);
+      const projectRoot = requireStringArgument('project_preview_status', args, 'projectRoot');
+      const sessionId = optionalStringArgument('project_preview_status', args, 'sessionId');
+
+      return executeTool('project_preview_status', { projectRoot }, async () => {
+        const { contract } = await loadProjectContext('project_preview_status', projectRoot);
+        const canonicalProjectRoot = contract.paths.projectRoot;
+
+        if (sessionId) {
+          const session = previewSessions.get(sessionId);
+          if (!session || session.projectRoot !== canonicalProjectRoot) {
+            throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
+              entity: 'mcp-tool',
+              rule: 'project-preview-session-not-found',
+              remediation: 'Call project_preview_status without sessionId to list known sessions first.',
+              metadata: { projectRoot: canonicalProjectRoot, sessionId },
+            });
+          }
+
+          return {
+            session: summarizePreviewSession(session),
+          };
+        }
+
+        const sessions = listProjectPreviewSessions(canonicalProjectRoot).map((session) => summarizePreviewSession(session));
+        return {
+          count: sessions.length,
+          sessions,
+        };
+      });
+    },
+  },
+  {
+    name: 'project_preview_stop',
+    description: 'Stop one preview session or all running preview sessions for a project.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description: 'Path to the Anydocs project root.',
+        },
+        sessionId: {
+          type: 'string',
+          description: 'Optional preview session id returned by project_preview_start.',
+        },
+      },
+      required: ['projectRoot'],
+      additionalProperties: false,
+    },
+    handler: async (argumentsValue) => {
+      const args = requireObjectArguments('project_preview_stop', argumentsValue);
+      const projectRoot = requireStringArgument('project_preview_stop', args, 'projectRoot');
+      const sessionId = optionalStringArgument('project_preview_stop', args, 'sessionId');
+
+      return executeTool('project_preview_stop', { projectRoot }, async () => {
+        const { contract } = await loadProjectContext('project_preview_stop', projectRoot);
+        const canonicalProjectRoot = contract.paths.projectRoot;
+        const targets = sessionId
+          ? (() => {
+              const session = previewSessions.get(sessionId);
+              if (!session || session.projectRoot !== canonicalProjectRoot) {
+                throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
+                  entity: 'mcp-tool',
+                  rule: 'project-preview-session-not-found',
+                  remediation: 'Call project_preview_status without sessionId to list known sessions first.',
+                  metadata: { projectRoot: canonicalProjectRoot, sessionId },
+                });
+              }
+              return [session];
+            })()
+          : listRunningPreviewSessions(canonicalProjectRoot);
+
+        for (const session of targets) {
+          await stopPreviewSession(session);
+        }
+
+        return {
+          stopped: targets.length,
+          sessions: targets.map((session) => summarizePreviewSession(session)),
+        };
+      });
     },
   },
   {

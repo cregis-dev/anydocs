@@ -232,6 +232,13 @@ Anydocs 的页面除了正文 `content`，还支持 template 驱动的结构化 
 
 如果你通过 MCP 让 agent 写页面，建议先查看 `project_open.authoring.templates` 返回的 template 定义；其中会包含可用模板及其 `metadataSchema`。
 
+模板相关 MCP 建议：
+
+- 查询模板：`page_template_query`（可查全部或指定 `templateId`）
+- 保存模板：`page_template_save`（按 `template.id` 创建或更新 `authoring.pageTemplates`）
+- 页面生成：`page_create_from_template` 与 `page_update_from_template` 现在都支持内置模板和项目自定义模板 id
+- 当用户要维护模板定义时，优先使用 `page_template_save`，不要用 `project_update_config` 做模板生命周期操作
+
 ### 6.4 构建公开产物
 
 ```bash

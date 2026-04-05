@@ -55,6 +55,19 @@ function expectSuccess<T>(result: ToolEnvelope): ToolSuccessEnvelope<T> {
   return result as ToolSuccessEnvelope<T>;
 }
 
+function isPreviewRuntimeRestricted(result: ToolEnvelope): boolean {
+  if (result.ok) {
+    return false;
+  }
+
+  const message = result.error.message ?? '';
+  return (
+    /listen EPERM|listen EACCES|operation not permitted 127\.0\.0\.1/.test(message) ||
+    /Unable to locate the docs web runtime/.test(message) ||
+    /Timed out waiting for docs preview server/.test(message)
+  );
+}
+
 test('project_open returns canonical config, paths, and enabled languages', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -219,6 +232,70 @@ test('project_build dryRun returns planned artifact metadata without writing fil
   }
 });
 
+test(
+  'project_preview_start, project_preview_status, and project_preview_stop manage preview sessions',
+  { timeout: 120_000, concurrency: false },
+  async (t) => {
+    const projectRoot = await createTempProjectRoot();
+    let sessionId: string | undefined;
+
+    try {
+      await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+      const startResult = await invokeTool('project_preview_start', {
+        projectRoot,
+        startTimeoutMs: 60_000,
+      });
+      if (isPreviewRuntimeRestricted(startResult)) {
+        t.skip(`Skipping preview MCP tool test in restricted runtime: ${startResult.error?.message ?? 'unknown error'}`);
+        return;
+      }
+
+      const started = expectSuccess<{
+        session: {
+          id: string;
+          status: string;
+          previewUrl: string;
+          projectRoot: string;
+          projectId: string;
+        };
+      }>(startResult);
+      sessionId = started.data.session.id;
+      assert.equal(started.data.session.status, 'running');
+      assert.equal(started.data.session.projectRoot, projectRoot);
+      assert.equal(started.data.session.projectId, 'default');
+      assert.match(started.data.session.previewUrl, /^http:\/\/127\.0\.0\.1:\d+\//);
+
+      const statusOne = expectSuccess<{
+        session: { id: string; status: string };
+      }>(await invokeTool('project_preview_status', { projectRoot, sessionId }));
+      assert.equal(statusOne.data.session.id, sessionId);
+      assert.equal(statusOne.data.session.status, 'running');
+
+      const statusAll = expectSuccess<{
+        count: number;
+        sessions: Array<{ id: string; status: string }>;
+      }>(await invokeTool('project_preview_status', { projectRoot }));
+      assert.ok(statusAll.data.count >= 1);
+      assert.ok(statusAll.data.sessions.some((session) => session.id === sessionId));
+
+      const stopped = expectSuccess<{
+        stopped: number;
+        sessions: Array<{ id: string; status: string }>;
+      }>(await invokeTool('project_preview_stop', { projectRoot, sessionId }));
+      assert.equal(stopped.data.stopped, 1);
+      assert.equal(stopped.data.sessions[0]?.id, sessionId);
+      assert.equal(stopped.data.sessions[0]?.status, 'stopped');
+      sessionId = undefined;
+    } finally {
+      if (sessionId) {
+        await invokeTool('project_preview_stop', { projectRoot, sessionId });
+      }
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  },
+);
+
 test('project_sync_workflow returns a diff for stale workflow files and can apply it', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -300,6 +377,64 @@ test('project_open returns custom templates alongside built-ins', async () => {
     assert.equal(customTemplate?.defaultSummary, 'Document the architectural decision.');
     assert.equal(customTemplate?.metadataSchema?.fields[0]?.id, 'decision-status');
     assert.equal(customTemplate?.metadataSchema?.fields[0]?.visibility, 'public');
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_template_save creates, updates, and page_template_query returns resolved templates', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+
+    const created = expectSuccess<{
+      action: 'created' | 'updated';
+      template: { id: string; builtIn: boolean; baseTemplate: string; defaultSummary?: string };
+    }>(await invokeTool('page_template_save', {
+      projectRoot,
+      template: {
+        id: 'adr',
+        label: 'ADR',
+        baseTemplate: 'reference',
+        defaultSummary: 'Document architectural decisions.',
+      },
+    }));
+    assert.equal(created.data.action, 'created');
+    assert.equal(created.data.template.id, 'adr');
+    assert.equal(created.data.template.builtIn, false);
+    assert.equal(created.data.template.baseTemplate, 'reference');
+    assert.equal(created.data.template.defaultSummary, 'Document architectural decisions.');
+
+    const updated = expectSuccess<{
+      action: 'created' | 'updated';
+      template: { id: string; defaultSummary?: string };
+    }>(await invokeTool('page_template_save', {
+      projectRoot,
+      template: {
+        id: 'adr',
+        label: 'Architecture Decision Record',
+        baseTemplate: 'reference',
+        defaultSummary: 'Track ADR context, alternatives, and outcomes.',
+      },
+    }));
+    assert.equal(updated.data.action, 'updated');
+    assert.equal(updated.data.template.id, 'adr');
+    assert.equal(updated.data.template.defaultSummary, 'Track ADR context, alternatives, and outcomes.');
+
+    const queryAll = expectSuccess<{
+      templates: Array<{ id: string; builtIn: boolean }>;
+    }>(await invokeTool('page_template_query', { projectRoot }));
+    assert.ok(queryAll.data.templates.some((template) => template.id === 'concept' && template.builtIn));
+    assert.ok(queryAll.data.templates.some((template) => template.id === 'adr' && !template.builtIn));
+
+    const queryOne = expectSuccess<{
+      template: { id: string; defaultSummary?: string; baseTemplate: string; builtIn: boolean };
+    }>(await invokeTool('page_template_query', { projectRoot, templateId: 'adr' }));
+    assert.equal(queryOne.data.template.id, 'adr');
+    assert.equal(queryOne.data.template.baseTemplate, 'reference');
+    assert.equal(queryOne.data.template.builtIn, false);
+    assert.equal(queryOne.data.template.defaultSummary, 'Track ADR context, alternatives, and outcomes.');
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -648,6 +783,69 @@ test('page_create_from_template writes a richer canonical page through template 
   }
 });
 
+test('page_create_from_template supports project-defined templates and default sections', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'adr',
+            label: 'ADR',
+            baseTemplate: 'reference',
+            defaultSummary: 'Document this decision with context and consequences.',
+            defaultSections: [
+              { title: 'Context', body: 'What changed and why now.' },
+              { title: 'Decision', body: 'What we decided to do.' },
+            ],
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'decision-status',
+                  label: 'Decision Status',
+                  type: 'enum',
+                  required: true,
+                  options: ['proposed', 'accepted'],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    const result = expectSuccess<{
+      page: {
+        id: string;
+        template?: string;
+        metadata?: Record<string, unknown>;
+        render?: { markdown?: string };
+      };
+    }>(await invokeTool('page_create_from_template', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'adr-001',
+      slug: 'architecture/adr-001',
+      title: 'Use static search index files',
+      template: 'adr',
+      metadata: {
+        'decision-status': 'proposed',
+      },
+    }));
+
+    assert.equal(result.data.page.id, 'adr-001');
+    assert.equal(result.data.page.template, 'adr');
+    assert.equal(result.data.page.metadata?.['decision-status'], 'proposed');
+    assert.match(result.data.page.render?.markdown ?? '', /## Context/);
+    assert.match(result.data.page.render?.markdown ?? '', /## Decision/);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('page_update_from_template rewrites an existing page through template composition', async () => {
   const projectRoot = await createTempProjectRoot();
 
@@ -683,6 +881,67 @@ test('page_update_from_template rewrites an existing page through template compo
     }));
     assert.equal(result.data.page.id, 'publish-guide');
     assert.match(result.data.page.render?.markdown ?? '', /## Allowed states/);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('page_update_from_template can switch to a project-defined template id', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    const configResult = await updateProjectConfig(projectRoot, {
+      authoring: {
+        pageTemplates: [
+          {
+            id: 'blueprint-review',
+            label: 'Blueprint Review',
+            baseTemplate: 'reference',
+            defaultSummary: 'Capture decision context and review outcomes.',
+            defaultSections: [{ title: 'Decision', body: 'Summarize the outcome.' }],
+            metadataSchema: {
+              fields: [
+                {
+                  id: 'review-state',
+                  label: 'Review State',
+                  type: 'enum',
+                  required: true,
+                  options: ['draft', 'approved'],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(configResult.ok, true);
+
+    await createCorePage({
+      projectRoot,
+      lang: 'en',
+      page: {
+        id: 'design-review',
+        slug: 'design-review',
+        title: 'Design Review',
+        content: createYooptaContent('Before custom template rewrite'),
+      },
+    });
+
+    const result = expectSuccess<{
+      page: { id: string; template?: string; metadata?: Record<string, unknown>; render?: { markdown?: string } };
+    }>(await invokeTool('page_update_from_template', {
+      projectRoot,
+      lang: 'en',
+      pageId: 'design-review',
+      template: 'blueprint-review',
+      metadata: { 'review-state': 'approved' },
+    }));
+
+    assert.equal(result.data.page.id, 'design-review');
+    assert.equal(result.data.page.template, 'blueprint-review');
+    assert.equal(result.data.page.metadata?.['review-state'], 'approved');
+    assert.match(result.data.page.render?.markdown ?? '', /## Decision/);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
