@@ -6,21 +6,23 @@ import {
 import { ValidationError } from '../errors/validation-error.ts';
 
 const SHARED_THEME_BLOCK_TYPES = [...DOC_CONTENT_BLOCK_TYPES];
+const CONTENT_FIRST_THEME_CAPABILITIES: ProjectThemeCapabilities = {
+  supportedBlockTypes: [...SHARED_THEME_BLOCK_TYPES],
+  unsupportedBlockTypes: [],
+  navigation: {
+    topNav: false,
+    topNavGroupSwitching: false,
+  },
+  features: {
+    search: true,
+    i18nSwitcher: true,
+    darkMode: false,
+  },
+};
 
 const THEME_CAPABILITY_REGISTRY: Record<string, ProjectThemeCapabilities> = {
-  'classic-docs': {
-    supportedBlockTypes: [...SHARED_THEME_BLOCK_TYPES],
-    unsupportedBlockTypes: [],
-    navigation: {
-      topNav: false,
-      topNavGroupSwitching: false,
-    },
-    features: {
-      search: true,
-      i18nSwitcher: true,
-      darkMode: false,
-    },
-  },
+  'classic-docs': CONTENT_FIRST_THEME_CAPABILITIES,
+  'blueprint-review': CONTENT_FIRST_THEME_CAPABILITIES,
   'atlas-docs': {
     supportedBlockTypes: [...SHARED_THEME_BLOCK_TYPES],
     unsupportedBlockTypes: [],

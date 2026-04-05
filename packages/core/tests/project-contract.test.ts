@@ -348,6 +348,7 @@ test('loadProjectContract accepts custom authoring page templates in project con
 test('getProjectThemeCapabilities returns the registered project-surface capabilities for known themes', () => {
   const atlas = getProjectThemeCapabilities('atlas-docs');
   const classic = getProjectThemeCapabilities('classic-docs');
+  const blueprintReview = getProjectThemeCapabilities('blueprint-review');
 
   assert.equal(atlas.navigation.topNav, true);
   assert.equal(atlas.navigation.topNavGroupSwitching, true);
@@ -355,6 +356,9 @@ test('getProjectThemeCapabilities returns the registered project-surface capabil
   assert.equal(classic.navigation.topNav, false);
   assert.equal(classic.features.i18nSwitcher, true);
   assert.ok(classic.supportedBlockTypes.includes('mermaid'));
+  assert.equal(blueprintReview.navigation.topNav, false);
+  assert.equal(blueprintReview.features.search, true);
+  assert.ok(blueprintReview.supportedBlockTypes.includes('mermaid'));
 });
 
 test('loadProjectContract rejects invalid authoring page template metadata schema', async () => {

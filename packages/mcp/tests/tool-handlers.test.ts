@@ -113,6 +113,36 @@ test('project_open returns canonical config, paths, and enabled languages', asyn
   }
 });
 
+test('project_open returns theme capabilities for blueprint-review projects', async () => {
+  const projectRoot = await createTempProjectRoot();
+
+  try {
+    await initializeProject({ repoRoot: projectRoot, languages: ['en'], defaultLanguage: 'en' });
+    await updateProjectConfig(projectRoot, {
+      site: {
+        theme: {
+          id: 'blueprint-review',
+        },
+      },
+    });
+
+    const result = expectSuccess<{
+      config: { site: { theme: { id: string } } };
+      themeCapabilities: {
+        navigation: { topNav: boolean; topNavGroupSwitching: boolean };
+        features: { search: boolean; i18nSwitcher: boolean; darkMode: boolean };
+      };
+    }>(await invokeTool('project_open', { projectRoot }));
+
+    assert.equal(result.data.config.site.theme.id, 'blueprint-review');
+    assert.equal(result.data.themeCapabilities.navigation.topNav, false);
+    assert.equal(result.data.themeCapabilities.navigation.topNavGroupSwitching, false);
+    assert.equal(result.data.themeCapabilities.features.search, true);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('project_update_config writes supported project fields through the canonical config path', async () => {
   const projectRoot = await createTempProjectRoot();
 
