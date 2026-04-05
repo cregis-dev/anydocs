@@ -15,7 +15,7 @@ import { projectTools } from './tools/project-tools.ts';
 import { createToolError, renderToolResult, type ToolDefinition } from './tools/shared.ts';
 
 export const ANYDOCS_MCP_SERVER_NAME = 'anydocs-mcp';
-export const ANYDOCS_MCP_SERVER_VERSION = '1.0.0';
+export const ANYDOCS_MCP_SERVER_VERSION = '1.2.0';
 
 const toolDefinitions: ToolDefinition[] = [...projectTools, ...pageTools, ...navigationTools];
 const toolDefinitionByName = new Map(toolDefinitions.map((definition) => [definition.name, definition]));

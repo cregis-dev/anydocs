@@ -719,7 +719,9 @@ export const pageTools: ToolDefinition[] = [
         const { contract } = await loadProjectContext('page_template_save', projectRoot);
         const existingTemplates = contract.config.authoring?.pageTemplates ?? [];
         const existingIndex = existingTemplates.findIndex((template) => template.id === templateId);
+        const existingTemplate = existingIndex >= 0 ? existingTemplates[existingIndex] : undefined;
         const nextTemplate = {
+          ...(existingTemplate ?? {}),
           ...templatePayload,
           id: templateId,
         } as unknown as ProjectPageTemplateDefinition;

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 
 import {
   DOC_CONTENT_AUTHORING_GUIDANCE,
@@ -99,6 +100,10 @@ function optionalIntegerArgument(
   return value;
 }
 
+function normalizeProjectRoot(input: string): string {
+  return path.resolve(input);
+}
+
 type PreviewSessionRuntime = Awaited<ReturnType<typeof runPreviewWorkflow>>;
 
 type PreviewSession = {
@@ -144,12 +149,17 @@ function summarizePreviewSession(session: PreviewSession) {
 }
 
 function listProjectPreviewSessions(projectRoot: string): PreviewSession[] {
-  return [...previewSessions.values()].filter((session) => session.projectRoot === projectRoot);
+  const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
+  return [...previewSessions.values()].filter(
+    (session) => normalizeProjectRoot(session.projectRoot) === normalizedProjectRoot,
+  );
 }
 
 function listRunningPreviewSessions(projectRoot?: string): PreviewSession[] {
+  const normalizedProjectRoot = projectRoot == null ? undefined : normalizeProjectRoot(projectRoot);
   return [...previewSessions.values()].filter((session) =>
-    session.status === 'running' && (projectRoot == null || session.projectRoot === projectRoot)
+    session.status === 'running'
+      && (normalizedProjectRoot == null || normalizeProjectRoot(session.projectRoot) === normalizedProjectRoot)
   );
 }
 
@@ -605,19 +615,17 @@ export const projectTools: ToolDefinition[] = [
       const args = requireObjectArguments('project_preview_status', argumentsValue);
       const projectRoot = requireStringArgument('project_preview_status', args, 'projectRoot');
       const sessionId = optionalStringArgument('project_preview_status', args, 'sessionId');
+      const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
 
       return executeTool('project_preview_status', { projectRoot }, async () => {
-        const { contract } = await loadProjectContext('project_preview_status', projectRoot);
-        const canonicalProjectRoot = contract.paths.projectRoot;
-
         if (sessionId) {
           const session = previewSessions.get(sessionId);
-          if (!session || session.projectRoot !== canonicalProjectRoot) {
+          if (!session || normalizeProjectRoot(session.projectRoot) !== normalizedProjectRoot) {
             throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
               entity: 'mcp-tool',
               rule: 'project-preview-session-not-found',
               remediation: 'Call project_preview_status without sessionId to list known sessions first.',
-              metadata: { projectRoot: canonicalProjectRoot, sessionId },
+              metadata: { projectRoot, sessionId },
             });
           }
 
@@ -626,7 +634,7 @@ export const projectTools: ToolDefinition[] = [
           };
         }
 
-        const sessions = listProjectPreviewSessions(canonicalProjectRoot).map((session) => summarizePreviewSession(session));
+        const sessions = listProjectPreviewSessions(normalizedProjectRoot).map((session) => summarizePreviewSession(session));
         return {
           count: sessions.length,
           sessions,
@@ -656,24 +664,23 @@ export const projectTools: ToolDefinition[] = [
       const args = requireObjectArguments('project_preview_stop', argumentsValue);
       const projectRoot = requireStringArgument('project_preview_stop', args, 'projectRoot');
       const sessionId = optionalStringArgument('project_preview_stop', args, 'sessionId');
+      const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
 
       return executeTool('project_preview_stop', { projectRoot }, async () => {
-        const { contract } = await loadProjectContext('project_preview_stop', projectRoot);
-        const canonicalProjectRoot = contract.paths.projectRoot;
         const targets = sessionId
           ? (() => {
               const session = previewSessions.get(sessionId);
-              if (!session || session.projectRoot !== canonicalProjectRoot) {
+              if (!session || normalizeProjectRoot(session.projectRoot) !== normalizedProjectRoot) {
                 throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
                   entity: 'mcp-tool',
                   rule: 'project-preview-session-not-found',
                   remediation: 'Call project_preview_status without sessionId to list known sessions first.',
-                  metadata: { projectRoot: canonicalProjectRoot, sessionId },
+                  metadata: { projectRoot, sessionId },
                 });
               }
               return [session];
             })()
-          : listRunningPreviewSessions(canonicalProjectRoot);
+          : listRunningPreviewSessions(normalizedProjectRoot);
 
         for (const session of targets) {
           await stopPreviewSession(session);

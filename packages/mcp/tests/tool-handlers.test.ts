@@ -279,6 +279,7 @@ test(
       assert.ok(statusAll.data.count >= 1);
       assert.ok(statusAll.data.sessions.some((session) => session.id === sessionId));
 
+      await writeFile(path.join(projectRoot, 'anydocs.config.json'), '{', 'utf8');
       const stopped = expectSuccess<{
         stopped: number;
         sessions: Array<{ id: string; status: string }>;
@@ -390,7 +391,14 @@ test('page_template_save creates, updates, and page_template_query returns resol
 
     const created = expectSuccess<{
       action: 'created' | 'updated';
-      template: { id: string; builtIn: boolean; baseTemplate: string; defaultSummary?: string };
+      template: {
+        id: string;
+        builtIn: boolean;
+        baseTemplate: string;
+        defaultSummary?: string;
+        defaultSections?: Array<{ title: string }>;
+        metadataSchema?: { fields: Array<{ id: string }> };
+      };
     }>(await invokeTool('page_template_save', {
       projectRoot,
       template: {
@@ -398,6 +406,18 @@ test('page_template_save creates, updates, and page_template_query returns resol
         label: 'ADR',
         baseTemplate: 'reference',
         defaultSummary: 'Document architectural decisions.',
+        defaultSections: [{ title: 'Context', body: 'Why this decision exists.' }],
+        metadataSchema: {
+          fields: [
+            {
+              id: 'decision-status',
+              label: 'Decision Status',
+              type: 'enum',
+              required: true,
+              options: ['proposed', 'accepted'],
+            },
+          ],
+        },
       },
     }));
     assert.equal(created.data.action, 'created');
@@ -405,6 +425,8 @@ test('page_template_save creates, updates, and page_template_query returns resol
     assert.equal(created.data.template.builtIn, false);
     assert.equal(created.data.template.baseTemplate, 'reference');
     assert.equal(created.data.template.defaultSummary, 'Document architectural decisions.');
+    assert.equal(created.data.template.defaultSections?.[0]?.title, 'Context');
+    assert.equal(created.data.template.metadataSchema?.fields[0]?.id, 'decision-status');
 
     const updated = expectSuccess<{
       action: 'created' | 'updated';
@@ -429,12 +451,21 @@ test('page_template_save creates, updates, and page_template_query returns resol
     assert.ok(queryAll.data.templates.some((template) => template.id === 'adr' && !template.builtIn));
 
     const queryOne = expectSuccess<{
-      template: { id: string; defaultSummary?: string; baseTemplate: string; builtIn: boolean };
+      template: {
+        id: string;
+        defaultSummary?: string;
+        baseTemplate: string;
+        builtIn: boolean;
+        defaultSections?: Array<{ title: string }>;
+        metadataSchema?: { fields: Array<{ id: string }> };
+      };
     }>(await invokeTool('page_template_query', { projectRoot, templateId: 'adr' }));
     assert.equal(queryOne.data.template.id, 'adr');
     assert.equal(queryOne.data.template.baseTemplate, 'reference');
     assert.equal(queryOne.data.template.builtIn, false);
     assert.equal(queryOne.data.template.defaultSummary, 'Track ADR context, alternatives, and outcomes.');
+    assert.equal(queryOne.data.template.defaultSections?.[0]?.title, 'Context');
+    assert.equal(queryOne.data.template.metadataSchema?.fields[0]?.id, 'decision-status');
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
