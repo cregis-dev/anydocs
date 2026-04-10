@@ -122,12 +122,19 @@ export function AtlasDocsReaderLayout({
   );
 
   const domainNavLinks = useMemo(
-    () => topNavLinks.filter((entry): entry is TopNavGroupEntry => entry.item.type === 'nav-group'),
+    () => topNavLinks.filter(
+      (entry): entry is TopNavGroupEntry | TopNavExternalEntry =>
+        entry.item.type === 'nav-group' ||
+        (entry.item.type === 'external' && entry.item.href.startsWith('/')),
+    ),
     [topNavLinks],
   );
 
   const utilityNavLinks = useMemo(
-    () => topNavLinks.filter((entry): entry is TopNavExternalEntry => entry.item.type === 'external'),
+    () => topNavLinks.filter(
+      (entry): entry is TopNavExternalEntry =>
+        entry.item.type === 'external' && !entry.item.href.startsWith('/'),
+    ),
     [topNavLinks],
   );
 
@@ -214,7 +221,7 @@ export function AtlasDocsReaderLayout({
             </Link>
 
             {showSearch ? (
-              <div className="hidden min-w-0 flex-1 lg:flex lg:justify-center">
+              <div className="hidden min-w-0 flex-1 lg:!flex lg:justify-center">
                 <SearchPanel
                   lang={lang}
                   placeholder={copy.sidebar.searchPlaceholder}
@@ -224,10 +231,10 @@ export function AtlasDocsReaderLayout({
                 />
               </div>
             ) : (
-              <div className="hidden flex-1 lg:block" />
+              <div className="hidden flex-1 lg:!block" />
             )}
 
-            <div className="hidden shrink-0 items-center gap-1 lg:flex">
+            <div className="hidden shrink-0 items-center gap-1 lg:!flex">
               {utilityNavLinks.map((entry) => {
                 const active = isTopNavEntryActive(entry);
 
@@ -357,22 +364,37 @@ export function AtlasDocsReaderLayout({
                   {domainNavLinks.length ? (
                     <div className="grid grid-cols-2 gap-2">
                       {domainNavLinks.map((entry) => {
-                        const active = entry.item.groupId === effectiveActiveGroupId;
+                        const active = isTopNavEntryActive(entry);
+                        const mobileLinkClassName = cn(
+                          'flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] font-medium leading-4 transition-colors duration-200',
+                          active
+                            ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                            : 'text-fd-muted-foreground hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                        );
+
+                        if (entry.item.type === 'nav-group') {
+                          return (
+                            <Link
+                              key={entry.item.id}
+                              href={entry.href}
+                              className={mobileLinkClassName}
+                              onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
+                            >
+                              {entry.label}
+                            </Link>
+                          );
+                        }
 
                         return (
-                          <Link
+                          <a
                             key={entry.item.id}
                             href={entry.href}
-                            className={cn(
-                              'flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] font-medium leading-4 transition-colors duration-200',
-                              active
-                                ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                                : 'text-fd-muted-foreground hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
-                            )}
-                            onClick={(event) => handleTopNavGroupNavigate(event, entry.item.groupId, entry.href)}
+                            target={entry.item.openInNewTab ? '_blank' : undefined}
+                            rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                            className={mobileLinkClassName}
                           >
                             {entry.label}
-                          </Link>
+                          </a>
                         );
                       })}
                     </div>
@@ -400,26 +422,41 @@ export function AtlasDocsReaderLayout({
         </div>
 
         {domainNavLinks.length ? (
-          <div className="hidden border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)] lg:block">
+          <div className="hidden border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)] lg:!block">
             <div className="mx-auto flex h-[50px] max-w-[1600px] items-stretch px-4 sm:px-6 lg:px-8">
               <nav className="flex h-full min-w-0 items-stretch gap-7 overflow-x-auto">
                 {domainNavLinks.map((entry) => {
-                  const active = entry.item.groupId === effectiveActiveGroupId;
+                  const active = isTopNavEntryActive(entry);
+                  const linkClassName = cn(
+                    'inline-flex h-full shrink-0 items-center border-b-2 border-transparent px-0 pb-[8px] pt-[2px] text-[15px] tracking-[-0.015em] transition-colors duration-200',
+                    active
+                      ? 'border-[color:var(--atlas-foreground)] font-semibold text-fd-foreground'
+                      : 'font-medium text-[color:var(--atlas-top-nav-link)] hover:text-fd-foreground',
+                  );
+
+                  if (entry.item.type === 'nav-group') {
+                    return (
+                      <Link
+                        key={entry.item.id}
+                        href={entry.href}
+                        className={linkClassName}
+                        onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
+                      >
+                        {entry.label}
+                      </Link>
+                    );
+                  }
 
                   return (
-                    <Link
+                    <a
                       key={entry.item.id}
                       href={entry.href}
-                      className={cn(
-                        'inline-flex h-full shrink-0 items-center border-b-2 border-transparent px-0 pb-[8px] pt-[2px] text-[15px] tracking-[-0.015em] transition-colors duration-200',
-                        active
-                          ? 'border-[color:var(--atlas-foreground)] font-semibold text-fd-foreground'
-                          : 'font-medium text-[color:var(--atlas-top-nav-link)] hover:text-fd-foreground',
-                      )}
-                      onClick={(event) => handleTopNavGroupNavigate(event, entry.item.groupId, entry.href)}
+                      target={entry.item.openInNewTab ? '_blank' : undefined}
+                      rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                      className={linkClassName}
                     >
                       {entry.label}
-                    </Link>
+                    </a>
                   );
                 })}
               </nav>
