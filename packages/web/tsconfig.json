@@ -38,7 +38,9 @@
     "**/*.tsx",
     "**/*.mts",
     ".next-cli-preview/types/**/*.ts",
-    ".next-cli-preview/dev/types/**/*.ts"
+    ".next-cli-preview/dev/types/**/*.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

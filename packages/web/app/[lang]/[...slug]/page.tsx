@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { ScalarApiReference } from "@/components/docs/scalar-api-reference";
+import {
+  getPublishedApiSourceById,
+  getPublishedApiSourceSpec,
+} from "@/lib/docs/api-sources";
 import { DocContentView } from "@/components/docs/doc-content-view";
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
 import { DocsToc } from "@/components/docs/toc";
@@ -235,6 +240,35 @@ export default async function Page({
   );
   if (!page) {
     notFound();
+  }
+
+  // Render OpenAPI-backed pages inline using Scalar
+  if (page.template === "api-source") {
+    const sourceId =
+      typeof (page.metadata as Record<string, unknown> | undefined)?.["api-source"] === "string"
+        ? ((page.metadata as Record<string, unknown>)["api-source"] as string)
+        : null;
+    if (!sourceId) notFound();
+    const [apiSource, spec] = await Promise.all([
+      getPublishedApiSourceById(lang, sourceId, source.projectId, source.customPath),
+      getPublishedApiSourceSpec(lang, sourceId, source.projectId, source.customPath),
+    ]);
+    if (!apiSource || !spec) notFound();
+    return (
+      <div className="min-w-0 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+        <ScalarApiReference
+          specContent={spec}
+          showTryIt={apiSource.runtime?.tryIt?.enabled ?? false}
+          title={apiSource.display.title}
+          description={
+            apiSource.source.kind === "url"
+              ? `Interactive OpenAPI reference for ${apiSource.display.title}.`
+              : `Interactive OpenAPI reference built from ${apiSource.source.path}.`
+          }
+          sourceId={apiSource.id}
+        />
+      </div>
+    );
   }
 
   const siteTheme = await getPublishedSiteTheme(
