@@ -126,6 +126,38 @@ async function waitForHttp(url: string, timeoutMs = 20_000): Promise<void> {
   throw new Error(`Timed out waiting for HTTP server at ${url}.`);
 }
 
+async function waitForResponseStatus(
+  input: string | URL,
+  expectedStatus: number,
+  timeoutMs = 20_000,
+): Promise<Response> {
+  const maxAttempts = Math.ceil(timeoutMs / 150);
+  let lastResponse: Response | null = null;
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await fetch(input);
+      if (response.status === expectedStatus) {
+        return response;
+      }
+
+      lastResponse = response;
+    } catch (error) {
+      lastError = error;
+    }
+
+    await delay(150);
+  }
+
+  if (lastResponse) {
+    throw new Error(`Timed out waiting for HTTP ${expectedStatus} from ${String(input)}. Last status: ${lastResponse.status}.`);
+  }
+
+  const details = lastError instanceof Error ? lastError.message : String(lastError ?? 'unknown error');
+  throw new Error(`Timed out waiting for HTTP ${expectedStatus} from ${String(input)}. Last error: ${details}.`);
+}
+
 test('studio starts a locked single-project Studio server and rejects cross-project access', { timeout: 240_000 }, async () => {
   const repoRoot = await createTempRepoRoot('anydocs-cli-studio-project-');
   const otherProjectRoot = await createTempRepoRoot('anydocs-cli-studio-other-');
@@ -152,13 +184,13 @@ test('studio starts a locked single-project Studio server and rejects cross-proj
       projectUrl.searchParams.set('projectId', 'default');
       projectUrl.searchParams.set('path', repoRoot);
 
-      const lockedProjectResponse = await fetch(projectUrl);
+      const lockedProjectResponse = await waitForResponseStatus(projectUrl, 200, 120_000);
       assert.equal(lockedProjectResponse.status, 200);
 
       const rejectedProjectUrl = new URL(projectUrl);
       rejectedProjectUrl.searchParams.set('path', otherProjectRoot);
 
-      const rejectedProjectResponse = await fetch(rejectedProjectUrl);
+      const rejectedProjectResponse = await waitForResponseStatus(rejectedProjectUrl, 400, 120_000);
       assert.equal(rejectedProjectResponse.status, 400);
       assert.match(await rejectedProjectResponse.text(), /locked project root/i);
 
