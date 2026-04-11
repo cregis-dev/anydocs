@@ -52,7 +52,17 @@ async function main() {
         console.warn(`[${lang}] Search index not found, text content will be empty.`);
       }
 
-      const textMap = new Map(searchIndex.docs.map(d => [d.id, d.text || '']));
+      const textMap = new Map();
+      for (const doc of searchIndex.docs) {
+        const pageId = doc.pageId || doc.id;
+        const text = doc.text || '';
+        if (!pageId || !text) {
+          continue;
+        }
+
+        const existing = textMap.get(pageId);
+        textMap.set(pageId, existing ? `${existing}\n\n${text}` : text);
+      }
 
       for (const page of pagesMeta.pages) {
         const textContent = textMap.get(page.id) || '';

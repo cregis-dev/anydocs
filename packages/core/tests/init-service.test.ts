@@ -13,8 +13,8 @@ async function createTempRepoRoot(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'anydocs-init-'));
 }
 
-const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
-const REPO_AGENT_GUIDE = path.join(REPO_ROOT, 'docs', 'agent.md');
+const PACKAGE_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const BUNDLED_AGENT_GUIDE = path.join(PACKAGE_ROOT, 'docs', 'agent.md');
 
 test('initializeProject creates the canonical project structure and starter content', async () => {
   const repoRoot = await createTempRepoRoot();
@@ -74,7 +74,7 @@ test('initializeProject creates the canonical project structure and starter cont
       };
     };
     const skillGuide = await readFile(path.join(projectRoot, 'skill.md'), 'utf8');
-    const sourceSkillGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
+    const sourceSkillGuide = await readFile(BUNDLED_AGENT_GUIDE, 'utf8');
 
     assert.equal(zhPage.status, 'published');
     assert.equal(zhPage.slug, 'welcome');
@@ -117,7 +117,7 @@ test('initializeProject can generate a Codex-specific AGENTS.md guide instead of
     await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
 
     const agentGuide = await readFile(path.join(repoRoot, 'AGENTS.md'), 'utf8');
-    const sourceSkillGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
+    const sourceSkillGuide = await readFile(BUNDLED_AGENT_GUIDE, 'utf8');
 
     assert.equal(agentGuide, sourceSkillGuide);
     assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('AGENTS.md')));
@@ -139,7 +139,7 @@ test('initializeProject can generate a CLAUDE.md guide and bundled slash command
     await assert.rejects(() => access(path.join(repoRoot, 'skill.md')), /ENOENT/);
 
     const agentGuide = await readFile(path.join(repoRoot, 'CLAUDE.md'), 'utf8');
-    const sourceClaudeGuide = await readFile(REPO_AGENT_GUIDE, 'utf8');
+    const sourceClaudeGuide = await readFile(BUNDLED_AGENT_GUIDE, 'utf8');
 
     assert.equal(agentGuide, sourceClaudeGuide);
     assert.ok(result.createdFiles.some((filePath) => filePath.endsWith('CLAUDE.md')));

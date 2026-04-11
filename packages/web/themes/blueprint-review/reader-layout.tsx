@@ -26,6 +26,7 @@ export function BlueprintReviewReaderLayout({
   availableLanguages,
   nav,
   pages,
+  searchIndexHref,
   projectName,
   siteTheme,
 }: DocsThemeReaderLayoutProps) {
@@ -43,6 +44,7 @@ export function BlueprintReviewReaderLayout({
       lang={lang}
       nav={nav}
       pages={pages}
+      searchIndexHref={searchIndexHref}
       homeLabel={homeLabel}
       showHomeLink={false}
       showSearch={showSearch}
@@ -117,6 +119,7 @@ export function BlueprintReviewReaderLayout({
                     lang={lang}
                     nav={nav}
                     pages={pages}
+                    searchIndexHref={searchIndexHref}
                     homeLabel={homeLabel}
                     showHomeLink={false}
                     showSearch={showSearch}

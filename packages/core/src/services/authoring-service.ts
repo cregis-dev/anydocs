@@ -22,9 +22,9 @@ import {
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
   validateDocContentV1,
-  assertValidYooptaContentValue,
   normalizeSlug,
   renderPageContent,
+  yooptaToDocContent,
 } from '../utils/index.ts';
 import { DOC_CONTENT_BLOCK_TYPES, DOC_CONTENT_TEXT_MARKS } from '../types/content.ts';
 
@@ -180,6 +180,21 @@ function currentTimestamp(): string {
   return new Date().toISOString();
 }
 
+function nextTimestampAfter(previous?: string, fallback: string = currentTimestamp()): string {
+  if (!previous) {
+    return fallback;
+  }
+
+  const previousMs = Date.parse(previous);
+  const fallbackMs = Date.parse(fallback);
+
+  if (Number.isNaN(previousMs) || Number.isNaN(fallbackMs) || fallbackMs > previousMs) {
+    return fallback;
+  }
+
+  return new Date(previousMs + 1).toISOString();
+}
+
 function assertValidAuthoringContent(content: unknown, pageId?: string): void {
   const canonicalResult = validateDocContentV1(content);
   if (canonicalResult.ok) {
@@ -187,7 +202,7 @@ function assertValidAuthoringContent(content: unknown, pageId?: string): void {
   }
 
   try {
-    assertValidYooptaContentValue(content);
+    yooptaToDocContent(content);
     return;
   } catch (error: unknown) {
     throw new ValidationError('Page content must use the canonical docs content schema or supported legacy Yoopta structure.', {
@@ -721,7 +736,7 @@ export async function updatePage<TContent = unknown>(
         id: existingPage.id,
         status: existingPage.status,
         render: resolveNextRender(existingPage, input.patch, input.regenerateRender),
-        updatedAt: currentTimestamp(),
+        updatedAt: nextTimestampAfter(existingPage.updatedAt),
       },
       input.lang,
       contract.config,
@@ -774,7 +789,7 @@ export async function updatePagesBatch<TContent = unknown>(
         id: existingPage.id,
         status: existingPage.status,
         render: resolveNextRender(existingPage, entry.patch, entry.regenerateRender),
-        updatedAt: timestamp,
+        updatedAt: nextTimestampAfter(existingPage.updatedAt, timestamp),
       },
       input.lang,
       contract.config,
@@ -812,7 +827,7 @@ export async function setPageStatus<TContent = unknown>(
       {
         ...existingPage,
         status: input.status,
-        updatedAt: currentTimestamp(),
+        updatedAt: nextTimestampAfter(existingPage.updatedAt),
       },
       input.lang,
       contract.config,
@@ -858,7 +873,7 @@ export async function setPageStatusesBatch<TContent = unknown>(
       {
         ...existingPage,
         status: entry.status,
-        updatedAt: timestamp,
+        updatedAt: nextTimestampAfter(existingPage.updatedAt, timestamp),
       },
       input.lang,
       contract.config,

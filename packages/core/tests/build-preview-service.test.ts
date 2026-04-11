@@ -11,6 +11,7 @@ import { updateProjectConfig } from '../src/fs/content-repository.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { loadPublishedSiteBuildArtifacts, runBuildWorkflow } from '../src/services/build-service.ts';
 import { runPreviewWorkflow } from '../src/services/preview-service.ts';
+import { saveProjectImageAsset } from '../src/services/project-asset-service.ts';
 import { writePublishedArtifacts } from '../src/publishing/build-artifacts.ts';
 
 async function createTempRepoRoot(): Promise<string> {
@@ -86,6 +87,11 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const savedImage = await saveProjectImageAsset(repoRoot, {
+      bytes: Buffer.from('fake-png-bytes'),
+      filename: 'hero-image.png',
+      mimeType: 'image/png',
+    });
     const update = await updateProjectConfig(repoRoot, {
       site: {
         url: 'https://docs.example.com',
@@ -100,6 +106,7 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.equal(result.defaultDocsPath, '/en/welcome');
 
     await access(path.join(result.artifactRoot, 'index.html'));
+    await access(path.join(result.artifactRoot, savedImage.src.slice(1)));
     await access(path.join(result.artifactRoot, 'docs', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'index.html'));
     await access(path.join(result.artifactRoot, 'en', 'welcome', 'index.html'));
@@ -127,7 +134,10 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     const docsPage = await readFile(path.join(result.artifactRoot, 'en', 'welcome', 'index.html'), 'utf8');
     const searchIndex = JSON.parse(
       await readFile(path.join(result.artifactRoot, 'search-index.en.json'), 'utf8'),
-    ) as { lang: string; docs: Array<{ slug: string }> };
+    ) as {
+      lang: string;
+      docs: Array<{ pageSlug: string; pageTitle: string; sectionTitle: string; href: string }>;
+    };
     const referenceRoot = await readFile(
       path.join(result.artifactRoot, 'en', 'reference', 'index.html'),
       'utf8',
@@ -136,6 +146,7 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     const robots = await readFile(path.join(result.artifactRoot, 'robots.txt'), 'utf8');
     const llms = await readFile(path.join(result.artifactRoot, 'llms.txt'), 'utf8');
     const llmsFull = await readFile(path.join(result.artifactRoot, 'llms-full.txt'), 'utf8');
+    const exportedImage = await readFile(path.join(result.artifactRoot, savedImage.src.slice(1)));
     const chunks = JSON.parse(
       await readFile(path.join(result.machineReadableRoot, 'chunks.en.json'), 'utf8'),
     ) as {
@@ -162,11 +173,16 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.match(sitemap, /https:\/\/docs\.example\.com\/en\/welcome/);
     assert.match(robots, /Sitemap: https:\/\/docs\.example\.com\/sitemap\.xml/);
     assert.equal(searchIndex.lang, 'en');
-    assert.deepEqual(searchIndex.docs.map((entry) => entry.slug), ['welcome']);
+    assert.ok(searchIndex.docs.length >= 1);
+    assert.equal(searchIndex.docs[0]?.pageSlug, 'welcome');
+    assert.equal(searchIndex.docs[0]?.pageTitle, 'Welcome');
+    assert.ok('sectionTitle' in (searchIndex.docs[0] ?? {}));
+    assert.ok('href' in (searchIndex.docs[0] ?? {}));
     assert.match(llms, /\/en\/welcome/);
     assert.match(llmsFull, /# Docs Full Export/);
     assert.match(llmsFull, /Page ID: welcome/);
     assert.match(llmsFull, /URL: \/en\/welcome/);
+    assert.equal(exportedImage.toString('utf8'), 'fake-png-bytes');
     assert.equal(chunks.lang, 'en');
     assert.equal(chunks.chunking.strategy, 'heading-aware');
     assert.equal(chunks.chunks[0]?.pageId, 'welcome');
@@ -236,6 +252,214 @@ test('published artifacts emit a fallback chunk for published pages without head
     assert.deepEqual(chunks.chunks[0]?.headingPath, []);
     assert.equal(chunks.chunks[0]?.order, 1);
     assert.equal(chunks.chunks[0]?.text, 'Body content without headings for chunk fallback.');
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('published search index emits section-level records with stable anchors and page-level fallback hrefs', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+
+    await savePage(repository, 'en', {
+      id: 'guide',
+      lang: 'en',
+      slug: 'guide',
+      title: 'Guide',
+      status: 'published',
+      content: {},
+      render: {
+        markdown: `# Guide
+
+## Overview
+Search starts here.
+
+### Details
+Drill into details.
+
+### Details
+Repeated heading should still get a stable anchor.
+`,
+        plainText:
+          'Guide Overview Search starts here. Details Drill into details. Details Repeated heading should still get a stable anchor.',
+      },
+    });
+
+    await savePage(repository, 'en', {
+      id: 'faq',
+      lang: 'en',
+      slug: 'faq',
+      title: 'FAQ',
+      status: 'published',
+      content: {},
+      render: {
+        plainText: 'Frequently asked questions without explicit headings.',
+      },
+    });
+
+    await savePage(repository, 'en', {
+      id: 'draft-page',
+      lang: 'en',
+      slug: 'draft-page',
+      title: 'Draft',
+      status: 'draft',
+      content: {},
+      render: {
+        plainText: 'This content must stay out of published search.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as {
+      docs: Array<{
+        pageId: string;
+        pageSlug: string;
+        pageTitle: string;
+        sectionTitle: string;
+        href: string;
+        text: string;
+        breadcrumbs: string[];
+      }>;
+    };
+
+    const guideResults = searchIndex.docs.filter((entry) => entry.pageId === 'guide');
+    const faqResult = searchIndex.docs.find((entry) => entry.pageId === 'faq');
+
+    assert.ok(guideResults.length >= 3);
+    assert.deepEqual(
+      guideResults.map((entry) => entry.sectionTitle),
+      ['Overview', 'Details', 'Details'],
+    );
+    assert.deepEqual(
+      guideResults.map((entry) => entry.href),
+      ['/en/guide#overview', '/en/guide#details', '/en/guide#details-2'],
+    );
+    assert.match(guideResults[1]?.text ?? '', /Drill into details/);
+    assert.equal(faqResult?.href, '/en/faq');
+    assert.equal(faqResult?.sectionTitle, '');
+    assert.equal(searchIndex.docs.some((entry) => entry.pageId === 'draft-page'), false);
+    assert.equal(
+      searchIndex.docs.every(
+        (entry) =>
+          typeof entry.pageId === 'string' &&
+          typeof entry.pageSlug === 'string' &&
+          typeof entry.pageTitle === 'string' &&
+          typeof entry.sectionTitle === 'string' &&
+          Array.isArray(entry.breadcrumbs) &&
+          typeof entry.href === 'string' &&
+          typeof entry.text === 'string',
+      ),
+      true,
+    );
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('published search index normalizes formatted markdown headings to reader-stable anchors', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+
+    await savePage(repository, 'en', {
+      id: 'formatted-guide',
+      lang: 'en',
+      slug: 'formatted-guide',
+      title: 'Formatted Guide',
+      status: 'published',
+      content: {},
+      render: {
+        markdown: `# Formatted Guide
+
+## **Overview**
+Overview body.
+
+### [API](/reference/api)
+API details.
+`,
+        plainText: 'Formatted Guide Overview Overview body. API API details.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as {
+      docs: Array<{ pageId: string; sectionTitle: string; href: string }>;
+    };
+
+    const results = searchIndex.docs.filter((entry) => entry.pageId === 'formatted-guide');
+
+    assert.deepEqual(
+      results.map((entry) => entry.sectionTitle),
+      ['Overview', 'API'],
+    );
+    assert.deepEqual(
+      results.map((entry) => entry.href),
+      ['/en/formatted-guide#overview', '/en/formatted-guide#api'],
+    );
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('published search index ignores heading-like lines inside fenced code blocks', async () => {
+  const repoRoot = await createTempRepoRoot();
+
+  try {
+    await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
+    const repository = createDocsRepository(repoRoot);
+
+    await savePage(repository, 'en', {
+      id: 'code-guide',
+      lang: 'en',
+      slug: 'code-guide',
+      title: 'Code Guide',
+      status: 'published',
+      content: {},
+      render: {
+        markdown: `# Code Guide
+
+## Setup
+Use this command:
+
+\`\`\`bash
+# install
+echo "ready"
+\`\`\`
+
+## Next
+Continue here.
+`,
+        plainText: 'Code Guide Setup Use this command install ready Next Continue here.',
+      },
+    });
+
+    const { contract } = await writeMachineReadableArtifacts(repoRoot);
+    const searchIndex = JSON.parse(
+      await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
+    ) as {
+      docs: Array<{ pageId: string; sectionTitle: string; href: string; text: string }>;
+    };
+
+    const results = searchIndex.docs.filter((entry) => entry.pageId === 'code-guide');
+
+    assert.deepEqual(
+      results.map((entry) => entry.sectionTitle),
+      ['Setup', 'Next'],
+    );
+    assert.deepEqual(
+      results.map((entry) => entry.href),
+      ['/en/code-guide#setup', '/en/code-guide#next'],
+    );
+    assert.equal(results.some((entry) => entry.sectionTitle === 'install'), false);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }
@@ -311,7 +535,7 @@ test('published artifacts derive text from canonical content when render is omit
     const { contract } = await writeMachineReadableArtifacts(repoRoot);
     const searchIndex = JSON.parse(
       await readFile(path.join(contract.paths.artifactRoot, 'search-index.en.json'), 'utf8'),
-    ) as { docs: Array<{ slug: string; text: string }> };
+    ) as { docs: Array<{ pageSlug: string; text: string }> };
     const chunks = JSON.parse(
       await readFile(path.join(contract.paths.machineReadableRoot, 'chunks.en.json'), 'utf8'),
     ) as {
@@ -319,7 +543,7 @@ test('published artifacts derive text from canonical content when render is omit
     };
     const llmsFull = await readFile(path.join(contract.paths.artifactRoot, 'llms-full.txt'), 'utf8');
 
-    assert.equal(searchIndex.docs[0]?.slug, 'welcome');
+    assert.equal(searchIndex.docs[0]?.pageSlug, 'welcome');
     assert.match(searchIndex.docs[0]?.text ?? '', /Canonical content drives search text/);
     assert.match(chunks.chunks[0]?.text ?? '', /Canonical content drives search text/);
     assert.match(llmsFull, /Canonical content drives search text/);

@@ -72,6 +72,7 @@ export function AtlasDocsReaderLayout({
   availableLanguages,
   nav,
   pages,
+  searchIndexHref,
   projectName,
   siteTheme,
   siteNavigation,
@@ -217,6 +218,7 @@ export function AtlasDocsReaderLayout({
               <div className="hidden min-w-0 flex-1 lg:flex lg:justify-center">
                 <SearchPanel
                   lang={lang}
+                  indexHref={searchIndexHref}
                   placeholder={copy.sidebar.searchPlaceholder}
                   className="relative w-full max-w-[520px]"
                   inputClassName="h-11 rounded-2xl border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--atlas-search-background)] px-4 text-[14px] shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
@@ -383,6 +385,7 @@ export function AtlasDocsReaderLayout({
                     lang={lang}
                     nav={effectiveFilteredNav}
                     pages={pages}
+                    searchIndexHref={searchIndexHref}
                     showHomeLink={false}
                     showSearch={false}
                     availableLanguages={availableLanguages}
