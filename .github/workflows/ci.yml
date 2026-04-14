@@ -19,7 +19,7 @@ env:
 jobs:
   quality:
 
-    if: ${{ github.event.workflow_run.conclusion != 'success' }}     # 代码扫描通过，才会执行后续逻辑
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}     # 代码扫描通过，才会执行后续逻辑
     
     name: Quality
     runs-on: ubuntu-latest
@@ -28,13 +28,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
+        with:                                                       # 指定由security-audit携带的仓库分支，去拉取代码
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
-
-      - name: 验证代码分支
-        run: cat test.txt
-        
+          fetch-depth: 0       
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -70,7 +66,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
+        with:                                                 # 指定由security-audit携带的仓库分支，去拉取代码
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
