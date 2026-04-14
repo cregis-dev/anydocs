@@ -6,47 +6,45 @@ import MiniSearch from 'minisearch';
 
 import { Input } from '@/components/ui/input';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
+import {
+  buildReaderSearchResults,
+  findReaderFallbackHits,
+  mergeReaderSearchHits,
+  normalizeReaderSearchIndex,
+  type ReaderSearchDoc,
+  type ReaderSearchHit,
+  type ReaderSearchIndex,
+} from '@/lib/docs/search';
 import { cn } from '@/lib/utils';
-
-type SearchDoc = {
-  id: string;
-  slug: string;
-  title: string;
-  description?: string;
-  breadcrumbs?: string[];
-  text?: string;
-};
-
-type SearchIndex = {
-  lang: string;
-  docs: SearchDoc[];
-};
 
 export function SearchPanel({
   lang,
+  indexHref,
   placeholder,
   className,
   inputClassName,
   resultsClassName,
 }: {
   lang: 'zh' | 'en';
+  indexHref?: string;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
   resultsClassName?: string;
 }) {
   const [q, setQ] = useState('');
-  const [idx, setIdx] = useState<SearchIndex | null>(null);
+  const [idx, setIdx] = useState<ReaderSearchIndex | null>(null);
   const copy = getDocsUiCopy(lang);
   const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
+  const resolvedIndexHref = indexHref ?? `/search-index.${lang}.json`;
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/search-index.${lang}.json`, { cache: 'force-cache' })
+    fetch(resolvedIndexHref, { cache: 'force-cache' })
       .then((r) => r.json())
-      .then((data: SearchIndex) => {
+      .then((data: unknown) => {
         if (cancelled) return;
-        setIdx(data);
+        setIdx(normalizeReaderSearchIndex(data, lang));
       })
       .catch(() => {
         if (cancelled) return;
@@ -55,15 +53,15 @@ export function SearchPanel({
     return () => {
       cancelled = true;
     };
-  }, [lang]);
+  }, [lang, resolvedIndexHref]);
 
   const mini = useMemo(() => {
     if (!idx) return null;
-    const ms = new MiniSearch({
-      fields: ['title', 'description', 'text'],
-      storeFields: ['id', 'slug', 'title', 'description', 'breadcrumbs'],
+    const ms = new MiniSearch<ReaderSearchDoc>({
+      fields: ['pageTitle', 'sectionTitle', 'text'],
+      storeFields: ['id', 'pageId', 'pageSlug', 'pageTitle', 'sectionTitle', 'breadcrumbs', 'href', 'text'],
       searchOptions: {
-        boost: { title: 4, description: 2, text: 1 },
+        boost: { pageTitle: 8, sectionTitle: 5, text: 1 },
         prefix: true,
         fuzzy: 0.2,
       },
@@ -74,9 +72,14 @@ export function SearchPanel({
 
   const results = useMemo(() => {
     const query = q.trim();
-    if (!mini || !query) return [];
-    return mini.search(query, { combineWith: 'AND' }).slice(0, 12) as unknown as SearchDoc[];
-  }, [mini, q]);
+    if (!idx || !mini || !query) return [];
+    const miniHits = mini.search(query, { combineWith: 'AND' }) as unknown as ReaderSearchHit[];
+    const fallbackHits = findReaderFallbackHits(idx.docs, query);
+    return buildReaderSearchResults(
+      mergeReaderSearchHits(miniHits, fallbackHits),
+      query,
+    );
+  }, [idx, mini, q]);
 
   return (
     <div className={cn('space-y-2', className)}>
@@ -107,12 +110,22 @@ export function SearchPanel({
               {results.map((r) => (
                 <Link
                   key={r.id}
-                  href={`/${lang}/${r.slug}`}
+                  href={r.href}
                   className="block rounded-lg px-3 py-2 text-sm transition hover:bg-[color:var(--docs-search-hover,var(--fd-muted))]"
                 >
-                  <div className="truncate font-medium text-fd-foreground">{r.title}</div>
+                  <div className="truncate font-medium text-fd-foreground">{r.pageTitle}</div>
+                  {r.sectionTitle ? (
+                    <div className="truncate text-xs font-medium text-[color:var(--docs-body-copy,var(--fd-foreground))]">
+                      {r.sectionTitle}
+                    </div>
+                  ) : null}
                   {r.breadcrumbs?.length ? (
                     <div className="truncate text-xs text-fd-muted-foreground">{r.breadcrumbs.join(' › ')}</div>
+                  ) : null}
+                  {r.snippet ? (
+                    <div className="mt-1 line-clamp-2 text-xs leading-5 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                      {r.snippet}
+                    </div>
                   ) : null}
                 </Link>
               ))}

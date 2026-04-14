@@ -2,6 +2,7 @@ export * from './doc-content-adapter.ts';
 export * from './doc-content-normalize.ts';
 export * from './canonical-render.ts';
 export * from './content-schema.ts';
+export * from './heading-ids.ts';
 export * from './render-page-content.ts';
 export * from './slug.ts';
 export * from './markdown-content.ts';

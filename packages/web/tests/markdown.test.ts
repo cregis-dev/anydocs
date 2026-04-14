@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { extractTocFromMarkdown, normalizeMarkdownForRendering } from '../lib/docs/markdown.ts';
+import { extractTocFromMarkdown, injectHeadingIds, normalizeMarkdownForRendering } from '../lib/docs/markdown.ts';
 
 test('normalizeMarkdownForRendering converts Mintlify card groups into plain markdown bullets', () => {
   const markdown = `
@@ -85,4 +85,25 @@ test('extractTocFromMarkdown deduplicates repeated heading ids', () => {
     { depth: 3, title: '请求参数', id: '请求参数-2' },
     { depth: 3, title: '请求示例', id: '请求示例-2' },
   ]);
+});
+
+test('injectHeadingIds uses the same deduplicated heading ids as the toc extractor', () => {
+  const markdown = `
+## Details
+
+### 请求参数
+
+### 请求参数
+`;
+
+  assert.equal(
+    injectHeadingIds(markdown).trim(),
+    `
+## <a id="details"></a>Details
+
+### <a id="请求参数"></a>请求参数
+
+### <a id="请求参数-2"></a>请求参数
+`.trim(),
+  );
 });

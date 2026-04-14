@@ -64,3 +64,35 @@ test('extractTocFromDocContent derives stable heading ids from canonical heading
     { depth: 3, title: 'Details', id: 'details-2' },
   ]);
 });
+
+test('extractTocFromDocContent preserves shared heading id behavior for punctuation and CJK text', () => {
+  const content = {
+    version: 1,
+    blocks: [
+      {
+        type: 'heading',
+        id: 'post-register',
+        level: 2,
+        children: [{ type: 'text', text: 'POST /register' }],
+      },
+      {
+        type: 'heading',
+        id: 'params-1',
+        level: 3,
+        children: [{ type: 'text', text: '请求参数' }],
+      },
+      {
+        type: 'heading',
+        id: 'params-2',
+        level: 3,
+        children: [{ type: 'text', text: '请求参数' }],
+      },
+    ],
+  };
+
+  assert.deepEqual(extractTocFromDocContent(content), [
+    { depth: 2, title: 'POST /register', id: 'post-register' },
+    { depth: 3, title: '请求参数', id: '请求参数' },
+    { depth: 3, title: '请求参数', id: '请求参数-2' },
+  ]);
+});

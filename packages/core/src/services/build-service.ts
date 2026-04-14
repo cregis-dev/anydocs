@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { access, cp, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { loadProjectContract } from '../fs/content-repository.ts';
@@ -12,6 +12,7 @@ import { writePublishedArtifacts } from '../publishing/build-artifacts.ts';
 import { writePublishedOpenApiArtifacts } from '../publishing/build-openapi-artifacts.ts';
 import type { DocsLanguage } from '../types/project.ts';
 import type { WorkflowStandardFile } from '../types/workflow-standard.ts';
+import { PROJECT_ASSETS_DIRNAME } from './project-asset-service.ts';
 import { createWorkflowStandardDefinition } from './workflow-standard-service.ts';
 
 export type BuildWorkflowOptions = {
@@ -62,6 +63,21 @@ function countNavigationItems(items: Array<{ children?: unknown[] } | Record<str
   return count;
 }
 
+async function copyProjectAssetsToArtifactRoot(projectRoot: string, artifactRoot: string): Promise<void> {
+  const sourceAssetsRoot = path.join(projectRoot, PROJECT_ASSETS_DIRNAME);
+
+  try {
+    await access(sourceAssetsRoot);
+  } catch {
+    return;
+  }
+
+  await cp(sourceAssetsRoot, path.join(artifactRoot, PROJECT_ASSETS_DIRNAME), {
+    recursive: true,
+    force: true,
+  });
+}
+
 export async function runBuildWorkflow(options: BuildWorkflowOptions): Promise<BuildWorkflowResult> {
   const contractResult = await loadProjectContract(options.repoRoot, options.projectId, options.outputDir);
   if (!contractResult.ok) {
@@ -84,6 +100,7 @@ export async function runBuildWorkflow(options: BuildWorkflowOptions): Promise<B
       projectRoot: contract.paths.projectRoot,
       outputRoot: contract.paths.artifactRoot,
     });
+    await copyProjectAssetsToArtifactRoot(contract.paths.projectRoot, contract.paths.artifactRoot);
     await mkdir(contract.paths.machineReadableRoot, { recursive: true });
     await writePublishedArtifacts(contract, siteArtifacts);
     await writePublishedOpenApiArtifacts(contract);

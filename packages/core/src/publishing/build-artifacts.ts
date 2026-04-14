@@ -5,17 +5,17 @@ import { filterPublicPageMetadata } from '../services/page-template-service.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
 import type { NavItem, PageDoc } from '../types/docs.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
+import { createHeadingIdGenerator } from '../utils/heading-ids.ts';
 import { renderPageContent } from '../utils/render-page-content.ts';
 
-type SearchIndexDoc = {
+type ReaderSearchIndexDoc = {
   id: string;
-  slug: string;
-  title: string;
-  description: string;
-  tags: string[];
-  status: 'published';
-  updatedAt: string | null;
+  pageId: string;
+  pageSlug: string;
+  pageTitle: string;
+  sectionTitle: string;
   breadcrumbs: string[];
+  href: string;
   text: string;
 };
 
@@ -48,6 +48,12 @@ type MachineReadableChunkDoc = {
   text: string;
   summary?: string;
   tokenEstimate: number;
+};
+
+type SearchSection = {
+  headingPath: string[];
+  headingId: string;
+  text: string;
 };
 
 type MachineReadableArtifactIndex = {
@@ -167,9 +173,10 @@ function stripMarkdown(markdown: string): string {
   return markdown
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`([^`]*)`/g, '$1')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/[#>*~]/g, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/<\/?[^>]+>/g, ' ')
+    .replace(/[*#>~]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -269,22 +276,6 @@ function getPageText(page: PageDoc) {
   };
 }
 
-function toSearchDoc(page: PageDoc, breadcrumbs: string[]): SearchIndexDoc {
-  const { plainText } = getPageText(page);
-
-  return {
-    id: page.id,
-    slug: page.slug,
-    title: page.title,
-    description: page.description ?? '',
-    tags: page.tags ?? [],
-    status: 'published',
-    updatedAt: page.updatedAt ?? null,
-    breadcrumbs,
-    text: plainText,
-  };
-}
-
 function buildLlmsTxt(siteArtifacts: BuildWorkflowPublishedSiteResult[]): string {
   const lines: string[] = [];
   lines.push('# Docs (LLM-friendly index)');
@@ -351,17 +342,44 @@ function buildLlmsFullTxt(
   return lines.join('\n').trimEnd();
 }
 
-function extractMarkdownSections(markdown: string, title: string): Array<{ headingPath: string[]; text: string }> {
+function extractHeadingPlainText(source: string): string {
+  return stripMarkdown(source)
+    .replace(/_/g, ' ')
+    .replace(/\\([\\`*_[\]{}()#+.!-])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getFenceDelimiter(line: string): string | null {
+  const trimmed = line.trim();
+  const match = /^(```+|~~~+)/.exec(trimmed);
+  return match?.[1] ?? null;
+}
+
+function closesFence(line: string, delimiter: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith(delimiter[0] ?? '')) {
+    return false;
+  }
+
+  const match = /^(```+|~~~+)/.exec(trimmed);
+  return Boolean(match && match[1] && match[1][0] === delimiter[0] && match[1].length >= delimiter.length);
+}
+
+function extractMarkdownSections(markdown: string, title: string): SearchSection[] {
   const normalized = stripLeadingTitleHeading(markdown, title).replace(/\r\n/g, '\n').trim();
   if (!normalized) {
     return [];
   }
 
-  const sections: Array<{ headingPath: string[]; text: string }> = [];
+  const sections: SearchSection[] = [];
   const headingStack: Array<{ depth: number; title: string }> = [];
+  const nextHeadingId = createHeadingIdGenerator();
   const lines = normalized.split('\n');
   let currentHeadingPath: string[] = [];
+  let currentHeadingId = '';
   let currentLines: string[] = [];
+  let activeFenceDelimiter: string | null = null;
 
   const flushCurrent = () => {
     const text = stripMarkdown(currentLines.join('\n'));
@@ -371,11 +389,27 @@ function extractMarkdownSections(markdown: string, title: string): Array<{ headi
 
     sections.push({
       headingPath: [...currentHeadingPath],
+      headingId: currentHeadingId,
       text,
     });
   };
 
   for (const line of lines) {
+    const fenceDelimiter = getFenceDelimiter(line);
+    if (activeFenceDelimiter) {
+      currentLines.push(line);
+      if (fenceDelimiter && closesFence(line, activeFenceDelimiter)) {
+        activeFenceDelimiter = null;
+      }
+      continue;
+    }
+
+    if (fenceDelimiter) {
+      activeFenceDelimiter = fenceDelimiter;
+      currentLines.push(line);
+      continue;
+    }
+
     const headingMatch = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
     if (!headingMatch) {
       currentLines.push(line);
@@ -386,12 +420,18 @@ function extractMarkdownSections(markdown: string, title: string): Array<{ headi
     currentLines = [];
 
     const depth = headingMatch[1].length;
-    const headingTitle = headingMatch[2].replace(/`/g, '').trim();
+    const headingTitle = extractHeadingPlainText(headingMatch[2]);
+    if (!headingTitle) {
+      currentLines.push(line);
+      continue;
+    }
+    const headingId = nextHeadingId(headingTitle);
     while (headingStack.length > 0 && headingStack[headingStack.length - 1]!.depth >= depth) {
       headingStack.pop();
     }
     headingStack.push({ depth, title: headingTitle });
     currentHeadingPath = headingStack.map((entry) => entry.title);
+    currentHeadingId = headingId;
   }
 
   flushCurrent();
@@ -435,16 +475,48 @@ function splitChunkText(text: string, maxChars = CHUNK_MAX_CHARS, overlapChars =
   return chunks;
 }
 
-function toChunkDocs(site: BuildWorkflowPublishedSiteResult, page: PageDoc, breadcrumbs: string[]): MachineReadableChunkDoc[] {
+function getSearchSections(page: PageDoc): SearchSection[] {
   const { markdown, plainText } = getPageText(page);
   const sectionCandidates = extractMarkdownSections(markdown, page.title);
+  if (sectionCandidates.length > 0) {
+    return sectionCandidates;
+  }
+
   const fallbackText = stripLeadingTitleText(plainText, page.title) || plainText.trim() || page.title.trim();
-  const sections =
-    sectionCandidates.length > 0
-      ? sectionCandidates
-      : fallbackText
-        ? [{ headingPath: [] as string[], text: fallbackText }]
-        : [];
+  return fallbackText
+    ? [
+        {
+          headingPath: [],
+          headingId: '',
+          text: fallbackText,
+        },
+      ]
+    : [];
+}
+
+function toReaderSearchDocs(
+  site: BuildWorkflowPublishedSiteResult,
+  page: PageDoc,
+  breadcrumbs: string[],
+): ReaderSearchIndexDoc[] {
+  return getSearchSections(page)
+    .flatMap((section, sectionIndex) =>
+      splitChunkText(section.text).map((chunkText, chunkIndex) => ({
+        id: `${page.id}#${String(sectionIndex + 1).padStart(3, '0')}-${String(chunkIndex + 1).padStart(2, '0')}`,
+        pageId: page.id,
+        pageSlug: page.slug,
+        pageTitle: page.title,
+        sectionTitle: section.headingPath.at(-1) ?? '',
+        breadcrumbs,
+        href: section.headingId ? `/${site.lang}/${page.slug}#${section.headingId}` : `/${site.lang}/${page.slug}`,
+        text: chunkText,
+      })),
+    )
+    .filter((entry) => entry.text);
+}
+
+function toChunkDocs(site: BuildWorkflowPublishedSiteResult, page: PageDoc, breadcrumbs: string[]): MachineReadableChunkDoc[] {
+  const sections = getSearchSections(page);
 
   const chunks: MachineReadableChunkDoc[] = [];
   let order = 1;
@@ -585,7 +657,7 @@ export async function writePublishedArtifacts(
     const searchIndex = {
       lang: site.lang,
       generatedAt,
-      docs: site.content.pages.map((page) => toSearchDoc(page, breadcrumbsById.get(page.id) ?? [])),
+      docs: site.content.pages.flatMap((page) => toReaderSearchDocs(site, page, breadcrumbsById.get(page.id) ?? [])),
     };
     const navigationArtifact = {
       lang: site.lang,

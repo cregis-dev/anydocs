@@ -231,3 +231,9 @@ export async function getDefaultLanguageStaticParams(
 
   return [{ slug: [] }, ...site.routes.map((route) => ({ slug: route.segments }))];
 }
+
+export function getReaderSearchIndexHref(lang: DocsLang): string {
+  return getCliDocsRuntimeMode() === 'preview'
+    ? `/api/docs/search-index?lang=${lang}`
+    : `/search-index.${lang}.json`;
+}

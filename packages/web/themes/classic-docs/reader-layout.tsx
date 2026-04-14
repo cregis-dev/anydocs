@@ -31,6 +31,7 @@ export function ClassicDocsReaderLayout({
   availableLanguages,
   nav,
   pages,
+  searchIndexHref,
   projectName,
   siteTheme,
 }: DocsThemeReaderLayoutProps) {
@@ -46,6 +47,7 @@ export function ClassicDocsReaderLayout({
     lang,
     nav,
     pages,
+    searchIndexHref,
     homeLabel,
     showHomeLink: false,
     showSearch,

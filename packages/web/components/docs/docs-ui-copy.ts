@@ -87,13 +87,13 @@ const DOCS_UI_COPY: Record<DocsLang, DocsUiCopy> = {
     sidebar: {
       navigationLabel: 'Documentation navigation',
       homeLabel: 'Docs Home',
-      searchPlaceholder: 'Search pages, titles, or keywords…',
-      searchHint: 'Search titles, descriptions, and page content.',
+      searchPlaceholder: 'Find pages, sections, or keywords…',
+      searchHint: 'Search page titles, section headings, and page content.',
     },
     search: {
       loading: 'Searching docs...',
-      noResults: 'No matching pages',
-      noResultsHint: 'Try another keyword, or continue browsing from the sidebar.',
+      noResults: 'No matching pages or sections',
+      noResultsHint: 'Try another keyword, or keep browsing from the sidebar.',
       browseHome: 'Browse docs home',
     },
     toc: {
@@ -161,13 +161,13 @@ const DOCS_UI_COPY: Record<DocsLang, DocsUiCopy> = {
     sidebar: {
       navigationLabel: '文档导航',
       homeLabel: '文档首页',
-      searchPlaceholder: '搜索页面、标题或关键词…',
-      searchHint: '可搜索标题、描述和页面内容。',
+      searchPlaceholder: '查找页面、章节或关键词…',
+      searchHint: '可搜索页面标题、章节标题和正文内容。',
     },
     search: {
       loading: '正在搜索文档...',
-      noResults: '没有匹配的页面',
-      noResultsHint: '换一个关键词，或从左侧分组继续浏览。',
+      noResults: '没有匹配的页面或章节',
+      noResultsHint: '换一个关键词，或继续从左侧导航浏览。',
       browseHome: '浏览文档首页',
     },
     toc: {

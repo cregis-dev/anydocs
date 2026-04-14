@@ -6,6 +6,7 @@ import {
   getPublishedContext,
   getPublishedLanguages,
   getPublishedProjectName,
+  getReaderSearchIndexHref,
   getPublishedSiteNavigation,
   getPublishedSiteTheme,
   isDocsReaderAvailable,
@@ -61,6 +62,7 @@ export default async function Layout({
           availableLanguages={availableLanguages}
           nav={nav}
           pages={pages}
+          searchIndexHref={getReaderSearchIndexHref(docsLang)}
           projectName={projectName}
           siteTheme={siteTheme}
           siteNavigation={siteNavigation}
