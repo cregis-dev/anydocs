@@ -217,10 +217,12 @@ async function exportDocsSite(mode) {
     }
   }
 
+  const distDirFull = path.join(webRoot, distDir);
+
   try {
     await prepareTsconfigForDist(originalTsconfig, distDir);
 
-    await runNext(['build', '--webpack'], {
+    await runNext(['build'], {
       env: createRuntimeEnv(mode, {
         ANYDOCS_NEXT_DIST_DIR: distDir,
         ANYDOCS_DOCS_OUTPUT_ROOT: outputRoot,
@@ -228,7 +230,16 @@ async function exportDocsSite(mode) {
     });
 
     await cleanupExportOutput(outputRoot);
-    await cp(exportDir, outputRoot, { recursive: true, force: true });
+
+    // Next.js static export defaults to 'out', but might fallback to distDir structure
+    // if export is skipped or config is not picked up.
+    let finalExportSource = exportDir;
+    const outExists = await readdir(webRoot).then(files => files.includes('out')).catch(() => false);
+    if (!outExists) {
+      finalExportSource = distDirFull;
+    }
+
+    await cp(finalExportSource, outputRoot, { recursive: true, force: true });
     await pruneNonDocsSiteArtifacts(outputRoot, mode);
     await pruneInternalExportArtifacts(outputRoot);
   } finally {
