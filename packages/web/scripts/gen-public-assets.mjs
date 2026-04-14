@@ -176,12 +176,16 @@ async function pruneInternalExportArtifacts(outputRoot) {
 async function exportDocsSite(mode) {
   const outputRoot = getOutputRoot(mode);
   const distDir = '.next-cli-export';
-  const exportDir = path.join(webRoot, distDir);
+  const exportDir = path.join(webRoot, 'out');
   const originalTsconfig = await snapshotTsconfig();
   const hiddenEntries = [
     {
       source: path.join(webRoot, 'app', 'api'),
       backup: path.join(webRoot, 'app', '__api_export_hidden__'),
+    },
+    {
+      source: path.join(webRoot, 'app', 'studio'),
+      backup: path.join(webRoot, 'app', '__studio_export_hidden__'),
     },
     ...(mode === 'desktop'
       ? [
@@ -198,6 +202,7 @@ async function exportDocsSite(mode) {
   ];
 
   await rm(exportDir, { recursive: true, force: true });
+  await rm(path.join(webRoot, distDir), { recursive: true, force: true });
   for (const entry of hiddenEntries) {
     await rm(entry.backup, { recursive: true, force: true });
   }
