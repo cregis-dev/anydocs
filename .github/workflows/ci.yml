@@ -5,13 +5,6 @@ on:
     workflows: ["Security Audit Workflow"]   # 流水线依赖。此处必须与security-audit.yml中的name保持一致。此处可以保持不变即可。
     types:
       - completed
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-  workflow_dispatch:
 
 permissions:
   contents: read
