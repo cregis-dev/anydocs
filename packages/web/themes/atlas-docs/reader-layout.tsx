@@ -237,6 +237,20 @@ export function AtlasDocsReaderLayout({
             <div className="hidden shrink-0 items-center gap-1 lg:!flex">
               {utilityNavLinks.map((entry) => {
                 const active = isTopNavEntryActive(entry);
+                const className = cn(
+                  'inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200',
+                  active
+                    ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                    : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                );
+
+                if (entry.item.href.startsWith('/') && !entry.item.openInNewTab) {
+                  return (
+                    <Link key={entry.item.id} href={entry.item.href} className={className}>
+                      {entry.label}
+                    </Link>
+                  );
+                }
 
                 return (
                   <a
@@ -244,12 +258,7 @@ export function AtlasDocsReaderLayout({
                     href={entry.item.href}
                     target={entry.item.openInNewTab ? '_blank' : undefined}
                     rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className={cn(
-                      'inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200',
-                      active
-                        ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                        : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
-                    )}
+                    className={className}
                   >
                     {entry.label}
                   </a>
@@ -340,6 +349,20 @@ export function AtlasDocsReaderLayout({
                     <div className="flex flex-wrap gap-2">
                       {utilityNavLinks.map((entry) => {
                         const active = isTopNavEntryActive(entry);
+                        const className = cn(
+                          'inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-medium leading-4 transition-colors duration-200',
+                          active
+                            ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
+                            : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                        );
+
+                        if (entry.item.href.startsWith('/') && !entry.item.openInNewTab) {
+                          return (
+                            <Link key={entry.item.id} href={entry.item.href} className={className}>
+                              {entry.label}
+                            </Link>
+                          );
+                        }
 
                         return (
                           <a
@@ -347,12 +370,7 @@ export function AtlasDocsReaderLayout({
                             href={entry.item.href}
                             target={entry.item.openInNewTab ? '_blank' : undefined}
                             rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
-                            className={cn(
-                              'inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-medium leading-4 transition-colors duration-200',
-                              active
-                                ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                                : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
-                            )}
+                            className={className}
                           >
                             {entry.label}
                           </a>
@@ -380,6 +398,14 @@ export function AtlasDocsReaderLayout({
                               className={mobileLinkClassName}
                               onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
                             >
+                              {entry.label}
+                            </Link>
+                          );
+                        }
+
+                        if (entry.href.startsWith('/') && !entry.item.openInNewTab) {
+                          return (
+                            <Link key={entry.item.id} href={entry.href} className={mobileLinkClassName}>
                               {entry.label}
                             </Link>
                           );
@@ -442,6 +468,14 @@ export function AtlasDocsReaderLayout({
                         className={linkClassName}
                         onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
                       >
+                        {entry.label}
+                      </Link>
+                    );
+                  }
+
+                  if (entry.href.startsWith('/') && !entry.item.openInNewTab) {
+                    return (
+                      <Link key={entry.item.id} href={entry.href} className={linkClassName}>
                         {entry.label}
                       </Link>
                     );
