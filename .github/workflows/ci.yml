@@ -32,6 +32,9 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
+      - name: 验证代码分支
+        run: cat test.txt
+        
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
