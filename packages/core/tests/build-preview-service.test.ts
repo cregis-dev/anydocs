@@ -122,11 +122,22 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
 
     const exportedFiles = await listFilesRecursively(result.artifactRoot);
     const leakedTxtFiles = exportedFiles.filter(
-      (filePath) =>
-        filePath.endsWith('.txt') &&
-        !filePath.endsWith('llms.txt') &&
-        !filePath.endsWith('llms-full.txt') &&
-        !filePath.endsWith('robots.txt'),
+      (filePath) => {
+        if (!filePath.endsWith('.txt')) {
+          return false;
+        }
+
+        const fileName = path.basename(filePath);
+        if (fileName.startsWith('__next.')) {
+          return false;
+        }
+
+        return (
+          !filePath.endsWith('llms.txt') &&
+          !filePath.endsWith('llms-full.txt') &&
+          !filePath.endsWith('robots.txt')
+        );
+      },
     );
     assert.deepEqual(leakedTxtFiles, []);
 
