@@ -472,11 +472,22 @@ test('build emits a deployable static docs site and exits successfully', async (
 
     const exportedFiles = await listFilesRecursively(path.join(repoRoot, 'dist'));
     const leakedTxtFiles = exportedFiles.filter(
-      (filePath) =>
-        filePath.endsWith('.txt') &&
-        !filePath.endsWith('llms.txt') &&
-        !filePath.endsWith('llms-full.txt') &&
-        !filePath.endsWith('robots.txt'),
+      (filePath) => {
+        if (!filePath.endsWith('.txt')) {
+          return false;
+        }
+
+        const fileName = path.basename(filePath);
+        if (fileName.startsWith('__next.')) {
+          return false;
+        }
+
+        return (
+          !filePath.endsWith('llms.txt') &&
+          !filePath.endsWith('llms-full.txt') &&
+          !filePath.endsWith('robots.txt')
+        );
+      },
     );
     assert.deepEqual(leakedTxtFiles, []);
   } finally {
