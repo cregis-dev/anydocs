@@ -152,6 +152,7 @@ async function pruneNonDocsSiteArtifacts(outputRoot, mode) {
 
 async function pruneInternalExportArtifacts(outputRoot) {
   const preservedTextFiles = new Set(['llms.txt', 'robots.txt']);
+  const shouldPreserveTxt = (name) => preservedTextFiles.has(name) || name.startsWith('__next.');
   const entries = await readdir(outputRoot, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -167,7 +168,7 @@ async function pruneInternalExportArtifacts(outputRoot) {
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith('.txt') && !preservedTextFiles.has(entry.name)) {
+    if (entry.isFile() && entry.name.endsWith('.txt') && !shouldPreserveTxt(entry.name)) {
       await rm(entryPath, { force: true });
     }
   }
