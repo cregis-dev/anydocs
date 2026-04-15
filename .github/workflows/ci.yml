@@ -1,10 +1,13 @@
 name: CI
 
 on:
-  workflow_run:                              # 依赖security-audit的执行，当扫描执行结束之后，才触发本流水线
-    workflows: ["Security Audit Workflow"]   # 此处必须与security-audit.yml中的name保持一致。此处可以保持不变即可。
-    types:
-      - completed
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,9 +21,6 @@ env:
 
 jobs:
   quality:
-
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}     # 代码扫描通过，才会执行后续逻辑
-    
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -28,9 +28,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:                                                       # 指定由security-audit携带的仓库分支，去拉取代码
-          ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0       
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -66,9 +63,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:                                                 # 指定由security-audit携带的仓库分支，去拉取代码
-          ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
