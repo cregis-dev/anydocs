@@ -1,0 +1,70 @@
+name: Security Audit Workflow               # 执行代码审计，生成审计报告，提交到AI服务，提交到安全审计平台
+
+on:
+  pull_request:                             # 流水线触发条件，请保持和原有流水线的触发条件一致
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AUDIT_SERVER: "http://8.219.214.141:8082"    # 安全审计平台api节点url
+  PROJECT_NAME: "${{ github.repository }}"     # 审计报告唯一标识
+
+jobs:
+  security-audit:
+    name: "🔍 代码安全审计"
+    runs-on: [self-hosted, audit-machine]
+    timeout-minutes: 180
+    
+    steps:
+    - name: "📥 检出代码"
+      uses: actions/checkout@v4
+        
+    - name: "⚡ 执行安全扫描"
+      run: |
+        echo "执行安全扫描..."
+        SEMGREP_REDACT_CODE=true semgrep scan --config auto . 2>&1 | tee semgrep_report.txt
+        
+    - name: "📤 上传扫描结果"
+      run: |
+        echo "上传扫描结果..."
+        curl -X POST "$AUDIT_SERVER/upload-and-audit/" \
+          -F "file=@semgrep_report.txt" \
+          -F "additional_param=$PROJECT_NAME" \
+          -o uploadResponse.json
+        UPLOAD_RESPONSE=$(cat uploadResponse.json)
+        echo "semgrep上传文件api返回内容: $UPLOAD_RESPONSE"   
+        
+    - name: "⏳ 轮询审计结果"
+      id: audit-result
+      run: |
+        echo "轮询审计结果..."
+        
+        for i in {1..100}; do
+          echo "第 $i 次轮询..."
+          
+          curl -X POST "$AUDIT_SERVER/audit-status/" \
+            -F "task_id=$PROJECT_NAME" \
+            -o auditResponse.json
+            
+          AUDIT_RESPONSE=$(cat auditResponse.json)
+          echo "审计结果状态: $AUDIT_RESPONSE"
+          
+          STATUS=$(jq -r '.status // "error"' auditResponse.json 2>/dev/null || echo "error")
+          
+          if [ "$STATUS" = "completed" ]; then
+            echo "✅ 审计通过"
+            exit 0
+          elif [ "$STATUS" = "failed" ]; then
+            echo "❌ 审计失败"
+            exit 1
+          fi
+          
+          sleep 60
+        done
+        echo "❌ 轮询超时"
+        exit 1
+
