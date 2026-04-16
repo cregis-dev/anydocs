@@ -36,28 +36,59 @@ function SelectTrigger({ className, children, ...props }: React.ComponentProps<t
   );
 }
 
-function SelectContent({ className, children, position = 'popper', ...props }: React.ComponentProps<typeof SelectPrimitive.Content>) {
-  return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        data-slot="select-content"
-        position={position}
-        className={cn(
-          'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-fd-border bg-fd-popover text-fd-popover-foreground shadow-md',
-          className,
-        )}
-        {...props}
-      >
-        <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
-          <ChevronUp className="size-4" />
-        </SelectPrimitive.ScrollUpButton>
-        <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
-        <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
-          <ChevronDown className="size-4" />
-        </SelectPrimitive.ScrollDownButton>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
+type SelectContentProps = React.ComponentProps<typeof SelectPrimitive.Content> & {
+  inPortal?: boolean;
+};
+
+function SelectContent({ className, children, position = 'popper', inPortal = true, ...props }: SelectContentProps) {
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (!inPortal) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      const wrapper = contentRef.current?.parentElement;
+      if (!wrapper?.hasAttribute('data-radix-popper-content-wrapper')) {
+        return;
+      }
+
+      const currentZ = Number.parseInt(wrapper.style.zIndex || '0', 10);
+      if (Number.isNaN(currentZ) || currentZ < 70) {
+        wrapper.style.zIndex = '70';
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [inPortal]);
+
+  const content = (
+    <SelectPrimitive.Content
+      ref={contentRef}
+      data-slot="select-content"
+      position={position}
+      className={cn(
+        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-fd-border bg-fd-popover text-fd-popover-foreground shadow-md',
+        className,
+      )}
+      {...props}
+    >
+      <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
+        <ChevronUp className="size-4" />
+      </SelectPrimitive.ScrollUpButton>
+      <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
+      <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
+        <ChevronDown className="size-4" />
+      </SelectPrimitive.ScrollDownButton>
+    </SelectPrimitive.Content>
   );
+
+  if (!inPortal) {
+    return content;
+  }
+
+  return <SelectPrimitive.Portal>{content}</SelectPrimitive.Portal>;
 }
 
 function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>) {
@@ -104,4 +135,3 @@ export {
   SelectItem,
   SelectSeparator,
 };
-

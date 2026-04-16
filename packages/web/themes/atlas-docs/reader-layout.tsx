@@ -170,6 +170,15 @@ export function AtlasDocsReaderLayout({
     });
   };
 
+  const handleLanguageChange = (value: string) => {
+    const nextLang = value as typeof lang;
+    if (nextLang === lang) {
+      return;
+    }
+
+    router.push(buildLanguageHref(pathname, lang, nextLang));
+  };
+
   const isTopNavEntryActive = (entry: TopNavLinkEntry) =>
     (entry.item.type === 'nav-group' && entry.item.groupId === effectiveActiveGroupId) ||
     (entry.item.type === 'external' &&
@@ -207,7 +216,7 @@ export function AtlasDocsReaderLayout({
   return (
     <div className={`${ATLAS_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`} style={themeStyle}>
       <header className="sticky top-0 z-40 bg-[color:var(--atlas-header)] backdrop-blur">
-        <div className="border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)]">
+        <div className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)]">
           <div className="mx-auto flex h-[64px] max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
             <Link href={`/${lang}`} className="flex min-w-0 shrink-0 items-center gap-3">
               {logoSrc ? (
@@ -268,21 +277,15 @@ export function AtlasDocsReaderLayout({
               })}
 
               {showLanguageSwitcher ? (
-                <Select
-                  value={lang}
-                  onValueChange={(value) => {
-                    const nextLang = value as typeof lang;
-                    if (nextLang === lang) {
-                      return;
-                    }
-
-                    router.push(buildLanguageHref(pathname, lang, nextLang));
-                  }}
-                >
+                <Select value={lang} onValueChange={handleLanguageChange}>
                   <SelectTrigger className="inline-flex h-9 min-w-[9.5rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                     <span className="truncate pr-2">{activeLanguageLabel}</span>
                   </SelectTrigger>
-                  <SelectContent className="min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg">
+                  <SelectContent
+                    inPortal={false}
+                    sideOffset={8}
+                    className="atlas-language-select-content min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg"
+                  >
                     {availableLanguages.map((language) => (
                       <SelectItem
                         key={language}
@@ -319,21 +322,15 @@ export function AtlasDocsReaderLayout({
                   ) : null}
 
                   {showLanguageSwitcher ? (
-                    <Select
-                      value={lang}
-                      onValueChange={(value) => {
-                        const nextLang = value as typeof lang;
-                        if (nextLang === lang) {
-                          return;
-                        }
-
-                        router.push(buildLanguageHref(pathname, lang, nextLang));
-                      }}
-                    >
+                    <Select value={lang} onValueChange={handleLanguageChange}>
                       <SelectTrigger className="inline-flex h-10 w-full rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                         <span className="truncate pr-2">{activeLanguageLabel}</span>
                       </SelectTrigger>
-                      <SelectContent className="min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg">
+                      <SelectContent
+                        inPortal={false}
+                        sideOffset={8}
+                        className="atlas-language-select-content min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg"
+                      >
                         {availableLanguages.map((language) => (
                           <SelectItem
                             key={language}
@@ -450,7 +447,7 @@ export function AtlasDocsReaderLayout({
         </div>
 
         {domainNavLinks.length ? (
-          <div className="hidden border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)] lg:!block">
+          <div className="relative z-20 hidden border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)] lg:!block">
             <div className="mx-auto flex h-[50px] max-w-[1600px] items-stretch px-4 sm:px-6 lg:px-8">
               <nav className="flex h-full min-w-0 items-stretch gap-7 overflow-x-auto">
                 {domainNavLinks.map((entry) => {
