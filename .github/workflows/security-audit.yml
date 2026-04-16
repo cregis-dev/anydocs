@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AUDIT_SERVER: "http://8.219.214.141:8082"    # 安全审计平台api节点url
+  AUDIT_SERVER: "http://8.219.214.149:8082"    # 安全审计平台api节点url
   PROJECT_NAME: "${{ github.repository }}"     # 审计报告唯一标识
 
 jobs:
