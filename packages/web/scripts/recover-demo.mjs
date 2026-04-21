@@ -7,7 +7,7 @@ const EXTERNAL_PROJECTS_ROOT = process.env.DOCS_PROJECTS_ROOT || '/Users/shawn/w
 
 async function main() {
   console.log('Starting Demo recovery...');
-  console.log(`Target Root: ${EXTERNAL_PROJECTS_ROOT}`);
+  console.log('Target Root:', EXTERNAL_PROJECTS_ROOT);
 
   // 1. Ensure target directories exist
   const sourceRoot = path.join(EXTERNAL_PROJECTS_ROOT, DEFAULT_PROJECT_ID, 'source');
@@ -25,9 +25,9 @@ async function main() {
       const navPath = path.join(process.cwd(), 'public', 'mcp', `navigation.${lang}.json`);
       const navContent = await fs.readFile(navPath, 'utf8');
       await fs.writeFile(path.join(sourceRoot, 'navigation', `${lang}.json`), navContent);
-      console.log(`[${lang}] Navigation recovered.`);
+      console.log('[%s] Navigation recovered.', lang);
     } catch (e) {
-      console.warn(`[${lang}] Navigation recovery failed:`, e.message);
+      console.warn('[%s] Navigation recovery failed:', lang, e.message);
       // Create empty nav if missing
       await fs.writeFile(
         path.join(sourceRoot, 'navigation', `${lang}.json`), 
@@ -49,7 +49,7 @@ async function main() {
         const searchIndexPath = path.join(process.cwd(), 'public', `search-index.${lang}.json`);
         searchIndex = JSON.parse(await fs.readFile(searchIndexPath, 'utf8'));
       } catch (e) {
-        console.warn(`[${lang}] Search index not found, text content will be empty.`);
+        console.warn('[%s] Search index not found, text content will be empty.', lang);
       }
 
       const textMap = new Map();
@@ -100,15 +100,15 @@ async function main() {
           path.join(sourceRoot, 'pages', lang, `${page.id}.json`),
           JSON.stringify(pageDoc, null, 2)
         );
-        console.log(`[${lang}] Page recovered: ${page.slug}`);
+        console.log('[%s] Page recovered:', lang, page.slug);
       }
     } catch (e) {
-      console.error(`[${lang}] Page recovery failed:`, e.message);
+      console.error('[%s] Page recovery failed:', lang, e.message);
     }
   }
 
   console.log('Recovery completed!');
-  console.log(`Please run 'pnpm dev' to restart the server and check the recovered project.`);
+  console.log("Please run 'pnpm dev' to restart the server and check the recovered project.");
 }
 
 main().catch(console.error);

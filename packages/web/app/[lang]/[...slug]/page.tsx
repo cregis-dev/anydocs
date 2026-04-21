@@ -375,10 +375,10 @@ export default async function Page({
 
     return (
       <div className="min-w-0">
-        <div className="mx-auto max-w-[1560px]">
+        <div className="mx-auto max-w-[1520px]">
           <div
             className={cn(
-              "grid min-w-0 items-start gap-y-0 xl:gap-x-8 2xl:gap-x-12",
+              "grid min-w-0 items-start gap-y-0 xl:gap-x-6 2xl:gap-x-8",
               hasBlueprintToc
                 ? "xl:grid-cols-[minmax(0,1fr)_min-content]"
                 : "xl:grid-cols-[minmax(0,1fr)]",
@@ -390,8 +390,8 @@ export default async function Page({
                 hasBlueprintToc && "xl:col-start-1 xl:row-start-1",
               )}
             >
-              <div className="px-5 py-6 sm:px-8 lg:px-9 lg:py-8 xl:px-12 xl:py-10">
-                <div className="max-w-[940px] 2xl:max-w-[980px]">
+              <div className="px-5 py-6 sm:px-8 lg:px-9 lg:py-8 xl:px-10 xl:py-10">
+                <div className="max-w-[980px] 2xl:max-w-[1020px]">
                   <header
                     className={cn(
                       "border-b",

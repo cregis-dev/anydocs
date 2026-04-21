@@ -13,6 +13,7 @@ export type DocsUiCopy = {
   sidebar: {
     navigationLabel: string;
     homeLabel: string;
+    searchTriggerLabel: string;
     searchPlaceholder: string;
     searchHint: string;
   };
@@ -99,7 +100,8 @@ const DOCS_UI_COPY: Record<DocsLang, DocsUiCopy> = {
     sidebar: {
       navigationLabel: "Documentation navigation",
       homeLabel: "Docs Home",
-      searchPlaceholder: "Find pages, sections, or keywords…",
+      searchTriggerLabel: "Search docs",
+      searchPlaceholder: "Find pages, sections, or keywords",
       searchHint: "Search page titles, section headings, and page content.",
     },
     search: {
@@ -187,7 +189,8 @@ const DOCS_UI_COPY: Record<DocsLang, DocsUiCopy> = {
     sidebar: {
       navigationLabel: "文档导航",
       homeLabel: "文档首页",
-      searchPlaceholder: "查找页面、章节或关键词…",
+      searchTriggerLabel: "搜索文档",
+      searchPlaceholder: "查找页面、章节或关键词",
       searchHint: "可搜索页面标题、章节标题和正文内容。",
     },
     search: {

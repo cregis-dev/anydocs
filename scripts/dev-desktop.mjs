@@ -39,12 +39,17 @@ function spawnProcess(label, command, args, env = process.env, cwd = repoRoot) {
     }
 
     if (code !== 0) {
-      console.error(`[${label}] exited with code ${code ?? 'null'} signal ${signal ?? 'null'}`)
+      console.error(
+        '[%s] exited with code %s signal %s',
+        label,
+        code ?? 'null',
+        signal ?? 'null'
+      )
       shutdown(code ?? 1)
     }
   })
   child.on('error', (error) => {
-    console.error(`[${label}] failed:`, error)
+    console.error('[%s] failed:', label, error)
     shutdown(1)
   })
 

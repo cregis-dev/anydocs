@@ -61,7 +61,10 @@ export function BlueprintReviewReaderLayout({
       className="h-dvh border-r-0 bg-[color:color-mix(in_srgb,var(--blueprint-sidebar,#faf8f3)_92%,white)]"
       insetClassName="px-5 pt-5"
       searchWrapperClassName="pt-3"
+      searchTriggerLabel={copy.sidebar.searchTriggerLabel}
       searchPlaceholder={copy.sidebar.searchPlaceholder}
+      searchTriggerTextClassName="text-[12.5px] tracking-[-0.01em]"
+      searchShortcutClassName="rounded-xl border-[color:color-mix(in_srgb,var(--blueprint-divider)_82%,white)] bg-[color:color-mix(in_srgb,white_68%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--docs-body-copy-subtle,var(--fd-muted-foreground))_88%,white)]"
       searchInputClassName="h-10 rounded-2xl border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-3.5 text-[13px] shadow-none"
       searchResultsClassName="rounded-2xl border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-1 shadow-[0_16px_50px_rgba(15,23,42,0.10)]"
       navWrapperClassName="pt-3"

@@ -17,9 +17,57 @@ export function createHeadingIdGenerator() {
   return createLocalHeadingIdGenerator();
 }
 
+const SUPPORTED_HTML_ATTRIBUTES = new Set(['alt', 'src', 'title']);
+
+function isHtmlAttributeNameChar(char: string | undefined) {
+  return char !== undefined && /[A-Za-z0-9_:-]/.test(char);
+}
+
 function getAttributeValue(source: string, name: string) {
-  const match = new RegExp(`${name}\\s*=\\s*"([^"]*)"`, 'i').exec(source);
-  return match?.[1]?.trim() ?? '';
+  const attributeName = name.trim().toLowerCase();
+  if (!SUPPORTED_HTML_ATTRIBUTES.has(attributeName)) {
+    return '';
+  }
+
+  const lowerSource = source.toLowerCase();
+
+  for (let index = 0; index < source.length; index += 1) {
+    if (!lowerSource.startsWith(attributeName, index)) {
+      continue;
+    }
+
+    if (isHtmlAttributeNameChar(source[index - 1])) {
+      continue;
+    }
+
+    let cursor = index + attributeName.length;
+    while (/\s/.test(source[cursor] ?? '')) {
+      cursor += 1;
+    }
+
+    if (source[cursor] !== '=') {
+      continue;
+    }
+
+    cursor += 1;
+    while (/\s/.test(source[cursor] ?? '')) {
+      cursor += 1;
+    }
+
+    if (source[cursor] !== '"') {
+      continue;
+    }
+
+    const valueStart = cursor + 1;
+    const valueEnd = source.indexOf('"', valueStart);
+    if (valueEnd < 0) {
+      return '';
+    }
+
+    return source.slice(valueStart, valueEnd).trim();
+  }
+
+  return '';
 }
 
 function collapseWhitespace(value: string) {
