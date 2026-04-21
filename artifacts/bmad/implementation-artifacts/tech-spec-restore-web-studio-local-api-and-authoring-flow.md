@@ -9,7 +9,7 @@ tech_stack:
   - 'TypeScript'
   - '@anydocs/core service layer'
   - 'Playwright end-to-end tests'
-  - 'Electron IPC fallback boundary for desktop runtime'
+  - 'Desktop runtime fallback boundary for the local desktop server'
 files_to_modify:
   - 'packages/web/app/api/local/_shared.ts'
   - 'packages/web/app/api/local/_preview-registry.ts'
@@ -25,7 +25,7 @@ files_to_modify:
   - 'packages/web/tests/e2e/studio-authoring-flow.spec.ts'
   - 'packages/web/scripts/gen-public-assets.mjs'
 code_patterns:
-  - 'Studio web runtime falls back to /api/local/* when desktop IPC is unavailable'
+  - 'Studio web runtime falls back to /api/local/* when the desktop runtime bridge is unavailable'
   - 'Studio bootstrap loads project, navigation, pages, and api-sources together before marking the workspace connected'
   - 'Route handlers should stay thin and delegate filesystem/build/preview work to existing helpers'
   - 'Studio connection status is derived from initial load state, so bootstrap API failures surface as Disconnected'
@@ -69,7 +69,7 @@ Restore the local App Router endpoints required by web Studio, keep the existing
 
 ### Codebase Patterns
 
-- `packages/web/components/studio/backend.ts` is the canonical bridge between Studio UI actions and the local API or desktop IPC surface.
+- `packages/web/components/studio/backend.ts` is the canonical bridge between Studio UI actions and the local API or desktop-server surface.
 - `LocalStudioApp` bootstraps the selected project by loading project contract, navigation, page list, and API sources in one combined path, so web Studio is not functionally complete unless all of those endpoints exist.
 - In web mode, missing local API handlers surface immediately as load errors and drive the footer state to `Disconnected`.
 - There is an existing completed spec for the broader local API restoration effort in `artifacts/bmad/implementation-artifacts/tech-spec-studio-local-api-routes.md`; this spec narrows the delivery target to the web Studio recovery path.

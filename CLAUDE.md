@@ -40,7 +40,7 @@ Upgrading to a **multi-project workspace**:
 ```bash
 pnpm install          # Install dependencies
 pnpm dev              # Start development server (Next.js)
-pnpm dev:desktop      # Start Electron desktop app
+pnpm dev:desktop      # Start Tauri desktop app
 ```
 
 ### Build & Validation
@@ -48,7 +48,7 @@ pnpm dev:desktop      # Start Electron desktop app
 pnpm build            # Full workspace build
 pnpm build:web        # Build Next.js app (includes gen:public)
 pnpm build:cli        # Build CLI package
-pnpm build:desktop    # Build Electron app
+pnpm build:desktop    # Build Tauri desktop app
 pnpm typecheck        # TypeScript type checking
 pnpm lint             # ESLint
 pnpm test             # Package-level regression gate
@@ -106,7 +106,7 @@ anydocs/                                     # Tool repository
 │   ├── cli/                                 # CLI tool
 │   ├── core/                                # Core library
 │   ├── web/                                 # Next.js Studio & reader
-│   └── desktop/                             # Electron app
+│   └── desktop/                             # Tauri app
 │
 └── content/projects/                        # Example docs projects
     └── default/                             # Demo project
@@ -137,7 +137,7 @@ dist/                                        # Build output (git-ignored)
         └── llms.txt
 ```
     ├── core/                                # Shared types & utilities
-    ├── desktop/                             # Electron app
+    ├── desktop/                             # Tauri app
     └── web/                                 # Next.js web app
 ```
 

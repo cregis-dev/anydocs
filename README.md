@@ -27,13 +27,20 @@ anydocs-mcp
 
 ## 快速启动
 
+当前 Studio 只有两类运行时：
+
+- `CLI Studio`：通过 `anydocs studio <projectRoot>` 启动，锁定单一项目根
+- `Desktop`：通过 `pnpm dev:desktop` 启动，走 Tauri + 本地 desktop server
+
+普通 `pnpm dev` 只启动 Next.js 开发服务器本身，不直接暴露 Studio。
+
 ### 方式 A：先跑示例项目
 
-先启动 Studio：
+先启动 CLI Studio：
 
 ```bash
 pnpm install
-pnpm dev
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 ```
 
 然后按你要理解的主题，选一个 example 跑 `preview`：
@@ -59,7 +66,6 @@ pnpm --filter @anydocs/cli cli preview examples/codex-mcp-docs
 然后：
 
 - 打开 `http://localhost:3000/studio`
-- 在 Studio 里选择你刚才 preview 的 example 路径
 - 终端里的 `preview` 会输出阅读站 URL，用来查看已发布页面
 
 如果你只想先跑一个，默认从 `examples/starter-docs` 开始。
@@ -72,14 +78,13 @@ pnpm --filter @anydocs/cli cli preview examples/codex-mcp-docs
 ```bash
 pnpm install
 npx @anydocs/cli init ./my-docs-project --agent codex
-pnpm dev
+npx @anydocs/cli studio ./my-docs-project
 npx @anydocs/cli preview ./my-docs-project
 ```
 
 然后：
 
 - 打开 `http://localhost:3000/studio`
-- 在 Studio 里选择 `./my-docs-project`
 - 让 agent 通过 MCP 操作这个项目
 
 如果你主要使用 Claude Code，可以把初始化命令里的 `--agent codex` 换成 `--agent claude-code`。
@@ -158,7 +163,7 @@ Markdown 迁移优先级：
 日常闭环：
 
 ```bash
-pnpm dev
+npx @anydocs/cli studio ./my-docs-project
 npx @anydocs/cli preview ./my-docs-project
 npx @anydocs/cli build ./my-docs-project
 ```
@@ -168,6 +173,7 @@ npx @anydocs/cli build ./my-docs-project
 ```bash
 pnpm dev
 pnpm dev:desktop
+npx @anydocs/cli studio ./my-docs-project
 npx @anydocs/cli init ./my-docs-project
 npx @anydocs/cli build ./my-docs-project
 npx @anydocs/cli preview ./my-docs-project
@@ -178,7 +184,9 @@ npx -y @anydocs/mcp
 
 补充：
 
-- `pnpm dev` 只启动 Studio 开发环境，不直接开放 Reader
+- Studio 运行时当前只保留两类：`CLI Studio` 和 `Desktop`
+- `pnpm dev` 只启动 Next.js 开发服务器本身，默认不暴露 Studio，也不直接开放 Reader
+- 如需本地进入 Studio，请使用 `anydocs studio <projectRoot>` 或 `pnpm dev:desktop`
 - 阅读站请用 `preview` 或构建后的静态产物查看
 - `preview` 默认就是 live 模式，`--watch` 只是兼容旧用法
 
@@ -225,8 +233,10 @@ my-docs-project/
 如果你已经能跑起来，后续按场景查这些文档：
 
 - [docs/usage-manual.md](docs/usage-manual.md)：详细操作手册
+- [docs/runtime-architecture.md](docs/runtime-architecture.md)：运行时边界、env contract 和路由策略
 - [docs/agent.md](docs/agent.md)：项目根最小 agent guide 模板
 - [docs/developer-guide.md](docs/developer-guide.md)：开发与验证流程
+- [DESIGN.md](DESIGN.md)：Anydocs 设计入口索引
 - [docs/classic-docs-theme-config.md](docs/classic-docs-theme-config.md)：`classic-docs` 阅读主题配置
 - [docs/README.md](docs/README.md)：`docs/` 目录索引
 - [artifacts/bmad/README.md](artifacts/bmad/README.md)：规划、技术规格和测试产物索引
