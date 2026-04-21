@@ -37,6 +37,10 @@ export function getRenderableDocContent(content: unknown, title: string): DocCon
     }
   }
 
+  // Canonical content can still come from older imports with adjacent list
+  // blocks split per item; normalize both canonical and converted paths.
+  nextContent = normalizeDocContent(nextContent);
+
   const normalizedTitle = title.trim();
   const blocks = [...nextContent.blocks];
   const [firstBlock] = blocks;
