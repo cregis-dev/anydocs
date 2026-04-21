@@ -1,7 +1,7 @@
-name: Security Audit Workflow               # 执行代码审计，生成审计报告，提交到AI服务，提交到安全审计平台
+name: Security Audit Workflow # Run code scanning, upload the report, and poll the audit service.
 
 on:
-  pull_request:                             # 流水线触发条件，请保持和原有流水线的触发条件一致
+  pull_request:
     branches:
       - main
   push:
@@ -10,61 +10,73 @@ on:
   workflow_dispatch:
 
 env:
-  AUDIT_SERVER: "http://8.219.214.141:8082"    # 安全审计平台api节点url
-  PROJECT_NAME: "${{ github.repository }}"     # 审计报告唯一标识
+  AUDIT_SERVER: ${{ vars.AUDIT_SERVER_URL }}
+  AUDIT_TASK_ID: "${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}"
 
 jobs:
   security-audit:
-    name: "🔍 代码安全审计"
+    name: "Security Audit"
     runs-on: [self-hosted, audit-machine]
     timeout-minutes: 180
     
     steps:
-    - name: "📥 检出代码"
+    - name: Check out repository
       uses: actions/checkout@v4
-        
-    - name: "⚡ 执行安全扫描"
+
+    - name: Validate audit service configuration
       run: |
-        echo "执行安全扫描..."
+        set -euo pipefail
+        if [ -z "${AUDIT_SERVER}" ]; then
+          echo "AUDIT_SERVER_URL GitHub Actions variable is not set."
+          exit 1
+        fi
+
+    - name: Run Semgrep scan
+      run: |
+        set -euo pipefail
+        echo "Running Semgrep scan..."
         SEMGREP_REDACT_CODE=true semgrep scan --config auto . 2>&1 | tee semgrep_report.txt
         
-    - name: "📤 上传扫描结果"
+    - name: Upload scan results
       run: |
-        echo "上传扫描结果..."
-        curl -X POST "$AUDIT_SERVER/upload-and-audit/" \
+        set -euo pipefail
+        echo "Uploading scan results..."
+        curl --fail --silent --show-error \
+          -X POST "$AUDIT_SERVER/upload-and-audit/" \
           -F "file=@semgrep_report.txt" \
-          -F "additional_param=$PROJECT_NAME" \
+          -F "additional_param=$AUDIT_TASK_ID" \
           -o uploadResponse.json
         UPLOAD_RESPONSE=$(cat uploadResponse.json)
-        echo "semgrep上传文件api返回内容: $UPLOAD_RESPONSE"   
+        echo "Upload API response: $UPLOAD_RESPONSE"
         
-    - name: "⏳ 轮询审计结果"
+    - name: Poll audit status
       id: audit-result
       run: |
-        echo "轮询审计结果..."
+        set -euo pipefail
+        echo "Polling audit status..."
         
         for i in {1..100}; do
-          echo "第 $i 次轮询..."
+          echo "Polling attempt $i..."
           
-          curl -X POST "$AUDIT_SERVER/audit-status/" \
-            -F "task_id=$PROJECT_NAME" \
+          curl --fail --silent --show-error \
+            -X POST "$AUDIT_SERVER/audit-status/" \
+            -F "task_id=$AUDIT_TASK_ID" \
             -o auditResponse.json
             
           AUDIT_RESPONSE=$(cat auditResponse.json)
-          echo "审计结果状态: $AUDIT_RESPONSE"
+          echo "Audit status response: $AUDIT_RESPONSE"
           
-          STATUS=$(jq -r '.status // "error"' auditResponse.json 2>/dev/null || echo "error")
+          STATUS=$(jq -r '.status // "error"' auditResponse.json)
           
           if [ "$STATUS" = "completed" ]; then
-            echo "✅ 审计通过"
+            echo "Audit completed successfully."
             exit 0
           elif [ "$STATUS" = "failed" ]; then
-            echo "❌ 审计失败"
-            exit 0
+            echo "Audit failed."
+            exit 1
           fi
           
           sleep 60
         done
-        echo "❌ 轮询超时"
+        echo "Audit status polling timed out."
         exit 1
-
