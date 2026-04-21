@@ -89,7 +89,6 @@ test('getRenderableDocContent merges adjacent canonical numbered lists to preser
     ],
   });
 });
-
 test('getRenderableDocContent converts renderable legacy Yoopta content to canonical blocks', () => {
   const legacyContent = {
     intro: {
@@ -210,7 +209,6 @@ test('getRenderableDocContent converts legacy numbered-list entry arrays with ur
     ],
   });
 });
-
 test('getRenderableDocContent merges adjacent converted numbered lists to preserve sequence numbering', () => {
   const legacyContent = {
     step1: {
