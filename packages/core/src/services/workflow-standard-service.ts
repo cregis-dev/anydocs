@@ -141,6 +141,15 @@ function createGeneratedArtifacts(contract: ProjectContract): WorkflowStandardFi
       description: `Static search index for ${language}.`,
     });
     artifacts.push({
+      id: 'searchFind',
+      path: relativeToRepo(contract, path.join(contract.paths.artifactRoot, `search-find.${language}.json`)),
+      format: 'json',
+      required: false,
+      writable: false,
+      generated: true,
+      description: `Chunk-level reader search artifact for ${language}.`,
+    });
+    artifacts.push({
       id: 'chunkIndex',
       path: relativeToRepo(contract, path.join(contract.paths.machineReadableRoot, `chunks.${language}.json`)),
       format: 'json',

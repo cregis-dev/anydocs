@@ -26,6 +26,7 @@ export function BlueprintReviewReaderLayout({
   availableLanguages,
   nav,
   pages,
+  searchFindHref,
   searchIndexHref,
   projectName,
   siteTheme,
@@ -44,6 +45,7 @@ export function BlueprintReviewReaderLayout({
       lang={lang}
       nav={nav}
       pages={pages}
+      searchFindHref={searchFindHref}
       searchIndexHref={searchIndexHref}
       homeLabel={homeLabel}
       showHomeLink={false}
@@ -119,6 +121,7 @@ export function BlueprintReviewReaderLayout({
                     lang={lang}
                     nav={nav}
                     pages={pages}
+                    searchFindHref={searchFindHref}
                     searchIndexHref={searchIndexHref}
                     homeLabel={homeLabel}
                     showHomeLink={false}

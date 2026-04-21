@@ -15,6 +15,7 @@ export type WorkflowStandardFile = {
     | 'openApiRoot'
     | 'openApiIndex'
     | 'searchIndex'
+    | 'searchFind'
     | 'chunkIndex';
   path: string;
   format: 'json' | 'text' | 'directory';

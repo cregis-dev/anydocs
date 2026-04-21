@@ -6,6 +6,8 @@ import {
   getPublishedContext,
   getPublishedProjectName,
   getPublishedLanguages,
+  getReaderSearchFindHref,
+  getReaderSearchIndexHref,
   getPublishedSiteTheme,
   getPublishedSiteUrl,
   isDocsReaderAvailable,
@@ -74,6 +76,8 @@ export default async function Page({
         pages={pages}
         siteTitle={siteTitle}
         showSearch={siteTheme.chrome?.showSearch ?? true}
+        searchFindHref={getReaderSearchFindHref(docsLang)}
+        searchIndexHref={getReaderSearchIndexHref(docsLang)}
       />
     );
   }

@@ -554,8 +554,8 @@ export default async function Page({
         <div
           className={cn(
             "mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20",
-            isClassicTheme && "max-w-[760px] pb-16 pt-8",
-            isAtlasTheme && "max-w-[820px] pb-20 pt-10",
+            isClassicTheme && "max-w-[820px] pb-16 pt-8",
+            isAtlasTheme && "max-w-[760px] pb-20 pt-10",
           )}
         >
           {showBreadcrumbs ? (
@@ -603,9 +603,9 @@ export default async function Page({
                 className={cn(
                   "max-w-[590px] text-[18px] font-light leading-[1.75] text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]",
                   isClassicTheme &&
-                    "max-w-[720px] text-[16px] font-normal leading-7 tracking-[-0.01em]",
+                    "max-w-[760px] text-[16px] font-normal leading-7 tracking-[-0.01em]",
                   isAtlasTheme &&
-                    "max-w-[760px] text-[16px] font-normal leading-7 tracking-[-0.01em] text-[color:color-mix(in_srgb,var(--docs-body-copy,var(--fd-muted-foreground))_94%,white)]",
+                    "max-w-[700px] text-[16px] font-normal leading-7 tracking-[-0.01em] text-[color:color-mix(in_srgb,var(--docs-body-copy,var(--fd-muted-foreground))_94%,white)]",
                 )}
               >
                 {page.description}
@@ -645,12 +645,28 @@ export default async function Page({
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
                   isClassicTheme &&
-                    "rounded-lg px-3.5 py-2 text-[13px]",
+                    "flex min-w-[220px] flex-col items-start gap-1 rounded-2xl border-[color:color-mix(in_srgb,var(--fd-border)_88%,white)] bg-white px-4 py-3 text-left shadow-[0_6px_18px_rgba(15,23,42,0.03)]",
                   isAtlasTheme &&
                     "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
                 )}
               >
-                ← {prevPage.title}
+                {isClassicTheme ? (
+                  <>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                      Previous
+                    </span>
+                    <span className="text-[14px] font-medium leading-6 text-fd-foreground">← {prevPage.title}</span>
+                  </>
+                ) : isAtlasTheme ? (
+                  <>
+                    <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                      Prev
+                    </span>
+                    <span>{prevPage.title}</span>
+                  </>
+                ) : (
+                  <>← {prevPage.title}</>
+                )}
               </Link>
             ) : (
               <span />
@@ -661,12 +677,28 @@ export default async function Page({
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
                   isClassicTheme &&
-                    "rounded-lg px-3.5 py-2 text-[13px]",
+                    "flex min-w-[220px] flex-col items-end gap-1 rounded-2xl border-[color:color-mix(in_srgb,var(--fd-border)_88%,white)] bg-white px-4 py-3 text-right shadow-[0_6px_18px_rgba(15,23,42,0.03)]",
                   isAtlasTheme &&
                     "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
                 )}
               >
-                {nextPage.title} →
+                {isClassicTheme ? (
+                  <>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                      Next
+                    </span>
+                    <span className="text-[14px] font-medium leading-6 text-fd-foreground">{nextPage.title} →</span>
+                  </>
+                ) : isAtlasTheme ? (
+                  <>
+                    <span>{nextPage.title}</span>
+                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                      Next
+                    </span>
+                  </>
+                ) : (
+                  <>{nextPage.title} →</>
+                )}
               </Link>
             ) : (
               <span />
@@ -680,13 +712,13 @@ export default async function Page({
           toc={effectiveToc}
           className={cn(
             isClassicTheme &&
-              "sticky top-[92px] self-start w-[236px] shrink-0 border-l-0 bg-transparent px-0 py-6 lg:-ml-2",
+              "sticky top-[88px] self-start w-[220px] shrink-0 border-l-0 bg-transparent px-0 py-5 lg:-ml-2",
             isAtlasTheme &&
-              "sticky top-[124px] self-start w-[236px] shrink-0 border-l-0 bg-transparent px-0 py-8 lg:-ml-2",
+              "sticky top-[120px] self-start w-[248px] shrink-0 border-l-0 bg-transparent px-0 py-8 lg:-ml-2",
           )}
           contentClassName={cn(
             isClassicTheme &&
-              "bg-transparent px-0 py-0",
+              "border-l border-[color:color-mix(in_srgb,var(--docs-toc-border,var(--fd-border))_78%,white)] bg-transparent px-0 py-0 pl-4",
             isAtlasTheme &&
               "rounded-[20px] border border-[color:color-mix(in_srgb,var(--docs-toc-border)_74%,white)] bg-[color:color-mix(in_srgb,var(--atlas-panel)_92%,transparent)] px-4 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] backdrop-blur-sm",
           )}
@@ -708,7 +740,7 @@ export default async function Page({
           )}
           activeLinkClassName={cn(
             isClassicTheme &&
-              "rounded-none border-l-0 bg-transparent py-1 pl-0 pr-0 font-medium break-words text-[color:var(--docs-toc-link-active,var(--fd-foreground))]",
+              "relative rounded-none border-l-0 bg-transparent py-1 pl-0 pr-0 font-semibold break-words text-[color:var(--docs-toc-link-active,var(--fd-foreground))] before:absolute before:-left-4 before:top-1.5 before:h-4 before:w-[2px] before:rounded-full before:bg-[color:var(--docs-toc-link-active,var(--fd-foreground))]",
             isAtlasTheme &&
               "relative rounded-r-xl border-l-0 bg-[color:var(--docs-toc-active-background,var(--fd-muted))] py-1.5 pl-3 pr-2 font-semibold tracking-[-0.01em] break-words text-[color:var(--docs-toc-link-active,var(--fd-foreground))] before:absolute before:bottom-2 before:-left-3 before:top-2 before:w-[2px] before:rounded-full before:bg-[color:var(--docs-toc-link-active,var(--fd-foreground))]",
           )}

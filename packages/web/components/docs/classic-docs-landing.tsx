@@ -12,6 +12,8 @@ type ClassicDocsLandingProps = {
   pages: PageDoc[];
   siteTitle: string;
   showSearch: boolean;
+  searchFindHref?: string;
+  searchIndexHref?: string;
 };
 
 type LandingLink = {
@@ -119,7 +121,15 @@ function buildSections(nav: NavigationDoc, pages: PageDoc[], lang: DocsLang, cop
     .filter((section): section is LandingSection => section !== null);
 }
 
-export function ClassicDocsLanding({ lang, nav, pages, siteTitle, showSearch }: ClassicDocsLandingProps) {
+export function ClassicDocsLanding({
+  lang,
+  nav,
+  pages,
+  siteTitle,
+  showSearch,
+  searchFindHref,
+  searchIndexHref,
+}: ClassicDocsLandingProps) {
   const copy = getDocsUiCopy(lang);
   const orderedLinks = dedupeLinks(flattenPageLinks(nav.items, pages, lang));
   const quickStartLinks = orderedLinks.slice(0, 5);
@@ -157,6 +167,8 @@ export function ClassicDocsLanding({ lang, nav, pages, siteTitle, showSearch }: 
               <div className="max-w-2xl">
                 <SearchPanel
                   lang={lang}
+                  findHref={searchFindHref}
+                  indexHref={searchIndexHref}
                   placeholder={copy.sidebar.searchPlaceholder}
                   inputClassName="h-11 rounded-lg border border-fd-border bg-fd-background px-4 text-[15px]"
                   resultsClassName="rounded-xl"

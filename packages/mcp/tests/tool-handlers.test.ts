@@ -265,6 +265,13 @@ test(
       assert.equal(started.data.session.projectRoot, projectRoot);
       assert.equal(started.data.session.projectId, 'default');
       assert.match(started.data.session.previewUrl, /^http:\/\/127\.0\.0\.1:\d+\//);
+      const searchIndexExists = await readFile(path.join(projectRoot, 'dist', 'search-index.en.json'), 'utf8')
+        .then(() => true)
+        .catch(() => false);
+      const searchFindExists = await readFile(path.join(projectRoot, 'dist', 'search-find.en.json'), 'utf8')
+        .then(() => true)
+        .catch(() => false);
+      assert.equal(searchIndexExists || searchFindExists, true);
 
       const statusOne = expectSuccess<{
         session: { id: string; status: string };
