@@ -158,7 +158,7 @@ async function waitForResponseStatus(
   throw new Error(`Timed out waiting for HTTP ${expectedStatus} from ${String(input)}. Last error: ${details}.`);
 }
 
-test('studio starts a locked single-project Studio server and rejects cross-project access', { timeout: 240_000 }, async () => {
+test('studio starts a locked CLI Studio server and rejects cross-project access', { timeout: 240_000 }, async () => {
   const repoRoot = await createTempRepoRoot('anydocs-cli-studio-project-');
   const otherProjectRoot = await createTempRepoRoot('anydocs-cli-studio-other-');
 

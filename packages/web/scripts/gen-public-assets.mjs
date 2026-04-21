@@ -1,15 +1,21 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  createCliDocsRuntimeEnv,
+  createDesktopRuntimeEnv,
+  DOCS_RUNTIME_MODES,
+} from '@anydocs/core/runtime-contract';
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(webRoot, '../..');
+const exportWorkspaceRoot = path.join(repoRoot, 'packages', '.tmp', 'web-export-runtime');
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve('next/dist/bin/next');
-const tsconfigPath = path.join(webRoot, 'tsconfig.json');
 const RUNTIME_ENV_ALLOWLIST = new Set([
   'CI',
   'COLORTERM',
@@ -60,13 +66,12 @@ function createRuntimeEnv(mode, overrides = {}) {
     ...baseEnv,
     NODE_ENV: mode === 'export' || mode === 'public' || mode === 'desktop' ? 'production' : 'development',
     ...(mode === 'desktop'
-      ? {
-          ANYDOCS_DESKTOP_RUNTIME: '1',
-        }
+      ? createDesktopRuntimeEnv()
       : {
-          ANYDOCS_DOCS_RUNTIME: mode === 'public' ? 'export' : mode,
-          ANYDOCS_DOCS_PROJECT_ROOT: projectRoot,
-          ANYDOCS_DISABLE_STUDIO: '1',
+          ...createCliDocsRuntimeEnv({
+            mode: mode === 'public' ? DOCS_RUNTIME_MODES.export : mode,
+            projectRoot,
+          }),
         }),
     ...overrides,
   };
@@ -75,7 +80,7 @@ function createRuntimeEnv(mode, overrides = {}) {
 function runNext(args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [nextBin, ...args], {
-      cwd: webRoot,
+      cwd: options.cwd ?? webRoot,
       stdio: options.stdio ?? 'inherit',
       env: options.env ?? process.env,
     });
@@ -92,8 +97,8 @@ function runNext(args, options = {}) {
   });
 }
 
-async function snapshotTsconfig() {
-  return readFile(tsconfigPath, 'utf8');
+async function snapshotTsconfig(tsconfigFile) {
+  return readFile(tsconfigFile, 'utf8');
 }
 
 function normalizeGeneratedTypeIncludes(include = [], distDir) {
@@ -108,21 +113,56 @@ function normalizeGeneratedTypeIncludes(include = [], distDir) {
   ];
 }
 
-async function prepareTsconfigForDist(originalContent, distDir) {
+async function prepareTsconfigForDist(tsconfigFile, originalContent, distDir) {
   const parsed = JSON.parse(originalContent);
   const nextConfig = {
     ...parsed,
     include: normalizeGeneratedTypeIncludes(Array.isArray(parsed.include) ? parsed.include : [], distDir),
   };
 
-  await writeFile(tsconfigPath, `${JSON.stringify(nextConfig, null, 2)}\n`, 'utf8');
+  await writeFile(tsconfigFile, `${JSON.stringify(nextConfig, null, 2)}\n`, 'utf8');
 }
 
-async function restoreTsconfig(originalContent) {
-  const currentContent = await readFile(tsconfigPath, 'utf8').catch(() => null);
+async function restoreTsconfig(tsconfigFile, originalContent) {
+  const currentContent = await readFile(tsconfigFile, 'utf8').catch(() => null);
   if (currentContent !== null && currentContent !== originalContent) {
-    await writeFile(tsconfigPath, originalContent, 'utf8');
+    await writeFile(tsconfigFile, originalContent, 'utf8');
   }
+}
+
+function shouldCopyRuntimeEntry(srcPath) {
+  const relativePath = path.relative(webRoot, srcPath);
+  if (!relativePath || relativePath === '') {
+    return true;
+  }
+
+  if (relativePath.startsWith(`..${path.sep}`) || relativePath === '..') {
+    return false;
+  }
+
+  const [topLevelName] = relativePath.split(path.sep);
+  if (
+    topLevelName === 'node_modules' ||
+    topLevelName === 'test-results' ||
+    topLevelName === 'playwright-report' ||
+    topLevelName === 'coverage'
+  ) {
+    return false;
+  }
+
+  return !/^\.next($|-)/.test(topLevelName);
+}
+
+async function prepareExportWorkspace() {
+  await rm(exportWorkspaceRoot, { recursive: true, force: true });
+  await mkdir(path.dirname(exportWorkspaceRoot), { recursive: true });
+  await cp(webRoot, exportWorkspaceRoot, {
+    recursive: true,
+    force: true,
+    filter: shouldCopyRuntimeEntry,
+  });
+  await symlink(path.join(webRoot, 'node_modules'), path.join(exportWorkspaceRoot, 'node_modules'), 'dir');
+  return exportWorkspaceRoot;
 }
 
 async function cleanupExportOutput(outputRoot) {
@@ -134,7 +174,7 @@ async function cleanupExportOutput(outputRoot) {
       entry.name === 'mcp' ||
       entry.name === 'llms.txt' ||
       entry.name === 'build-manifest.json' ||
-      /^search-index\..+\.json$/.test(entry.name)
+      /^search-(index|find)\..+\.json$/.test(entry.name)
     ) {
       continue;
     }
@@ -177,33 +217,35 @@ async function pruneInternalExportArtifacts(outputRoot) {
 async function exportDocsSite(mode) {
   const outputRoot = getOutputRoot(mode);
   const distDir = '.next-cli-export';
-  const exportDir = path.join(webRoot, 'out');
-  const originalTsconfig = await snapshotTsconfig();
+  const runtimeWebRoot = await prepareExportWorkspace();
+  const runtimeTsconfigPath = path.join(runtimeWebRoot, 'tsconfig.json');
+  const exportDir = path.join(runtimeWebRoot, 'out');
+  const originalTsconfig = await snapshotTsconfig(runtimeTsconfigPath);
   const hiddenEntries = [
     {
-      source: path.join(webRoot, 'app', 'api'),
-      backup: path.join(webRoot, 'app', '__api_export_hidden__'),
+      source: path.join(runtimeWebRoot, 'app', 'api'),
+      backup: path.join(runtimeWebRoot, 'app', '__api_export_hidden__'),
     },
     {
-      source: path.join(webRoot, 'app', 'studio'),
-      backup: path.join(webRoot, 'app', '__studio_export_hidden__'),
+      source: path.join(runtimeWebRoot, 'app', 'studio'),
+      backup: path.join(runtimeWebRoot, 'app', '__studio_export_hidden__'),
     },
     ...(mode === 'desktop'
       ? [
           {
-            source: path.join(webRoot, 'app', 'docs'),
-            backup: path.join(webRoot, 'app', '__docs_export_hidden__'),
+            source: path.join(runtimeWebRoot, 'app', 'docs'),
+            backup: path.join(runtimeWebRoot, 'app', '__docs_export_hidden__'),
           },
           {
-            source: path.join(webRoot, 'app', '[lang]'),
-            backup: path.join(webRoot, 'app', '__lang_export_hidden__'),
+            source: path.join(runtimeWebRoot, 'app', '[lang]'),
+            backup: path.join(runtimeWebRoot, 'app', '__lang_export_hidden__'),
           },
         ]
       : []),
   ];
 
   await rm(exportDir, { recursive: true, force: true });
-  await rm(path.join(webRoot, distDir), { recursive: true, force: true });
+  await rm(path.join(runtimeWebRoot, distDir), { recursive: true, force: true });
   for (const entry of hiddenEntries) {
     await rm(entry.backup, { recursive: true, force: true });
   }
@@ -218,12 +260,13 @@ async function exportDocsSite(mode) {
     }
   }
 
-  const distDirFull = path.join(webRoot, distDir);
+  const distDirFull = path.join(runtimeWebRoot, distDir);
 
   try {
-    await prepareTsconfigForDist(originalTsconfig, distDir);
+    await prepareTsconfigForDist(runtimeTsconfigPath, originalTsconfig, distDir);
 
-    await runNext(['build'], {
+    await runNext(['build', '--webpack'], {
+      cwd: runtimeWebRoot,
       env: createRuntimeEnv(mode, {
         ANYDOCS_NEXT_DIST_DIR: distDir,
         ANYDOCS_DOCS_OUTPUT_ROOT: outputRoot,
@@ -235,7 +278,7 @@ async function exportDocsSite(mode) {
     // Next.js static export defaults to 'out', but might fallback to distDir structure
     // if export is skipped or config is not picked up.
     let finalExportSource = exportDir;
-    const outExists = await readdir(webRoot).then(files => files.includes('out')).catch(() => false);
+    const outExists = await readdir(runtimeWebRoot).then((files) => files.includes('out')).catch(() => false);
     if (!outExists) {
       finalExportSource = distDirFull;
     }
@@ -254,15 +297,17 @@ async function exportDocsSite(mode) {
       }
     }
 
-    await restoreTsconfig(originalTsconfig);
+    await restoreTsconfig(runtimeTsconfigPath, originalTsconfig);
+    await rm(runtimeWebRoot, { recursive: true, force: true });
   }
 }
 
 async function runPreviewProxy() {
   const args = process.argv.slice(3);
   const distDir = '.next-cli-preview';
-  const originalTsconfig = await snapshotTsconfig();
-  await prepareTsconfigForDist(originalTsconfig, distDir);
+  const tsconfigPath = path.join(webRoot, 'tsconfig.json');
+  const originalTsconfig = await snapshotTsconfig(tsconfigPath);
+  await prepareTsconfigForDist(tsconfigPath, originalTsconfig, distDir);
   await rm(path.join(webRoot, distDir), { recursive: true, force: true });
   let shuttingDown = false;
   const child = spawn(process.execPath, [nextBin, 'dev', ...args], {
@@ -286,7 +331,7 @@ async function runPreviewProxy() {
   child.on('exit', (code, signal) => {
     process.off('SIGINT', forwardSignal);
     process.off('SIGTERM', forwardSignal);
-    restoreTsconfig(originalTsconfig)
+    restoreTsconfig(tsconfigPath, originalTsconfig)
       .catch((error) => {
         console.error(error);
       })

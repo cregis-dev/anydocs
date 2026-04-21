@@ -11,6 +11,7 @@ import type {
   StudioBuildResponse,
   StudioHost,
   StudioPreviewResponse,
+  StudioPreviewStopResponse,
   StudioProjectResponse,
   StudioProjectSettingsPatch,
 } from './host-types';
@@ -208,6 +209,17 @@ export function createWebLocalHost(): StudioHost {
         }),
         {
           method: 'POST',
+        },
+      );
+    },
+    stopPreview(projectId: string, projectPath?: string): Promise<StudioPreviewStopResponse> {
+      return jsonFetch<StudioPreviewStopResponse>(
+        createLocalApiUrl('preview', {
+          projectId,
+          path: projectPath,
+        }),
+        {
+          method: 'DELETE',
         },
       );
     },

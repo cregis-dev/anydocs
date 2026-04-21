@@ -3,19 +3,12 @@ import path from 'node:path';
 import { ValidationError } from '@anydocs/core';
 import type { NextRequest } from 'next/server';
 
+import { normalizeOptionalString, readRuntimeConfig } from '@/lib/runtime/runtime-config';
+
 export type StudioProjectQuery = {
   projectId: string;
   customPath?: string;
 };
-
-function normalizeOptionalString(value?: string | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
 
 function createProjectPolicyError(message: string, metadata?: Record<string, unknown>) {
   return new ValidationError(message, {
@@ -29,17 +22,16 @@ function createProjectPolicyError(message: string, metadata?: Record<string, unk
 export function resolveStudioProjectQuery(request: NextRequest): StudioProjectQuery {
   const requestedProjectId = request.nextUrl.searchParams.get('projectId')?.trim() ?? '';
   const requestedCustomPath = normalizeOptionalString(request.nextUrl.searchParams.get('path'));
+  const runtime = readRuntimeConfig();
 
-  const studioMode = process.env.ANYDOCS_STUDIO_MODE;
-
-  if (studioMode !== 'cli-single-project') {
+  if (runtime.studio?.kind !== 'cli') {
     throw createProjectPolicyError('Studio local APIs are only available in CLI Studio runtime.', {
-      studioMode: studioMode ?? 'web-dev',
+      studioMode: runtime.studio?.kind ?? 'disabled',
     });
   }
 
-  const lockedProjectRoot = normalizeOptionalString(process.env.ANYDOCS_STUDIO_PROJECT_ROOT);
-  const lockedProjectId = normalizeOptionalString(process.env.ANYDOCS_STUDIO_PROJECT_ID) ?? requestedProjectId;
+  const lockedProjectRoot = runtime.studio.lockedProjectRoot;
+  const lockedProjectId = runtime.studio.lockedProjectId ?? requestedProjectId;
 
   if (!lockedProjectRoot) {
     throw createProjectPolicyError('CLI Studio mode is missing the locked project root.');

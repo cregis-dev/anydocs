@@ -21,6 +21,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true }); require('node:fs').rmSync('studio-runtime', { recursive: true, force: true }); require('node:fs').rmSync('docs-runtime', { recursive: true, force: true })\"",
     "cli": "node --experimental-strip-types src/index.ts",
     "dev": "tsx src/index.ts",
+    "studio": "node --experimental-strip-types src/index.ts studio",
     "preview": "node --experimental-strip-types src/index.ts preview",
     "build": "pnpm clean && pnpm --filter @anydocs/core build && tsc -p tsconfig.json && node scripts/prepare-studio-runtime.mjs",
     "prepublishOnly": "pnpm build",

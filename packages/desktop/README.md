@@ -1,34 +1,18 @@
 # anydocs-desktop
 
-An Electron application with React and TypeScript
+Tauri shell scaffold for Anydocs.
 
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-
-## Project Setup
-
-### Install
+## Scripts
 
 ```bash
-$ npm install
+pnpm dev        # run the local web shell in Vite
+pnpm tauri:dev  # run the Tauri desktop shell with the local web shell
+pnpm build      # type-check and build the local web shell
+pnpm tauri:build
 ```
 
-### Development
+## Notes
 
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+- The shell is intentionally minimal.
+- The native bridge currently exposes app info and a folder picker.
+- Studio and the Node desktop server will be wired in later without changing the Tauri shell shape.

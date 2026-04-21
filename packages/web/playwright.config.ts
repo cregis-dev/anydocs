@@ -1,16 +1,17 @@
 // Playwright Configuration
 import { defineConfig, devices } from '@playwright/test';
 
-const isCliSingleProjectStudio = process.env.ANYDOCS_E2E_STUDIO_MODE === 'cli-single-project';
+const STUDIO_RUNTIME_MODE_CLI = 'cli';
+const isCliStudio = process.env.ANYDOCS_E2E_STUDIO_MODE === STUDIO_RUNTIME_MODE_CLI;
 const webServer =
   process.env.STUDIO_SKIP_WEBSERVER === '1'
     ? undefined
     : {
-        command: isCliSingleProjectStudio
+        command: isCliStudio
           ? 'node --experimental-strip-types scripts/start-e2e-studio.mjs'
           : 'pnpm dev',
         url: 'http://127.0.0.1:3000/robots.txt',
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: isCliStudio ? false : !process.env.CI,
         timeout: 120000,
       };
 
@@ -19,7 +20,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: isCliStudio ? 1 : process.env.CI ? 1 : undefined,
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['list'],

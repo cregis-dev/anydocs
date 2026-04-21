@@ -7,12 +7,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const webRoot = path.join(repoRoot, 'packages', 'web')
 const desktopRoot = path.join(repoRoot, 'packages', 'desktop')
+const desktopServerRoot = path.join(repoRoot, 'packages', 'desktop-server')
+const desktopServerHost = process.env.ANYDOCS_DESKTOP_SERVER_HOST || '127.0.0.1'
+const desktopServerPort = process.env.ANYDOCS_DESKTOP_SERVER_PORT || '33440'
+const desktopServerUrl = `http://${desktopServerHost}:${desktopServerPort}`
 const rendererHost = process.env.ANYDOCS_DESKTOP_WEB_HOST || '127.0.0.1'
 const rendererPort = process.env.ANYDOCS_DESKTOP_WEB_PORT || '3000'
-const studioPath = process.env.ANYDOCS_DESKTOP_STUDIO_PATH || '/studio'
-const rendererUrl = process.env.ELECTRON_RENDERER_URL || `http://${rendererHost}:${rendererPort}${studioPath}`
-const baseUrl = new URL(rendererUrl)
-const healthUrl = new URL(studioPath, `${baseUrl.protocol}//${baseUrl.host}`).toString()
+const rendererUrl = process.env.ANYDOCS_DESKTOP_WEB_URL || `http://${rendererHost}:${rendererPort}/`
+const healthUrl = new URL('/studio', rendererUrl).toString()
 
 let shuttingDown = false
 const children = new Set()
@@ -93,6 +95,25 @@ process.on('SIGINT', () => shutdown(0))
 process.on('SIGTERM', () => shutdown(0))
 
 async function main() {
+  const desktopServerBuild = spawnProcess('desktop-server-build', 'pnpm', [
+    '--filter',
+    '@anydocs/desktop-server',
+    'build'
+  ], {
+    ...process.env
+  }, desktopServerRoot)
+  await new Promise((resolve, reject) => {
+    desktopServerBuild.on('exit', (code) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      reject(new Error(`desktop-server build failed with exit code ${code ?? 'null'}`))
+    })
+    desktopServerBuild.on('error', reject)
+  })
+
   spawnProcess('web', 'pnpm', [
     'exec',
     'next',
@@ -103,7 +124,8 @@ async function main() {
     rendererPort
   ], {
     ...process.env,
-    ANYDOCS_DESKTOP_RUNTIME: '1'
+    ANYDOCS_DESKTOP_RUNTIME: '1',
+    ANYDOCS_DESKTOP_SERVER_URL: desktopServerUrl
   }, webRoot)
 
   await waitForServer(healthUrl)
@@ -111,11 +133,14 @@ async function main() {
   spawnProcess(
     'desktop',
     'pnpm',
-    ['exec', 'electron-vite', 'dev', '--watch', '--ignoreConfigWarning'],
+    ['--filter', '@anydocs/desktop', 'tauri:dev'],
     {
       ...process.env,
-      ANYDOCS_DESKTOP_EXTERNAL_RENDERER: '1',
-      ELECTRON_RENDERER_URL: rendererUrl
+      ANYDOCS_DESKTOP_RUNTIME: '1',
+      ANYDOCS_DESKTOP_SERVER_URL: desktopServerUrl,
+      ANYDOCS_DESKTOP_SERVER_HOST: desktopServerHost,
+      ANYDOCS_DESKTOP_SERVER_PORT: desktopServerPort,
+      ANYDOCS_DESKTOP_MANAGED_SERVER: '1'
     },
     desktopRoot
   )

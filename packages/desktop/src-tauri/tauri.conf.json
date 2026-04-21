@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Anydocs Desktop",
+  "version": "1.0.0",
+  "identifier": "com.anydocs.desktop",
+  "build": {
+    "devUrl": "http://127.0.0.1:3000",
+    "frontendDist": "../web/out"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Anydocs",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 1024,
+        "minHeight": 720,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["../resources/icon.png"]
+  }
+}

@@ -15,6 +15,10 @@ export type StudioPreviewResponse = {
   previewUrl?: string;
 };
 
+export type StudioPreviewStopResponse = {
+  stopped: number;
+};
+
 export type StudioBuildResponse = {
   artifactRoot: string;
   languages: Array<{ lang: DocsLang; publishedPages: number }>;
@@ -91,4 +95,5 @@ export interface StudioHost {
   ): Promise<StudioApiSourcesResponse>;
   runBuild(projectId: string, projectPath?: string): Promise<StudioBuildResponse>;
   runPreview(projectId: string, projectPath?: string): Promise<StudioPreviewResponse>;
+  stopPreview(projectId: string, projectPath?: string): Promise<StudioPreviewStopResponse>;
 }

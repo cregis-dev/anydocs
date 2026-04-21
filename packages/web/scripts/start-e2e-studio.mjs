@@ -1,19 +1,192 @@
 import { spawn } from 'node:child_process';
-import { rm } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createPage, initializeProject, updateProjectConfig } from '../../core/src/index.ts';
+import { createPage, initializeProject, renderPageContent, updateProjectConfig } from '../../core/src/index.ts';
+import { createCliStudioRuntimeEnv } from '@anydocs/core/runtime-contract';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '../../..');
 const webRoot = path.resolve(scriptDir, '..');
+const nextDistDir = '.next-cli-studio-e2e';
+const appApiRoot = path.join(webRoot, 'app', 'api');
+const hiddenApiRoot = path.join(webRoot, 'app', '__api_export_hidden__');
 const projectRoot = process.env.ANYDOCS_E2E_PROJECT_ROOT
   ? path.resolve(process.env.ANYDOCS_E2E_PROJECT_ROOT)
   : path.join(repoRoot, 'packages', '.tmp', 'playwright-anydocs-project');
 
+const editorRegressionContent = {
+  version: 1,
+  blocks: [
+    {
+      type: 'heading',
+      id: 'editor-regression-h1',
+      level: 1,
+      children: [{ type: 'text', text: 'Editor Regression' }],
+    },
+    {
+      type: 'paragraph',
+      id: 'editor-regression-intro',
+      children: [
+        { type: 'text', text: 'This regression page exercises all supported blocks. Open the ' },
+        {
+          type: 'link',
+          href: '/studio',
+          title: 'Studio',
+          children: [{ type: 'text', text: 'Studio route' }],
+        },
+        { type: 'text', text: ' and verify round-trip persistence.' },
+      ],
+    },
+    {
+      type: 'heading',
+      id: 'editor-regression-h2',
+      level: 2,
+      children: [{ type: 'text', text: 'Block Coverage' }],
+    },
+    {
+      type: 'heading',
+      id: 'editor-regression-h3',
+      level: 3,
+      children: [{ type: 'text', text: 'Nested Coverage' }],
+    },
+    {
+      type: 'list',
+      id: 'editor-regression-bulleted',
+      style: 'bulleted',
+      items: [{ id: 'editor-bullet-1', children: [{ type: 'text', text: 'Bulleted list item' }] }],
+    },
+    {
+      type: 'list',
+      id: 'editor-regression-numbered',
+      style: 'numbered',
+      items: [{ id: 'editor-number-1', children: [{ type: 'text', text: 'Numbered list item' }] }],
+    },
+    {
+      type: 'list',
+      id: 'editor-regression-todo',
+      style: 'todo',
+      items: [{ id: 'editor-todo-1', checked: false, children: [{ type: 'text', text: 'Todo list item' }] }],
+    },
+    {
+      type: 'blockquote',
+      id: 'editor-regression-quote',
+      children: [{ type: 'text', text: 'Blockquote content' }],
+    },
+    {
+      type: 'codeBlock',
+      id: 'editor-regression-code',
+      language: 'bash',
+      title: 'CLI',
+      code: 'pnpm --filter @anydocs/web test:e2e',
+    },
+    {
+      type: 'codeGroup',
+      id: 'editor-regression-code-group',
+      items: [
+        { id: 'editor-regression-code-group-cli', title: 'CLI', language: 'bash', code: 'pnpm build' },
+        {
+          id: 'editor-regression-code-group-api',
+          title: 'API',
+          language: 'typescript',
+          code: 'page_set_status({ status: "published" })',
+        },
+      ],
+    },
+    {
+      type: 'image',
+      id: 'editor-regression-image',
+      src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="48" viewBox="0 0 96 48"><rect width="96" height="48" rx="8" fill="%230f172a"/><text x="48" y="29" fill="%23f8fafc" font-size="12" text-anchor="middle">E2E</text></svg>',
+      alt: 'Regression image',
+      caption: [{ type: 'text', text: 'Inline asset' }],
+    },
+    {
+      type: 'table',
+      id: 'editor-regression-table',
+      rows: [
+        {
+          id: 'editor-regression-table-row-1',
+          cells: [
+            {
+              id: 'editor-regression-table-cell-1-1',
+              header: true,
+              children: [{ type: 'text', text: 'Name' }],
+            },
+            {
+              id: 'editor-regression-table-cell-1-2',
+              header: true,
+              children: [{ type: 'text', text: 'Value' }],
+            },
+          ],
+        },
+        {
+          id: 'editor-regression-table-row-2',
+          cells: [
+            {
+              id: 'editor-regression-table-cell-2-1',
+              header: false,
+              children: [{ type: 'text', text: 'Mode' }],
+            },
+            {
+              id: 'editor-regression-table-cell-2-2',
+              header: false,
+              children: [{ type: 'text', text: 'CLI Studio' }],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'callout',
+      id: 'editor-regression-callout',
+      tone: 'warning',
+      title: 'Warning',
+      children: [{ type: 'text', text: 'Callout content' }],
+    },
+    {
+      type: 'divider',
+      id: 'editor-regression-divider',
+    },
+    {
+      type: 'mermaid',
+      id: 'editor-regression-mermaid',
+      title: 'Regression Diagram',
+      code: 'flowchart TD\n  Draft --> Review\n  Review --> Published',
+    },
+  ],
+};
+
+async function appendPageToNavigation(pageId) {
+  const navigationPath = path.join(projectRoot, 'navigation', 'en.json');
+  const navigation = JSON.parse(await readFile(navigationPath, 'utf8'));
+  navigation.items.push({ type: 'page', pageId });
+  await writeFile(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`, 'utf8');
+}
+
+async function ensureStudioApiRoutesPresent() {
+  const apiExists = await access(appApiRoot)
+    .then(() => true)
+    .catch(() => false);
+  if (apiExists) {
+    return;
+  }
+
+  const hiddenExists = await access(hiddenApiRoot)
+    .then(() => true)
+    .catch(() => false);
+  if (!hiddenExists) {
+    return;
+  }
+
+  await mkdir(path.dirname(appApiRoot), { recursive: true });
+  await rename(hiddenApiRoot, appApiRoot);
+}
+
 async function prepareProject() {
+  await ensureStudioApiRoutesPresent();
   await rm(projectRoot, { recursive: true, force: true });
+  await rm(path.join(webRoot, nextDistDir), { recursive: true, force: true });
   await initializeProject({
     repoRoot: projectRoot,
     languages: ['en'],
@@ -201,6 +374,69 @@ Long pages still need fast heading navigation on mobile and desktop.
       },
     },
   });
+
+  const editorRegressionRender = renderPageContent(editorRegressionContent);
+  await createPage({
+    projectRoot,
+    lang: 'en',
+    page: {
+      id: 'editor-regression',
+      slug: 'editor-regression',
+      title: 'Editor Regression',
+      description: 'Draft page used to validate Studio editor coverage for supported blocks.',
+      status: 'draft',
+      content: editorRegressionContent,
+      render: editorRegressionRender,
+    },
+  });
+  await appendPageToNavigation('editor-regression');
+
+  await createPage({
+    projectRoot,
+    lang: 'en',
+    page: {
+      id: 'review-gate',
+      slug: 'review-gate',
+      title: 'Review Gate',
+      description: 'Page used to validate review approval and publish transitions.',
+      template: 'blueprint-review',
+      metadata: {
+        'doc-type': 'review-note',
+        'review-state': 'in-review',
+        owner: 'QA',
+        reviewer: 'Docs',
+      },
+      status: 'in_review',
+      review: {
+        required: true,
+        sourceType: 'ai-generated',
+        sourceId: 'e2e-review-source',
+        itemId: 'review-gate-item',
+        sourcePath: '/imports/review-gate.md',
+        warnings: [
+          {
+            code: 'approval-required',
+            message: 'This page must be explicitly approved before publication.',
+            remediation: 'Approve the page in Studio before setting it to published.',
+          },
+        ],
+      },
+      content: {
+        version: 1,
+        blocks: [
+          {
+            type: 'paragraph',
+            children: [{ type: 'text', text: 'Approval workflow regression coverage.' }],
+          },
+        ],
+      },
+      render: {
+        markdown: 'Approval workflow regression coverage.',
+        plainText: 'Approval workflow regression coverage.',
+      },
+    },
+  });
+  await appendPageToNavigation('review-gate');
 }
 
 function startStudioServer() {
@@ -210,9 +446,11 @@ function startStudioServer() {
     stdio: 'inherit',
     env: {
       ...process.env,
-      ANYDOCS_STUDIO_MODE: 'cli-single-project',
-      ANYDOCS_STUDIO_PROJECT_ROOT: projectRoot,
-      ANYDOCS_STUDIO_PROJECT_ID: 'default',
+      ...createCliStudioRuntimeEnv({
+        projectRoot,
+        projectId: 'default',
+      }),
+      ANYDOCS_NEXT_DIST_DIR: nextDistDir,
     },
   });
 

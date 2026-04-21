@@ -1,62 +1,59 @@
 import type { StudioProject } from '@/components/studio/project-registry';
 import { generateProjectId } from '@/components/studio/project-registry';
+import { readRuntimeConfig } from '@/lib/runtime/runtime-config';
 
-export type StudioMode = 'web-dev' | 'cli-single-project' | 'desktop-multi-project';
+export type StudioMode = 'cli' | 'desktop';
 
-export type StudioBootContext = {
-  mode: StudioMode;
+export type CliStudioBootContext = {
+  mode: 'cli';
   lockedProjectRoot?: string;
   lockedProjectId?: string;
-  canSwitchProjects: boolean;
-  canOpenExternalProject: boolean;
-  canManageRecentProjects: boolean;
+  canSwitchProjects: false;
+  canOpenExternalProject: false;
+  canManageRecentProjects: false;
 };
 
-export const DEFAULT_STUDIO_BOOT_CONTEXT: StudioBootContext = {
-  mode: 'web-dev',
-  canSwitchProjects: true,
-  canOpenExternalProject: true,
-  canManageRecentProjects: true,
+export type DesktopStudioBootContext = {
+  mode: 'desktop';
+  lockedProjectRoot?: undefined;
+  lockedProjectId?: undefined;
+  serverBaseUrl?: string;
+  canSwitchProjects: true;
+  canOpenExternalProject: true;
+  canManageRecentProjects: true;
 };
 
-function normalizeOptionalString(value?: string | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
+export type StudioBootContext = CliStudioBootContext | DesktopStudioBootContext;
 
 function getProjectNameFromPath(projectPath: string): string {
   return projectPath.split(/[\\/]+/).filter(Boolean).at(-1) ?? projectPath;
 }
 
-export function readStudioBootContext(): StudioBootContext {
-  const lockedProjectRoot = normalizeOptionalString(process.env.ANYDOCS_STUDIO_PROJECT_ROOT);
-  const lockedProjectId = normalizeOptionalString(process.env.ANYDOCS_STUDIO_PROJECT_ID);
+export function readStudioBootContext(): StudioBootContext | null {
+  const runtime = readRuntimeConfig();
 
-  if (process.env.ANYDOCS_STUDIO_MODE === 'cli-single-project') {
+  if (runtime.studio?.kind === 'cli') {
     return {
-      mode: 'cli-single-project',
-      lockedProjectRoot,
-      lockedProjectId,
+      mode: 'cli',
+      lockedProjectRoot: runtime.studio.lockedProjectRoot,
+      lockedProjectId: runtime.studio.lockedProjectId,
       canSwitchProjects: false,
       canOpenExternalProject: false,
       canManageRecentProjects: false,
     };
   }
 
-  if (process.env.ANYDOCS_DESKTOP_RUNTIME === '1') {
+  if (runtime.studio?.kind === 'desktop') {
     return {
-      mode: 'desktop-multi-project',
+      mode: 'desktop',
+      serverBaseUrl: runtime.studio.serverBaseUrl,
       canSwitchProjects: true,
       canOpenExternalProject: true,
       canManageRecentProjects: true,
     };
   }
 
-  return DEFAULT_STUDIO_BOOT_CONTEXT;
+  return null;
 }
 
 export function createLockedStudioProject(bootContext: StudioBootContext): StudioProject | null {

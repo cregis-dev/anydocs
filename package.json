@@ -12,7 +12,7 @@
     "dev:desktop": "node scripts/dev-desktop.mjs",
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @anydocs/web build",
-    "build:desktop": "pnpm --filter @anydocs/desktop build",
+    "build:desktop": "pnpm --filter @anydocs/web desktop:export && pnpm --filter @anydocs/desktop-server build && pnpm --filter @anydocs/desktop tauri:build",
     "build:cli": "pnpm --filter @anydocs/cli build",
     "build:mcp": "pnpm --filter @anydocs/mcp build",
     "typecheck": "pnpm -r typecheck",
