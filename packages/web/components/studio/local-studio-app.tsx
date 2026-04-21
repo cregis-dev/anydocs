@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   FileText,
   Globe,
@@ -18,6 +18,8 @@ import {
   ChevronDown,
   Box,
   Sparkles,
+  FolderOpen,
+  ArrowUpRight,
 } from 'lucide-react';
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 
@@ -39,6 +41,12 @@ import {
   registerRecentProject,
   saveProjectsToStorage,
 } from '@/components/studio/project-registry';
+import {
+  hasNativeDesktopPathOpener,
+  onNativeDesktopMenuAction,
+  openNativeDesktopPath,
+  type DesktopMenuAction,
+} from '@/components/studio/native-desktop-bridge';
 import {
   createLockedStudioProject,
   type StudioBootContext,
@@ -97,7 +105,235 @@ type ProjectState = {
 type RightSidebarMode = 'page' | 'project' | null;
 type WorkflowAction = 'preview' | 'build';
 type SidebarCreateDialog = { type: 'page' | 'group' | 'link' } | null;
+type WorkflowDiagnostic = {
+  title: string;
+  detail: string;
+  remediation?: string;
+  raw?: string;
+};
+type WorkflowSuccess =
+  | {
+      type: 'build';
+      message: string;
+      artifactRoot: string;
+    }
+  | {
+      type: 'preview';
+      message: string;
+      previewUrl: string;
+    };
+type StoredWorkflowResult = {
+  action: WorkflowAction;
+  resolvedAt: string;
+  success: WorkflowSuccess | null;
+  error: string | null;
+};
+type WorkflowResultHistoryEntry = StoredWorkflowResult & {
+  id: string;
+};
 const STUDIO_BOOTSTRAP_RETRY_DELAYS_MS = [250, 500, 1_000, 1_500, 2_500, 4_000] as const;
+const WORKFLOW_STAGE_HINT_DELAY_MS = 4_000;
+const WORKFLOW_RESULT_HISTORY_LIMIT = 5;
+const WORKFLOW_RESULT_STORAGE_PREFIX = 'anydocs:studio:workflow-result:';
+
+function formatWorkflowActionLabel(action: WorkflowAction) {
+  return action === 'build' ? 'Build' : 'Preview';
+}
+
+function formatWorkflowElapsed(ms: number) {
+  const totalSeconds = Math.max(1, Math.floor(ms / 1_000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+
+  return `${minutes}m ${seconds}s`;
+}
+
+function getWorkflowStageHint(action: WorkflowAction, elapsedMs: number) {
+  if (action === 'build') {
+    if (elapsedMs < WORKFLOW_STAGE_HINT_DELAY_MS) {
+      return {
+        title: 'Preparing build',
+        detail: 'Saving local authoring state and starting the docs build.',
+      };
+    }
+    if (elapsedMs < 12_000) {
+      return {
+        title: 'Generating artifacts',
+        detail: 'Validating published pages and rewriting search, reader, and LLM outputs.',
+      };
+    }
+    return {
+      title: 'Finalizing build',
+      detail: 'Refreshing local runtime state. Larger projects may stay here for a bit.',
+    };
+  }
+
+  if (elapsedMs < WORKFLOW_STAGE_HINT_DELAY_MS) {
+    return {
+      title: 'Starting preview',
+      detail: 'Stopping older preview sessions and preparing the reader runtime.',
+    };
+  }
+  if (elapsedMs < 12_000) {
+    return {
+      title: 'Warming preview',
+      detail: 'Building the latest published output before opening the local reader.',
+    };
+  }
+  return {
+    title: 'Waiting for preview',
+    detail: 'Checking that the local preview server is ready to serve the updated docs.',
+  };
+}
+
+function describeWorkflowError(action: WorkflowAction, message: string): WorkflowDiagnostic {
+  const actionLabel = formatWorkflowActionLabel(action);
+  const normalized = message.trim();
+  const lower = normalized.toLowerCase();
+
+  if (lower.includes('timed out waiting for the shared web runtime lock')) {
+    return {
+      title: `${actionLabel} blocked by another docs runtime task`,
+      detail: 'The shared docs runtime stayed locked too long, usually because an older preview or build is still shutting down.',
+      remediation: 'Wait a moment, close stale preview windows if needed, then retry.',
+      raw: normalized,
+    };
+  }
+
+  if (lower.includes('timed out waiting for docs preview server to become ready')) {
+    return {
+      title: 'Preview server did not become ready',
+      detail: 'The local reader runtime never responded before the preview timeout expired.',
+      remediation: 'Retry preview. If it keeps failing, inspect the desktop or web terminal for runtime errors.',
+      raw: normalized,
+    };
+  }
+
+  if (lower.includes('address already in use') || lower.includes('eaddrinuse')) {
+    return {
+      title: 'Preview port is already in use',
+      detail: 'The local preview process could not bind to a free port.',
+      remediation: 'Close the conflicting process or restart the preview session, then retry.',
+      raw: normalized,
+    };
+  }
+
+  if (lower.includes('failed to fetch api source')) {
+    return {
+      title: 'Build could not fetch an API source',
+      detail: 'One of the configured API sources failed during artifact generation.',
+      remediation: 'Check the API source URL and credentials in project settings, then run build again.',
+      raw: normalized,
+    };
+  }
+
+  if (lower.includes('unable to locate the docs web runtime')) {
+    return {
+      title: 'Docs runtime is missing',
+      detail: 'Studio could not find the local docs runtime used for build and preview.',
+      remediation: 'Reinstall dependencies or restore the local web runtime before retrying.',
+      raw: normalized,
+    };
+  }
+
+  if (lower.includes('request failed: 5')) {
+    return {
+      title: `${actionLabel} failed in the local service`,
+      detail: 'The local Studio service returned an internal error while processing this workflow.',
+      remediation: 'Retry once. If the error repeats, inspect the terminal logs for the failing request.',
+      raw: normalized,
+    };
+  }
+
+  return {
+    title: `${actionLabel} failed`,
+    detail: normalized || `${actionLabel} workflow failed.`,
+    remediation: 'Inspect the terminal logs if this keeps happening, then retry.',
+    raw: normalized || undefined,
+  };
+}
+
+function getWorkflowResultStorageKey(projectId: string) {
+  return `${WORKFLOW_RESULT_STORAGE_PREFIX}${projectId}`;
+}
+
+function readStoredWorkflowResults(projectId: string): WorkflowResultHistoryEntry[] {
+  if (typeof window === 'undefined' || !projectId) {
+    return [];
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(getWorkflowResultStorageKey(projectId));
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((entry): entry is WorkflowResultHistoryEntry => {
+      if (!entry || typeof entry !== 'object') {
+        return false;
+      }
+
+      const candidate = entry as Partial<WorkflowResultHistoryEntry>;
+      return (
+        typeof candidate.id === 'string' &&
+        (candidate.action === 'build' || candidate.action === 'preview') &&
+        typeof candidate.resolvedAt === 'string' &&
+        ('success' in candidate || 'error' in candidate)
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredWorkflowResults(projectId: string, results: WorkflowResultHistoryEntry[]) {
+  if (typeof window === 'undefined' || !projectId) {
+    return;
+  }
+
+  window.sessionStorage.setItem(getWorkflowResultStorageKey(projectId), JSON.stringify(results));
+}
+
+function clearStoredWorkflowResult(projectId: string) {
+  if (typeof window === 'undefined' || !projectId) {
+    return;
+  }
+
+  window.sessionStorage.removeItem(getWorkflowResultStorageKey(projectId));
+}
+
+function formatWorkflowResolvedAt(resolvedAt: string) {
+  const value = new Date(resolvedAt);
+  if (Number.isNaN(value.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(value);
+}
+
+function formatWorkflowResultSummary(entry: WorkflowResultHistoryEntry) {
+  if (entry.success?.type === 'build') {
+    return 'Build completed';
+  }
+  if (entry.success?.type === 'preview') {
+    return 'Preview ready';
+  }
+
+  return describeWorkflowError(entry.action, entry.error ?? `${formatWorkflowActionLabel(entry.action)} failed`).title;
+}
 
 function collectNavPageRefs(items: NavItem[], out: { pageId: string; hidden: boolean }[]) {
   for (const item of items) {
@@ -151,6 +387,18 @@ function clearReviewApproval(page: PageDoc | null): PageDoc | null {
       approvedAt: undefined,
     },
   };
+}
+
+function shouldInvalidateReviewApproval(patch: Partial<PageDoc>): boolean {
+  return (
+    'content' in patch ||
+    'render' in patch ||
+    'title' in patch ||
+    'slug' in patch ||
+    'description' in patch ||
+    'template' in patch ||
+    'metadata' in patch
+  );
 }
 
 function applyPagePatch(page: PageDoc | null, patch: Partial<PageDoc>, invalidateApproval: boolean): PageDoc | null {
@@ -312,7 +560,7 @@ type LocalStudioAppProps = {
 export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const studioHost = host;
   const lockedProject = useMemo(() => createLockedStudioProject(bootContext), [bootContext]);
-  const isProjectLocked = bootContext.mode === 'cli-single-project';
+  const isProjectLocked = bootContext.mode === 'cli';
   const [projectId, setProjectId] = useState<string>(lockedProject?.id ?? '');
   const [lang, setLang] = useState<DocsLang | null>(null);
   const [load, setLoad] = useState<LoadState>({ nav: null, pages: [], loading: true, error: null });
@@ -336,6 +584,12 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const [workflowBusy, setWorkflowBusy] = useState<'build' | 'preview' | null>(null);
   const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [workflowSuccess, setWorkflowSuccess] = useState<WorkflowSuccess | null>(null);
+  const [workflowResultAction, setWorkflowResultAction] = useState<WorkflowAction | null>(null);
+  const [workflowResolvedAt, setWorkflowResolvedAt] = useState<string | null>(null);
+  const [workflowHistory, setWorkflowHistory] = useState<WorkflowResultHistoryEntry[]>([]);
+  const [workflowStartedAt, setWorkflowStartedAt] = useState<number | null>(null);
+  const [workflowElapsedMs, setWorkflowElapsedMs] = useState(0);
   const [navDirtyTick, setNavDirtyTick] = useState(0);
   const [selectedTopNavGroupId, setSelectedTopNavGroupId] = useState<string | null>(null);
   
@@ -392,6 +646,94 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   navDirtyTickRef.current = navDirtyTick;
   const workflowMenuRef = useRef<HTMLDivElement | null>(null);
   const previewWindowRef = useRef<Window | null>(null);
+  const workflowBusyLabel = workflowBusy ? formatWorkflowActionLabel(workflowBusy) : null;
+  const workflowElapsedLabel = workflowBusy ? formatWorkflowElapsed(workflowElapsedMs) : null;
+  const workflowStageHint = workflowBusy ? getWorkflowStageHint(workflowBusy, workflowElapsedMs) : null;
+  const showWorkflowStageHint = workflowBusy !== null && workflowElapsedMs >= WORKFLOW_STAGE_HINT_DELAY_MS;
+  const workflowResolvedLabel = workflowResolvedAt ? formatWorkflowResolvedAt(workflowResolvedAt) : null;
+  const workflowErrorDiagnostic = workflowError
+    ? describeWorkflowError(workflowResultAction ?? workflowAction, workflowError)
+    : null;
+  const workflowHistoryEntries = workflowHistory.slice(1);
+  const canOpenLocalPath = hasNativeDesktopPathOpener();
+
+  useEffect(() => {
+    if (!workflowBusy || workflowStartedAt === null) {
+      setWorkflowElapsedMs(0);
+      return;
+    }
+
+    const updateElapsed = () => {
+      setWorkflowElapsedMs(Date.now() - workflowStartedAt);
+    };
+
+    updateElapsed();
+    const intervalId = window.setInterval(updateElapsed, 1_000);
+    return () => window.clearInterval(intervalId);
+  }, [workflowBusy, workflowStartedAt]);
+
+  const clearWorkflowResult = useCallback(
+    (targetProjectId?: string, options?: { clearHistory?: boolean }) => {
+      const nextProjectId = targetProjectId ?? projectId;
+      setWorkflowMessage(null);
+      setWorkflowError(null);
+      setWorkflowSuccess(null);
+      setWorkflowResultAction(null);
+      setWorkflowResolvedAt(null);
+      if (options?.clearHistory) {
+        setWorkflowHistory([]);
+      }
+      if (nextProjectId && options?.clearHistory) {
+        clearStoredWorkflowResult(nextProjectId);
+      }
+    },
+    [projectId],
+  );
+
+  const persistWorkflowResult = useCallback(
+    (nextAction: WorkflowAction, result: { success?: WorkflowSuccess | null; error?: string | null }) => {
+      const nextEntry: WorkflowResultHistoryEntry = {
+        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        resolvedAt: new Date().toISOString(),
+        action: nextAction,
+        success: result.success ?? null,
+        error: result.error ?? null,
+      };
+      setWorkflowResultAction(nextAction);
+      setWorkflowResolvedAt(nextEntry.resolvedAt);
+      setWorkflowHistory((current) => {
+        const nextHistory = [nextEntry, ...current].slice(0, WORKFLOW_RESULT_HISTORY_LIMIT);
+        writeStoredWorkflowResults(projectId, nextHistory);
+        return nextHistory;
+      });
+    },
+    [projectId],
+  );
+
+  useEffect(() => {
+    if (!projectId) {
+      return;
+    }
+
+    const stored = readStoredWorkflowResults(projectId);
+    if (!stored.length) {
+      setWorkflowMessage(null);
+      setWorkflowError(null);
+      setWorkflowSuccess(null);
+      setWorkflowResultAction(null);
+      setWorkflowResolvedAt(null);
+      setWorkflowHistory([]);
+      return;
+    }
+
+    const latest = stored[0];
+    setWorkflowHistory(stored);
+    setWorkflowResultAction(latest.action);
+    setWorkflowResolvedAt(latest.resolvedAt);
+    setWorkflowSuccess(latest.success);
+    setWorkflowError(latest.error);
+    setWorkflowMessage(latest.success?.message ?? null);
+  }, [projectId]);
 
   useEffect(() => {
     if (!workflowMenuOpen) {
@@ -423,6 +765,40 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     };
   }, [workflowMenuOpen]);
 
+  const handleOpenWorkflowArtifactRoot = useCallback(async () => {
+    if (workflowSuccess?.type !== 'build') {
+      return;
+    }
+
+    const opened = await openNativeDesktopPath(workflowSuccess.artifactRoot);
+    if (!opened) {
+      setWorkflowError('Desktop path opener is unavailable in this runtime.');
+    }
+  }, [workflowSuccess]);
+
+  const handleOpenWorkflowPreview = useCallback(() => {
+    if (workflowSuccess?.type !== 'preview') {
+      return;
+    }
+
+    const existingPreviewWindow = previewWindowRef.current;
+    if (existingPreviewWindow && !existingPreviewWindow.closed) {
+      existingPreviewWindow.location.href = workflowSuccess.previewUrl;
+      existingPreviewWindow.focus();
+      return;
+    }
+
+    previewWindowRef.current = window.open(workflowSuccess.previewUrl, '_blank');
+  }, [workflowSuccess]);
+
+  const stopPreviewSessions = useCallback(async () => {
+    try {
+      await studioHost.stopPreview(projectId, selectedProject?.path);
+    } catch {
+      // Preview cleanup should not block project switching or closing.
+    }
+  }, [projectId, selectedProject, studioHost]);
+
   const handleOpenFolder = useCallback(async (projectPathOverride?: string) => {
     if (!bootContext.canOpenExternalProject) {
       return;
@@ -430,6 +806,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
 
     setIsOpeningFolder(true);
     try {
+      await stopPreviewSessions();
       const projectPath = projectPathOverride
         ? normalizeAbsoluteProjectPath(projectPathOverride)
         : await pickNativeProjectPath();
@@ -450,13 +827,14 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     } finally {
       setIsOpeningFolder(false);
     }
-  }, [bootContext.canManageRecentProjects, bootContext.canOpenExternalProject, recentProjects]);
+  }, [bootContext.canManageRecentProjects, bootContext.canOpenExternalProject, recentProjects, stopPreviewSessions]);
 
-  const handleProjectSelect = useCallback((project: StudioProject) => {
+  const handleProjectSelect = useCallback(async (project: StudioProject) => {
     if (!bootContext.canSwitchProjects) {
       return;
     }
 
+    await stopPreviewSessions();
     const updated = recentProjects.map(p => 
       p.id === project.id 
         ? { ...p, lastOpened: Date.now() }
@@ -467,7 +845,12 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
     setRecentProjects(updated);
     setProjectId(project.id);
-  }, [bootContext.canManageRecentProjects, bootContext.canSwitchProjects, recentProjects]);
+  }, [bootContext.canManageRecentProjects, bootContext.canSwitchProjects, recentProjects, stopPreviewSessions]);
+
+  const handleCloseProject = useCallback(async () => {
+    await stopPreviewSessions();
+    setProjectId('');
+  }, [stopPreviewSessions]);
 
   const handleRecentProjectRemove = useCallback((project: StudioProject) => {
     if (!bootContext.canManageRecentProjects) {
@@ -481,14 +864,15 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
 
   const activeIdRef = useRef<string | null>(null);
   activeIdRef.current = activeId;
+  const previousLangRef = useRef<DocsLang | null>(lang);
+  const pendingLanguagePageSlugRef = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!projectId) {
       setLoad({ nav: null, pages: [], loading: false, error: null });
       setNavDraft(null);
       setProjectState(null);
-      setWorkflowMessage(null);
-      setWorkflowError(null);
+      clearWorkflowResult(undefined, { clearHistory: true });
       setRightSidebarMode(null);
       return;
     }
@@ -570,11 +954,16 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       }
       setProjectDirty(false);
       setProjectSaveError(null);
-      // Only reset activeId if it's not valid for the new project
       const currentActiveId = activeIdRef.current;
+      const fallbackPageId =
+        pendingLanguagePageSlugRef.current
+          ? pages.pages.find((page) => page.slug === pendingLanguagePageSlugRef.current)?.id ?? null
+          : null;
+      pendingLanguagePageSlugRef.current = null;
+
+      // Only reset activeId if it's not valid for the newly loaded language/project.
       if (!currentActiveId || !pages.pages.find((p) => p.id === currentActiveId)) {
-        const first = pages.pages[0]?.id ?? null;
-        setActiveId(first);
+        setActiveId(fallbackPageId ?? pages.pages[0]?.id ?? null);
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '加载失败';
@@ -582,12 +971,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setRightSidebarMode(null);
       setLoad({ nav: null, pages: [], loading: false, error: msg });
     }
-  }, [lang, projectId, selectedProject, studioHost]);
+  }, [clearWorkflowResult, lang, projectId, selectedProject, studioHost]);
 
   // When projectId changes, reset activeId
   useEffect(() => {
     setActiveId(null);
     setRightSidebarMode(null);
+    pendingLanguagePageSlugRef.current = null;
   }, [projectId]);
 
   useEffect(() => {
@@ -604,9 +994,17 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
   }, [isProjectLocked, projectId]);
 
-  // When lang changes, reset activeId to force reload with new language
-  useEffect(() => {
+  // Clear the previous-language page selection before passive effects run so
+  // desktop mode does not fetch a pageId that only exists in the old language.
+  useLayoutEffect(() => {
+    if (previousLangRef.current === lang) {
+      return;
+    }
+
+    previousLangRef.current = lang;
     setActiveId(null);
+    setActive(null);
+    setActiveLoading(false);
     setRightSidebarMode((current) => (current === 'page' ? null : current));
   }, [lang]);
 
@@ -622,6 +1020,11 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       return;
     }
     if (!lang) {
+      setActive(null);
+      setActiveLoading(false);
+      return;
+    }
+    if (pendingLanguagePageSlugRef.current) {
       setActive(null);
       setActiveLoading(false);
       return;
@@ -1129,8 +1532,9 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
 
   const runPreview = useCallback(async () => {
     if (!selectedProject?.path) {
-      setWorkflowMessage(null);
+      clearWorkflowResult(undefined, { clearHistory: true });
       setWorkflowError('请重新打开外部项目根目录。');
+      setWorkflowResultAction('preview');
       return;
     }
 
@@ -1142,12 +1546,19 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
 
     setWorkflowBusy('preview');
-    setWorkflowMessage(null);
-    setWorkflowError(null);
+    setWorkflowStartedAt(Date.now());
+    clearWorkflowResult();
     try {
       const result: StudioPreviewResponse = await studioHost.runPreview(projectId, selectedProject.path);
       const targetUrl = new URL(result.previewUrl ?? result.docsPath, window.location.href).toString();
-      setWorkflowMessage(`Preview ready: ${targetUrl}`);
+      const success: WorkflowSuccess = {
+        type: 'preview',
+        message: `Preview ready: ${targetUrl}`,
+        previewUrl: targetUrl,
+      };
+      setWorkflowMessage(success.message);
+      setWorkflowSuccess(success);
+      persistWorkflowResult('preview', { success });
       const nextPreviewWindow = previewWindowRef.current;
 
       if (nextPreviewWindow && !nextPreviewWindow.closed) {
@@ -1163,12 +1574,14 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
           previewWindowRef.current = null;
         }
       }
-      setWorkflowMessage(null);
+      clearWorkflowResult();
       setWorkflowError(e instanceof Error ? e.message : 'Preview workflow failed');
+      persistWorkflowResult('preview', { error: e instanceof Error ? e.message : 'Preview workflow failed' });
     } finally {
       setWorkflowBusy(null);
+      setWorkflowStartedAt(null);
     }
-  }, [projectId, selectedProject, studioHost]);
+  }, [clearWorkflowResult, persistWorkflowResult, projectId, selectedProject, studioHost]);
 
   const onDeletePage = useCallback(async () => {
     if (!lang || !active || !selectedProject?.path) {
@@ -1211,33 +1624,43 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setRightSidebarMode(null);
       setDirty(false);
       setSaveError(null);
-      setWorkflowMessage(null);
-      setWorkflowError(null);
+      clearWorkflowResult(undefined, { clearHistory: true });
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : '页面删除失败');
     }
-  }, [active, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
+  }, [active, clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
 
   const runBuild = useCallback(async () => {
     if (!selectedProject?.path) {
-      setWorkflowMessage(null);
+      clearWorkflowResult(undefined, { clearHistory: true });
       setWorkflowError('请重新打开外部项目根目录。');
+      setWorkflowResultAction('build');
       return;
     }
     setWorkflowBusy('build');
-    setWorkflowMessage(null);
-    setWorkflowError(null);
+    setWorkflowStartedAt(Date.now());
+    clearWorkflowResult();
     try {
       const result: StudioBuildResponse = await studioHost.runBuild(projectId, selectedProject.path);
       const summary = result.languages.map((entry) => `${entry.lang}:${entry.publishedPages}`).join(', ');
-      setWorkflowMessage(`Build validated -> ${result.artifactRoot} (${summary})`);
+      const success: WorkflowSuccess = {
+        type: 'build',
+        message: `Build validated -> ${result.artifactRoot} (${summary})`,
+        artifactRoot: result.artifactRoot,
+      };
+      setWorkflowMessage(success.message);
+      setWorkflowSuccess(success);
+      persistWorkflowResult('build', { success });
     } catch (e: unknown) {
-      setWorkflowMessage(null);
-      setWorkflowError(e instanceof Error ? e.message : 'Build workflow failed');
+      const errorMessage = e instanceof Error ? e.message : 'Build workflow failed';
+      clearWorkflowResult();
+      setWorkflowError(errorMessage);
+      persistWorkflowResult('build', { error: errorMessage });
     } finally {
       setWorkflowBusy(null);
+      setWorkflowStartedAt(null);
     }
-  }, [projectId, selectedProject, studioHost]);
+  }, [clearWorkflowResult, persistWorkflowResult, projectId, selectedProject, studioHost]);
 
   const triggerWorkflowAction = useCallback(
     async (action: WorkflowAction) => {
@@ -1265,6 +1688,60 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     [triggerWorkflowAction],
   );
 
+  const handleLanguageChange = useCallback(
+    (value: string) => {
+      const nextLang = value as DocsLang;
+      pendingLanguagePageSlugRef.current = active?.slug ?? null;
+      setLang((current) => (current === nextLang ? current : nextLang));
+    },
+    [active],
+  );
+
+  const handleDesktopMenuAction = useCallback(
+    async (action: DesktopMenuAction) => {
+      if (action === 'open-project') {
+        await handleOpenFolder();
+        return;
+      }
+
+      if (action === 'new-page') {
+        if (!projectId) {
+          await handleOpenFolder();
+          return;
+        }
+
+        setCreateMenuOpen(false);
+        setSidebarCreateDialog({ type: 'page' });
+        return;
+      }
+
+      if (action === 'save') {
+        if (dirty && active) {
+          await onSave(active);
+        }
+
+        if (navDirty && navDraft) {
+          await onSaveNav();
+        }
+
+        if (projectDirty && projectState) {
+          await onSaveProject();
+        }
+      }
+    },
+    [active, dirty, handleOpenFolder, navDirty, navDraft, onSave, onSaveNav, onSaveProject, projectDirty, projectId, projectState],
+  );
+
+  useEffect(() => {
+    if (bootContext.mode !== 'desktop') {
+      return;
+    }
+
+    return onNativeDesktopMenuAction((action) => {
+      void handleDesktopMenuAction(action);
+    });
+  }, [bootContext.mode, handleDesktopMenuAction]);
+
   if (!projectId) {
     return (
       <WelcomeScreen
@@ -1274,7 +1751,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         allowExternalProjectOpen={bootContext.canOpenExternalProject}
         allowRecentProjects={bootContext.canManageRecentProjects}
         onOpenProject={(projectPath) => handleOpenFolder(projectPath)}
-        onSelectProject={handleProjectSelect}
+        onSelectProject={(project) => void handleProjectSelect(project)}
         onRemoveProject={handleRecentProjectRemove}
       />
     );
@@ -1298,7 +1775,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0"
-              onClick={() => setProjectId('')}
+              onClick={() => void handleCloseProject()}
               title="Close Project"
               data-testid="studio-close-project-button"
             >
@@ -1391,7 +1868,9 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                 ) : (
                   <Eye className="mr-2 size-4" />
                 )}
-                {workflowAction === 'build' ? 'Build' : 'Preview'}
+                {workflowBusy === workflowAction
+                  ? `${formatWorkflowActionLabel(workflowAction)}ing...`
+                  : formatWorkflowActionLabel(workflowAction)}
               </Button>
               <Button
                 type="button"
@@ -1543,7 +2022,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               )}
             </div>
             <div className="sticky bottom-0 z-10 shrink-0 border-t border-fd-border bg-fd-card/95 p-4 shadow-[0_-10px_24px_rgba(15,23,42,0.06)] backdrop-blur supports-[backdrop-filter]:bg-fd-card/90">
-              <Select value={lang ?? ''} onValueChange={(v) => setLang(v as DocsLang)}>
+              <Select value={lang ?? ''} onValueChange={handleLanguageChange}>
                 <SelectTrigger
                   className="h-11 w-full rounded-xl px-3 text-sm"
                   disabled={!projectState}
@@ -1590,10 +2069,108 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               <div className="min-h-full">
                 {workflowError ? (
                   <div
-                    className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                    className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm"
                     data-testid="studio-workflow-error"
                   >
-                    {workflowError}
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 rounded-full bg-red-100 p-2 text-red-700">
+                        <X className="size-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">
+                              {workflowErrorDiagnostic?.title ?? 'Workflow failed'}
+                            </p>
+                            {workflowResolvedLabel ? (
+                              <p className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-red-900/60">
+                                Last attempt {workflowResolvedLabel}
+                              </p>
+                            ) : null}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 shrink-0 text-red-900/60 hover:bg-red-100 hover:text-red-900"
+                            onClick={() => clearWorkflowResult(undefined, { clearHistory: true })}
+                            data-testid="studio-dismiss-workflow-result-button"
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        </div>
+                        <p className="mt-1 text-red-800/90">
+                          {workflowErrorDiagnostic?.detail ?? workflowError}
+                        </p>
+                        {workflowErrorDiagnostic?.remediation ? (
+                          <p className="mt-2 text-xs font-medium text-red-900/80">
+                            Suggested next step: {workflowErrorDiagnostic.remediation}
+                          </p>
+                        ) : null}
+                        {workflowErrorDiagnostic?.raw &&
+                        workflowErrorDiagnostic.raw !== workflowErrorDiagnostic.detail ? (
+                          <p className="mt-2 break-all font-mono text-[11px] text-red-900/70">
+                            {workflowErrorDiagnostic.raw}
+                          </p>
+                        ) : null}
+                        {workflowHistoryEntries.length ? (
+                          <div className="mt-4 border-t border-red-200/70 pt-3" data-testid="studio-workflow-history">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-red-900/60">
+                              Recent workflow activity
+                            </p>
+                            <div className="mt-2 space-y-2">
+                              {workflowHistoryEntries.map((entry) => (
+                                <div
+                                  key={entry.id}
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-red-200/70 bg-white/40 px-3 py-2"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="truncate text-xs font-medium text-red-900">
+                                      {formatWorkflowResultSummary(entry)}
+                                    </p>
+                                    <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-red-900/55">
+                                      {formatWorkflowActionLabel(entry.action)} {formatWorkflowResolvedAt(entry.resolvedAt) ?? entry.resolvedAt}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {workflowBusy && workflowStageHint ? (
+                  <div
+                    className="mb-4 rounded-xl border border-fd-border bg-fd-card px-4 py-3 shadow-sm"
+                    data-testid="studio-workflow-progress"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 rounded-full bg-fd-muted p-2 text-fd-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <p className="text-sm font-semibold text-fd-foreground">
+                            {workflowBusyLabel} in progress
+                          </p>
+                          {workflowElapsedLabel ? (
+                            <span className="text-xs font-medium uppercase tracking-[0.2em] text-fd-muted-foreground">
+                              {workflowElapsedLabel}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-fd-muted-foreground">
+                          {workflowStageHint.detail}
+                        </p>
+                        {showWorkflowStageHint ? (
+                          <p className="mt-2 text-xs font-medium text-fd-foreground/80">
+                            Current step: {workflowStageHint.title}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 ) : null}
                 {navSaveError ? (
@@ -1601,7 +2178,106 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     {navSaveError}
                   </div>
                 ) : null}
-                {workflowMessage ? (
+                {workflowSuccess ? (
+                  <div
+                    className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm"
+                    data-testid="studio-workflow-message"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 rounded-full bg-emerald-100 p-2 text-emerald-700">
+                        {workflowSuccess.type === 'build' ? <Box className="size-4" /> : <Eye className="size-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">
+                              {workflowSuccess.type === 'build' ? 'Build completed' : 'Preview ready'}
+                            </p>
+                            {workflowResolvedLabel ? (
+                              <p className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-950/60">
+                                Completed {workflowResolvedLabel}
+                              </p>
+                            ) : null}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 shrink-0 text-emerald-950/60 hover:bg-emerald-100 hover:text-emerald-950"
+                            onClick={() => clearWorkflowResult(undefined, { clearHistory: true })}
+                            data-testid="studio-dismiss-workflow-result-button"
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        </div>
+                        <p className="mt-1 break-all text-emerald-900/90">{workflowSuccess.message}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {workflowSuccess.type === 'build' ? (
+                            <>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => void triggerWorkflowAction('preview')}
+                                data-testid="studio-workflow-run-preview-button"
+                              >
+                                <ArrowUpRight className="size-4" />
+                                Run Preview
+                              </Button>
+                              {canOpenLocalPath ? (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => void handleOpenWorkflowArtifactRoot()}
+                                  data-testid="studio-workflow-open-artifacts-button"
+                                >
+                                  <FolderOpen className="size-4" />
+                                  Open Artifacts
+                                </Button>
+                              ) : null}
+                            </>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={handleOpenWorkflowPreview}
+                              data-testid="studio-workflow-open-preview-button"
+                            >
+                              <ArrowUpRight className="size-4" />
+                              Open Preview
+                            </Button>
+                          )}
+                        </div>
+                        {workflowHistoryEntries.length ? (
+                          <div className="mt-4 border-t border-emerald-200/70 pt-3" data-testid="studio-workflow-history">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-950/60">
+                              Recent workflow activity
+                            </p>
+                            <div className="mt-2 space-y-2">
+                              {workflowHistoryEntries.map((entry) => (
+                                <div
+                                  key={entry.id}
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200/70 bg-white/40 px-3 py-2"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="truncate text-xs font-medium text-emerald-950">
+                                      {formatWorkflowResultSummary(entry)}
+                                    </p>
+                                    <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-emerald-950/55">
+                                      {formatWorkflowActionLabel(entry.action)} {formatWorkflowResolvedAt(entry.resolvedAt) ?? entry.resolvedAt}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : workflowMessage ? (
                   <div
                     className="mb-4 rounded-md border border-fd-border bg-fd-card px-3 py-2 text-sm text-fd-muted-foreground"
                     data-testid="studio-workflow-message"
@@ -1706,7 +2382,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                       ...patch,
                       updatedAt: new Date().toISOString(),
                     },
-                    true,
+                    shouldInvalidateReviewApproval(patch),
                   ),
                 );
                 setDirty(true);
@@ -1747,9 +2423,9 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
           <div className="flex items-center gap-1" data-testid="studio-save-status">
             <Save className="size-3" />
             {workflowBusy
-              ? `${workflowBusy}...`
+              ? `${workflowBusyLabel} in progress${workflowElapsedLabel ? ` (${workflowElapsedLabel})` : ''}`
               : workflowError
-                ? 'Workflow failed'
+                ? (workflowErrorDiagnostic?.title ?? 'Workflow failed')
                 : navSaveError
                   ? 'Navigation save failed'
                   : savingNav

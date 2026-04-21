@@ -2,7 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 
-import { createDefaultStudioHost } from "@/components/studio/backend";
+import { createStudioHost } from "@/components/studio/backend";
 import { LocalStudioApp } from "@/components/studio/local-studio-app";
 import type { StudioBootContext } from "@/components/studio/studio-boot";
 
@@ -15,7 +15,7 @@ const getClientSnapshot = (): boolean => true;
 const getServerSnapshot = (): boolean => false;
 
 export function StudioEntry({ bootContext }: StudioEntryProps) {
-  const host = useMemo(() => createDefaultStudioHost(), []);
+  const host = useMemo(() => createStudioHost(bootContext), [bootContext]);
   const mounted = useSyncExternalStore(
     subscribeToClient,
     getClientSnapshot,

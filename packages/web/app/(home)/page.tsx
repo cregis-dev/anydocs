@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { StudioEntry } from '@/components/studio/studio-entry';
 import { readStudioBootContext } from '@/components/studio/studio-boot';
-import { getDefaultPublishedLanguage, isDesktopRuntimeEnabled, isExplicitCliDocsRuntimeEnabled } from '@/lib/docs/data';
+import { getDefaultPublishedLanguage, isExplicitCliDocsRuntimeEnabled } from '@/lib/docs/data';
 
 export default async function Page() {
   const bootContext = readStudioBootContext();
@@ -12,7 +12,7 @@ export default async function Page() {
     redirect(`/${defaultLanguage}`);
   }
 
-  if (!isDesktopRuntimeEnabled() && bootContext.mode !== 'cli-single-project') {
+  if (!bootContext) {
     notFound();
   }
 

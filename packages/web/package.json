@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "gen:public": "node scripts/gen-public-assets.mjs public",
-    "build": "next build",
+    "build": "next build --webpack",
     "docs:export": "node scripts/gen-public-assets.mjs export",
     "desktop:export": "node scripts/gen-public-assets.mjs desktop",
     "docs:preview": "node scripts/gen-public-assets.mjs preview",
@@ -13,12 +13,12 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:p0": "playwright test --grep @p0 --workers=2",
+    "test:e2e:p0": "playwright test --grep @p0",
     "test:e2e:p1": "playwright test --grep \"@p0|@p1\"",
     "test:api": "playwright test tests/e2e/studio-local-api.spec.ts",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:p0": "playwright test --grep @p0 --workers=2"
+    "test:p0": "playwright test --grep @p0"
   },
   "dependencies": {
     "@anydocs/core": "workspace:*",

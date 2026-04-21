@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadProjectContract } from '@anydocs/core';
+import { createCliStudioRuntimeEnv } from '@anydocs/core/runtime-contract';
 
 import { error, info } from '../output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
@@ -258,9 +259,10 @@ export async function runStudioCommand(options: StudioCommandOptions = {}): Prom
       env: {
         ...process.env,
         ANYDOCS_NEXT_DIST_DIR: distDir,
-        ANYDOCS_STUDIO_MODE: 'cli-single-project',
-        ANYDOCS_STUDIO_PROJECT_ROOT: contract.paths.projectRoot,
-        ANYDOCS_STUDIO_PROJECT_ID: contract.config.projectId,
+        ...createCliStudioRuntimeEnv({
+          projectRoot: contract.paths.projectRoot,
+          projectId: contract.config.projectId,
+        }),
       },
       stdio: json ? 'pipe' : 'inherit',
     });

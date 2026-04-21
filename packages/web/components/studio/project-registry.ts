@@ -1,19 +1,16 @@
 'use client';
 
+import {
+  hasNativeDesktopBridge,
+  pickNativeDesktopProjectDirectory,
+} from '@/components/studio/native-desktop-bridge';
+
 export interface StudioProject {
   id: string;
   name: string;
   path: string;
   lastOpened: number;
 }
-
-type ElectronDirectoryDialog = {
-  api?: {
-    dialog?: {
-      selectDirectory?: () => Promise<{ success: boolean; data?: unknown }>;
-    };
-  };
-};
 
 const STORAGE_KEY = 'studio-projects';
 const ABSOLUTE_PATH_PATTERN = /^(?:[A-Za-z]:[\\/]|\/)/;
@@ -102,7 +99,7 @@ export function hasNativeDirectoryPicker(): boolean {
     return false;
   }
 
-  return typeof (window as Window & ElectronDirectoryDialog).api?.dialog?.selectDirectory === 'function';
+  return hasNativeDesktopBridge();
 }
 
 export function generateProjectId(projectPath: string): string {
@@ -166,15 +163,10 @@ export async function pickNativeProjectPath(): Promise<string | null> {
     return null;
   }
 
-  const electronDialog = (window as Window & ElectronDirectoryDialog).api?.dialog?.selectDirectory;
-  if (electronDialog) {
-    const response = await electronDialog();
-    if (!response.success || typeof response.data !== 'string') {
-      return null;
-    }
-
-    return normalizeAbsoluteProjectPath(response.data);
+  const path = await pickNativeDesktopProjectDirectory();
+  if (!path) {
+    return null;
   }
 
-  return null;
+  return normalizeAbsoluteProjectPath(path);
 }

@@ -12,6 +12,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./search": {
+      "types": "./dist/search/index.d.ts",
+      "import": "./dist/search/index.js"
+    },
+    "./runtime-contract": {
+      "types": "./runtime-contract.d.ts",
+      "import": "./runtime-contract.mjs"
     }
   },
   "files": [
@@ -27,7 +35,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "minisearch": "^7.1.2"
+  },
   "devDependencies": {
     "@types/node": "^22.19.1",
     "typescript": "^5.0.0"

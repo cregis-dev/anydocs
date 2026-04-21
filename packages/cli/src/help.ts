@@ -28,7 +28,7 @@ export function printGeneralHelp(): void {
     '  init [targetDir]                       Initialize a new docs project',
     '  build [targetDir] [options]            Build a deployable static docs site',
     '  preview [targetDir] [options]          Start a live local docs preview server',
-    '  studio [targetDir] [options]           Start Studio for a single project',
+    '  studio [targetDir] [options]           Start the CLI Studio runtime',
     '  project <subcommand> [options]         Create or inspect project contract state',
     '  workflow inspect [targetDir]           Inspect the workflow standard definition',
     '  page <subcommand> [options]            Inspect pages by language, id, or slug',
