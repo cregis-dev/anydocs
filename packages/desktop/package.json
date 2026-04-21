@@ -7,8 +7,7 @@
   "homepage": "https://github.com/anydocs/anydocs",
   "scripts": {
     "dev": "pnpm tauri:dev",
-    "prebuild": "pnpm --filter @anydocs/web desktop:export && pnpm --filter @anydocs/desktop-server build",
-    "build": "pnpm tauri:build",
+    "build": "pnpm typecheck",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
