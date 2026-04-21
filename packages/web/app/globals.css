@@ -132,6 +132,24 @@ body {
   white-space: inherit;
 }
 
+/*
+ * Keep glyph paint area at inline boundaries while preserving layout width.
+ * This helps avoid right-edge clipping on some CJK glyphs in Slate leaves.
+ */
+.docs-yoopta-view [data-slate-string="true"] {
+  padding-inline-end: 1px;
+  margin-inline-end: -1px;
+}
+
+/*
+ * Yoopta numbered lists render text as:
+ *   div.list-decimal > span[data-slate-node="element"] > ... > span[data-slate-string]
+ * This wrapper can sit flush to the right edge and clip the final CJK glyph.
+ */
+.docs-yoopta-view .list-decimal > span[data-slate-node="element"] {
+  padding-inline-end: 1px;
+}
+
 .docs-yoopta-view h1,
 .docs-yoopta-view h2,
 .docs-yoopta-view h3,

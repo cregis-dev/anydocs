@@ -1,7 +1,8 @@
 import type { DocContentV1, InlineNode } from '@anydocs/core';
-import { validateDocContentV1 } from '@anydocs/core';
+import { normalizeDocContent, validateDocContentV1, yooptaToDocContent } from '@anydocs/core';
 
 import { createHeadingIdGenerator, type TocItem } from './markdown.ts';
+import { getRenderableLegacyYooptaContent } from './legacy-yoopta-reader.ts';
 
 function inlineText(nodes: InlineNode[]): string {
   return nodes
@@ -19,12 +20,25 @@ function inlineText(nodes: InlineNode[]): string {
 
 export function getRenderableDocContent(content: unknown, title: string): DocContentV1 | null {
   const canonical = validateDocContentV1(content);
-  if (!canonical.ok) {
-    return null;
+  let nextContent: DocContentV1 | null = canonical.ok ? (content as DocContentV1) : null;
+
+  // Legacy Yoopta pages are still in circulation; normalize to canonical so
+  // reader rendering can avoid Slate-specific DOM/layout quirks.
+  if (!nextContent) {
+    const legacyContent = getRenderableLegacyYooptaContent(content, title);
+    if (!legacyContent) {
+      return null;
+    }
+
+    try {
+      nextContent = normalizeDocContent(yooptaToDocContent(legacyContent));
+    } catch {
+      return null;
+    }
   }
 
   const normalizedTitle = title.trim();
-  const blocks = [...(content as DocContentV1).blocks];
+  const blocks = [...nextContent.blocks];
   const [firstBlock] = blocks;
 
   if (
