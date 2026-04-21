@@ -7,9 +7,9 @@ export const classicDocsThemeManifest = {
   id: CLASSIC_DOCS_THEME_ID,
   label: 'Classic Docs',
   className: CLASSIC_DOCS_THEME_CLASS_NAME,
-  description: 'Balanced documentation shell with familiar sidebar navigation and compact header chrome.',
+  description: 'Compact reader shell with familiar sidebar navigation and a centered article lane.',
   tone: 'neutral / product docs',
-  recommendedFor: 'General product documentation, onboarding guides, and mixed reference content.',
+  recommendedFor: 'General product documentation, onboarding guides, and mixed reference content that should stay calm and centered.',
   capabilities: {
     supportedBlockTypes: [...DOCS_CANONICAL_BLOCK_TYPES],
     unsupportedBlockTypes: [],

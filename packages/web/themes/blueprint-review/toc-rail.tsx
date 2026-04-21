@@ -33,14 +33,14 @@ export function BlueprintTocRail({
       )}
       aria-label="Table of contents"
     >
-      <div className="flex h-full w-[220px] overflow-hidden bg-transparent 2xl:w-[248px]">
-        <div className="flex h-full w-full flex-col border-l pl-5 2xl:pl-6" data-blueprint-divider>
-          <div className="flex items-center justify-between gap-2 px-0 py-3">
+      <div className="flex h-full w-[240px] overflow-hidden rounded-[24px] border border-[color:var(--blueprint-divider)] bg-[color:color-mix(in_srgb,var(--blueprint-panel)_94%,transparent)] shadow-[0_16px_32px_rgba(15,23,42,0.05)] 2xl:w-[272px]">
+        <div className="flex h-full w-full flex-col px-4 py-4" data-blueprint-divider>
+          <div className="flex items-center justify-between gap-2 border-b pb-3" data-blueprint-divider>
             <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fd-muted-foreground">
               {copy.toc.title}
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden pr-2 2xl:pr-3">
+          <div className="min-h-0 flex-1 overflow-hidden pt-3">
             <DocsToc
               toc={toc}
               hideTitle

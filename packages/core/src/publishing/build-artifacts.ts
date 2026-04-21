@@ -1,7 +1,13 @@
+import { createHash } from 'node:crypto';
 import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { filterPublicPageMetadata } from '../services/page-template-service.ts';
+import {
+  buildReaderSearchFindArtifact,
+  READER_SEARCH_CHUNK_MAX_CHARS,
+  READER_SEARCH_CHUNK_OVERLAP_CHARS,
+} from '../search/index.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
 import type { NavItem, PageDoc } from '../types/docs.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
@@ -23,6 +29,7 @@ type MachineReadablePageDoc = {
   id: string;
   slug: string;
   href: string;
+  sourcePath: string;
   title: string;
   description: string;
   template?: string;
@@ -30,6 +37,8 @@ type MachineReadablePageDoc = {
   tags: string[];
   updatedAt: string | null;
   breadcrumbs: string[];
+  navPath: string[];
+  pageHash: string;
 };
 
 type MachineReadableChunkDoc = {
@@ -38,15 +47,20 @@ type MachineReadableChunkDoc = {
   lang: string;
   slug: string;
   href: string;
+  sourcePath: string;
   title: string;
+  pageTitle: string;
   description: string;
   headingPath: string[];
   breadcrumbs: string[];
+  navPath: string[];
   order: number;
   tags: string[];
   updatedAt: string | null;
   text: string;
+  enrichedText: string;
   summary?: string;
+  chunkHash: string;
   tokenEstimate: number;
 };
 
@@ -59,7 +73,9 @@ type SearchSection = {
 type MachineReadableArtifactIndex = {
   version: 1;
   generatedAt: string;
+  builtAt: string;
   projectId: string;
+  defaultLanguage: string;
   publicationRule: 'published-only';
   site: {
     theme: {
@@ -80,6 +96,7 @@ type MachineReadableArtifactIndex = {
     navigationItems: number;
     files: {
       searchIndex: string;
+      searchFind: string;
       navigation: string;
       pages: string;
       chunks: string;
@@ -153,6 +170,7 @@ type BuildManifest = {
       mcp: string;
       llms: string;
       searchIndexes: string[];
+      searchFindIndexes: string[];
     };
   }>;
   deployment: {
@@ -166,8 +184,12 @@ type SerializedSiteNavigationMetadata = {
   topNav?: ProjectSiteNavigation['topNav'];
 };
 
-const CHUNK_MAX_CHARS = 2000;
-const CHUNK_OVERLAP_CHARS = 200;
+const MACHINE_READABLE_CHUNK_MAX_CHARS = 2000;
+const MACHINE_READABLE_CHUNK_OVERLAP_CHARS = 200;
+
+function hashValue(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
 
 function stripMarkdown(markdown: string): string {
   return markdown
@@ -438,7 +460,11 @@ function extractMarkdownSections(markdown: string, title: string): SearchSection
   return sections;
 }
 
-function splitChunkText(text: string, maxChars = CHUNK_MAX_CHARS, overlapChars = CHUNK_OVERLAP_CHARS): string[] {
+function splitChunkText(
+  text: string,
+  maxChars = MACHINE_READABLE_CHUNK_MAX_CHARS,
+  overlapChars = MACHINE_READABLE_CHUNK_OVERLAP_CHARS,
+): string[] {
   const normalized = text.replace(/\s+/g, ' ').trim();
   if (!normalized) {
     return [];
@@ -494,6 +520,68 @@ function getSearchSections(page: PageDoc): SearchSection[] {
     : [];
 }
 
+function buildPageHash(
+  projectId: string,
+  site: BuildWorkflowPublishedSiteResult,
+  page: PageDoc,
+  breadcrumbs: string[],
+): string {
+  const { plainText } = getPageText(page);
+
+  return hashValue({
+    projectId,
+    lang: site.lang,
+    pageId: page.id,
+    slug: page.slug,
+    href: `/${site.lang}/${page.slug}`,
+    title: page.title,
+    description: page.description ?? '',
+    breadcrumbs,
+    tags: page.tags ?? [],
+    updatedAt: page.updatedAt ?? null,
+    text: plainText,
+  });
+}
+
+function buildEnrichedText(input: {
+  lang: string;
+  title: string;
+  breadcrumbs: string[];
+  headingPath: string[];
+  href: string;
+  text: string;
+}): string {
+  const lines = [`Language: ${input.lang}`, `Title: ${input.title}`];
+
+  if (input.breadcrumbs.length > 0) {
+    lines.push(`Navigation: ${input.breadcrumbs.join(' > ')}`);
+  }
+
+  if (input.headingPath.length > 0) {
+    lines.push(`Section: ${input.headingPath.join(' > ')}`);
+  }
+
+  lines.push(`Page: ${input.href}`);
+  lines.push('Content:');
+  lines.push(input.text);
+
+  return lines.join('\n');
+}
+
+function buildChunkHash(input: {
+  projectId: string;
+  lang: string;
+  pageId: string;
+  chunkId: string;
+  href: string;
+  title: string;
+  headingPath: string[];
+  breadcrumbs: string[];
+  text: string;
+}): string {
+  return hashValue(input);
+}
+
 function toReaderSearchDocs(
   site: BuildWorkflowPublishedSiteResult,
   page: PageDoc,
@@ -515,28 +603,65 @@ function toReaderSearchDocs(
     .filter((entry) => entry.text);
 }
 
-function toChunkDocs(site: BuildWorkflowPublishedSiteResult, page: PageDoc, breadcrumbs: string[]): MachineReadableChunkDoc[] {
+function toChunkDocs(
+  projectId: string,
+  site: BuildWorkflowPublishedSiteResult,
+  page: PageDoc,
+  breadcrumbs: string[],
+  options?: {
+    maxChars?: number;
+    overlapChars?: number;
+  },
+): MachineReadableChunkDoc[] {
   const sections = getSearchSections(page);
 
   const chunks: MachineReadableChunkDoc[] = [];
   let order = 1;
+  const maxChars = options?.maxChars ?? MACHINE_READABLE_CHUNK_MAX_CHARS;
+  const overlapChars = options?.overlapChars ?? MACHINE_READABLE_CHUNK_OVERLAP_CHARS;
 
   for (const section of sections) {
-    for (const chunkText of splitChunkText(section.text)) {
+    for (const chunkText of splitChunkText(section.text, maxChars, overlapChars)) {
+      const href = `/${site.lang}/${page.slug}`;
+      const chunkId = `${page.id}#${String(order).padStart(4, '0')}`;
+      const enrichedText = buildEnrichedText({
+        lang: site.lang,
+        title: page.title,
+        breadcrumbs,
+        headingPath: section.headingPath,
+        href,
+        text: chunkText,
+      });
+
       chunks.push({
-        id: `${page.id}#${String(order).padStart(4, '0')}`,
+        id: chunkId,
         pageId: page.id,
         lang: site.lang,
         slug: page.slug,
-        href: `/${site.lang}/${page.slug}`,
+        href,
+        sourcePath: href,
         title: page.title,
+        pageTitle: page.title,
         description: page.description ?? '',
         headingPath: section.headingPath,
         breadcrumbs,
+        navPath: breadcrumbs,
         order,
         tags: page.tags ?? [],
         updatedAt: page.updatedAt ?? null,
         text: chunkText,
+        enrichedText,
+        chunkHash: buildChunkHash({
+          projectId,
+          lang: site.lang,
+          pageId: page.id,
+          chunkId,
+          href,
+          title: page.title,
+          headingPath: section.headingPath,
+          breadcrumbs,
+          text: chunkText,
+        }),
         tokenEstimate: Math.max(1, Math.ceil(chunkText.length / 4)),
       });
       order += 1;
@@ -554,14 +679,36 @@ function toChunkDocs(site: BuildWorkflowPublishedSiteResult, page: PageDoc, brea
       lang: site.lang,
       slug: page.slug,
       href: `/${site.lang}/${page.slug}`,
+      sourcePath: `/${site.lang}/${page.slug}`,
       title: page.title,
+      pageTitle: page.title,
       description: page.description ?? '',
       headingPath: [],
       breadcrumbs,
+      navPath: breadcrumbs,
       order: 1,
       tags: page.tags ?? [],
       updatedAt: page.updatedAt ?? null,
       text: page.title.trim(),
+      enrichedText: buildEnrichedText({
+        lang: site.lang,
+        title: page.title,
+        breadcrumbs,
+        headingPath: [],
+        href: `/${site.lang}/${page.slug}`,
+        text: page.title.trim(),
+      }),
+      chunkHash: buildChunkHash({
+        projectId,
+        lang: site.lang,
+        pageId: page.id,
+        chunkId: `${page.id}#0001`,
+        href: `/${site.lang}/${page.slug}`,
+        title: page.title,
+        headingPath: [],
+        breadcrumbs,
+        text: page.title.trim(),
+      }),
       tokenEstimate: Math.max(1, Math.ceil(page.title.trim().length / 4)),
     },
   ];
@@ -601,12 +748,12 @@ async function cleanupLegacyLanguageArtifacts(
   try {
     const artifactFiles = await readdir(artifactRoot);
     for (const fileName of artifactFiles) {
-      const searchMatch = /^search-index\.(.+)\.json$/.exec(fileName);
+      const searchMatch = /^(search-index|search-find)\.(.+)\.json$/.exec(fileName);
       if (!searchMatch) {
         continue;
       }
 
-      const language = searchMatch[1];
+      const language = searchMatch[2];
       if (enabledLanguages.has(language)) {
         continue;
       }
@@ -664,38 +811,61 @@ export async function writePublishedArtifacts(
       version: site.content.navigation.version,
       items: site.content.navigation.items,
     };
+    const chunkDocs = site.content.pages.flatMap((page) =>
+      toChunkDocs(contract.config.projectId, site, page, breadcrumbsById.get(page.id) ?? [])
+    );
+    const readerSearchChunkDocs = site.content.pages.flatMap((page) =>
+      toChunkDocs(contract.config.projectId, site, page, breadcrumbsById.get(page.id) ?? [], {
+        maxChars: READER_SEARCH_CHUNK_MAX_CHARS,
+        overlapChars: READER_SEARCH_CHUNK_OVERLAP_CHARS,
+      })
+    );
+    const searchFindArtifact = buildReaderSearchFindArtifact({
+      projectId: contract.config.projectId,
+      lang: site.lang,
+      generatedAt,
+      chunks: readerSearchChunkDocs,
+    });
     const chunkArtifact = {
       lang: site.lang,
       generatedAt,
+      builtAt: generatedAt,
       chunking: {
         strategy: 'heading-aware',
-        maxChars: CHUNK_MAX_CHARS,
-        overlapChars: CHUNK_OVERLAP_CHARS,
+        maxChars: MACHINE_READABLE_CHUNK_MAX_CHARS,
+        overlapChars: MACHINE_READABLE_CHUNK_OVERLAP_CHARS,
       },
-      chunks: site.content.pages.flatMap((page) => toChunkDocs(site, page, breadcrumbsById.get(page.id) ?? [])),
+      chunks: chunkDocs,
     };
     const pagesArtifact = {
       lang: site.lang,
       generatedAt,
+      builtAt: generatedAt,
       pages: site.content.pages.map((page): MachineReadablePageDoc => {
         const publicMetadata = filterPublicPageMetadata(page, contract.config);
+        const href = `/${site.lang}/${page.slug}`;
+        const breadcrumbs = breadcrumbsById.get(page.id) ?? [];
 
         return {
           id: page.id,
           slug: page.slug,
-          href: `/${site.lang}/${page.slug}`,
+          href,
+          sourcePath: href,
           title: page.title,
           description: page.description ?? '',
           ...(page.template ? { template: page.template } : {}),
           ...(publicMetadata ? { metadata: publicMetadata } : {}),
           tags: page.tags ?? [],
           updatedAt: page.updatedAt ?? null,
-          breadcrumbs: breadcrumbsById.get(page.id) ?? [],
+          breadcrumbs,
+          navPath: breadcrumbs,
+          pageHash: buildPageHash(contract.config.projectId, site, page, breadcrumbs),
         };
       }),
     };
 
     await writeJson(languagePaths.searchIndexFile, searchIndex);
+    await writeJson(path.join(outputRoot, `search-find.${site.lang}.json`), searchFindArtifact);
     await writeJson(path.join(contract.paths.machineReadableRoot, `navigation.${site.lang}.json`), navigationArtifact);
     await writeJson(path.join(contract.paths.machineReadableRoot, `pages.${site.lang}.json`), pagesArtifact);
     await writeJson(path.join(contract.paths.machineReadableRoot, `chunks.${site.lang}.json`), chunkArtifact);
@@ -704,7 +874,9 @@ export async function writePublishedArtifacts(
   const machineReadableIndex: MachineReadableArtifactIndex = {
     version: 1,
     generatedAt,
+    builtAt: generatedAt,
     projectId: contract.config.projectId,
+    defaultLanguage: contract.config.defaultLanguage,
     publicationRule: 'published-only',
     site: {
       theme: serializeThemeMetadata(contract.config.site.theme),
@@ -716,6 +888,7 @@ export async function writePublishedArtifacts(
       navigationItems: countNavigationItems(site.content.navigation.items),
       files: {
         searchIndex: `../search-index.${site.lang}.json`,
+        searchFind: `../search-find.${site.lang}.json`,
         navigation: `navigation.${site.lang}.json`,
         pages: `pages.${site.lang}.json`,
         chunks: `chunks.${site.lang}.json`,
@@ -770,6 +943,7 @@ export async function writePublishedArtifacts(
           searchIndexes: contract.config.languages.map((lang) =>
             path.relative(outputRoot, contract.paths.languageRoots[lang].searchIndexFile)
           ),
+          searchFindIndexes: contract.config.languages.map((lang) => `search-find.${lang}.json`),
         },
       },
     ],

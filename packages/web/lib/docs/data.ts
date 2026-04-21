@@ -19,6 +19,7 @@ import {
 import { getPublishedApiSources } from '@/lib/docs/api-sources';
 import { sanitizeCookieDocsSource, type DocsRuntimeSource } from '@/lib/docs/request-source';
 import type { DocsLang, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
+import { readCliDocsRuntimeMode, readRuntimeConfig } from '@/lib/runtime/runtime-config';
 export type { DocsRuntimeSource } from '@/lib/docs/request-source';
 
 export type PublishedStaticParam = {
@@ -31,38 +32,24 @@ export type PublishedContext = {
   pages: PublishedPageDoc[];
 };
 
-function normalizeOptionalString(value?: string | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
 export function isDesktopRuntimeEnabled(): boolean {
-  return process.env.ANYDOCS_DESKTOP_RUNTIME === '1';
+  return readRuntimeConfig().isDesktopRuntime;
 }
 
 export function getCliDocsRuntimeMode(): 'export' | 'preview' | null {
-  return process.env.ANYDOCS_DOCS_RUNTIME === 'export' || process.env.ANYDOCS_DOCS_RUNTIME === 'preview'
-    ? process.env.ANYDOCS_DOCS_RUNTIME
-    : null;
+  return readCliDocsRuntimeMode();
 }
 
 export function getCliDocsSourceFromEnv(): DocsRuntimeSource | null {
-  if (!getCliDocsRuntimeMode()) {
-    return null;
-  }
+  const runtime = readRuntimeConfig();
 
-  const customPath = normalizeOptionalString(process.env.ANYDOCS_DOCS_PROJECT_ROOT);
-  if (!customPath) {
+  if (!runtime.docs) {
     return null;
   }
 
   return {
-    projectId: normalizeOptionalString(process.env.ANYDOCS_DOCS_PROJECT_ID) ?? '',
-    customPath,
+    projectId: runtime.docs.projectId,
+    customPath: runtime.docs.projectRoot,
   };
 }
 
@@ -236,4 +223,10 @@ export function getReaderSearchIndexHref(lang: DocsLang): string {
   return getCliDocsRuntimeMode() === 'preview'
     ? `/api/docs/search-index?lang=${lang}`
     : `/search-index.${lang}.json`;
+}
+
+export function getReaderSearchFindHref(lang: DocsLang): string {
+  return getCliDocsRuntimeMode() === 'preview'
+    ? `/api/docs/search-find?lang=${lang}`
+    : `/search-find.${lang}.json`;
 }

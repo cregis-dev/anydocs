@@ -1,5 +1,6 @@
 import { loadProjectContract } from '../fs/content-repository.ts';
 import { loadPublishedSiteBuildArtifacts } from './build-service.ts';
+import { writePublishedArtifacts } from '../publishing/build-artifacts.ts';
 import type { DocsLanguage } from '../types/project.ts';
 
 export type PreviewWorkflowOptions = {
@@ -55,6 +56,8 @@ export async function runPreviewWorkflow(options: PreviewWorkflowOptions): Promi
   }
 
   const contract = contractResult.value;
+  const siteArtifacts = await loadPublishedSiteBuildArtifacts(options);
+  await writePublishedArtifacts(contract, siteArtifacts);
   const { startDocsPreviewServer } = await import('./web-runtime-bridge.ts');
   const server = await startDocsPreviewServer({
     projectRoot: contract.paths.projectRoot,

@@ -1,20 +1,31 @@
-'use client';
+"use client";
 
-import type { CSSProperties, MouseEvent } from 'react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
-import type { ProjectSiteTopNavItem } from '@anydocs/core';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import type { CSSProperties, MouseEvent } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import type { ProjectSiteTopNavItem } from "@anydocs/core";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
 
-import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
-import { SearchPanel } from '@/components/docs/search-panel';
-import { DocsSidebar } from '@/components/docs/sidebar';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import type { DocsThemeReaderLayoutProps } from '@/lib/themes/types';
-import { cn } from '@/lib/utils';
+import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
+import { SearchPanel } from "@/components/docs/search-panel";
+import { DocsSidebar } from "@/components/docs/sidebar";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import type { DocsThemeReaderLayoutProps } from "@/lib/themes/types";
+import { cn } from "@/lib/utils";
 import {
   buildTopNavHref,
   buildLanguageHref,
@@ -22,30 +33,38 @@ import {
   normalizeRoutePath,
   resolveFilteredNavigation,
   resolveTopNavLabel,
-} from '@/lib/themes/atlas-nav';
-import { ATLAS_DOCS_THEME_CLASS_NAME } from '@/themes/atlas-docs/manifest';
+} from "@/lib/themes/atlas-nav";
+import { ATLAS_DOCS_THEME_CLASS_NAME } from "@/themes/atlas-docs/manifest";
 
 function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
-  return !event.defaultPrevented && event.button === 0 && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+  );
 }
 
-function getAtlasDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteTheme']) {
+function getAtlasDocsThemeStyle(
+  siteTheme: DocsThemeReaderLayoutProps["siteTheme"],
+) {
   const colors = siteTheme.colors ?? {};
   const style: CSSProperties & Record<string, string> = {};
 
-  if (colors.primary) style['--atlas-primary'] = colors.primary;
-  if (colors.primaryForeground) style['--atlas-primary-foreground'] = colors.primaryForeground;
-  if (colors.accent) style['--atlas-accent'] = colors.accent;
-  if (colors.accentForeground) style['--atlas-accent-foreground'] = colors.accentForeground;
+  if (colors.primary) style["--atlas-primary"] = colors.primary;
+  if (colors.primaryForeground)
+    style["--atlas-primary-foreground"] = colors.primaryForeground;
+  if (colors.accent) style["--atlas-accent"] = colors.accent;
+  if (colors.accentForeground)
+    style["--atlas-accent-foreground"] = colors.accentForeground;
 
   return style;
 }
 
 const LANGUAGE_META: Record<string, { label: string }> = {
-  en: { label: 'English' },
-  es: { label: 'Español' },
-  fr: { label: 'Français' },
-  zh: { label: '简体中文' },
+  en: { label: "English" },
+  es: { label: "Español" },
+  fr: { label: "Français" },
+  zh: { label: "简体中文" },
 };
 
 function getLanguageLabel(language: string) {
@@ -59,11 +78,11 @@ type TopNavLinkEntry = {
 };
 
 type TopNavGroupEntry = TopNavLinkEntry & {
-  item: Extract<ProjectSiteTopNavItem, { type: 'nav-group' }>;
+  item: Extract<ProjectSiteTopNavItem, { type: "nav-group" }>;
 };
 
 type TopNavExternalEntry = TopNavLinkEntry & {
-  item: Extract<ProjectSiteTopNavItem, { type: 'external' }>;
+  item: Extract<ProjectSiteTopNavItem, { type: "external" }>;
 };
 
 export function AtlasDocsReaderLayout({
@@ -72,6 +91,7 @@ export function AtlasDocsReaderLayout({
   availableLanguages,
   nav,
   pages,
+  searchFindHref,
   searchIndexHref,
   projectName,
   siteTheme,
@@ -83,15 +103,22 @@ export function AtlasDocsReaderLayout({
   const normalizedPathname = normalizeRoutePath(pathname);
   const referenceRoot = normalizeRoutePath(`/${lang}/reference`);
   const isReferenceRoute =
-    normalizedPathname === referenceRoot || normalizedPathname.startsWith(`${referenceRoot}/`);
+    normalizedPathname === referenceRoot ||
+    normalizedPathname.startsWith(`${referenceRoot}/`);
   const topNav = useMemo(() => siteNavigation?.topNav ?? [], [siteNavigation]);
-  const [optimisticNavState, setOptimisticNavState] = useState<{ groupId: string; sourcePath: string } | null>(null);
+  const [optimisticNavState, setOptimisticNavState] = useState<{
+    groupId: string;
+    sourcePath: string;
+  } | null>(null);
   const [, startTransition] = useTransition();
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const configuredSiteTitle = siteTheme.branding?.siteTitle?.trim();
   const logoSrc = siteTheme.branding?.logoSrc;
   const logoAlt = siteTheme.branding?.logoAlt;
-  const siteTitle = configuredSiteTitle ?? projectName?.trim() ?? (!logoSrc ? 'Atlas Docs' : '');
+  const siteTitle =
+    configuredSiteTitle ??
+    projectName?.trim() ??
+    (!logoSrc ? "Atlas Docs" : "");
   const themeStyle = getAtlasDocsThemeStyle(siteTheme);
   const showLanguageSwitcher = availableLanguages.length > 1;
   const activeLanguageLabel = getLanguageLabel(lang);
@@ -123,32 +150,36 @@ export function AtlasDocsReaderLayout({
   );
 
   const domainNavLinks = useMemo(
-    () => topNavLinks.filter(
-      (entry): entry is TopNavGroupEntry | TopNavExternalEntry =>
-        entry.item.type === 'nav-group' ||
-        (entry.item.type === 'external' && entry.item.href.startsWith('/')),
-    ),
+    () =>
+      topNavLinks.filter(
+        (entry): entry is TopNavGroupEntry | TopNavExternalEntry =>
+          entry.item.type === "nav-group" ||
+          (entry.item.type === "external" && entry.item.href.startsWith("/")),
+      ),
     [topNavLinks],
   );
 
   const utilityNavLinks = useMemo(
-    () => topNavLinks.filter(
-      (entry): entry is TopNavExternalEntry =>
-        entry.item.type === 'external' && !entry.item.href.startsWith('/'),
-    ),
+    () =>
+      topNavLinks.filter(
+        (entry): entry is TopNavExternalEntry =>
+          entry.item.type === "external" && !entry.item.href.startsWith("/"),
+      ),
     [topNavLinks],
   );
 
   useEffect(() => {
     for (const entry of topNavLinks) {
-      if (entry.item.type === 'nav-group') {
+      if (entry.item.type === "nav-group") {
         router.prefetch(entry.href);
       }
     }
   }, [router, topNavLinks]);
 
   const effectiveActiveGroupId =
-    optimisticNavState && optimisticNavState.sourcePath === pathname ? optimisticNavState.groupId : activeGroupId;
+    optimisticNavState && optimisticNavState.sourcePath === pathname
+      ? optimisticNavState.groupId
+      : activeGroupId;
   const effectiveFilteredNav = useMemo(() => {
     if (!effectiveActiveGroupId) {
       return filteredNav;
@@ -157,7 +188,11 @@ export function AtlasDocsReaderLayout({
     return filterNavigationToGroup(nav, effectiveActiveGroupId);
   }, [effectiveActiveGroupId, filteredNav, nav]);
 
-  const handleTopNavGroupNavigate = (event: MouseEvent<HTMLAnchorElement>, groupId: string, href: string) => {
+  const handleTopNavGroupNavigate = (
+    event: MouseEvent<HTMLAnchorElement>,
+    groupId: string,
+    href: string,
+  ) => {
     if (!isPlainLeftClick(event)) {
       return;
     }
@@ -180,11 +215,14 @@ export function AtlasDocsReaderLayout({
   };
 
   const isTopNavEntryActive = (entry: TopNavLinkEntry) =>
-    (entry.item.type === 'nav-group' && entry.item.groupId === effectiveActiveGroupId) ||
-    (entry.item.type === 'external' &&
-      entry.item.href.startsWith('/') &&
+    (entry.item.type === "nav-group" &&
+      entry.item.groupId === effectiveActiveGroupId) ||
+    (entry.item.type === "external" &&
+      entry.item.href.startsWith("/") &&
       (normalizedPathname === normalizeRoutePath(entry.item.href) ||
-        normalizedPathname.startsWith(`${normalizeRoutePath(entry.item.href)}/`)));
+        normalizedPathname.startsWith(
+          `${normalizeRoutePath(entry.item.href)}/`,
+        )));
 
   const headerOffset = domainNavLinks.length > 0 ? 108 : 60;
 
@@ -214,31 +252,47 @@ export function AtlasDocsReaderLayout({
   );
 
   return (
-    <div className={`${ATLAS_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`} style={themeStyle}>
+    <div
+      className={`${ATLAS_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`}
+      style={themeStyle}
+    >
       <header className="sticky top-0 z-40 bg-[color:var(--atlas-header)] backdrop-blur">
         <div className="relative z-30 border-b border-[color:color-mix(in_srgb,var(--fd-border)_78%,white)]">
           <div className="mx-auto flex h-[64px] max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
-            <Link href={`/${lang}`} className="flex min-w-0 shrink-0 items-center gap-3">
+            <Link
+              href={`/${lang}`}
+              className="flex min-w-0 shrink-0 items-center gap-3"
+            >
               {logoSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={logoSrc}
-                  alt={logoAlt ?? (siteTitle ? `${siteTitle} logo` : copy.common.projectLogoAlt)}
+                  alt={
+                    logoAlt ??
+                    (siteTitle
+                      ? `${siteTitle} logo`
+                      : copy.common.projectLogoAlt)
+                  }
                   className="h-7 w-auto object-contain"
                 />
               ) : null}
-              {siteTitle ? <span className="truncate text-[15px] font-semibold text-fd-foreground sm:text-base">{siteTitle}</span> : null}
+              {siteTitle ? (
+                <span className="truncate text-[15px] font-semibold text-fd-foreground sm:text-base">
+                  {siteTitle}
+                </span>
+              ) : null}
             </Link>
 
             {showSearch ? (
               <div className="hidden min-w-0 flex-1 lg:!flex lg:justify-center">
                 <SearchPanel
                   lang={lang}
+                  findHref={searchFindHref}
                   indexHref={searchIndexHref}
                   placeholder={copy.sidebar.searchPlaceholder}
                   className="relative w-full max-w-[520px]"
                   inputClassName="h-11 rounded-2xl border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--atlas-search-background)] px-4 text-[14px] shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
-                  resultsClassName="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(28rem,calc(100dvh-7rem))] rounded-2xl border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.10)]"
+                  resultsClassName="rounded-[24px] border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.10)]"
                 />
               </div>
             ) : (
@@ -249,15 +303,22 @@ export function AtlasDocsReaderLayout({
               {utilityNavLinks.map((entry) => {
                 const active = isTopNavEntryActive(entry);
                 const className = cn(
-                  'inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200',
+                  "inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200",
                   active
-                    ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                    : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                    ? "bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]"
+                    : "text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground",
                 );
 
-                if (entry.item.href.startsWith('/') && !entry.item.openInNewTab) {
+                if (
+                  entry.item.href.startsWith("/") &&
+                  !entry.item.openInNewTab
+                ) {
                   return (
-                    <Link key={entry.item.id} href={entry.item.href} className={className}>
+                    <Link
+                      key={entry.item.id}
+                      href={entry.item.href}
+                      className={className}
+                    >
                       {entry.label}
                     </Link>
                   );
@@ -267,8 +328,12 @@ export function AtlasDocsReaderLayout({
                   <a
                     key={entry.item.id}
                     href={entry.item.href}
-                    target={entry.item.openInNewTab ? '_blank' : undefined}
-                    rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                    target={entry.item.openInNewTab ? "_blank" : undefined}
+                    rel={
+                      entry.item.openInNewTab
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
                     className={className}
                   >
                     {entry.label}
@@ -302,29 +367,41 @@ export function AtlasDocsReaderLayout({
 
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="secondary" size="icon" className="ml-auto rounded-lg lg:!hidden">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="ml-auto rounded-lg lg:!hidden"
+                >
                   <Menu className="h-4 w-4" />
                   <span className="sr-only">{copy.common.openNavigation}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="left-0 top-0 h-dvh max-w-[20.5rem] translate-x-0 translate-y-0 rounded-none border-r border-fd-border bg-fd-background p-0">
-                <DialogTitle className="sr-only">{copy.common.documentationNavigation}</DialogTitle>
-                <DialogDescription className="sr-only">{copy.common.navigationDialogDescription}</DialogDescription>
+                <DialogTitle className="sr-only">
+                  {copy.common.documentationNavigation}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {copy.common.navigationDialogDescription}
+                </DialogDescription>
                 <div className="space-y-3 border-b border-fd-border px-3 py-3">
                   {showSearch ? (
                     <SearchPanel
                       lang={lang}
+                      findHref={searchFindHref}
+                      indexHref={searchIndexHref}
                       placeholder={copy.sidebar.searchPlaceholder}
                       className="relative"
                       inputClassName="h-10 rounded-xl border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--atlas-search-background)] px-3.5 text-[13px] shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
-                      resultsClassName="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.10)]"
+                      resultsClassName="rounded-[22px] border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.10)]"
                     />
                   ) : null}
 
                   {showLanguageSwitcher ? (
                     <Select value={lang} onValueChange={handleLanguageChange}>
                       <SelectTrigger className="inline-flex h-10 w-full rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                        <span className="truncate pr-2">{activeLanguageLabel}</span>
+                        <span className="truncate pr-2">
+                          {activeLanguageLabel}
+                        </span>
                       </SelectTrigger>
                       <SelectContent
                         inPortal={false}
@@ -349,15 +426,22 @@ export function AtlasDocsReaderLayout({
                       {utilityNavLinks.map((entry) => {
                         const active = isTopNavEntryActive(entry);
                         const className = cn(
-                          'inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-medium leading-4 transition-colors duration-200',
+                          "inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-medium leading-4 transition-colors duration-200",
                           active
-                            ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                            : 'text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                            ? "bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]"
+                            : "text-[color:var(--atlas-top-nav-link)] hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground",
                         );
 
-                        if (entry.item.href.startsWith('/') && !entry.item.openInNewTab) {
+                        if (
+                          entry.item.href.startsWith("/") &&
+                          !entry.item.openInNewTab
+                        ) {
                           return (
-                            <Link key={entry.item.id} href={entry.item.href} className={className}>
+                            <Link
+                              key={entry.item.id}
+                              href={entry.item.href}
+                              className={className}
+                            >
                               {entry.label}
                             </Link>
                           );
@@ -367,8 +451,14 @@ export function AtlasDocsReaderLayout({
                           <a
                             key={entry.item.id}
                             href={entry.item.href}
-                            target={entry.item.openInNewTab ? '_blank' : undefined}
-                            rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                            target={
+                              entry.item.openInNewTab ? "_blank" : undefined
+                            }
+                            rel={
+                              entry.item.openInNewTab
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
                             className={className}
                           >
                             {entry.label}
@@ -383,27 +473,40 @@ export function AtlasDocsReaderLayout({
                       {domainNavLinks.map((entry) => {
                         const active = isTopNavEntryActive(entry);
                         const mobileLinkClassName = cn(
-                          'flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] font-medium leading-4 transition-colors duration-200',
+                          "flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-center text-[11px] font-medium leading-4 transition-colors duration-200",
                           active
-                            ? 'bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]'
-                            : 'text-fd-muted-foreground hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground',
+                            ? "bg-[color:var(--atlas-top-nav-active-background)] text-fd-foreground ring-1 ring-inset ring-[color:var(--atlas-top-nav-active-border)]"
+                            : "text-fd-muted-foreground hover:bg-[color:var(--atlas-sidebar-hover)] hover:text-fd-foreground",
                         );
 
-                        if (entry.item.type === 'nav-group') {
+                        if (entry.item.type === "nav-group") {
                           return (
                             <Link
                               key={entry.item.id}
                               href={entry.href}
                               className={mobileLinkClassName}
-                              onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
+                              onClick={(event) =>
+                                handleTopNavGroupNavigate(
+                                  event,
+                                  (entry as TopNavGroupEntry).item.groupId,
+                                  entry.href,
+                                )
+                              }
                             >
                               {entry.label}
                             </Link>
                           );
                         }
-                        if (entry.href.startsWith('/') && !entry.item.openInNewTab) {
+                        if (
+                          entry.href.startsWith("/") &&
+                          !entry.item.openInNewTab
+                        ) {
                           return (
-                            <Link key={entry.item.id} href={entry.href} className={mobileLinkClassName}>
+                            <Link
+                              key={entry.item.id}
+                              href={entry.href}
+                              className={mobileLinkClassName}
+                            >
                               {entry.label}
                             </Link>
                           );
@@ -413,8 +516,14 @@ export function AtlasDocsReaderLayout({
                           <a
                             key={entry.item.id}
                             href={entry.href}
-                            target={entry.item.openInNewTab ? '_blank' : undefined}
-                            rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                            target={
+                              entry.item.openInNewTab ? "_blank" : undefined
+                            }
+                            rel={
+                              entry.item.openInNewTab
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
                             className={mobileLinkClassName}
                           >
                             {entry.label}
@@ -429,6 +538,7 @@ export function AtlasDocsReaderLayout({
                     lang={lang}
                     nav={effectiveFilteredNav}
                     pages={pages}
+                    searchFindHref={searchFindHref}
                     searchIndexHref={searchIndexHref}
                     showHomeLink={false}
                     showSearch={false}
@@ -453,27 +563,37 @@ export function AtlasDocsReaderLayout({
                 {domainNavLinks.map((entry) => {
                   const active = isTopNavEntryActive(entry);
                   const linkClassName = cn(
-                    'inline-flex h-full shrink-0 items-center border-b-2 border-transparent px-0 pb-[8px] pt-[2px] text-[15px] tracking-[-0.015em] transition-colors duration-200',
+                    "inline-flex h-full shrink-0 items-center border-b-2 border-transparent px-0 pb-[8px] pt-[2px] text-[15px] tracking-[-0.015em] transition-colors duration-200",
                     active
-                      ? 'border-[color:var(--atlas-foreground)] font-semibold text-fd-foreground'
-                      : 'font-medium text-[color:var(--atlas-top-nav-link)] hover:text-fd-foreground',
+                      ? "border-[color:var(--atlas-foreground)] font-semibold text-fd-foreground"
+                      : "font-medium text-[color:var(--atlas-top-nav-link)] hover:text-fd-foreground",
                   );
 
-                  if (entry.item.type === 'nav-group') {
+                  if (entry.item.type === "nav-group") {
                     return (
                       <Link
                         key={entry.item.id}
                         href={entry.href}
                         className={linkClassName}
-                        onClick={(event) => handleTopNavGroupNavigate(event, (entry as TopNavGroupEntry).item.groupId, entry.href)}
+                        onClick={(event) =>
+                          handleTopNavGroupNavigate(
+                            event,
+                            (entry as TopNavGroupEntry).item.groupId,
+                            entry.href,
+                          )
+                        }
                       >
                         {entry.label}
                       </Link>
                     );
                   }
-                  if (entry.href.startsWith('/') && !entry.item.openInNewTab) {
+                  if (entry.href.startsWith("/") && !entry.item.openInNewTab) {
                     return (
-                      <Link key={entry.item.id} href={entry.href} className={linkClassName}>
+                      <Link
+                        key={entry.item.id}
+                        href={entry.href}
+                        className={linkClassName}
+                      >
                         {entry.label}
                       </Link>
                     );
@@ -483,8 +603,12 @@ export function AtlasDocsReaderLayout({
                     <a
                       key={entry.item.id}
                       href={entry.href}
-                      target={entry.item.openInNewTab ? '_blank' : undefined}
-                      rel={entry.item.openInNewTab ? 'noopener noreferrer' : undefined}
+                      target={entry.item.openInNewTab ? "_blank" : undefined}
+                      rel={
+                        entry.item.openInNewTab
+                          ? "noopener noreferrer"
+                          : undefined
+                      }
                       className={linkClassName}
                     >
                       {entry.label}
@@ -499,19 +623,30 @@ export function AtlasDocsReaderLayout({
 
       <div
         className={cn(
-          'mx-auto lg:!max-w-[1600px]',
-          !isReferenceRoute && 'lg:!grid lg:!grid-cols-[296px_minmax(0,1fr)]',
+          "mx-auto lg:!max-w-[1600px]",
+          !isReferenceRoute && "lg:!grid lg:!grid-cols-[296px_minmax(0,1fr)]",
         )}
         style={{ minHeight: `calc(100dvh - ${headerOffset}px)` }}
       >
         {!isReferenceRoute ? (
           <aside className="hidden border-r border-[color:color-mix(in_srgb,var(--fd-border)_74%,white)] bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
-            <div className="sticky overflow-hidden" style={{ top: `${headerOffset}px`, height: `calc(100dvh - ${headerOffset}px)` }}>
+            <div
+              className="sticky overflow-hidden"
+              style={{
+                top: `${headerOffset}px`,
+                height: `calc(100dvh - ${headerOffset}px)`,
+              }}
+            >
               {desktopSidebar}
             </div>
           </aside>
         ) : null}
-        <main className={cn('min-w-0 bg-[color:var(--atlas-body-background)]', !isReferenceRoute && 'lg:col-start-2')}>
+        <main
+          className={cn(
+            "min-w-0 bg-[color:var(--atlas-body-background)]",
+            !isReferenceRoute && "lg:col-start-2",
+          )}
+        >
           {children}
         </main>
       </div>

@@ -149,6 +149,16 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
       lang: string;
       docs: Array<{ pageSlug: string; pageTitle: string; sectionTitle: string; href: string }>;
     };
+    const searchFind = JSON.parse(
+      await readFile(path.join(result.artifactRoot, 'search-find.en.json'), 'utf8'),
+    ) as {
+      version: number;
+      lang: string;
+      engine: string;
+      docType: string;
+      chunking: { maxChars: number; overlapChars: number };
+      index: Record<string, unknown>;
+    };
     const referenceRoot = await readFile(
       path.join(result.artifactRoot, 'en', 'reference', 'index.html'),
       'utf8',
@@ -162,17 +172,33 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
       await readFile(path.join(result.machineReadableRoot, 'chunks.en.json'), 'utf8'),
     ) as {
       lang: string;
+      builtAt: string;
       chunking: { strategy: string; maxChars: number; overlapChars: number };
-      chunks: Array<{ pageId: string; href: string; text: string; order: number }>;
+      chunks: Array<{
+        pageId: string;
+        href: string;
+        sourcePath: string;
+        pageTitle: string;
+        navPath: string[];
+        text: string;
+        enrichedText: string;
+        chunkHash: string;
+        order: number;
+      }>;
     };
     const mcpIndex = JSON.parse(await readFile(path.join(result.machineReadableRoot, 'index.json'), 'utf8')) as {
       version: number;
+      builtAt: string;
+      defaultLanguage: string;
       site: { theme: { id: string; codeTheme?: string } };
-      languages: Array<{ lang: string; files: { searchIndex: string; chunks: string } }>;
+      languages: Array<{ lang: string; files: { searchIndex: string; searchFind: string; chunks: string } }>;
     };
     const manifest = JSON.parse(await readFile(path.join(result.artifactRoot, 'build-manifest.json'), 'utf8')) as {
       source: { site: { theme: { id: string; codeTheme?: string } } };
-      projects: Array<{ site: { theme: { id: string; codeTheme?: string } }; artifacts: { site: string; searchIndexes: string[] } }>;
+      projects: Array<{
+        site: { theme: { id: string; codeTheme?: string } };
+        artifacts: { site: string; searchIndexes: string[]; searchFindIndexes: string[] };
+      }>;
     };
 
     assert.match(rootIndex, /\/en(?!\/docs)/);
@@ -189,21 +215,40 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.equal(searchIndex.docs[0]?.pageTitle, 'Welcome');
     assert.ok('sectionTitle' in (searchIndex.docs[0] ?? {}));
     assert.ok('href' in (searchIndex.docs[0] ?? {}));
+    assert.equal(searchFind.version, 2);
+    assert.equal(searchFind.lang, 'en');
+    assert.equal(searchFind.engine, 'minisearch');
+    assert.equal(searchFind.docType, 'chunk');
+    assert.equal(searchFind.chunking.maxChars, 800);
+    assert.equal(searchFind.chunking.overlapChars, 100);
+    assert.equal(typeof searchFind.index, 'object');
     assert.match(llms, /\/en\/welcome/);
     assert.match(llmsFull, /# Docs Full Export/);
     assert.match(llmsFull, /Page ID: welcome/);
     assert.match(llmsFull, /URL: \/en\/welcome/);
     assert.equal(exportedImage.toString('utf8'), 'fake-png-bytes');
     assert.equal(chunks.lang, 'en');
+    assert.match(chunks.builtAt, /^\d{4}-\d{2}-\d{2}T/);
     assert.equal(chunks.chunking.strategy, 'heading-aware');
+    assert.equal(chunks.chunking.maxChars, 2000);
+    assert.equal(chunks.chunking.overlapChars, 200);
     assert.equal(chunks.chunks[0]?.pageId, 'welcome');
     assert.equal(chunks.chunks[0]?.href, '/en/welcome');
+    assert.equal(chunks.chunks[0]?.sourcePath, '/en/welcome');
+    assert.equal(chunks.chunks[0]?.pageTitle, 'Welcome');
+    assert.deepEqual(chunks.chunks[0]?.navPath, ['Getting Started']);
     assert.ok((chunks.chunks[0]?.text ?? '').length > 0);
+    assert.match(chunks.chunks[0]?.enrichedText ?? '', /Language: en/);
+    assert.match(chunks.chunks[0]?.enrichedText ?? '', /Page: \/en\/welcome/);
+    assert.match(chunks.chunks[0]?.chunkHash ?? '', /^[0-9a-f]{64}$/);
     assert.equal(chunks.chunks[0]?.order, 1);
     assert.equal(mcpIndex.version, 1);
+    assert.match(mcpIndex.builtAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(mcpIndex.defaultLanguage, 'en');
     assert.equal(mcpIndex.site.theme.id, 'classic-docs');
     assert.equal(mcpIndex.site.theme.codeTheme, 'github-dark');
     assert.equal(mcpIndex.languages[0]?.files.searchIndex, '../search-index.en.json');
+    assert.equal(mcpIndex.languages[0]?.files.searchFind, '../search-find.en.json');
     assert.equal(mcpIndex.languages[0]?.files.chunks, 'chunks.en.json');
     assert.equal(manifest.source.site.theme.id, 'classic-docs');
     assert.equal(manifest.source.site.theme.codeTheme, 'github-dark');
@@ -211,6 +256,7 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.equal(manifest.projects[0]?.site.theme.codeTheme, 'github-dark');
     assert.equal(manifest.projects[0]?.artifacts.site, '.');
     assert.deepEqual(manifest.projects[0]?.artifacts.searchIndexes, ['search-index.en.json']);
+    assert.deepEqual(manifest.projects[0]?.artifacts.searchFindIndexes, ['search-find.en.json']);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }
@@ -254,7 +300,15 @@ test('published artifacts emit a fallback chunk for published pages without head
     const chunks = JSON.parse(
       await readFile(path.join(contract.paths.machineReadableRoot, 'chunks.en.json'), 'utf8'),
     ) as {
-      chunks: Array<{ id: string; pageId: string; headingPath: string[]; text: string; order: number }>;
+      chunks: Array<{
+        id: string;
+        pageId: string;
+        headingPath: string[];
+        text: string;
+        enrichedText: string;
+        chunkHash: string;
+        order: number;
+      }>;
     };
 
     assert.equal(chunks.chunks.length, 1);
@@ -263,6 +317,8 @@ test('published artifacts emit a fallback chunk for published pages without head
     assert.deepEqual(chunks.chunks[0]?.headingPath, []);
     assert.equal(chunks.chunks[0]?.order, 1);
     assert.equal(chunks.chunks[0]?.text, 'Body content without headings for chunk fallback.');
+    assert.match(chunks.chunks[0]?.enrichedText ?? '', /Content:\nBody content without headings for chunk fallback\./);
+    assert.match(chunks.chunks[0]?.chunkHash ?? '', /^[0-9a-f]{64}$/);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }
@@ -622,8 +678,12 @@ test('published pages artifacts serialize template and only public metadata', as
     const pagesArtifact = JSON.parse(
       await readFile(path.join(contract.paths.machineReadableRoot, 'pages.en.json'), 'utf8'),
     ) as {
+      builtAt: string;
       pages: Array<{
         id: string;
+        sourcePath: string;
+        navPath: string[];
+        pageHash: string;
         template?: string;
         metadata?: Record<string, unknown>;
       }>;
@@ -635,6 +695,10 @@ test('published pages artifacts serialize template and only public metadata', as
     const adrPage = pagesArtifact.pages.find((page) => page.id === 'adr-001');
 
     assert.equal(adrPage?.id, 'adr-001');
+    assert.match(pagesArtifact.builtAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(adrPage?.sourcePath, '/en/architecture/adr-001');
+    assert.deepEqual(adrPage?.navPath, []);
+    assert.match(adrPage?.pageHash ?? '', /^[0-9a-f]{64}$/);
     assert.equal(adrPage?.template, 'adr');
     assert.deepEqual(adrPage?.metadata, {
       'decision-status': 'accepted',
@@ -881,6 +945,8 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
       assert.equal(result.projectId, 'default');
       assert.equal(result.docsPath, '/en/welcome');
       assert.match(result.url, /^http:\/\/127\.0\.0\.1:\d+$/);
+      await access(path.join(repoRoot, 'dist', 'search-find.en.json'));
+      await access(path.join(repoRoot, 'dist', 'search-index.en.json'));
 
       const initialBody = await waitForPreviewText(`${result.url}${result.docsPath}`, 'Welcome');
       assert.match(initialBody, /Welcome/);

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -183,6 +184,34 @@ function attachPreviewExitWatcher(session: PreviewSession) {
     session.signal = null;
     session.endedAt = new Date().toISOString();
   });
+}
+
+async function assertPreviewSearchArtifactsExist(artifactRoot: string, language: string): Promise<void> {
+  const searchIndexPath = path.join(artifactRoot, `search-index.${language}.json`);
+  const searchFindPath = path.join(artifactRoot, `search-find.${language}.json`);
+
+  const [hasSearchIndex, hasSearchFind] = await Promise.all([
+    access(searchIndexPath).then(() => true).catch(() => false),
+    access(searchFindPath).then(() => true).catch(() => false),
+  ]);
+
+  if (!hasSearchIndex && !hasSearchFind) {
+    throw new ValidationError('Preview startup did not produce the expected search artifacts.', {
+      entity: 'mcp-tool',
+      rule: 'project-preview-search-artifacts-must-exist',
+      remediation:
+        'Retry project_preview_start after a successful build, and verify the preview runtime can write at least one search artifact.',
+      metadata: {
+        artifactRoot,
+        language,
+        expectedFiles: [searchIndexPath, searchFindPath],
+        availableFiles: {
+          searchIndex: hasSearchIndex,
+          searchFind: hasSearchFind,
+        },
+      },
+    });
+  }
 }
 
 async function stopPreviewSession(session: PreviewSession): Promise<void> {
@@ -565,6 +594,12 @@ export const projectTools: ToolDefinition[] = [
           ...(startTimeoutMs !== undefined ? { startTimeoutMs } : {}),
           stdio: 'pipe',
         });
+        try {
+          await assertPreviewSearchArtifactsExist(contract.paths.artifactRoot, runtime.language);
+        } catch (error) {
+          await runtime.stop().catch(() => undefined);
+          throw error;
+        }
         const sessionId = randomUUID();
         const session: PreviewSession = {
           id: sessionId,

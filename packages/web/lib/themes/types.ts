@@ -9,6 +9,7 @@ export type DocsThemeReaderLayoutProps = {
   availableLanguages: DocsLang[];
   nav: NavigationDoc;
   pages: PublishedPageDoc[];
+  searchFindHref?: string;
   searchIndexHref?: string;
   projectName?: string;
   siteTheme: ProjectSiteTheme;

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { cp, mkdir, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -94,6 +95,37 @@ function runNext(args, options = {}) {
 
       reject(new Error(`next ${args[0]} failed (exit=${code ?? 'null'}, signal=${signal ?? 'null'}).`));
     });
+  });
+}
+
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd ?? webRoot,
+      stdio: options.stdio ?? 'inherit',
+      env: options.env ?? process.env,
+    });
+
+    child.on('error', reject);
+    child.on('exit', (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`${command} ${args.join(' ')} failed (exit=${code ?? 'null'}, signal=${signal ?? 'null'}).`));
+    });
+  });
+}
+
+async function ensureCoreBuild() {
+  const coreDistEntrypoint = path.join(repoRoot, 'packages', 'core', 'dist', 'index.js');
+  if (existsSync(coreDistEntrypoint)) {
+    return;
+  }
+
+  await runCommand('pnpm', ['--filter', '@anydocs/core', 'build'], {
+    cwd: repoRoot,
   });
 }
 
@@ -215,6 +247,7 @@ async function pruneInternalExportArtifacts(outputRoot) {
 }
 
 async function exportDocsSite(mode) {
+  await ensureCoreBuild();
   const outputRoot = getOutputRoot(mode);
   const distDir = '.next-cli-export';
   const runtimeWebRoot = await prepareExportWorkspace();

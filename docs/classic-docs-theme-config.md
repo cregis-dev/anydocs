@@ -2,6 +2,8 @@
 
 本文说明 `classic-docs` 阅读主题的可配置项、推荐写法，以及在 Studio 中对应的设置入口。
 
+这是一份 **Reader-only** 的主题配置说明。Reader 有多个主题，选择建议见 [reader-theme-guide.md](reader-theme-guide.md)。Studio 不使用这份主题壳层。
+
 ## 适用范围
 
 - 主题 ID：`classic-docs`

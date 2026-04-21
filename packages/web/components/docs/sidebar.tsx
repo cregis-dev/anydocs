@@ -334,6 +334,7 @@ type DocsSidebarProps = {
   lang: DocsLang;
   nav: NavigationDoc;
   pages: PublishedPageDoc[];
+  searchFindHref?: string;
   searchIndexHref?: string;
   homeLabel?: string;
   showHomeLink?: boolean;
@@ -374,6 +375,7 @@ export function DocsSidebar({
   lang,
   nav,
   pages,
+  searchFindHref,
   searchIndexHref,
   homeLabel,
   showHomeLink = true,
@@ -480,6 +482,7 @@ export function DocsSidebar({
         <div className={cn('shrink-0 px-6 pt-4', insetClassName, searchWrapperClassName)}>
           <SearchPanel
             lang={lang}
+            findHref={searchFindHref}
             indexHref={searchIndexHref}
             placeholder={searchPlaceholder}
             inputClassName={cn(
