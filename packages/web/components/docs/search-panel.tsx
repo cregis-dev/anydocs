@@ -108,11 +108,28 @@ export function SearchPanel({
   const router = useRouter();
   const copy = getDocsUiCopy(lang);
   const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
-  const [shortcutLabel, setShortcutLabel] = useState("Ctrl K");
+
+  const shortcutLabel =
+    typeof navigator !== "undefined" &&
+    /mac|iphone|ipad|ipod/i.test(navigator.platform)
+      ? "⌘K"
+      : "Ctrl K";
+
+  const openWithSeed = (seed = "") => {
+    setQ(seed);
+    setOpen(true);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setQ("");
+      setActiveIndex(-1);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
-    setIdx(null);
     loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
       .then((data) => {
         if (cancelled) return;
@@ -129,19 +146,7 @@ export function SearchPanel({
   }, [findHref, indexHref, lang]);
 
   useEffect(() => {
-    if (typeof navigator === "undefined") {
-      return;
-    }
-
-    setShortcutLabel(
-      /mac|iphone|ipad|ipod/i.test(navigator.platform) ? "⌘K" : "Ctrl K",
-    );
-  }, []);
-
-  useEffect(() => {
     if (!open) {
-      setQ("");
-      setActiveIndex(-1);
       return;
     }
 
@@ -193,34 +198,22 @@ export function SearchPanel({
     ).slice(0, 12);
   }, [idx, lang, q]);
   const highlightTerms = useMemo(() => getHighlightTerms(q), [q]);
+  const resolvedActiveIndex =
+    !q.trim() || results.length === 0
+      ? -1
+      : activeIndex >= 0 && activeIndex < results.length
+        ? activeIndex
+        : 0;
 
   useEffect(() => {
-    if (!q.trim() || results.length === 0) {
-      setActiveIndex(-1);
-      return;
-    }
-    setActiveIndex((current) => {
-      if (current >= 0 && current < results.length) {
-        return current;
-      }
-      return 0;
-    });
-  }, [q, results.length]);
-
-  useEffect(() => {
-    if (activeIndex < 0) {
+    if (resolvedActiveIndex < 0) {
       return;
     }
 
-    itemRefs.current[activeIndex]?.scrollIntoView({
+    itemRefs.current[resolvedActiveIndex]?.scrollIntoView({
       block: "nearest",
     });
-  }, [activeIndex]);
-
-  function openWithSeed(seed = "") {
-    setQ(seed);
-    setOpen(true);
-  }
+  }, [resolvedActiveIndex]);
 
   function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
@@ -260,17 +253,17 @@ export function SearchPanel({
     }
 
     if (event.key === "Enter") {
-      const result = results[activeIndex] ?? results[0];
+      const result = results[resolvedActiveIndex] ?? results[0];
       if (!result) return;
       event.preventDefault();
-      setOpen(false);
+      handleOpenChange(false);
       router.push(result.href ?? `/${lang}/${result.slug}`);
     }
   }
 
   return (
     <div className={cn("w-full", className)}>
-      <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+      <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
         <DialogPrimitive.Trigger asChild>
           <button
             type="button"
@@ -407,7 +400,7 @@ export function SearchPanel({
                         ]
                           .filter(Boolean)
                           .join(" · ");
-                        const isActive = activeIndex === index;
+                        const isActive = resolvedActiveIndex === index;
                         const isSectionResult = Boolean(
                           result.sectionTitle &&
                           result.sectionTitle !== result.title,
@@ -435,7 +428,7 @@ export function SearchPanel({
                               isSectionResult &&
                                 "ml-3 pl-5 before:absolute before:bottom-3 before:left-0 before:top-3 before:w-px before:bg-[rgba(15,23,42,0.10)]",
                             )}
-                            onClick={() => setOpen(false)}
+                            onClick={() => handleOpenChange(false)}
                             onMouseEnter={() => setActiveIndex(index)}
                           >
                             <span
@@ -494,7 +487,7 @@ export function SearchPanel({
                     </div>
                     <Link
                       href={`/${lang}`}
-                      onClick={() => setOpen(false)}
+                      onClick={() => handleOpenChange(false)}
                       className="inline-flex rounded-full border border-fd-border px-3 py-1.5 text-xs font-medium text-fd-foreground transition hover:bg-fd-muted"
                     >
                       {copy.search.browseHome}
