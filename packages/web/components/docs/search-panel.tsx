@@ -86,17 +86,23 @@ export function SearchPanel({
   lang,
   findHref,
   indexHref,
+  triggerLabel,
   placeholder,
   className,
   inputClassName,
+  triggerTextClassName,
+  shortcutClassName,
   resultsClassName,
 }: {
   lang: "zh" | "en";
   findHref?: string;
   indexHref?: string;
+  triggerLabel?: string;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  triggerTextClassName?: string;
+  shortcutClassName?: string;
   resultsClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -108,6 +114,8 @@ export function SearchPanel({
   const router = useRouter();
   const copy = getDocsUiCopy(lang);
   const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
+  const resolvedTriggerLabel =
+    triggerLabel ?? copy.sidebar.searchTriggerLabel ?? resolvedPlaceholder;
 
   const shortcutLabel =
     typeof navigator !== "undefined" &&
@@ -278,10 +286,20 @@ export function SearchPanel({
             onKeyDown={handleTriggerKeyDown}
           >
             <Search className="h-4 w-4 shrink-0 text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]" />
-            <span className="min-w-0 flex-1 truncate text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]">
-              {resolvedPlaceholder}
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]",
+                triggerTextClassName,
+              )}
+            >
+              {resolvedTriggerLabel}
             </span>
-            <span className="hidden shrink-0 rounded-md border border-[rgba(15,23,42,0.08)] bg-white/80 px-2 py-1 text-[11px] font-medium tracking-[0.02em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] sm:inline-flex">
+            <span
+              className={cn(
+                "hidden shrink-0 rounded-md border border-[rgba(15,23,42,0.08)] bg-white/80 px-2 py-1 text-[11px] font-medium tracking-[0.02em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] sm:inline-flex",
+                shortcutClassName,
+              )}
+            >
               {shortcutLabel}
             </span>
           </button>

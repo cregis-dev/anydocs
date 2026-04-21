@@ -1,14 +1,29 @@
-'use client';
+"use client";
 
-import { List } from 'lucide-react';
+import { List } from "lucide-react";
 
-import { DocsToc } from '@/components/docs/toc';
-import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import type { DocsLang } from '@/lib/docs/types';
-import { cn } from '@/lib/utils';
-import type { TocItem } from '@/lib/docs/markdown';
+import { DocsToc } from "@/components/docs/toc";
+import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import type { DocsLang } from "@/lib/docs/types";
+import { cn } from "@/lib/utils";
+import type { TocItem } from "@/lib/docs/markdown";
+
+const blueprintTocListClassName =
+  "relative space-y-0.5 pl-3 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:bg-[color:color-mix(in_srgb,var(--blueprint-divider)_92%,white)] [&_[data-depth='2']]:mt-2 [&_[data-depth='2']]:py-1.5 [&_[data-depth='2']]:pl-3 [&_[data-depth='2']]:text-[13px] [&_[data-depth='2']]:font-medium [&_[data-depth='2']]:leading-6 [&_[data-depth='2']]:text-[color:color-mix(in_srgb,var(--fd-foreground)_92%,white)] [&_[data-depth='3']]:pl-5 [&_[data-depth='3']]:text-[12px] [&_[data-depth='3']]:leading-5 [&_[data-depth='4']]:pl-6 [&_[data-depth='4']]:text-[11px] [&_[data-depth='4']]:leading-5";
+
+const blueprintTocActiveLinkClassName =
+  "relative rounded-r-[14px] border-l-0 bg-[color:color-mix(in_srgb,var(--blueprint-accent-soft)_42%,white)] py-1.5 pl-3 pr-2 font-semibold tracking-[-0.01em] break-words text-fd-foreground before:absolute before:bottom-2 before:-left-3 before:top-2 before:w-[2px] before:rounded-full before:bg-[color:var(--blueprint-accent)]";
+
+const blueprintTocInactiveLinkClassName =
+  "rounded-r-[14px] border-l-0 bg-transparent py-1.5 pl-3 pr-2 font-normal tracking-[-0.01em] break-words text-[color:color-mix(in_srgb,var(--fd-muted-foreground)_88%,white)] hover:bg-[color:color-mix(in_srgb,var(--blueprint-accent-soft)_38%,white)] hover:text-fd-foreground";
 
 export function BlueprintTocRail({
   toc,
@@ -28,27 +43,30 @@ export function BlueprintTocRail({
   return (
     <aside
       className={cn(
-        'hidden xl:!block xl:sticky xl:top-4 xl:h-[calc(100dvh-2rem)]',
+        "hidden xl:!block xl:sticky xl:top-8 xl:self-start",
         className,
       )}
       aria-label="Table of contents"
     >
-      <div className="flex h-full w-[240px] overflow-hidden rounded-[24px] border border-[color:var(--blueprint-divider)] bg-[color:color-mix(in_srgb,var(--blueprint-panel)_94%,transparent)] shadow-[0_16px_32px_rgba(15,23,42,0.05)] 2xl:w-[272px]">
-        <div className="flex h-full w-full flex-col px-4 py-4" data-blueprint-divider>
-          <div className="flex items-center justify-between gap-2 border-b pb-3" data-blueprint-divider>
+      <div className="w-[220px] 2xl:w-[236px]">
+        <div className="px-2 py-3">
+          <div
+            className="flex items-center justify-between gap-2 border-b pb-3"
+            data-blueprint-divider
+          >
             <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fd-muted-foreground">
               {copy.toc.title}
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden pt-3">
+          <div className="pt-3">
             <DocsToc
               toc={toc}
               hideTitle
-              className="!block h-full w-full border-0 bg-transparent px-0 py-0"
-              contentClassName="max-h-full overflow-y-auto pr-1"
-              listClassName="space-y-0.5"
-              activeLinkClassName="bg-[color:var(--blueprint-accent-soft)] text-fd-foreground"
-              inactiveLinkClassName="text-fd-muted-foreground hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-fd-foreground"
+              className="!block h-auto w-full border-0 bg-transparent px-0 py-0"
+              contentClassName="max-h-[calc(100dvh-10rem)] overflow-y-auto pr-1"
+              listClassName={blueprintTocListClassName}
+              activeLinkClassName={blueprintTocActiveLinkClassName}
+              inactiveLinkClassName={blueprintTocInactiveLinkClassName}
               disableDefaultDepthStyles
             />
           </div>
@@ -74,7 +92,7 @@ export function BlueprintMobileTocButton({
   }
 
   return (
-    <div className={cn('xl:hidden', className)}>
+    <div className={cn("xl:hidden", className)}>
       <Dialog>
         <DialogTrigger asChild>
           <Button
@@ -87,17 +105,21 @@ export function BlueprintMobileTocButton({
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-[22rem] rounded-[24px] border-[color:var(--blueprint-divider)] bg-fd-background p-0">
-          <DialogTitle className="px-5 pt-5 text-sm font-semibold text-fd-foreground">{copy.toc.title}</DialogTitle>
-          <DialogDescription className="sr-only">{copy.blueprint.showToc}</DialogDescription>
+          <DialogTitle className="px-5 pt-5 text-sm font-semibold text-fd-foreground">
+            {copy.toc.title}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {copy.blueprint.showToc}
+          </DialogDescription>
           <div className="max-h-[70dvh] overflow-y-auto px-3 pb-4 pt-3">
             <DocsToc
               toc={toc}
               hideTitle
               className="!block h-auto w-full border-0 bg-transparent px-0 py-0"
               contentClassName="max-h-none overflow-visible"
-              listClassName="space-y-0.5"
-              activeLinkClassName="bg-[color:var(--blueprint-accent-soft)] text-fd-foreground"
-              inactiveLinkClassName="text-fd-muted-foreground hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] hover:text-fd-foreground"
+              listClassName={blueprintTocListClassName}
+              activeLinkClassName={blueprintTocActiveLinkClassName}
+              inactiveLinkClassName={blueprintTocInactiveLinkClassName}
               disableDefaultDepthStyles
             />
           </div>

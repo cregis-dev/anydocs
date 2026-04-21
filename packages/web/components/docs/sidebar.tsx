@@ -352,6 +352,9 @@ type DocsSidebarProps = {
   fillHeight?: boolean;
   searchWrapperClassName?: string;
   searchPlaceholder?: string;
+  searchTriggerLabel?: string;
+  searchTriggerTextClassName?: string;
+  searchShortcutClassName?: string;
   searchInputClassName?: string;
   searchResultsClassName?: string;
   navWrapperClassName?: string;
@@ -389,6 +392,9 @@ export function DocsSidebar({
   fillHeight = true,
   searchWrapperClassName,
   searchPlaceholder,
+  searchTriggerLabel,
+  searchTriggerTextClassName,
+  searchShortcutClassName,
   searchInputClassName,
   searchResultsClassName,
   navWrapperClassName,
@@ -484,7 +490,10 @@ export function DocsSidebar({
             lang={lang}
             findHref={searchFindHref}
             indexHref={searchIndexHref}
+            triggerLabel={searchTriggerLabel}
             placeholder={searchPlaceholder}
+            triggerTextClassName={searchTriggerTextClassName}
+            shortcutClassName={searchShortcutClassName}
             inputClassName={cn(
               'border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
               searchInputClassName,
