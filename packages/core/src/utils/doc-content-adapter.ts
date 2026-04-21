@@ -30,6 +30,14 @@ function readChildren(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function readLinkHref(value: unknown): string | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  return readString(value.href) ?? readString(value.url);
+}
+
 function trimUndefined<T extends Record<string, unknown>>(value: T): T {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
 }
@@ -72,7 +80,7 @@ function yooptaInlineToCanonical(node: unknown): InlineNode[] {
     return [
       trimUndefined({
         type: 'link' as const,
-        href: readString(isRecord(node.props) ? node.props.href : undefined) ?? '',
+        href: readLinkHref(node.props) ?? '',
         title: readString(isRecord(node.props) ? node.props.title : undefined),
         children: readChildren(node.children).flatMap((child) => yooptaInlineToCanonical(child)).filter((child): child is TextNode => child.type === 'text'),
       }),
@@ -107,36 +115,43 @@ function yooptaListItemsToCanonical(value: unknown, style: 'bulleted' | 'numbere
 }
 
 function yooptaListBlockToCanonical(
-  entry: Record<string, unknown> | undefined,
+  entries: Record<string, unknown>[],
   style: 'bulleted' | 'numbered' | 'todo',
   blockId: string,
 ): ListItem[] {
-  const structuredItems = yooptaListItemsToCanonical(entry?.children, style);
-  if (structuredItems.length > 0) {
-    return structuredItems;
+  const items: ListItem[] = [];
+
+  for (const entry of entries) {
+    const structuredItems = yooptaListItemsToCanonical(entry.children, style);
+    if (structuredItems.length > 0) {
+      items.push(...structuredItems);
+      continue;
+    }
+
+    const children = yooptaInlineChildrenToCanonical(entry.children);
+    if (children.length === 0) {
+      continue;
+    }
+
+    items.push(
+      trimUndefined({
+        id: readString(entry.id) ?? `${blockId}-item-${items.length + 1}`,
+        children,
+        checked: style === 'todo' ? readBoolean(isRecord(entry.props) ? entry.props.checked : undefined) : undefined,
+      }),
+    );
   }
 
-  const children = yooptaInlineChildrenToCanonical(entry?.children);
-  if (children.length === 0) {
-    return [];
-  }
-
-  return [
-    trimUndefined({
-      id: `${blockId}-item-1`,
-      children,
-      checked: style === 'todo' ? readBoolean(isRecord(entry?.props) ? entry.props.checked : undefined) : undefined,
-    }),
-  ];
+  return items;
 }
 
-function yooptaValueEntry(block: Record<string, unknown>): Record<string, unknown> | undefined {
-  const [entry] = readChildren(block.value);
-  return isRecord(entry) ? entry : undefined;
+function yooptaValueEntries(block: Record<string, unknown>): Record<string, unknown>[] {
+  return readChildren(block.value).filter(isRecord);
 }
 
 function yooptaBlockToCanonical(block: Record<string, unknown>, index: number): DocBlock | null {
-  const entry = yooptaValueEntry(block);
+  const entries = yooptaValueEntries(block);
+  const [entry] = entries;
   const blockId = readString(block.id) ?? `block-${index + 1}`;
 
   switch (block.type) {
@@ -149,11 +164,11 @@ function yooptaBlockToCanonical(block: Record<string, unknown>, index: number): 
     case 'HeadingThree':
       return { type: 'heading', id: blockId, level: 3, children: yooptaInlineChildrenToCanonical(entry?.children) };
     case 'BulletedList':
-      return { type: 'list', id: blockId, style: 'bulleted', items: yooptaListBlockToCanonical(entry, 'bulleted', blockId) };
+      return { type: 'list', id: blockId, style: 'bulleted', items: yooptaListBlockToCanonical(entries, 'bulleted', blockId) };
     case 'NumberedList':
-      return { type: 'list', id: blockId, style: 'numbered', items: yooptaListBlockToCanonical(entry, 'numbered', blockId) };
+      return { type: 'list', id: blockId, style: 'numbered', items: yooptaListBlockToCanonical(entries, 'numbered', blockId) };
     case 'TodoList':
-      return { type: 'list', id: blockId, style: 'todo', items: yooptaListBlockToCanonical(entry, 'todo', blockId) };
+      return { type: 'list', id: blockId, style: 'todo', items: yooptaListBlockToCanonical(entries, 'todo', blockId) };
     case 'Blockquote':
       return { type: 'blockquote', id: blockId, children: yooptaInlineChildrenToCanonical(entry?.children) };
     case 'Callout':
@@ -224,7 +239,7 @@ function yooptaBlockToCanonical(block: Record<string, unknown>, index: number): 
           })),
       };
     case 'Link': {
-      const href = readString(isRecord(entry?.props) ? entry.props.href : undefined) ?? '';
+      const href = readLinkHref(entry?.props) ?? '';
       const title = readString(isRecord(entry?.props) ? entry.props.title : undefined);
       return {
         type: 'paragraph',

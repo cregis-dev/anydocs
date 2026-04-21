@@ -33,6 +33,62 @@ test('getRenderableDocContent removes a leading H1 that duplicates the page titl
   });
 });
 
+test('getRenderableDocContent merges adjacent canonical numbered lists to preserve sequence numbering', () => {
+  const content = {
+    version: 1,
+    blocks: [
+      {
+        type: 'heading',
+        id: 'hero',
+        level: 1,
+        children: [{ type: 'text', text: 'Guide' }],
+      },
+      {
+        type: 'list',
+        id: 'step1',
+        style: 'numbered',
+        items: [
+          {
+            id: 'item-1',
+            children: [{ type: 'text', text: '第一步' }],
+          },
+        ],
+      },
+      {
+        type: 'list',
+        id: 'step2',
+        style: 'numbered',
+        items: [
+          {
+            id: 'item-2',
+            children: [{ type: 'text', text: '第二步' }],
+          },
+        ],
+      },
+    ],
+  };
+
+  assert.deepEqual(getRenderableDocContent(content, 'Guide'), {
+    version: 1,
+    blocks: [
+      {
+        type: 'list',
+        id: 'step1',
+        style: 'numbered',
+        items: [
+          {
+            id: 'item-1',
+            children: [{ type: 'text', text: '第一步' }],
+          },
+          {
+            id: 'item-2',
+            children: [{ type: 'text', text: '第二步' }],
+          },
+        ],
+      },
+    ],
+  });
+});
 test('getRenderableDocContent converts renderable legacy Yoopta content to canonical blocks', () => {
   const legacyContent = {
     intro: {
@@ -88,6 +144,71 @@ test('getRenderableDocContent converts renderable legacy Yoopta content to canon
   });
 });
 
+test('getRenderableDocContent converts legacy numbered-list entry arrays with url links', () => {
+  const legacyContent = {
+    steps: {
+      id: 'steps',
+      type: 'NumberedList',
+      value: [
+        {
+          id: 'item-1',
+          type: 'numbered-list',
+          children: [
+            { text: '访问 ' },
+            {
+              id: 'link-1',
+              type: 'link',
+              children: [{ text: 'https://www.cregis.com/download' }],
+              props: {
+                url: 'https://www.cregis.com/download',
+                title: '下载地址',
+              },
+            },
+            { text: ' 下载客户端' },
+          ],
+          props: { nodeType: 'block' },
+        },
+        {
+          id: 'item-2',
+          type: 'numbered-list',
+          children: [{ text: '安装并启动 Cregis App' }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order: 0, depth: 0 },
+    },
+  };
+
+  assert.deepEqual(getRenderableDocContent(legacyContent, 'Guide'), {
+    version: 1,
+    blocks: [
+      {
+        type: 'list',
+        id: 'steps',
+        style: 'numbered',
+        items: [
+          {
+            id: 'item-1',
+            children: [
+              { type: 'text', text: '访问 ' },
+              {
+                type: 'link',
+                href: 'https://www.cregis.com/download',
+                title: '下载地址',
+                children: [{ type: 'text', text: 'https://www.cregis.com/download' }],
+              },
+              { type: 'text', text: ' 下载客户端' },
+            ],
+          },
+          {
+            id: 'item-2',
+            children: [{ type: 'text', text: '安装并启动 Cregis App' }],
+          },
+        ],
+      },
+    ],
+  });
+});
 test('getRenderableDocContent merges adjacent converted numbered lists to preserve sequence numbering', () => {
   const legacyContent = {
     step1: {

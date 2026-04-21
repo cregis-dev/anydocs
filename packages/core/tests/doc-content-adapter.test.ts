@@ -159,6 +159,69 @@ test('yooptaToDocContent converts supported legacy blocks into canonical content
   });
 });
 
+test('yooptaToDocContent converts legacy numbered-list entries and url links', () => {
+  const content = yooptaToDocContent({
+    'block-1': {
+      id: 'block-1',
+      type: 'NumberedList',
+      value: [
+        {
+          id: 'legacy-item-1',
+          type: 'numbered-list',
+          children: [
+            { text: 'Visit ' },
+            {
+              id: 'inline-link-1',
+              type: 'link',
+              children: [{ text: 'https://example.com' }],
+              props: { url: 'https://example.com', title: 'Example' },
+            },
+            { text: ' first.' },
+          ],
+          props: { nodeType: 'block' },
+        },
+        {
+          id: 'legacy-item-2',
+          type: 'numbered-list',
+          children: [{ text: 'Then continue.' }],
+          props: { nodeType: 'block' },
+        },
+      ],
+      meta: { order: 0, depth: 0 },
+    },
+  });
+
+  assert.deepEqual(content, {
+    version: 1,
+    blocks: [
+      {
+        type: 'list',
+        id: 'block-1',
+        style: 'numbered',
+        items: [
+          {
+            id: 'legacy-item-1',
+            children: [
+              { type: 'text', text: 'Visit ' },
+              {
+                type: 'link',
+                href: 'https://example.com',
+                title: 'Example',
+                children: [{ type: 'text', text: 'https://example.com' }],
+              },
+              { type: 'text', text: ' first.' },
+            ],
+          },
+          {
+            id: 'legacy-item-2',
+            children: [{ type: 'text', text: 'Then continue.' }],
+          },
+        ],
+      },
+    ],
+  });
+});
+
 test('docContentToYoopta round-trips canonical content through the legacy adapter', () => {
   const canonical = {
     version: 1 as const,
