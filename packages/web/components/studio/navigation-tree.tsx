@@ -20,6 +20,13 @@ import { cn } from '@/lib/utils';
 
 type IndexPath = number[];
 
+function toTestIdSegment(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'item';
+}
+
 const Menu = ({
   open,
   onOpenChange,
@@ -240,6 +247,7 @@ export function NavigationTree({
             <div
               role="button"
               tabIndex={0}
+              data-testid={`studio-nav-section-${toTestIdSegment(k)}`}
               className="flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
               onClick={() => toggleCollapsed(path)}
               onKeyDown={(event) => handlePseudoButtonKeyDown(event, () => toggleCollapsed(path))}
@@ -259,6 +267,7 @@ export function NavigationTree({
                     variant="ghost"
                     size="icon"
                     className="size-8"
+                    data-testid={`studio-nav-section-menu-trigger-${toTestIdSegment(k)}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onClick();
@@ -273,6 +282,7 @@ export function NavigationTree({
                     rename();
                     setMenuOpen(false);
                   }}
+                  testId={`studio-nav-section-rename-button-${toTestIdSegment(k)}`}
                 >
                   <Pencil className="size-4" /> Rename
                 </MenuItem>
@@ -342,7 +352,7 @@ export function NavigationTree({
                 <Folder className="size-4 text-fd-muted-foreground" />
               </>
             }
-            title={item.title}
+            title={<span data-testid={`studio-nav-folder-${toTestIdSegment(k)}`}>{item.title}</span>}
             onClick={() => toggleCollapsed(path)}
             actions={
               <Menu
@@ -354,6 +364,7 @@ export function NavigationTree({
                     variant="ghost"
                     size="icon"
                     className="size-8"
+                    data-testid={`studio-nav-folder-menu-trigger-${toTestIdSegment(k)}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onClick();
@@ -368,6 +379,7 @@ export function NavigationTree({
                     rename();
                     setMenuOpen(false);
                   }}
+                  testId={`studio-nav-folder-rename-button-${toTestIdSegment(k)}`}
                 >
                   <Pencil className="size-4" /> Rename
                 </MenuItem>
@@ -428,7 +440,7 @@ export function NavigationTree({
           <Row
             depth={depth}
             leading={<Link2 className="size-4 text-fd-muted-foreground" />}
-            title={item.title}
+            title={<span data-testid={`studio-nav-link-${toTestIdSegment(k)}`}>{item.title}</span>}
             subtitle={item.href}
             onClick={edit}
             actions={
@@ -441,6 +453,7 @@ export function NavigationTree({
                     variant="ghost"
                     size="icon"
                     className="size-8"
+                    data-testid={`studio-nav-link-menu-trigger-${toTestIdSegment(k)}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onClick();
@@ -455,6 +468,7 @@ export function NavigationTree({
                     edit();
                     setMenuOpen(false);
                   }}
+                  testId={`studio-nav-link-edit-button-${toTestIdSegment(k)}`}
                 >
                   <Pencil className="size-4" /> Edit
                 </MenuItem>

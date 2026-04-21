@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 import { buildLocalApiUrl, studioUrl } from './support/studio';
-import { isCliSingleProjectStudio } from './support/studio-mode';
+import { isCliStudio } from './support/studio-mode';
 
 test.describe.configure({ mode: 'serial' });
 
 test('studio authoring flow persists template and structured metadata @p0', async ({ page, request }) => {
-  test.skip(!isCliSingleProjectStudio, 'Needs CLI single-project Studio runtime.');
+  test.skip(!isCliStudio, 'Needs CLI Studio runtime.');
 
   await page.goto(studioUrl);
   await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();

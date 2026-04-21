@@ -65,3 +65,17 @@ export async function stopActivePreview(projectRoot: string): Promise<boolean> {
   await entry.exitPromise;
   return true;
 }
+
+export async function stopAllActivePreviews(): Promise<number> {
+  const entries = [...previewRegistry.values()].filter((entry) => !entry.exited);
+  previewRegistry.clear();
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      await entry.result.stop();
+      await entry.exitPromise;
+    }),
+  );
+
+  return entries.length;
+}
