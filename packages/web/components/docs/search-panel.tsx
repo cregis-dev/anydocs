@@ -23,10 +23,6 @@ import {
 } from "@/lib/docs/search";
 import { cn } from "@/lib/utils";
 
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function getHighlightTerms(query: string) {
   const normalized = query.trim().toLocaleLowerCase();
   if (!normalized) {
@@ -56,25 +52,63 @@ function renderHighlightedText(
     return <span className={className}>{text}</span>;
   }
 
-  const matcher = new RegExp(`(${terms.map(escapeRegex).join("|")})`, "giu");
-  const pieces = text.split(matcher).filter(Boolean);
+  const normalizedText = text.toLocaleLowerCase();
+  const pieces: Array<{ text: string; isMatch: boolean }> = [];
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    let nextMatchIndex = -1;
+    let nextMatchTerm = "";
+
+    for (const term of terms) {
+      const matchIndex = normalizedText.indexOf(term, cursor);
+      if (matchIndex < 0) {
+        continue;
+      }
+
+      if (
+        nextMatchIndex < 0 ||
+        matchIndex < nextMatchIndex ||
+        (matchIndex === nextMatchIndex && term.length > nextMatchTerm.length)
+      ) {
+        nextMatchIndex = matchIndex;
+        nextMatchTerm = term;
+      }
+    }
+
+    if (nextMatchIndex < 0) {
+      pieces.push({ text: text.slice(cursor), isMatch: false });
+      break;
+    }
+
+    if (nextMatchIndex > cursor) {
+      pieces.push({
+        text: text.slice(cursor, nextMatchIndex),
+        isMatch: false,
+      });
+    }
+
+    const nextCursor = nextMatchIndex + nextMatchTerm.length;
+    pieces.push({
+      text: text.slice(nextMatchIndex, nextCursor),
+      isMatch: true,
+    });
+    cursor = nextCursor;
+  }
 
   return (
     <span className={className}>
       {pieces.map((piece, index) => {
-        const isMatch = terms.some(
-          (term) => piece.toLocaleLowerCase() === term,
-        );
-        if (!isMatch) {
-          return <span key={`${piece}-${index}`}>{piece}</span>;
+        if (!piece.isMatch) {
+          return <span key={`${piece.text}-${index}`}>{piece.text}</span>;
         }
 
         return (
           <mark
-            key={`${piece}-${index}`}
+            key={`${piece.text}-${index}`}
             className="rounded-[0.35rem] bg-[rgba(251,191,36,0.26)] px-0.5 text-inherit"
           >
-            {piece}
+            {piece.text}
           </mark>
         );
       })}
