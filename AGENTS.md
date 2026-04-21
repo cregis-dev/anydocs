@@ -17,9 +17,9 @@ The codebase still carries some future-facing multi-project concepts, but the cu
 ### Studio
 
 - Primary routes: `/` and `/studio`
-- Intended runtime: local development and desktop runtime
+- Intended runtime: CLI Studio and desktop runtime
 - UI shape: navigation + editor + metadata/settings workflow
-- Data access: `/api/local/*` in web dev, or Electron IPC in desktop runtime
+- Data access: `/api/local/*` in CLI Studio, or local desktop server in desktop runtime
 - Supports all authoring states: `draft`, `in_review`, `published`
 
 ### Docs Reader
@@ -46,6 +46,7 @@ The codebase still carries some future-facing multi-project concepts, but the cu
 pnpm install
 pnpm dev
 pnpm dev:desktop
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 ```
 
 ### Build, Lint, and Tests
@@ -124,13 +125,13 @@ anydocs/
 
 | Route | Description | Runtime |
 |-------|-------------|---------|
-| `/` | Studio home; redirects to default docs language in CLI docs runtime | Dev / desktop / CLI docs runtime |
-| `/studio` | Studio authoring interface | Dev / desktop |
+| `/` | Studio home; redirects to default docs language in CLI docs runtime | CLI Studio / desktop / CLI docs runtime |
+| `/studio` | Studio authoring interface | CLI Studio / desktop |
 | `/docs/[...slug]` | Redirects to the default language reader route | Reader runtime |
 | `/[lang]` | Canonical language landing route for the reader | Reader runtime |
 | `/[lang]/[...slug]` | Canonical published docs reader route | Reader runtime |
 | `/[lang]/docs/[...slug]` | Compatibility redirect to `/{lang}/...` | Reader runtime |
-| `/api/local/*` | Local filesystem-backed Studio APIs | Local web dev only in intended deployments |
+| `/api/local/*` | Local filesystem-backed Studio APIs | CLI Studio only |
 
 ### Content Model
 
@@ -189,13 +190,13 @@ Supported navigation node types: `section`, `folder`, `page`, `link`
 - **UI**: Radix + shadcn/ui + Tailwind CSS v4
 - **Search**: MiniSearch static indexes
 - **Framework**: Next.js 16 App Router
-- **Desktop shell**: Electron
+- **Desktop shell**: Tauri
 
 ### Data Flow
 
 1. **Authoring**
    - Studio reads and writes canonical source files from the selected project root.
-   - Web dev uses `/api/local/*`; desktop runtime uses IPC.
+   - CLI Studio uses `/api/local/*`; desktop runtime uses the local desktop server.
    - All page statuses remain visible in Studio.
 
 2. **Build**
@@ -213,11 +214,14 @@ Supported navigation node types: `section`, `folder`, `page`, `link`
 
 - `README.md`: repository overview
 - `docs/README.md`: docs index
+- `docs/runtime-architecture.md`: runtime boundaries and env contract overview
 - `artifacts/bmad/planning-artifacts/architecture.md`: architecture decisions and planning context
 - `artifacts/bmad/planning-artifacts/prd.md`: product requirements
 - `artifacts/bmad/planning-artifacts/epics.md`: delivery breakdown
+- `packages/core/runtime-contract.mjs`: shared runtime env keys and helper factories
 - `packages/web/lib/docs/fs.ts`: Studio-side filesystem bridge
 - `packages/web/lib/docs/data.ts`: published reader data/runtime selection
+- `packages/web/lib/runtime/runtime-config.ts`: runtime env resolution for Studio and reader
 - `packages/web/app/[lang]/[...slug]/page.tsx`: canonical reader page
 - `packages/web/app/[lang]/docs/[[...slug]]/page.tsx`: compatibility redirect route
 - `packages/web/app/docs/[[...slug]]/page.tsx`: default-language redirect route
@@ -227,6 +231,7 @@ Supported navigation node types: `section`, `folder`, `page`, `link`
 ## Runtime and Security Constraints
 
 - In hosted web production, `/` and `/studio` should not expose the Studio unless explicitly running in desktop runtime.
+- Plain `pnpm dev` is not a Studio runtime; Studio should only be exposed in CLI Studio or desktop runtime.
 - `/api/local/*` is a local-authoring surface and should not be exposed as a public deployment API.
 - `llms.txt`, search indexes, and `mcp/` artifacts must remain `published`-only.
 - Never expose `draft` or `in_review` pages through public reader or machine-readable outputs.
@@ -271,10 +276,10 @@ Avoid expanding the editor toward layout-heavy page-builder behavior unless the 
 
 ```bash
 pnpm install
-pnpm dev
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 ```
 
-Then open `http://localhost:3000/studio` and select `examples/starter-docs` as the demo project path.
+Then open `http://localhost:3000/studio`.
 
 ### Create a New Project
 

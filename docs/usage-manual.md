@@ -45,8 +45,9 @@ pnpm test:full
 
 | 场景 | 命令 | 说明 |
 | --- | --- | --- |
-| Web 开发 | `pnpm dev` | 启动 Next.js，本地开发时会先生成公开产物 |
-| 桌面端开发 | `pnpm dev:desktop` | 启动 Electron 客户端 |
+| Web 开发 | `pnpm dev` | 启动 Next.js 开发服务器本身，不直接暴露 Studio |
+| CLI Studio | `pnpm --filter @anydocs/cli cli studio <projectRoot>` | 启动锁定到单一项目根的 Studio |
+| 桌面端开发 | `pnpm dev:desktop` | 启动 Tauri 桌面客户端 |
 | 全量构建 | `pnpm build` | 递归构建 workspace |
 | 仅构建 Web | `pnpm build:web` | 先生成公开产物，再执行 Next.js build |
 | 仅构建 CLI | `pnpm build:cli` | 编译 `@anydocs/cli` |
@@ -60,7 +61,7 @@ anydocs/                     # 工具仓库
 ├── packages/                # 工具代码
 │   ├── cli/                # CLI 工具
 │   ├── core/               # 核心库
-│   ├── desktop/            # Electron 应用
+│   ├── desktop/            # Tauri 桌面应用
 │   └── web/                # Next.js Studio & 阅读站
 │
 ├── examples/               # 示例项目
@@ -102,19 +103,26 @@ anydocs/                     # 工具仓库
 
 ## 5. Web 与 Studio 的使用方式
 
-启动本地开发：
+启动 Next.js 开发服务器：
 
 ```bash
 pnpm dev
 ```
 
-常用地址：
+如果你要进入 Studio，推荐使用 CLI Studio：
 
-- `http://localhost:3000/`：本地首页，开发环境下直接进入 Studio
+```bash
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
+```
+
+常用地址只在 `CLI Studio` 或 `Desktop` 运行时可用：
+
+- `http://localhost:3000/`：Studio 首页
 - `http://localhost:3000/studio`：Studio 编辑台
 
 Docs Site 说明：
-- 普通 `pnpm dev` 仍以 Studio 开发为主，未显式进入 CLI preview/export 上下文时，`/[lang]/docs/*` 阅读站路由不会对外开放。
+- Studio 当前只保留两类运行时：`CLI Studio` 和 `Desktop`
+- 普通 `pnpm dev` 不属于 Studio 运行时；未显式进入 CLI preview/export 上下文时，`/[lang]/docs/*` 阅读站路由也不会对外开放。
 - 如需验证真实阅读站，请使用 CLI `preview` 启动本地动态阅读站，或使用 CLI `build` 生成可部署静态站点后再用任意静态服务器验证。
 
 你在 Studio 里可以做的事：
@@ -131,7 +139,7 @@ Docs Site 说明：
 - Studio 目前只能打开已有项目，不能直接创建新项目；如需新建项目，请使用 CLI `init`
 - 导航节点菜单里的 `Delete` 只删除导航节点本身，不会删除对应页面文件
 
-Studio 走本地写文件接口，相关接口位于 `/api/local/*`。这些接口依赖 Node.js 文件系统能力，只适合本地或受控环境。
+CLI Studio 走本地写文件接口，相关接口位于 `/api/local/*`。这些接口依赖 Node.js 文件系统能力，只适合本地或受控环境。Desktop 运行时则通过 Tauri 托管的本地 desktop server 访问本地项目。
 
 ## 6. CLI 使用方式
 
@@ -381,8 +389,8 @@ npx @anydocs/cli convert-import <importId> ./my-docs-project
 
 ```bash
 pnpm install
-pnpm dev
-# 在 Studio 中编辑仓库内置示例项目 examples/starter-docs
+npx @anydocs/cli studio examples/starter-docs
+# 在 CLI Studio 中编辑仓库内置示例项目 examples/starter-docs
 npx @anydocs/cli build examples/starter-docs
 ```
 
@@ -419,7 +427,7 @@ npx @anydocs/cli preview ./my-docs-project
 ```bash
 npx @anydocs/cli import ./legacy-docs ./my-docs-project zh
 npx @anydocs/cli convert-import <importId> ./my-docs-project
-pnpm dev
+npx @anydocs/cli studio ./my-docs-project
 # 在 Studio 中审核和发布导入的内容
 ```
 
@@ -566,8 +574,8 @@ vercel --prod
 # 安装依赖
 pnpm install
 
-# 启动开发服务器（Studio）
-pnpm dev
+# 启动 CLI Studio
+npx @anydocs/cli studio examples/starter-docs
 
 # 构建示例项目
 npx @anydocs/cli build examples/starter-docs

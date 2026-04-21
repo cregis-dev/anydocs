@@ -2,6 +2,8 @@
 
 本文面向 Anydocs 仓库维护者与功能开发者，聚焦源码开发、调试和验证流程。文档项目的日常使用、CLI 命令语义、初始化、导入和 Markdown 迁移，请优先查看 [usage-manual.md](usage-manual.md)。
 
+Studio / Reader 的运行时边界、env contract 与路由策略，统一见 [runtime-architecture.md](runtime-architecture.md)。
+
 ## 1. 环境准备
 
 ### 1.1 系统要求
@@ -25,7 +27,7 @@ pnpm install
 
 ## 2. 开发模式启动
 
-### 2.1 启动开发服务器
+### 2.1 启动 Next.js 开发服务器
 
 ```bash
 # 在项目根目录执行
@@ -35,25 +37,34 @@ pnpm dev
 这个命令会：
 1. 启动 Next.js 开发服务器
 2. 监听文件变化并自动重载
-3. 提供 Studio 编辑入口与本地写入 API
+3. 提供 web 代码的开发调试环境
 
-**访问地址：**
+**重要说明：**
 
-- **Studio 编辑台**: http://localhost:3000/studio
-- **首页**: http://localhost:3000/ （开发环境下重定向到 Studio）
-
-**重要说明**：
+- 普通 `pnpm dev` 默认不暴露 `/` 和 `/studio`
 - 普通 `pnpm dev` 不会自动开放 `/[lang]/docs/*` 阅读站路由
+- 如需进入 Studio，请使用 CLI Studio 或 Desktop 运行时
 - 如需验证真实阅读站，请运行 CLI `preview` 启动本地动态阅读站，或运行 CLI `build` 生成完整静态站点后用静态服务器验证
 - 详见 [4.5 场景五：端到端测试](#45-场景五端到端测试编辑--构建--预览)
 
-### 2.2 启动 Electron 桌面端
+### 2.2 启动 CLI Studio
+
+```bash
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
+```
+
+访问地址：
+
+- **Studio 编辑台**: http://localhost:3000/studio
+- **首页**: http://localhost:3000/
+
+### 2.3 启动 Tauri 桌面端
 
 ```bash
 pnpm dev:desktop
 ```
 
-这将启动 Electron 应用的开发模式。
+这将启动 Tauri 桌面应用的开发模式。
 
 ## 3. 从源码调用 CLI
 
@@ -111,8 +122,8 @@ cat examples/starter-docs/dist/llms.txt
 ### 4.1 场景一：开发 Studio 功能
 
 ```bash
-# 启动开发服务器
-pnpm dev
+# 启动 CLI Studio
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 
 # 在浏览器中打开
 # http://localhost:3000/studio
@@ -124,7 +135,7 @@ pnpm dev
 ### 4.2 场景二：开发阅读站功能
 
 ```bash
-# 启动开发服务器
+# 启动 Next.js 开发服务器
 pnpm dev
 
 # 编辑 packages/web/app/[lang]/[...slug]/ 下的文件
@@ -222,8 +233,8 @@ pnpm --filter @anydocs/core typecheck
 ### 4.5 场景五：端到端测试（编辑 → 构建 → 预览）
 
 ```bash
-# 1. 启动 Studio
-pnpm dev
+# 1. 启动 CLI Studio
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 
 # 2. 在 Studio 中编辑内容
 #    http://localhost:3000/studio
@@ -339,7 +350,7 @@ node --experimental-strip-types packages/cli/src/index.ts <command>
 **问题**: Studio 保存时报错
 
 **检查**:
-1. 确保在开发模式下运行 `pnpm dev`
+1. 确保你运行的是 `CLI Studio` 或 `Desktop`，例如 `pnpm --filter @anydocs/cli cli studio examples/starter-docs`
 2. 检查文件权限
 3. 查看浏览器控制台和终端日志
 
@@ -390,8 +401,8 @@ pnpm typecheck
 
 在编辑内容时，同时运行：
 ```bash
-# 终端 1：Studio
-pnpm dev
+# 终端 1：CLI Studio
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 
 # 终端 2：动态阅读站预览
 node --experimental-strip-types packages/cli/src/index.ts preview examples/starter-docs
@@ -430,7 +441,7 @@ pnpm lint
 pnpm test
 pnpm build
 node --experimental-strip-types packages/cli/src/index.ts build examples/starter-docs
-pnpm dev
+pnpm --filter @anydocs/cli cli studio examples/starter-docs
 ```
 
 ## 9. 快速参考
@@ -440,7 +451,8 @@ pnpm dev
 | 任务 | 命令 |
 |------|------|
 | 安装依赖 | `pnpm install` |
-| 启动开发 | `pnpm dev` |
+| 启动 Next.js 开发服务器 | `pnpm dev` |
+| 启动 CLI Studio | `pnpm --filter @anydocs/cli cli studio examples/starter-docs` |
 | 启动桌面端开发 | `pnpm dev:desktop` |
 | 类型检查 | `pnpm typecheck` |
 | 代码检查 | `pnpm lint` |

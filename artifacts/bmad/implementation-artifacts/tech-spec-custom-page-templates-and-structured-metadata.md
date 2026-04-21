@@ -9,7 +9,7 @@ tech_stack:
   - 'Node.js'
   - 'pnpm workspace monorepo'
   - 'Next.js App Router'
-  - 'Electron + local-first Studio runtime'
+  - 'Tauri + local-first Studio runtime'
   - 'MCP adapter over @anydocs/core'
 files_to_modify:
   - 'packages/core/src/types/project.ts'

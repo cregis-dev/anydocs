@@ -6,11 +6,16 @@
 
 - [usage-manual.md](usage-manual.md): 日常使用入口，覆盖初始化、Studio、build、preview、导入与 Markdown 迁移
 - [developer-guide.md](developer-guide.md): 面向仓库维护者的开发、验证和调试指南
+- [runtime-architecture.md](runtime-architecture.md): Studio / Reader runtime 边界、env contract 与路由策略
 - [agent.md](agent.md): 项目根最小 agent guide 模板
 
 ## Product Docs
 
 - [classic-docs-theme-config.md](classic-docs-theme-config.md): `classic-docs` 阅读主题配置说明
+- [reader-theme-guide.md](reader-theme-guide.md): Reader 主题选择指南
+- [design-system.md](design-system.md): Anydocs 共享设计系统与统一 token 规范
+- [reader-design.md](reader-design.md): Reader surface 设计规范
+- [studio-design.md](studio-design.md): Studio surface 设计规范
 
 ## Templates
 
