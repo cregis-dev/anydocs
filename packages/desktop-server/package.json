@@ -10,10 +10,12 @@
     "anydocs-desktop-server": "./dist/index.js"
   },
   "scripts": {
+    "prebuild": "pnpm --filter @anydocs/core build",
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "pretypecheck": "pnpm --filter @anydocs/core build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
