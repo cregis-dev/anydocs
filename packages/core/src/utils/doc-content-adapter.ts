@@ -209,14 +209,23 @@ function yooptaBlockToCanonical(block: Record<string, unknown>, index: number): 
     case 'Divider':
       return { type: 'divider', id: blockId };
     case 'Image':
+      const imageProps = isRecord(entry?.props) ? entry.props : undefined;
+      const imageSizes = isRecord(imageProps?.sizes) ? imageProps.sizes : undefined;
+      const width =
+        readNumber(isRecord(imageProps) ? imageProps.width : undefined) ??
+        readNumber(isRecord(imageSizes) ? imageSizes.width : undefined);
+      const height =
+        readNumber(isRecord(imageProps) ? imageProps.height : undefined) ??
+        readNumber(isRecord(imageSizes) ? imageSizes.height : undefined);
+
       return trimUndefined({
         type: 'image' as const,
         id: blockId,
-        src: readString(isRecord(entry?.props) ? entry.props.src : undefined) ?? '',
-        alt: readString(isRecord(entry?.props) ? entry.props.alt : undefined),
-        title: readString(isRecord(entry?.props) ? entry.props.title : undefined),
-        width: readNumber(isRecord(entry?.props) ? entry.props.width : undefined),
-        height: readNumber(isRecord(entry?.props) ? entry.props.height : undefined),
+        src: readString(isRecord(imageProps) ? imageProps.src : undefined) ?? '',
+        alt: readString(isRecord(imageProps) ? imageProps.alt : undefined),
+        title: readString(isRecord(imageProps) ? imageProps.title : undefined),
+        width: width != null && width > 0 ? width : undefined,
+        height: height != null && height > 0 ? height : undefined,
         caption: yooptaInlineChildrenToCanonical(entry?.children).length > 0 ? yooptaInlineChildrenToCanonical(entry?.children) : undefined,
       }) as DocBlock;
     case 'Table':
@@ -487,8 +496,10 @@ export function docContentToYoopta(content: DocContentV1): Record<string, unknow
             src: block.src,
             alt: block.alt,
             title: block.title,
-            width: block.width,
-            height: block.height,
+            sizes: {
+              width: block.width ?? 0,
+              height: block.height ?? 0,
+            },
           }),
         );
         break;

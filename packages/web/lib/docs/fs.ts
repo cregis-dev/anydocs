@@ -166,8 +166,8 @@ export async function getProjectPathByFolderName(folderName: string): Promise<st
   return folderName;
 }
 
-// Stub function for listProjects - used by API routes
-// Will be handled by Electron IPC in desktop mode
+// Stub function for listProjects - used by API routes.
+// Desktop mode resolves projects through the local desktop runtime instead.
 export async function listProjects(): Promise<string[]> {
   return [];
 }

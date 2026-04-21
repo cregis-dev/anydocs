@@ -155,7 +155,11 @@ export function YooptaDocEditor({
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-4xl" style={{ paddingBottom: 100 }}>
+    <div
+      className="mx-auto w-full max-w-4xl"
+      style={{ paddingBottom: 100 }}
+      data-testid="studio-yoopta-editor"
+    >
       <BlockDndContext editor={editor}>
         <YooptaEditor
           editor={editor}

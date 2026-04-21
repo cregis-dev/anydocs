@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 type ProjectSettingsValue = {
   name: string;
@@ -177,6 +178,373 @@ function SettingsSection({
   );
 }
 
+type ShellNavGroup = {
+  title: string;
+  items: Array<{ label: string; active?: boolean }>;
+};
+
+type ReaderShellConfig = {
+  headerTitle: string;
+  headerSubtitle: string;
+  shellLabel: string;
+  shellSummary: string;
+  navSummary: string;
+  articleSummary: string;
+  railSummary: string;
+  navGroups: ShellNavGroup[];
+  articleTitle: string;
+  articleLines: number;
+  railTitle: string;
+  railLines: number;
+  footerNote: string;
+  layoutClass: string;
+  navClassName: string;
+  articleClassName: string;
+  railClassName: string;
+};
+
+function getReaderShellConfig(currentThemeId: string): ReaderShellConfig {
+  if (currentThemeId === 'atlas-docs') {
+    return {
+      headerTitle: 'Site-wide nav',
+      headerSubtitle: 'Useful for multiple domains with a shared top navigation.',
+      shellLabel: 'Two-level chrome',
+      shellSummary: 'Top navigation scopes the site, then each section gets its own sidebar.',
+      navSummary: 'Use when the docs split into guides, APIs, SDKs, and references.',
+      articleSummary: 'The reading lane stays stable while the navigation carries the domain split.',
+      railSummary: 'Keep page anchors and supporting context in a light right rail.',
+      navGroups: [
+        {
+          title: 'Guides',
+          items: [
+            { label: 'Introduction' },
+            { label: 'Getting Started', active: true },
+            { label: 'Concepts' },
+          ],
+        },
+        {
+          title: 'Reference',
+          items: [
+            { label: 'API Reference' },
+            { label: 'SDK Docs' },
+            { label: 'Changelog' },
+          ],
+        },
+      ],
+      articleTitle: 'One site, several domains',
+      articleLines: 4,
+      railTitle: 'On this page',
+      railLines: 3,
+      footerNote: 'Top nav + scoped sidebar + right rail',
+      layoutClass: 'grid-cols-[1fr_minmax(0,1.8fr)_120px]',
+      navClassName: 'bg-fd-muted/60',
+      articleClassName: 'bg-fd-background',
+      railClassName: 'bg-fd-muted/50',
+    };
+  }
+
+  if (currentThemeId === 'blueprint-review') {
+    return {
+      headerTitle: 'Review chrome',
+      headerSubtitle: 'Best for internal docs, PRDs, and deep folder trees.',
+      shellLabel: 'Review-first chrome',
+      shellSummary: 'The sidebar does the orientation work so the page can stay dense and content-first.',
+      navSummary: 'Use when the tree is deep and hierarchy matters more than site-wide marketing nav.',
+      articleSummary: 'Long-form review content stays readable without turning into a blog layout.',
+      railSummary: 'Keep comments, references, or related links close to the page.',
+      navGroups: [
+        {
+          title: 'Planning',
+          items: [
+            { label: 'Scope' },
+            { label: 'PRD', active: true },
+            { label: 'Assumptions' },
+          ],
+        },
+        {
+          title: 'Review',
+          items: [
+            { label: 'Architecture' },
+            { label: 'Implementation' },
+            { label: 'QA notes' },
+          ],
+        },
+      ],
+      articleTitle: 'Dense, content-first reading',
+      articleLines: 5,
+      railTitle: 'References',
+      railLines: 4,
+      footerNote: 'Dense reading shell with deep folders',
+      layoutClass: 'grid-cols-[160px_minmax(0,1fr)_120px]',
+      navClassName: 'bg-fd-muted/60',
+      articleClassName: 'bg-fd-background',
+      railClassName: 'bg-fd-muted/50',
+    };
+  }
+
+  return {
+    headerTitle: 'Compact docs shell',
+    headerSubtitle: 'Best for a single product doc tree with a clean reading lane.',
+    shellLabel: 'Classic reader chrome',
+    shellSummary: 'A compact sidebar keeps the tree visible while the article stays centered and calm.',
+    navSummary: 'Best when the site is mostly one connected doc tree instead of multiple domains.',
+    articleSummary: 'The content column remains dominant so long-form docs are easy to scan.',
+    railSummary: 'Use the right rail sparingly for anchors, not for primary navigation.',
+    navGroups: [
+      {
+        title: 'Getting Started',
+        items: [
+          { label: 'Welcome' },
+          { label: 'Install', active: true },
+          { label: 'Quickstart' },
+        ],
+      },
+      {
+        title: 'Reference',
+        items: [
+          { label: 'Pages' },
+          { label: 'Navigation' },
+          { label: 'Settings' },
+        ],
+      },
+    ],
+    articleTitle: 'Compact sidebar, centered article',
+    articleLines: 4,
+    railTitle: 'This page',
+    railLines: 3,
+    footerNote: 'Compact sidebar + centered article',
+    layoutClass: 'grid-cols-[180px_minmax(0,1.1fr)_96px]',
+    navClassName: 'bg-fd-muted/60',
+    articleClassName: 'bg-fd-background',
+    railClassName: 'bg-fd-muted/50',
+  };
+}
+
+function ShellHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="space-y-2 rounded-md border border-fd-border bg-fd-card p-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="h-2.5 w-20 rounded-full bg-fd-foreground/12" />
+        <div className="h-2.5 w-10 rounded-full bg-fd-foreground/10" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-2.5 w-16 rounded-full bg-fd-foreground/12" />
+        <div className="h-2.5 w-24 rounded-full bg-fd-foreground/10" />
+      </div>
+      <div className="text-[11px] font-medium text-fd-muted-foreground">{title}</div>
+      <div className="text-[11px] text-fd-muted-foreground">{subtitle}</div>
+    </div>
+  );
+}
+
+function ShellAnatomy({
+  shellLabel,
+  shellSummary,
+  navSummary,
+  articleSummary,
+  railSummary,
+}: {
+  shellLabel: string;
+  shellSummary: string;
+  navSummary: string;
+  articleSummary: string;
+  railSummary: string;
+}) {
+  return (
+    <div className="space-y-2 rounded-md border border-fd-border bg-fd-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary" className="text-[10px] uppercase tracking-[0.12em]">
+          {shellLabel}
+        </Badge>
+        <span className="text-xs text-fd-muted-foreground">{shellSummary}</span>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        <div className="rounded-md border border-fd-border bg-fd-background p-2">
+          <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
+            Navigation
+          </div>
+          <div className="mt-1 text-xs text-fd-foreground">{navSummary}</div>
+        </div>
+        <div className="rounded-md border border-fd-border bg-fd-background p-2">
+          <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
+            Content
+          </div>
+          <div className="mt-1 text-xs text-fd-foreground">{articleSummary}</div>
+        </div>
+        <div className="rounded-md border border-fd-border bg-fd-background p-2">
+          <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
+            Rail
+          </div>
+          <div className="mt-1 text-xs text-fd-foreground">{railSummary}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShellNav({
+  groups,
+  compact = false,
+  className,
+}: {
+  groups: ShellNavGroup[];
+  compact?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn('rounded-md border border-fd-border p-2', compact ? 'space-y-2' : 'space-y-3', className)}>
+      <div className="h-2.5 w-20 rounded-full bg-fd-foreground/12" />
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <div key={group.title} className="space-y-2">
+            <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
+              {group.title}
+            </div>
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <div
+                  key={item.label}
+                  className={cn(
+                    'rounded-md border px-2 py-1',
+                    item.active
+                      ? 'border-fd-foreground/20 bg-fd-card'
+                      : 'border-transparent bg-transparent',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'h-2 rounded-full',
+                      item.active ? 'w-24 bg-fd-foreground/16' : 'w-20 bg-fd-foreground/10',
+                    )}
+                  />
+                  <div className="mt-1 text-[10px] text-fd-muted-foreground">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShellArticle({
+  title,
+  lines = 3,
+  className,
+}: {
+  title: string;
+  lines?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn('space-y-2 rounded-md border border-fd-border p-2', className)}>
+      <div className="text-[11px] font-medium text-fd-foreground">{title}</div>
+      <div className="h-2 w-40 rounded-full bg-fd-foreground/12" />
+      <div className="space-y-2">
+        {Array.from({ length: lines }).map((_, index) => (
+          <div key={index} className="h-2 rounded-full bg-fd-foreground/10" />
+        ))}
+      </div>
+      <div className="h-12 rounded-md border border-dashed border-fd-border bg-fd-card/70" />
+    </div>
+  );
+}
+
+function ShellRail({
+  title,
+  compact = false,
+  className,
+}: {
+  title: string;
+  compact?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn('rounded-md border border-fd-border p-2', compact ? 'space-y-2' : 'space-y-3', className)}>
+      <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
+        {title}
+      </div>
+      <div className="h-2.5 w-12 rounded-full bg-fd-foreground/12" />
+      <div className="space-y-2">
+        <div className="h-2 rounded-full bg-fd-foreground/10" />
+        <div className="h-2 rounded-full bg-fd-foreground/10" />
+        <div className="h-2 rounded-full bg-fd-foreground/10" />
+        {!compact ? <div className="h-2 rounded-full bg-fd-foreground/10" /> : null}
+      </div>
+    </div>
+  );
+}
+
+function ReaderThemeShellPreview({
+  themeId,
+}: {
+  themeId: string;
+}) {
+  const config = getReaderShellConfig(themeId);
+
+  return (
+    <div className="space-y-3">
+      <ShellHeader title={config.headerTitle} subtitle={config.headerSubtitle} />
+      <ShellAnatomy
+        shellLabel={config.shellLabel}
+        shellSummary={config.shellSummary}
+        navSummary={config.navSummary}
+        articleSummary={config.articleSummary}
+        railSummary={config.railSummary}
+      />
+      <div className={cn('grid gap-2', config.layoutClass)}>
+        <ShellNav
+          groups={config.navGroups}
+          compact={themeId !== 'atlas-docs'}
+          className={config.navClassName}
+        />
+        <ShellArticle
+          title={config.articleTitle}
+          lines={config.articleLines}
+          className={config.articleClassName}
+        />
+        <ShellRail
+          title={config.railTitle}
+          compact={themeId !== 'atlas-docs'}
+          className={config.railClassName}
+        />
+      </div>
+      <div className="text-xs text-fd-muted-foreground">{config.footerNote}</div>
+    </div>
+  );
+}
+
+type ReaderThemePreviewData = {
+  id: string;
+  label: string;
+  tone: string;
+  previewSummary: string;
+  structureSummary: string;
+  chromeLabel: string;
+};
+
+function ReaderThemePreview({
+  theme,
+}: {
+  theme: ReaderThemePreviewData;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-fd-border bg-fd-background p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium text-fd-foreground">{theme.label} Preview</div>
+          <div className="text-xs text-fd-muted-foreground">{theme.previewSummary}</div>
+          <div className="mt-1 text-xs text-fd-muted-foreground">{theme.structureSummary}</div>
+        </div>
+        <Badge variant="secondary">{theme.chromeLabel}</Badge>
+      </div>
+
+      <ReaderThemeShellPreview themeId={theme.id} />
+    </div>
+  );
+}
+
 function ProjectSettingsContent({
   project,
   navGroupOptions,
@@ -192,6 +560,31 @@ function ProjectSettingsContent({
 
   const selectedTheme = docsThemes.find((theme) => theme.id === project.themeId) ?? null;
   const topNavSupported = selectedTheme?.capabilities.navigation.topNav ?? false;
+  const themePreviewData: ReaderThemePreviewData | null = selectedTheme
+    ? {
+        id: selectedTheme.id,
+        label: selectedTheme.label,
+        tone: selectedTheme.tone,
+        previewSummary:
+          selectedTheme.id === 'atlas-docs'
+            ? 'Top nav + scoped sidebar + right rail'
+            : selectedTheme.id === 'blueprint-review'
+              ? 'Dense sidebar + long-form review layout'
+              : 'Compact sidebar + centered article',
+        structureSummary:
+          selectedTheme.id === 'atlas-docs'
+            ? 'Top navigation organizes the site; each section gets its own sidebar.'
+            : selectedTheme.id === 'blueprint-review'
+              ? 'The sidebar is the primary orientation layer because the tree is deep.'
+              : 'The sidebar stays compact so the article remains the main reading lane.',
+        chromeLabel:
+          selectedTheme.id === 'atlas-docs'
+            ? 'Two-level chrome'
+            : selectedTheme.id === 'blueprint-review'
+              ? 'Review chrome'
+              : 'Classic chrome',
+      }
+    : null;
 
   return (
     <div className="space-y-4">
@@ -211,7 +604,7 @@ function ProjectSettingsContent({
             value={project.defaultLanguage}
             onValueChange={(value) => onProjectChange({ defaultLanguage: value as DocsLang })}
           >
-            <SelectTrigger>
+            <SelectTrigger data-testid="studio-project-default-language-trigger">
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent>
@@ -261,24 +654,46 @@ function ProjectSettingsContent({
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Reader" description="Theme and reader-facing labels.">
+      <SettingsSection title="Reader" description="Reader theme, branding, and surface-specific labels. This affects the public docs shell only.">
         <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Docs Theme</div>
           <Select value={project.themeId} onValueChange={(value) => onProjectChange({ themeId: value })}>
-            <SelectTrigger>
+            <SelectTrigger data-testid="studio-project-theme-trigger">
               <SelectValue placeholder="Select theme" />
             </SelectTrigger>
             <SelectContent>
               {docsThemes.map((theme) => (
-                <SelectItem key={theme.id} value={theme.id}>
-                  {theme.label}
+                <SelectItem key={theme.id} value={theme.id} className="py-2">
+                  <div className="space-y-0.5 text-left">
+                    <div className="font-medium">{theme.label}</div>
+                    <div className="text-xs text-fd-muted-foreground">{theme.tone}</div>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {selectedTheme ? (
-            <div className="mt-2 text-xs text-fd-muted-foreground">
-              {selectedTheme.label}: {selectedTheme.description}
+            <div className="mt-3 space-y-2 rounded-lg border border-fd-border bg-fd-background p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{selectedTheme.tone}</Badge>
+                <Badge variant="secondary">Reader only</Badge>
+              </div>
+              <div className="text-sm font-medium text-fd-foreground">{selectedTheme.label}</div>
+              <div className="text-xs text-fd-muted-foreground">{selectedTheme.description}</div>
+              <div className="text-xs text-fd-muted-foreground">
+                Best for: {selectedTheme.recommendedFor}
+              </div>
+              <div className="text-xs text-fd-muted-foreground">
+                Why this shell: {themePreviewData?.previewSummary}
+              </div>
+              <div className="text-xs text-fd-muted-foreground">
+                Navigation logic: {themePreviewData?.structureSummary}
+              </div>
+            </div>
+          ) : null}
+          {themePreviewData ? (
+            <div className="mt-3">
+              <ReaderThemePreview theme={themePreviewData} />
             </div>
           ) : null}
         </div>
@@ -309,7 +724,7 @@ function ProjectSettingsContent({
             value={project.codeTheme}
             onValueChange={(value) => onProjectChange({ codeTheme: value as 'github-light' | 'github-dark' })}
           >
-            <SelectTrigger>
+            <SelectTrigger data-testid="studio-project-code-theme-trigger">
               <SelectValue placeholder="Select code theme" />
             </SelectTrigger>
             <SelectContent>

@@ -40,7 +40,7 @@ export const YooptaSlashCommandMenu = () => (
     {(props) => {
       if (!props.items || props.items.length === 0) {
         return (
-          <SlashCommandMenu.Content>
+          <SlashCommandMenu.Content data-testid="studio-yoopta-slash-menu">
             <div className="p-4 text-center text-sm text-gray-500">
               No blocks available
             </div>
@@ -49,7 +49,7 @@ export const YooptaSlashCommandMenu = () => (
       }
 
       return (
-        <SlashCommandMenu.Content>
+        <SlashCommandMenu.Content data-testid="studio-yoopta-slash-menu">
           <SlashCommandMenu.List>
             <SlashCommandMenu.Empty>No blocks found</SlashCommandMenu.Empty>
             {props.items.map((item) => {
@@ -62,6 +62,7 @@ export const YooptaSlashCommandMenu = () => (
                   title={item.title}
                   description={item.description}
                   icon={<Icon size={16} />}
+                  data-testid={`studio-yoopta-slash-item-${item.id}`}
                 />
               );
             })}

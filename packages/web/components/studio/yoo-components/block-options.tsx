@@ -64,19 +64,24 @@ export const YooptaBlockOptions = ({
               ref={handleTurnIntoRef}
               onSelect={onTurnInto}
               keepOpen
+              data-testid="studio-yoopta-block-option-turn-into"
             >
               Turn into
             </BlockOptions.Item>
           </BlockOptions.Group>
           <BlockOptions.Separator />
           <BlockOptions.Group>
-            <BlockOptions.Item onSelect={onDuplicate}>
+            <BlockOptions.Item onSelect={onDuplicate} data-testid="studio-yoopta-block-option-duplicate">
               Duplicate
             </BlockOptions.Item>
-            <BlockOptions.Item onSelect={onCopyLink}>
+            <BlockOptions.Item onSelect={onCopyLink} data-testid="studio-yoopta-block-option-copy-link">
               Copy link to block
             </BlockOptions.Item>
-            <BlockOptions.Item variant="destructive" onSelect={onDelete}>
+            <BlockOptions.Item
+              variant="destructive"
+              onSelect={onDelete}
+              data-testid="studio-yoopta-block-option-delete"
+            >
               Delete
             </BlockOptions.Item>
           </BlockOptions.Group>

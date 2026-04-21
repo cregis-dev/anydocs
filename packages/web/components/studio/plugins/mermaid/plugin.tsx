@@ -43,6 +43,7 @@ const MermaidElement = (props: PluginElementRenderProps) => {
         isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
       }`}
       contentEditable={false} // Disable Yoopta native typings inside this node
+      data-testid="studio-yoopta-mermaid"
     >
       {/* Hidden children to satisfy Slate/Yoopta requirements */}
       <div className="hidden">{children}</div>
@@ -53,6 +54,7 @@ const MermaidElement = (props: PluginElementRenderProps) => {
           className="bg-white p-4 cursor-pointer min-h-[100px] flex items-center justify-center"
           onClick={() => setIsEditing(true)}
           title="Click to edit Mermaid syntax"
+          data-testid="studio-yoopta-mermaid-toggle"
         >
           {code ? (
             <MermaidViewer code={code} />
@@ -69,6 +71,7 @@ const MermaidElement = (props: PluginElementRenderProps) => {
               <button 
                 className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded"
                 onClick={() => setIsEditing(false)}
+                data-testid="studio-yoopta-mermaid-close"
               >
                 Close Editor
               </button>
@@ -79,6 +82,7 @@ const MermaidElement = (props: PluginElementRenderProps) => {
               value={code}
               onChange={handleChange}
               placeholder="graph TD;\n  A-->B;"
+              data-testid="studio-yoopta-mermaid-textarea"
             />
           </div>
         )}
