@@ -171,7 +171,7 @@ async function loadProjectContractForWorkflowSync(
 
   return {
     config,
-    paths: createProjectPathContract(repoRoot, projectRoot, config),
+    paths: createProjectPathContract(repoRoot, config),
   };
 }
 

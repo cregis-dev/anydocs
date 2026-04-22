@@ -26,7 +26,7 @@ async function writeValidContract(repoRoot: string) {
     name: 'Test Project',
   });
   const projectRoot = repoRoot;
-  const paths = createProjectPathContract(repoRoot, repoRoot, config);
+  const paths = createProjectPathContract(repoRoot, config);
   await mkdir(path.join(projectRoot, 'pages', 'en'), { recursive: true });
   await mkdir(path.join(projectRoot, 'pages', 'zh'), { recursive: true });
   await mkdir(path.join(projectRoot, 'navigation'), { recursive: true });
@@ -303,7 +303,7 @@ test('loadProjectContract accepts custom authoring page templates in project con
     };
 
     const config = rawConfig as ReturnType<typeof createDefaultProjectConfig>;
-    const paths = createProjectPathContract(repoRoot, repoRoot, config);
+    const paths = createProjectPathContract(repoRoot, config);
     await writeFile(path.join(repoRoot, ANYDOCS_CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`, 'utf8');
     await writeFile(
       path.join(repoRoot, ANYDOCS_WORKFLOW_FILE),
@@ -522,32 +522,28 @@ test('loadProjectContract fails when workflow standard file is malformed', async
 });
 
 test('loadProjectContract rejects configs whose projectId does not match the requested project root', async () => {
-  // Write a config that declares projectId='other-project' into the workspace-layout path
-  // for 'default' (i.e. content/projects/default/). Loading with projectId='default' should
-  // fail because the on-disk config says 'other-project'.
   const repoRoot = await createTempRepoRoot();
   const config = createDefaultProjectConfig({
     projectId: 'other-project',
     languages: ['en'],
   });
-  const projectDir = path.join(repoRoot, 'content', 'projects', 'default');
-  const paths = createProjectPathContract(repoRoot, projectDir, config);
+  const paths = createProjectPathContract(repoRoot, config);
 
   try {
-    await mkdir(path.join(projectDir, 'pages', 'en'), { recursive: true });
-    await mkdir(path.join(projectDir, 'navigation'), { recursive: true });
+    await mkdir(path.join(repoRoot, 'pages', 'en'), { recursive: true });
+    await mkdir(path.join(repoRoot, 'navigation'), { recursive: true });
     await writeFile(
-      path.join(projectDir, ANYDOCS_CONFIG_FILE),
+      path.join(repoRoot, ANYDOCS_CONFIG_FILE),
       `${JSON.stringify(config, null, 2)}\n`,
       'utf8',
     );
     await writeFile(
-      path.join(projectDir, ANYDOCS_WORKFLOW_FILE),
+      path.join(repoRoot, ANYDOCS_WORKFLOW_FILE),
       `${JSON.stringify(createWorkflowStandardDefinition({ config, paths }), null, 2)}\n`,
       'utf8',
     );
     await writeFile(
-      path.join(projectDir, 'navigation', 'en.json'),
+      path.join(repoRoot, 'navigation', 'en.json'),
       `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`,
       'utf8',
     );
@@ -802,7 +798,7 @@ test('updateProjectConfig creates missing language roots when enabling a new lan
     defaultLanguage: 'en',
     name: 'Single Language Project',
   });
-  const paths = createProjectPathContract(repoRoot, repoRoot, config);
+  const paths = createProjectPathContract(repoRoot, config);
 
   try {
     await mkdir(path.join(repoRoot, 'pages', 'en'), { recursive: true });

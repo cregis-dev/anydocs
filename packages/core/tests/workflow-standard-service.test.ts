@@ -29,7 +29,7 @@ test('createWorkflowStandardDefinition describes the canonical phase 1 content m
 
   try {
     const config = createDefaultProjectConfig({ languages: ['en', 'zh'], defaultLanguage: 'en' });
-    const paths = createProjectPathContract(repoRoot, repoRoot, config);
+    const paths = createProjectPathContract(repoRoot, config);
     const definition = createWorkflowStandardDefinition({ config, paths });
 
     assert.equal(definition.standardId, 'anydocs-phase-1');
@@ -71,7 +71,7 @@ test('exportWorkflowStandard returns Studio-independent guidance for external au
 
   try {
     const config = createDefaultProjectConfig({ languages: ['en'] });
-    const paths = createProjectPathContract(repoRoot, repoRoot, config);
+    const paths = createProjectPathContract(repoRoot, config);
     const exported = exportWorkflowStandard({ config, paths });
 
     assert.match(exported.markdownGuide, /Anydocs Workflow Standard/);
@@ -91,7 +91,7 @@ test('validateWorkflowStandardDefinition accepts exported workflow standards and
 
   try {
     const config = createDefaultProjectConfig({ languages: ['en'] });
-    const paths = createProjectPathContract(repoRoot, repoRoot, config);
+    const paths = createProjectPathContract(repoRoot, config);
     const exported = exportWorkflowStandard({ config, paths });
     const definition = validateWorkflowStandardDefinition(exported.definition);
 
@@ -107,7 +107,7 @@ test('assertWorkflowStandardMatchesContract accepts workflow definitions missing
 
   try {
     const config = createDefaultProjectConfig({ languages: ['en'] });
-    const paths = createProjectPathContract(repoRoot, repoRoot, config);
+    const paths = createProjectPathContract(repoRoot, config);
     const definition = createWorkflowStandardDefinition({ config, paths });
 
     assert.doesNotThrow(() =>
