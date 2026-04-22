@@ -41,19 +41,32 @@ interface StudioConfig {
   projectsRoot?: string;
 }
 
-let configCache: StudioConfig | null = null;
+interface ConfigCacheEntry {
+  config: StudioConfig;
+  mtime: number;
+}
+
+let configCache: ConfigCacheEntry | null = null;
 
 async function loadConfig(): Promise<StudioConfig> {
-  if (configCache) return configCache;
-  
   const configPath = path.join(process.cwd(), CONFIG_FILE);
   try {
+    const stat = await fs.stat(configPath);
+    const mtime = stat.mtimeMs;
+    if (configCache && configCache.mtime === mtime) {
+      return configCache.config;
+    }
     const content = await fs.readFile(configPath, 'utf-8');
-    configCache = JSON.parse(content) as StudioConfig;
-  } catch {
-    configCache = {};
+    const config = JSON.parse(content) as StudioConfig;
+    configCache = { config, mtime };
+    return config;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+      configCache = { config: {}, mtime: 0 };
+      return {};
+    }
+    throw e;
   }
-  return configCache;
 }
 
 function repoRoot() {

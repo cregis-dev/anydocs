@@ -44,7 +44,6 @@ import {
 import {
   hasNativeDesktopPathOpener,
   onNativeDesktopMenuAction,
-  openNativeDesktopPath,
   type DesktopMenuAction,
 } from '@/components/studio/native-desktop-bridge';
 import {
@@ -76,481 +75,32 @@ import {
   resolveTopNavLabel,
 } from '@/lib/themes/atlas-nav';
 import { cn } from '@/lib/utils';
-
-type LoadState = { nav: NavigationDoc | null; pages: PageDoc[]; loading: boolean; error: string | null };
-type ProjectState = {
-  name: string;
-  projectRoot: string;
-  languages: DocsLang[];
-  defaultLanguage: DocsLang;
-  themeId: string;
-  siteTitle: string;
-  homeLabel: string;
-  logoSrc: string;
-  logoAlt: string;
-  showSearch: boolean;
-  primaryColor: string;
-  primaryForegroundColor: string;
-  accentColor: string;
-  accentForegroundColor: string;
-  sidebarActiveColor: string;
-  sidebarActiveForegroundColor: string;
-  codeTheme: 'github-light' | 'github-dark';
-  topNavItems: ProjectSiteTopNavItem[];
-  authoringTemplates: ReturnType<typeof listResolvedProjectPageTemplates>;
-  apiSources: ApiSourceDoc[];
-  outputDir: string;
-} | null;
-
-type RightSidebarMode = 'page' | 'project' | null;
-type WorkflowAction = 'preview' | 'build';
-type SidebarCreateDialog = { type: 'page' | 'group' | 'link' } | null;
-type WorkflowDiagnostic = {
-  title: string;
-  detail: string;
-  remediation?: string;
-  raw?: string;
-};
-type WorkflowSuccess =
-  | {
-      type: 'build';
-      message: string;
-      artifactRoot: string;
-    }
-  | {
-      type: 'preview';
-      message: string;
-      previewUrl: string;
-    };
-type StoredWorkflowResult = {
-  action: WorkflowAction;
-  resolvedAt: string;
-  success: WorkflowSuccess | null;
-  error: string | null;
-};
-type WorkflowResultHistoryEntry = StoredWorkflowResult & {
-  id: string;
-};
-const STUDIO_BOOTSTRAP_RETRY_DELAYS_MS = [250, 500, 1_000, 1_500, 2_500, 4_000] as const;
-const WORKFLOW_STAGE_HINT_DELAY_MS = 4_000;
-const WORKFLOW_RESULT_HISTORY_LIMIT = 5;
-const WORKFLOW_RESULT_STORAGE_PREFIX = 'anydocs:studio:workflow-result:';
-
-function formatWorkflowActionLabel(action: WorkflowAction) {
-  return action === 'build' ? 'Build' : 'Preview';
-}
-
-function formatWorkflowElapsed(ms: number) {
-  const totalSeconds = Math.max(1, Math.floor(ms / 1_000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes === 0) {
-    return `${seconds}s`;
-  }
-
-  return `${minutes}m ${seconds}s`;
-}
-
-function getWorkflowStageHint(action: WorkflowAction, elapsedMs: number) {
-  if (action === 'build') {
-    if (elapsedMs < WORKFLOW_STAGE_HINT_DELAY_MS) {
-      return {
-        title: 'Preparing build',
-        detail: 'Saving local authoring state and starting the docs build.',
-      };
-    }
-    if (elapsedMs < 12_000) {
-      return {
-        title: 'Generating artifacts',
-        detail: 'Validating published pages and rewriting search, reader, and LLM outputs.',
-      };
-    }
-    return {
-      title: 'Finalizing build',
-      detail: 'Refreshing local runtime state. Larger projects may stay here for a bit.',
-    };
-  }
-
-  if (elapsedMs < WORKFLOW_STAGE_HINT_DELAY_MS) {
-    return {
-      title: 'Starting preview',
-      detail: 'Stopping older preview sessions and preparing the reader runtime.',
-    };
-  }
-  if (elapsedMs < 12_000) {
-    return {
-      title: 'Warming preview',
-      detail: 'Building the latest published output before opening the local reader.',
-    };
-  }
-  return {
-    title: 'Waiting for preview',
-    detail: 'Checking that the local preview server is ready to serve the updated docs.',
-  };
-}
-
-function describeWorkflowError(action: WorkflowAction, message: string): WorkflowDiagnostic {
-  const actionLabel = formatWorkflowActionLabel(action);
-  const normalized = message.trim();
-  const lower = normalized.toLowerCase();
-
-  if (lower.includes('timed out waiting for the shared web runtime lock')) {
-    return {
-      title: `${actionLabel} blocked by another docs runtime task`,
-      detail: 'The shared docs runtime stayed locked too long, usually because an older preview or build is still shutting down.',
-      remediation: 'Wait a moment, close stale preview windows if needed, then retry.',
-      raw: normalized,
-    };
-  }
-
-  if (lower.includes('timed out waiting for docs preview server to become ready')) {
-    return {
-      title: 'Preview server did not become ready',
-      detail: 'The local reader runtime never responded before the preview timeout expired.',
-      remediation: 'Retry preview. If it keeps failing, inspect the desktop or web terminal for runtime errors.',
-      raw: normalized,
-    };
-  }
-
-  if (lower.includes('address already in use') || lower.includes('eaddrinuse')) {
-    return {
-      title: 'Preview port is already in use',
-      detail: 'The local preview process could not bind to a free port.',
-      remediation: 'Close the conflicting process or restart the preview session, then retry.',
-      raw: normalized,
-    };
-  }
-
-  if (lower.includes('failed to fetch api source')) {
-    return {
-      title: 'Build could not fetch an API source',
-      detail: 'One of the configured API sources failed during artifact generation.',
-      remediation: 'Check the API source URL and credentials in project settings, then run build again.',
-      raw: normalized,
-    };
-  }
-
-  if (lower.includes('unable to locate the docs web runtime')) {
-    return {
-      title: 'Docs runtime is missing',
-      detail: 'Studio could not find the local docs runtime used for build and preview.',
-      remediation: 'Reinstall dependencies or restore the local web runtime before retrying.',
-      raw: normalized,
-    };
-  }
-
-  if (lower.includes('request failed: 5')) {
-    return {
-      title: `${actionLabel} failed in the local service`,
-      detail: 'The local Studio service returned an internal error while processing this workflow.',
-      remediation: 'Retry once. If the error repeats, inspect the terminal logs for the failing request.',
-      raw: normalized,
-    };
-  }
-
-  return {
-    title: `${actionLabel} failed`,
-    detail: normalized || `${actionLabel} workflow failed.`,
-    remediation: 'Inspect the terminal logs if this keeps happening, then retry.',
-    raw: normalized || undefined,
-  };
-}
-
-function getWorkflowResultStorageKey(projectId: string) {
-  return `${WORKFLOW_RESULT_STORAGE_PREFIX}${projectId}`;
-}
-
-function readStoredWorkflowResults(projectId: string): WorkflowResultHistoryEntry[] {
-  if (typeof window === 'undefined' || !projectId) {
-    return [];
-  }
-
-  try {
-    const raw = window.sessionStorage.getItem(getWorkflowResultStorageKey(projectId));
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter((entry): entry is WorkflowResultHistoryEntry => {
-      if (!entry || typeof entry !== 'object') {
-        return false;
-      }
-
-      const candidate = entry as Partial<WorkflowResultHistoryEntry>;
-      return (
-        typeof candidate.id === 'string' &&
-        (candidate.action === 'build' || candidate.action === 'preview') &&
-        typeof candidate.resolvedAt === 'string' &&
-        ('success' in candidate || 'error' in candidate)
-      );
-    });
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredWorkflowResults(projectId: string, results: WorkflowResultHistoryEntry[]) {
-  if (typeof window === 'undefined' || !projectId) {
-    return;
-  }
-
-  window.sessionStorage.setItem(getWorkflowResultStorageKey(projectId), JSON.stringify(results));
-}
-
-function clearStoredWorkflowResult(projectId: string) {
-  if (typeof window === 'undefined' || !projectId) {
-    return;
-  }
-
-  window.sessionStorage.removeItem(getWorkflowResultStorageKey(projectId));
-}
-
-function formatWorkflowResolvedAt(resolvedAt: string) {
-  const value = new Date(resolvedAt);
-  if (Number.isNaN(value.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(value);
-}
-
-function formatWorkflowResultSummary(entry: WorkflowResultHistoryEntry) {
-  if (entry.success?.type === 'build') {
-    return 'Build completed';
-  }
-  if (entry.success?.type === 'preview') {
-    return 'Preview ready';
-  }
-
-  return describeWorkflowError(entry.action, entry.error ?? `${formatWorkflowActionLabel(entry.action)} failed`).title;
-}
-
-function collectNavPageRefs(items: NavItem[], out: { pageId: string; hidden: boolean }[]) {
-  for (const item of items) {
-    if (item.type === 'page') {
-      out.push({ pageId: item.pageId, hidden: !!item.hidden });
-      continue;
-    }
-    if (item.type === 'link') continue;
-    collectNavPageRefs(item.children, out);
-  }
-}
-
-function validateStudioNavAndPages(nav: NavigationDoc | null, pages: PageDoc[]) {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  const bySlug = new Map<string, string[]>();
-  for (const p of pages) {
-    const ids = bySlug.get(p.slug) ?? [];
-    ids.push(p.id);
-    bySlug.set(p.slug, ids);
-  }
-  for (const [slug, ids] of bySlug.entries()) {
-    const uniq = [...new Set(ids)];
-    if (uniq.length > 1) warnings.push(`重复 slug：${slug}（${uniq.join(', ')}）`);
-  }
-
-  if (nav) {
-    const refs: { pageId: string; hidden: boolean }[] = [];
-    collectNavPageRefs(nav.items, refs);
-    const allIds = new Set(pages.map((p) => p.id));
-    const missing = [...new Set(refs.map((r) => r.pageId))].filter((id) => !allIds.has(id));
-    for (const id of missing) errors.push(`导航引用缺失 pageId：${id}`);
-
-    const hiddenPublished = refs.filter((r) => r.hidden).map((r) => r.pageId);
-    if (hiddenPublished.length) warnings.push(`隐藏节点不会出现在阅读站导航：${[...new Set(hiddenPublished)].join(', ')}`);
-  }
-
-  return { errors, warnings };
-}
-
-function clearReviewApproval(page: PageDoc | null): PageDoc | null {
-  if (!page?.review?.required || !page.review.approvedAt) {
-    return page;
-  }
-
-  return {
-    ...page,
-    review: {
-      ...page.review,
-      approvedAt: undefined,
-    },
-  };
-}
-
-function shouldInvalidateReviewApproval(patch: Partial<PageDoc>): boolean {
-  return (
-    'content' in patch ||
-    'render' in patch ||
-    'title' in patch ||
-    'slug' in patch ||
-    'description' in patch ||
-    'template' in patch ||
-    'metadata' in patch
-  );
-}
-
-function applyPagePatch(page: PageDoc | null, patch: Partial<PageDoc>, invalidateApproval: boolean): PageDoc | null {
-  if (!page) {
-    return page;
-  }
-
-  const next = {
-    ...page,
-    ...patch,
-  };
-
-  return invalidateApproval ? clearReviewApproval(next) : next;
-}
-
-function upsertPageInList(pages: PageDoc[], nextPage: PageDoc) {
-  const index = pages.findIndex((page) => page.id === nextPage.id);
-  if (index === -1) {
-    return [...pages, nextPage];
-  }
-
-  const nextPages = [...pages];
-  nextPages[index] = nextPage;
-  return nextPages;
-}
-
-function sortPagesBySlug(pages: PageDoc[]) {
-  return [...pages].sort((left, right) => left.slug.localeCompare(right.slug));
-}
-
-function normalizeProjectApiSources(
-  apiSources: ApiSourceDoc[],
-  languages: DocsLang[],
-  defaultLanguage: DocsLang,
-): ApiSourceDoc[] {
-  return apiSources.map((source) =>
-    languages.includes(source.lang)
-      ? source
-      : {
-          ...source,
-          lang: defaultLanguage,
-        },
-  );
-}
-
-function applyProjectPatch(
-  current: Exclude<ProjectState, null>,
-  patch: Partial<Exclude<ProjectState, null>>,
-): Exclude<ProjectState, null> {
-  const nextLanguages = patch.languages ?? current.languages;
-  const nextDefaultLanguage =
-    patch.defaultLanguage ??
-    (nextLanguages.includes(current.defaultLanguage) ? current.defaultLanguage : nextLanguages[0] ?? current.defaultLanguage);
-
-  return {
-    ...current,
-    ...patch,
-    languages: nextLanguages,
-    defaultLanguage: nextDefaultLanguage,
-    apiSources: normalizeProjectApiSources(patch.apiSources ?? current.apiSources, nextLanguages, nextDefaultLanguage),
-  };
-}
-
-function sanitizeApiSourcesForSave(apiSources: ApiSourceDoc[]): ApiSourceDoc[] {
-  return apiSources.map((source) => {
-    const routeBase = source.runtime?.routeBase?.trim();
-
-    return {
-      ...source,
-      id: source.id.trim(),
-      display: {
-        ...source.display,
-        title: source.display.title.trim(),
-      },
-      source:
-        source.source.kind === 'url'
-          ? {
-              kind: 'url',
-              url: source.source.url.trim(),
-            }
-          : {
-              kind: 'file',
-              path: source.source.path.trim(),
-            },
-      ...(routeBase || source.runtime?.tryIt
-        ? {
-            runtime: {
-              ...(routeBase ? { routeBase } : {}),
-              ...(source.runtime?.tryIt ? { tryIt: source.runtime.tryIt } : {}),
-            },
-          }
-        : {}),
-    };
-  });
-}
-
-function slugifyGroupId(value: string) {
-  return (
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .replace(/-{2,}/g, '-') || `group-${Date.now().toString(36)}`
-  );
-}
-
-function isTransientStudioBootstrapError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-
-  return (
-    /Request failed:\s*404\s+Not Found/i.test(message) ||
-    /received HTML instead/i.test(message)
-  );
-}
-
-function removePageRefsFromNav(items: NavItem[], pageId: string): { items: NavItem[]; removed: number } {
-  let removed = 0;
-  const nextItems: NavItem[] = [];
-
-  for (const item of items) {
-    if (item.type === 'page') {
-      if (item.pageId === pageId) {
-        removed += 1;
-        continue;
-      }
-
-      nextItems.push(item);
-      continue;
-    }
-
-    if (item.type === 'section' || item.type === 'folder') {
-      const cleaned = removePageRefsFromNav(item.children, pageId);
-      removed += cleaned.removed;
-      nextItems.push({ ...item, children: cleaned.items });
-      continue;
-    }
-
-    nextItems.push(item);
-  }
-
-  return { items: nextItems, removed };
-}
-
-function replaceNavigationGroupChildren(nav: NavigationDoc, groupId: string, children: NavItem[]): NavigationDoc {
-  return {
-    ...nav,
-    items: nav.items.map((item) =>
-      (item.type === 'section' || item.type === 'folder') && item.id === groupId ? { ...item, children } : item,
-    ),
-  };
-}
+import {
+  type LoadState,
+  type ProjectState,
+  type RightSidebarMode,
+  type WorkflowAction,
+  type WorkflowDiagnostic,
+  type WorkflowResultHistoryEntry,
+  type WorkflowSuccess,
+  type SidebarCreateDialog,
+  STUDIO_BOOTSTRAP_RETRY_DELAYS_MS,
+  applyPagePatch,
+  applyProjectPatch,
+  formatWorkflowActionLabel,
+  formatWorkflowResultSummary,
+  formatWorkflowResolvedAt,
+  isTransientStudioBootstrapError,
+  removePageRefsFromNav,
+  replaceNavigationGroupChildren,
+  sanitizeApiSourcesForSave,
+  shouldInvalidateReviewApproval,
+  slugifyGroupId,
+  sortPagesBySlug,
+  upsertPageInList,
+  validateStudioNavAndPages,
+} from '@/components/studio/local-studio-utils';
+import { useWorkflowState } from '@/components/studio/use-workflow-state';
 
 type LocalStudioAppProps = {
   bootContext: StudioBootContext;
@@ -581,28 +131,45 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const [projectDirtyTick, setProjectDirtyTick] = useState(0);
   const [projectSaving, setProjectSaving] = useState(false);
   const [projectSaveError, setProjectSaveError] = useState<string | null>(null);
-  const [workflowBusy, setWorkflowBusy] = useState<'build' | 'preview' | null>(null);
-  const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
-  const [workflowError, setWorkflowError] = useState<string | null>(null);
-  const [workflowSuccess, setWorkflowSuccess] = useState<WorkflowSuccess | null>(null);
-  const [workflowResultAction, setWorkflowResultAction] = useState<WorkflowAction | null>(null);
-  const [workflowResolvedAt, setWorkflowResolvedAt] = useState<string | null>(null);
-  const [workflowHistory, setWorkflowHistory] = useState<WorkflowResultHistoryEntry[]>([]);
-  const [workflowStartedAt, setWorkflowStartedAt] = useState<number | null>(null);
-  const [workflowElapsedMs, setWorkflowElapsedMs] = useState(0);
+  const {
+    workflowBusy,
+    setWorkflowBusy,
+    workflowMessage,
+    setWorkflowMessage,
+    workflowError,
+    setWorkflowError,
+    workflowSuccess,
+    setWorkflowSuccess,
+    workflowResultAction,
+    setWorkflowResultAction,
+    workflowStartedAt,
+    setWorkflowStartedAt,
+    workflowAction,
+    setWorkflowAction,
+    workflowMenuOpen,
+    setWorkflowMenuOpen,
+    workflowHistory,
+    workflowMenuRef,
+    previewWindowRef,
+    workflowBusyLabel,
+    workflowElapsedLabel,
+    workflowStageHint,
+    showWorkflowStageHint,
+    workflowResolvedLabel,
+    workflowErrorDiagnostic,
+    workflowHistoryEntries,
+    clearWorkflowResult,
+    persistWorkflowResult,
+    handleOpenWorkflowArtifactRoot,
+    handleOpenWorkflowPreview,
+  } = useWorkflowState(projectId);
+
   const [navDirtyTick, setNavDirtyTick] = useState(0);
   const [selectedTopNavGroupId, setSelectedTopNavGroupId] = useState<string | null>(null);
-  
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarMode, setRightSidebarMode] = useState<RightSidebarMode>(null);
-  const [workflowAction, setWorkflowAction] = useState<WorkflowAction>('preview');
-  const [workflowMenuOpen, setWorkflowMenuOpen] = useState(false);
-  
-  // Dropdown states
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [sidebarCreateDialog, setSidebarCreateDialog] = useState<SidebarCreateDialog>(null);
-  
-  // Folder opening state
   const [isOpeningFolder, setIsOpeningFolder] = useState(false);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>(lockedProject ? [lockedProject] : []);
   
@@ -644,152 +211,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   savingNavRef.current = savingNav;
   const navDirtyTickRef = useRef(0);
   navDirtyTickRef.current = navDirtyTick;
-  const workflowMenuRef = useRef<HTMLDivElement | null>(null);
-  const previewWindowRef = useRef<Window | null>(null);
-  const workflowBusyLabel = workflowBusy ? formatWorkflowActionLabel(workflowBusy) : null;
-  const workflowElapsedLabel = workflowBusy ? formatWorkflowElapsed(workflowElapsedMs) : null;
-  const workflowStageHint = workflowBusy ? getWorkflowStageHint(workflowBusy, workflowElapsedMs) : null;
-  const showWorkflowStageHint = workflowBusy !== null && workflowElapsedMs >= WORKFLOW_STAGE_HINT_DELAY_MS;
-  const workflowResolvedLabel = workflowResolvedAt ? formatWorkflowResolvedAt(workflowResolvedAt) : null;
-  const workflowErrorDiagnostic = workflowError
-    ? describeWorkflowError(workflowResultAction ?? workflowAction, workflowError)
-    : null;
-  const workflowHistoryEntries = workflowHistory.slice(1);
   const canOpenLocalPath = hasNativeDesktopPathOpener();
-
-  useEffect(() => {
-    if (!workflowBusy || workflowStartedAt === null) {
-      setWorkflowElapsedMs(0);
-      return;
-    }
-
-    const updateElapsed = () => {
-      setWorkflowElapsedMs(Date.now() - workflowStartedAt);
-    };
-
-    updateElapsed();
-    const intervalId = window.setInterval(updateElapsed, 1_000);
-    return () => window.clearInterval(intervalId);
-  }, [workflowBusy, workflowStartedAt]);
-
-  const clearWorkflowResult = useCallback(
-    (targetProjectId?: string, options?: { clearHistory?: boolean }) => {
-      const nextProjectId = targetProjectId ?? projectId;
-      setWorkflowMessage(null);
-      setWorkflowError(null);
-      setWorkflowSuccess(null);
-      setWorkflowResultAction(null);
-      setWorkflowResolvedAt(null);
-      if (options?.clearHistory) {
-        setWorkflowHistory([]);
-      }
-      if (nextProjectId && options?.clearHistory) {
-        clearStoredWorkflowResult(nextProjectId);
-      }
-    },
-    [projectId],
-  );
-
-  const persistWorkflowResult = useCallback(
-    (nextAction: WorkflowAction, result: { success?: WorkflowSuccess | null; error?: string | null }) => {
-      const nextEntry: WorkflowResultHistoryEntry = {
-        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        resolvedAt: new Date().toISOString(),
-        action: nextAction,
-        success: result.success ?? null,
-        error: result.error ?? null,
-      };
-      setWorkflowResultAction(nextAction);
-      setWorkflowResolvedAt(nextEntry.resolvedAt);
-      setWorkflowHistory((current) => {
-        const nextHistory = [nextEntry, ...current].slice(0, WORKFLOW_RESULT_HISTORY_LIMIT);
-        writeStoredWorkflowResults(projectId, nextHistory);
-        return nextHistory;
-      });
-    },
-    [projectId],
-  );
-
-  useEffect(() => {
-    if (!projectId) {
-      return;
-    }
-
-    const stored = readStoredWorkflowResults(projectId);
-    if (!stored.length) {
-      setWorkflowMessage(null);
-      setWorkflowError(null);
-      setWorkflowSuccess(null);
-      setWorkflowResultAction(null);
-      setWorkflowResolvedAt(null);
-      setWorkflowHistory([]);
-      return;
-    }
-
-    const latest = stored[0];
-    setWorkflowHistory(stored);
-    setWorkflowResultAction(latest.action);
-    setWorkflowResolvedAt(latest.resolvedAt);
-    setWorkflowSuccess(latest.success);
-    setWorkflowError(latest.error);
-    setWorkflowMessage(latest.success?.message ?? null);
-  }, [projectId]);
-
-  useEffect(() => {
-    if (!workflowMenuOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) {
-        return;
-      }
-      if (workflowMenuRef.current?.contains(target)) {
-        return;
-      }
-      setWorkflowMenuOpen(false);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setWorkflowMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [workflowMenuOpen]);
-
-  const handleOpenWorkflowArtifactRoot = useCallback(async () => {
-    if (workflowSuccess?.type !== 'build') {
-      return;
-    }
-
-    const opened = await openNativeDesktopPath(workflowSuccess.artifactRoot);
-    if (!opened) {
-      setWorkflowError('Desktop path opener is unavailable in this runtime.');
-    }
-  }, [workflowSuccess]);
-
-  const handleOpenWorkflowPreview = useCallback(() => {
-    if (workflowSuccess?.type !== 'preview') {
-      return;
-    }
-
-    const existingPreviewWindow = previewWindowRef.current;
-    if (existingPreviewWindow && !existingPreviewWindow.closed) {
-      existingPreviewWindow.location.href = workflowSuccess.previewUrl;
-      existingPreviewWindow.focus();
-      return;
-    }
-
-    previewWindowRef.current = window.open(workflowSuccess.previewUrl, '_blank');
-  }, [workflowSuccess]);
 
   const stopPreviewSessions = useCallback(async () => {
     try {
