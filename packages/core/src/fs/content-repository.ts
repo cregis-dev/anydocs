@@ -180,7 +180,7 @@ export async function loadProjectContract(
         },
       );
     }
-    const paths = createProjectPathContract(repoRoot, config, outputDir);
+    const paths = createProjectPathContract(repoRoot, projectRoot, config, outputDir);
     assertProjectContractStructure(config, paths);
 
     await ensureExists(
@@ -271,7 +271,7 @@ export async function updateProjectConfig(
       projectId: currentConfig.projectId,
       version: currentConfig.version,
     });
-    const nextPaths = createProjectPathContract(repoRoot, nextConfig);
+    const nextPaths = createProjectPathContract(repoRoot, contractResult.value.paths.projectRoot, nextConfig);
     await assertTopNavGroupsExistForLanguages(nextConfig, nextPaths);
 
     await writeJsonAtomic(contractResult.value.paths.configFile, nextConfig);

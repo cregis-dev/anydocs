@@ -226,7 +226,7 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
     }),
   );
 
-  const paths = createProjectPathContract(options.repoRoot, config);
+  const paths = createProjectPathContract(options.repoRoot, options.repoRoot, config);
 
   await ensurePathDoesNotExist(
     paths.configFile,

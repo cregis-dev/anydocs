@@ -4,7 +4,6 @@ import { ValidationError } from '../errors/validation-error.ts';
 import {
   ANYDOCS_CONFIG_FILE,
   ANYDOCS_WORKFLOW_FILE,
-  resolveProjectRoot,
 } from '../config/project-config.ts';
 import {
   SUPPORTED_DOCS_LANGUAGES,
@@ -15,10 +14,10 @@ import {
 
 export function createProjectPathContract(
   repoRoot: string,
+  projectRoot: string,
   config: ProjectConfig,
   outputDir?: string,
 ): ProjectPathContract {
-  const projectRoot = resolveProjectRoot(repoRoot, config.projectId);
   const pagesRoot = path.join(projectRoot, 'pages');
   const navigationRoot = path.join(projectRoot, 'navigation');
 

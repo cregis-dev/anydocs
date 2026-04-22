@@ -45,8 +45,14 @@ export function createDefaultProjectConfig(
   };
 }
 
-export function resolveProjectRoot(repoRoot: string, _projectId?: string): string {
-  return path.resolve(repoRoot);
+export const PROJECTS_SUBDIR = path.join('content', 'projects');
+
+export function resolveProjectRoot(repoRoot: string, projectId?: string): string {
+  const resolved = path.resolve(repoRoot);
+  if (!projectId) {
+    return resolved;
+  }
+  return path.join(resolved, PROJECTS_SUBDIR, projectId);
 }
 
 export function assertValidProjectId(projectId: string): void {
