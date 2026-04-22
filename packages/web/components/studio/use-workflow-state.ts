@@ -31,6 +31,7 @@ export type UseWorkflowStateReturn = {
   workflowSuccess: WorkflowSuccess | null;
   setWorkflowSuccess: (value: WorkflowSuccess | null) => void;
   workflowResultAction: WorkflowAction | null;
+  setWorkflowResultAction: (value: WorkflowAction | null) => void;
   workflowStartedAt: number | null;
   setWorkflowStartedAt: (value: number | null) => void;
   workflowAction: WorkflowAction;
@@ -224,6 +225,7 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
     workflowSuccess,
     setWorkflowSuccess,
     workflowResultAction,
+    setWorkflowResultAction,
     workflowStartedAt,
     setWorkflowStartedAt,
     workflowAction,

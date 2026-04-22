@@ -140,6 +140,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     workflowSuccess,
     setWorkflowSuccess,
     workflowResultAction,
+    setWorkflowResultAction,
     workflowStartedAt,
     setWorkflowStartedAt,
     workflowAction,
