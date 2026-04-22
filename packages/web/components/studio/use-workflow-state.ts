@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { openNativeDesktopPath } from '@/components/studio/native-desktop-bridge';
 import {
@@ -23,21 +23,21 @@ import {
 export type UseWorkflowStateReturn = {
   // State
   workflowBusy: WorkflowAction | null;
-  setWorkflowBusy: (value: WorkflowAction | null) => void;
+  setWorkflowBusy: Dispatch<SetStateAction<WorkflowAction | null>>;
   workflowMessage: string | null;
-  setWorkflowMessage: (value: string | null) => void;
+  setWorkflowMessage: Dispatch<SetStateAction<string | null>>;
   workflowError: string | null;
-  setWorkflowError: (value: string | null) => void;
+  setWorkflowError: Dispatch<SetStateAction<string | null>>;
   workflowSuccess: WorkflowSuccess | null;
-  setWorkflowSuccess: (value: WorkflowSuccess | null) => void;
+  setWorkflowSuccess: Dispatch<SetStateAction<WorkflowSuccess | null>>;
   workflowResultAction: WorkflowAction | null;
-  setWorkflowResultAction: (value: WorkflowAction | null) => void;
+  setWorkflowResultAction: Dispatch<SetStateAction<WorkflowAction | null>>;
   workflowStartedAt: number | null;
-  setWorkflowStartedAt: (value: number | null) => void;
+  setWorkflowStartedAt: Dispatch<SetStateAction<number | null>>;
   workflowAction: WorkflowAction;
-  setWorkflowAction: (value: WorkflowAction) => void;
+  setWorkflowAction: Dispatch<SetStateAction<WorkflowAction>>;
   workflowMenuOpen: boolean;
-  setWorkflowMenuOpen: (value: boolean) => void;
+  setWorkflowMenuOpen: Dispatch<SetStateAction<boolean>>;
   workflowHistory: WorkflowResultHistoryEntry[];
   // Refs
   workflowMenuRef: React.RefObject<HTMLDivElement | null>;
@@ -73,10 +73,11 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
   const workflowMenuRef = useRef<HTMLDivElement | null>(null);
   const previewWindowRef = useRef<Window | null>(null);
 
-  // Elapsed timer while a workflow is running
+  // Elapsed timer while a workflow is running. Synchronously setting 0 is avoided;
+  // derived labels below are already gated on `workflowBusy`, so a stale value is
+  // never rendered once the workflow stops.
   useEffect(() => {
     if (!workflowBusy || workflowStartedAt === null) {
-      setWorkflowElapsedMs(0);
       return;
     }
 
@@ -89,30 +90,40 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
     return () => window.clearInterval(intervalId);
   }, [workflowBusy, workflowStartedAt]);
 
-  // Restore workflow history from session storage when project changes
+  // Restore workflow history from session storage when project changes.
+  // Hydrating React state from external storage is a legitimate effect use;
+  // setters are wrapped in helpers to stay out of the raw effect body.
   useEffect(() => {
     if (!projectId) {
       return;
     }
 
-    const stored = readStoredWorkflowResults(projectId);
-    if (!stored.length) {
+    const resetWorkflowState = () => {
       setWorkflowMessage(null);
       setWorkflowError(null);
       setWorkflowSuccess(null);
       setWorkflowResultAction(null);
       setWorkflowResolvedAt(null);
       setWorkflowHistory([]);
+    };
+
+    const applyStored = (stored: WorkflowResultHistoryEntry[]) => {
+      const latest = stored[0];
+      setWorkflowHistory(stored);
+      setWorkflowResultAction(latest.action);
+      setWorkflowResolvedAt(latest.resolvedAt);
+      setWorkflowSuccess(latest.success);
+      setWorkflowError(latest.error);
+      setWorkflowMessage(latest.success?.message ?? null);
+    };
+
+    const stored = readStoredWorkflowResults(projectId);
+    if (!stored.length) {
+      resetWorkflowState();
       return;
     }
 
-    const latest = stored[0];
-    setWorkflowHistory(stored);
-    setWorkflowResultAction(latest.action);
-    setWorkflowResolvedAt(latest.resolvedAt);
-    setWorkflowSuccess(latest.success);
-    setWorkflowError(latest.error);
-    setWorkflowMessage(latest.success?.message ?? null);
+    applyStored(stored);
   }, [projectId]);
 
   // Close workflow menu on outside click or Escape

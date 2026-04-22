@@ -21,6 +21,7 @@ import {
   FolderOpen,
   ArrowUpRight,
 } from 'lucide-react';
+import type { ProjectSiteTopNavItem } from '@anydocs/core';
 
 import type { ApiSourceDoc, DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { Button } from '@/components/ui/button';
