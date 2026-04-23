@@ -138,6 +138,10 @@ async function ensureReconciled(projectRoot: string): Promise<void> {
   await loadPersistedPreviewSessions(normalizedRoot);
 }
 
+export async function ensurePreviewRegistryReconciled(projectRoot: string): Promise<void> {
+  await ensureReconciled(projectRoot);
+}
+
 function attachExitWatcher(session: InternalSession): void {
   if (!session.handle) return;
   void session.handle

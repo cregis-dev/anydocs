@@ -9,6 +9,7 @@ import {
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
   DOCS_YOOPTA_AUTHORING_GUIDANCE,
+  ensurePreviewRegistryReconciled,
   getProjectThemeCapabilities,
   getPreviewSession as getPreviewSessionFromRegistry,
   listPreviewSessionsForProject,
@@ -595,6 +596,9 @@ export const projectTools: ToolDefinition[] = [
 
       return executeTool('project_preview_status', { projectRoot }, async () => {
         const normalizedProjectRoot = path.resolve(projectRoot);
+        // Reconcile persisted sessions so a crash-recovered sessionId is visible
+        // to direct-by-id lookup (not only to project-scoped list calls).
+        await ensurePreviewRegistryReconciled(normalizedProjectRoot);
         if (sessionId) {
           const session = await getPreviewSessionFromRegistry(sessionId);
           if (!session || path.resolve(session.projectRoot) !== normalizedProjectRoot) {
@@ -646,6 +650,7 @@ export const projectTools: ToolDefinition[] = [
 
       return executeTool('project_preview_stop', { projectRoot }, async () => {
         const normalizedProjectRoot = path.resolve(projectRoot);
+        await ensurePreviewRegistryReconciled(normalizedProjectRoot);
         let targets: PreviewSessionRecord[];
         if (sessionId) {
           const session = await getPreviewSessionFromRegistry(sessionId);

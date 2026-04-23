@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -213,14 +214,29 @@ export function requireObjectArguments(tool: string, argumentsValue: unknown): R
   });
 }
 
-function parseAllowedProjectRoots(): string[] | null {
+function canonicalizePathStrict(target: string): string | null {
+  try {
+    return fs.realpathSync(target);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function parseAllowedProjectRoots(): { canonical: string; display: string }[] | null {
   const raw = process.env.ANYDOCS_MCP_ALLOWED_ROOTS;
   if (!raw) return null;
   const entries = raw
     .split(path.delimiter)
     .map((entry) => entry.trim())
     .filter(Boolean)
-    .map((entry) => path.resolve(entry));
+    .map((entry) => {
+      const resolved = path.resolve(entry);
+      const canonical = canonicalizePathStrict(resolved) ?? resolved;
+      return { canonical, display: resolved };
+    });
   return entries.length > 0 ? entries : null;
 }
 
@@ -239,7 +255,29 @@ export function requireProjectRoot(
   const raw = requireStringArgument(tool, args, 'projectRoot');
   const resolved = path.resolve(raw);
   const allowedRoots = parseAllowedProjectRoots();
-  if (allowedRoots && !isWithinAllowedRoot(resolved, allowedRoots)) {
+  if (!allowedRoots) {
+    return resolved;
+  }
+
+  // Follow symlinks before comparing against the allowlist so a symlink inside
+  // an allowed root that points outside it cannot bypass MCP_PROJECT_ROOT_OUT_OF_SCOPE.
+  const canonical = canonicalizePathStrict(resolved);
+  if (canonical == null) {
+    throw new DomainError(
+      'MCP_PROJECT_ROOT_OUT_OF_SCOPE',
+      `Tool "${tool}" projectRoot does not exist.`,
+      {
+        entity: 'mcp-tool',
+        rule: 'mcp-tool-project-root-must-exist',
+        remediation:
+          'Create the project directory before calling MCP tools, or unset ANYDOCS_MCP_ALLOWED_ROOTS to skip the allowlist check.',
+        metadata: { tool, projectRoot: resolved },
+      },
+    );
+  }
+
+  const canonicalRoots = allowedRoots.map((entry) => entry.canonical);
+  if (!isWithinAllowedRoot(canonical, canonicalRoots)) {
     throw new DomainError(
       'MCP_PROJECT_ROOT_OUT_OF_SCOPE',
       `Tool "${tool}" projectRoot is not inside any entry of ANYDOCS_MCP_ALLOWED_ROOTS.`,
@@ -248,11 +286,19 @@ export function requireProjectRoot(
         rule: 'mcp-tool-project-root-must-be-in-allowlist',
         remediation:
           'Use a projectRoot inside one of ANYDOCS_MCP_ALLOWED_ROOTS, or unset that env var to allow any absolute path.',
-        metadata: { tool, projectRoot: resolved, allowedRoots },
+        metadata: {
+          tool,
+          projectRoot: resolved,
+          canonicalProjectRoot: canonical,
+          allowedRoots: allowedRoots.map((entry) => entry.display),
+          canonicalAllowedRoots: canonicalRoots,
+        },
       },
     );
   }
-  return resolved;
+
+  // Return the canonical path so downstream I/O operates on the path we actually checked.
+  return canonical;
 }
 
 export function requireStringArgument(
