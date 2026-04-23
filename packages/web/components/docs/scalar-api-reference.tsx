@@ -29,7 +29,7 @@ export function ScalarApiReference({
   sourceId?: string;
 }) {
   return (
-    <div className="anydocs-scalar-shell min-w-0 overflow-hidden rounded-[18px] border border-[color:var(--atlas-content-border,var(--fd-border))] bg-white shadow-[0_1px_0_var(--atlas-content-shadow,rgba(0,0,0,0.04))]">
+    <div className="anydocs-scalar-shell min-w-0 rounded-[18px] border border-[color:var(--atlas-content-border,var(--fd-border))] bg-white shadow-[0_1px_0_var(--atlas-content-shadow,rgba(0,0,0,0.04))]">
       <div className="border-b border-[color:var(--atlas-content-border,var(--fd-border))] bg-[linear-gradient(180deg,#ffffff_0%,#ffffff_35%,#f8faf8_100%)]">
         <div className="flex flex-col gap-4 px-6 py-6 sm:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
