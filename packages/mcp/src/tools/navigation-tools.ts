@@ -12,11 +12,16 @@ import {
 
 import {
   type ToolDefinition,
+  DRY_RUN_SCHEMA_FIELD,
+  TOOL_ANNOTATIONS,
+  buildDryRunPreview,
   createRepository,
   executeTool,
   loadProjectContext,
   navigationFilePath,
+  optionalBooleanArgument,
   requireObjectArguments,
+  requireProjectRoot,
   requireStringArgument,
 } from './shared.ts';
 
@@ -79,6 +84,7 @@ export const navigationTools: ToolDefinition[] = [
   {
     name: 'nav_get',
     description: 'Load the canonical Anydocs navigation document for an enabled language.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -90,7 +96,7 @@ export const navigationTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_get', argumentsValue);
-      const projectRoot = requireStringArgument('nav_get', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_get', args);
       const lang = requireStringArgument('nav_get', args, 'lang');
 
       return executeTool('nav_get', { projectRoot, lang }, async () => {
@@ -109,6 +115,7 @@ export const navigationTools: ToolDefinition[] = [
     name: 'nav_set',
     description:
       'Replace the full canonical Anydocs navigation document for an enabled language.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -118,21 +125,32 @@ export const navigationTools: ToolDefinition[] = [
           type: 'object',
           description: 'A canonical navigation document with version and items.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'navigation'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_set', argumentsValue);
-      const projectRoot = requireStringArgument('nav_set', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_set', args);
       const lang = requireStringArgument('nav_set', args, 'lang');
+      const dryRun = optionalBooleanArgument('nav_set', args, 'dryRun') ?? false;
 
-      return executeTool('nav_set', { projectRoot, lang }, async () => {
+      return executeTool('nav_set', { projectRoot, lang, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('nav_set', projectRoot, lang);
+        const navigation = requireNavigationDocument('nav_set', args);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const current = await loadNavigation(repository, context.lang!);
+          return buildDryRunPreview('nav_set', 'replace-navigation', { projectRoot, lang, navigation }, {
+            file: navigationFilePath(context.contract.paths.projectRoot, context.lang!),
+            navigation: current,
+          });
+        }
         return setNavigation({
           projectRoot,
           lang: context.lang!,
-          navigation: requireNavigationDocument('nav_set', args),
+          navigation,
         });
       });
     },
@@ -141,6 +159,7 @@ export const navigationTools: ToolDefinition[] = [
     name: 'nav_replace_items',
     description:
       'Replace only navigation.items while preserving the current navigation document version.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -151,21 +170,32 @@ export const navigationTools: ToolDefinition[] = [
           items: { type: 'object' },
           description: 'The replacement top-level navigation item array.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'items'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_replace_items', argumentsValue);
-      const projectRoot = requireStringArgument('nav_replace_items', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_replace_items', args);
       const lang = requireStringArgument('nav_replace_items', args, 'lang');
+      const dryRun = optionalBooleanArgument('nav_replace_items', args, 'dryRun') ?? false;
 
-      return executeTool('nav_replace_items', { projectRoot, lang }, async () => {
+      return executeTool('nav_replace_items', { projectRoot, lang, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('nav_replace_items', projectRoot, lang);
+        const items = requireNavigationItems('nav_replace_items', args);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const current = await loadNavigation(repository, context.lang!);
+          return buildDryRunPreview('nav_replace_items', 'replace-navigation-items', { projectRoot, lang, items }, {
+            file: navigationFilePath(context.contract.paths.projectRoot, context.lang!),
+            navigation: current,
+          });
+        }
         return replaceNavigationItems({
           projectRoot,
           lang: context.lang!,
-          items: requireNavigationItems('nav_replace_items', args),
+          items,
         });
       });
     },
@@ -174,6 +204,7 @@ export const navigationTools: ToolDefinition[] = [
     name: 'nav_insert',
     description:
       'Insert a navigation item at the root or into a section/folder using a slash-separated parentPath like "0/1".',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -191,23 +222,47 @@ export const navigationTools: ToolDefinition[] = [
           type: 'object',
           description: 'The navigation item to insert.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'item'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_insert', argumentsValue);
-      const projectRoot = requireStringArgument('nav_insert', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_insert', args);
       const lang = requireStringArgument('nav_insert', args, 'lang');
+      const dryRun = optionalBooleanArgument('nav_insert', args, 'dryRun') ?? false;
 
-      return executeTool('nav_insert', { projectRoot, lang }, async () => {
+      return executeTool('nav_insert', { projectRoot, lang, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('nav_insert', projectRoot, lang);
+        const item = requireNavigationItem('nav_insert', args);
+        const parentPath = typeof args.parentPath === 'string' ? args.parentPath : undefined;
+        const index = typeof args.index === 'number' ? args.index : undefined;
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const current = await loadNavigation(repository, context.lang!);
+          return buildDryRunPreview(
+            'nav_insert',
+            'insert-navigation-item',
+            {
+              projectRoot,
+              lang,
+              item,
+              ...(parentPath !== undefined ? { parentPath } : {}),
+              ...(index !== undefined ? { index } : {}),
+            },
+            {
+              file: navigationFilePath(context.contract.paths.projectRoot, context.lang!),
+              navigation: current,
+            },
+          );
+        }
         return insertNavigationItem({
           projectRoot,
           lang: context.lang!,
-          item: requireNavigationItem('nav_insert', args),
-          ...(typeof args.parentPath === 'string' ? { parentPath: args.parentPath } : {}),
-          ...(typeof args.index === 'number' ? { index: args.index } : {}),
+          item,
+          ...(parentPath !== undefined ? { parentPath } : {}),
+          ...(index !== undefined ? { index } : {}),
         });
       });
     },
@@ -216,6 +271,7 @@ export const navigationTools: ToolDefinition[] = [
     name: 'nav_delete',
     description:
       'Delete a navigation item using a slash-separated itemPath like "0/1/2".',
+    annotations: TOOL_ANNOTATIONS.DESTRUCTIVE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -225,18 +281,28 @@ export const navigationTools: ToolDefinition[] = [
           type: 'string',
           description: 'Slash-separated zero-based item path.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'itemPath'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_delete', argumentsValue);
-      const projectRoot = requireStringArgument('nav_delete', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_delete', args);
       const lang = requireStringArgument('nav_delete', args, 'lang');
       const itemPath = requireStringArgument('nav_delete', args, 'itemPath');
+      const dryRun = optionalBooleanArgument('nav_delete', args, 'dryRun') ?? false;
 
-      return executeTool('nav_delete', { projectRoot, lang, itemPath }, async () => {
+      return executeTool('nav_delete', { projectRoot, lang, itemPath, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('nav_delete', projectRoot, lang);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const current = await loadNavigation(repository, context.lang!);
+          return buildDryRunPreview('nav_delete', 'delete-navigation-item', { projectRoot, lang, itemPath }, {
+            file: navigationFilePath(context.contract.paths.projectRoot, context.lang!),
+            navigation: current,
+          });
+        }
         return deleteNavigationItem({
           projectRoot,
           lang: context.lang!,
@@ -249,6 +315,7 @@ export const navigationTools: ToolDefinition[] = [
     name: 'nav_move',
     description:
       'Move a navigation item to the root or into another section/folder using slash-separated itemPath and parentPath values.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -266,24 +333,47 @@ export const navigationTools: ToolDefinition[] = [
           type: 'number',
           description: 'Optional zero-based insertion index in the destination container.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'itemPath'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('nav_move', argumentsValue);
-      const projectRoot = requireStringArgument('nav_move', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('nav_move', args);
       const lang = requireStringArgument('nav_move', args, 'lang');
       const itemPath = requireStringArgument('nav_move', args, 'itemPath');
+      const dryRun = optionalBooleanArgument('nav_move', args, 'dryRun') ?? false;
+      const parentPath = typeof args.parentPath === 'string' ? args.parentPath : undefined;
+      const index = typeof args.index === 'number' ? args.index : undefined;
 
-      return executeTool('nav_move', { projectRoot, lang, itemPath }, async () => {
+      return executeTool('nav_move', { projectRoot, lang, itemPath, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('nav_move', projectRoot, lang);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const current = await loadNavigation(repository, context.lang!);
+          return buildDryRunPreview(
+            'nav_move',
+            'move-navigation-item',
+            {
+              projectRoot,
+              lang,
+              itemPath,
+              ...(parentPath !== undefined ? { parentPath } : {}),
+              ...(index !== undefined ? { index } : {}),
+            },
+            {
+              file: navigationFilePath(context.contract.paths.projectRoot, context.lang!),
+              navigation: current,
+            },
+          );
+        }
         return moveNavigationItem({
           projectRoot,
           lang: context.lang!,
           itemPath,
-          ...(typeof args.parentPath === 'string' ? { parentPath: args.parentPath } : {}),
-          ...(typeof args.index === 'number' ? { index: args.index } : {}),
+          ...(parentPath !== undefined ? { parentPath } : {}),
+          ...(index !== undefined ? { index } : {}),
         });
       });
     },

@@ -6,6 +6,7 @@ export * from './legacy-import-service.ts';
 export * from './markdown-authoring-service.ts';
 export * from './page-template-service.ts';
 export * from './preview-service.ts';
+export * from './preview-registry.ts';
 export * from './theme-capabilities-service.ts';
 export * from './watch-service.ts';
 export * from './workflow-compatibility-service.ts';

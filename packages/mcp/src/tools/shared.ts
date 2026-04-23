@@ -39,12 +39,52 @@ export type ToolEnvelope<TData = unknown> = ToolSuccessEnvelope<TData> | ToolErr
 
 export type JsonSchema = Record<string, unknown>;
 
+export type ToolAnnotations = {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+  title?: string;
+};
+
 export type ToolDefinition = {
   name: string;
   description: string;
   inputSchema: JsonSchema;
+  annotations?: ToolAnnotations;
   handler: (argumentsValue: unknown) => Promise<ToolEnvelope>;
 };
+
+export const TOOL_ANNOTATIONS = {
+  READ_ONLY: {
+    readOnlyHint: true,
+    openWorldHint: false,
+  },
+  IDEMPOTENT_WRITE: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  NON_IDEMPOTENT_WRITE: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  DESTRUCTIVE: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  OPEN_WORLD_WRITE: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+} as const satisfies Record<string, ToolAnnotations>;
 
 type ProjectContext = {
   contract: ProjectContract;
@@ -55,21 +95,46 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+export const MCP_STABLE_ERROR_CODES: ReadonlySet<string> = new Set([
+  'VALIDATION_ERROR',
+  'MCP_TOOL_ERROR',
+  'MCP_PROJECT_ROOT_OUT_OF_SCOPE',
+]);
+
+function mapDomainErrorCode(code: string): { publicCode: string; sourceCode?: string } {
+  if (MCP_STABLE_ERROR_CODES.has(code)) {
+    return { publicCode: code };
+  }
+  if (code.startsWith('MCP_')) {
+    return { publicCode: code };
+  }
+  return { publicCode: 'MCP_DOMAIN_ERROR', sourceCode: code };
+}
+
 function toErrorEnvelope(tool: string, caughtError: unknown, meta: Record<string, unknown> = {}): ToolErrorEnvelope {
   const fallbackMessage = caughtError instanceof Error ? caughtError.message : String(caughtError);
-  const error =
-    caughtError instanceof DomainError
-      ? {
-          code: caughtError.code,
-          message: caughtError.message,
-          rule: caughtError.details.rule,
-          remediation: caughtError.details.remediation,
-          details: caughtError.details.metadata,
-        }
-      : {
-          code: 'MCP_TOOL_ERROR',
-          message: fallbackMessage,
-        };
+  let error: ToolErrorEnvelope['error'];
+
+  if (caughtError instanceof DomainError) {
+    const { publicCode, sourceCode } = mapDomainErrorCode(caughtError.code);
+    const existingMetadata = caughtError.details.metadata;
+    const details: Record<string, unknown> | undefined =
+      sourceCode !== undefined
+        ? { ...(existingMetadata ?? {}), sourceCode }
+        : existingMetadata;
+    error = {
+      code: publicCode,
+      message: caughtError.message,
+      ...(caughtError.details.rule ? { rule: caughtError.details.rule } : {}),
+      ...(caughtError.details.remediation ? { remediation: caughtError.details.remediation } : {}),
+      ...(details ? { details } : {}),
+    };
+  } else {
+    error = {
+      code: 'MCP_TOOL_ERROR',
+      message: fallbackMessage,
+    };
+  }
 
   return {
     ok: false,
@@ -148,6 +213,48 @@ export function requireObjectArguments(tool: string, argumentsValue: unknown): R
   });
 }
 
+function parseAllowedProjectRoots(): string[] | null {
+  const raw = process.env.ANYDOCS_MCP_ALLOWED_ROOTS;
+  if (!raw) return null;
+  const entries = raw
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => path.resolve(entry));
+  return entries.length > 0 ? entries : null;
+}
+
+function isWithinAllowedRoot(candidate: string, allowedRoots: string[]): boolean {
+  return allowedRoots.some((root) => {
+    if (candidate === root) return true;
+    const rel = path.relative(root, candidate);
+    return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+  });
+}
+
+export function requireProjectRoot(
+  tool: string,
+  args: Record<string, unknown>,
+): string {
+  const raw = requireStringArgument(tool, args, 'projectRoot');
+  const resolved = path.resolve(raw);
+  const allowedRoots = parseAllowedProjectRoots();
+  if (allowedRoots && !isWithinAllowedRoot(resolved, allowedRoots)) {
+    throw new DomainError(
+      'MCP_PROJECT_ROOT_OUT_OF_SCOPE',
+      `Tool "${tool}" projectRoot is not inside any entry of ANYDOCS_MCP_ALLOWED_ROOTS.`,
+      {
+        entity: 'mcp-tool',
+        rule: 'mcp-tool-project-root-must-be-in-allowlist',
+        remediation:
+          'Use a projectRoot inside one of ANYDOCS_MCP_ALLOWED_ROOTS, or unset that env var to allow any absolute path.',
+        metadata: { tool, projectRoot: resolved, allowedRoots },
+      },
+    );
+  }
+  return resolved;
+}
+
 export function requireStringArgument(
   tool: string,
   args: Record<string, unknown>,
@@ -168,6 +275,54 @@ export function requireStringArgument(
   }
 
   return value.trim();
+}
+
+export function optionalBooleanArgument(
+  tool: string,
+  args: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
+  const value = args[key];
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new ValidationError(`Tool "${tool}" expects "${key}" to be a boolean when provided.`, {
+      entity: 'mcp-tool',
+      rule: 'mcp-tool-boolean-argument',
+      remediation: `Provide "${key}" as true or false, or omit it.`,
+      metadata: { tool, key, received: value },
+    });
+  }
+
+  return value;
+}
+
+export const DRY_RUN_SCHEMA_FIELD = {
+  type: 'boolean',
+  description: 'When true, validate inputs and report would-be effect without writing to disk.',
+} as const;
+
+export type DryRunPreview<TCurrent = unknown> = {
+  dryRun: true;
+  action: string;
+  wouldExecute: { tool: string; args: Record<string, unknown> };
+  current: TCurrent;
+};
+
+export function buildDryRunPreview<TCurrent>(
+  tool: string,
+  action: string,
+  args: Record<string, unknown>,
+  current: TCurrent,
+): DryRunPreview<TCurrent> {
+  return {
+    dryRun: true,
+    action,
+    wouldExecute: { tool, args },
+    current,
+  };
 }
 
 export function optionalStringArgument(
