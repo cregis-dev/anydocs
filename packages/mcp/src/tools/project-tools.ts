@@ -9,24 +9,36 @@ import {
   DOCS_YOOPTA_ALLOWED_MARKS,
   DOCS_YOOPTA_ALLOWED_TYPES,
   DOCS_YOOPTA_AUTHORING_GUIDANCE,
+  ensurePreviewRegistryReconciled,
   getProjectThemeCapabilities,
+  getPreviewSession as getPreviewSessionFromRegistry,
+  listPreviewSessionsForProject,
   listResolvedProjectPageTemplates,
+  listRunningPreviewSessions,
+  registerPreviewSession,
   runPreviewWorkflow,
   runBuildWorkflow,
   assessWorkflowForwardCompatibility,
+  stopAllPreviewSessions,
+  stopPreviewSession,
   syncWorkflowStandard,
   updateProjectConfig,
   ValidationError,
   setProjectLanguages,
   validateProjectContract,
+  type PreviewSessionRecord,
 } from '@anydocs/core';
 
 import {
   type ToolDefinition,
+  DRY_RUN_SCHEMA_FIELD,
+  TOOL_ANNOTATIONS,
+  buildDryRunPreview,
   executeTool,
   loadProjectContext,
   optionalStringArgument,
   requireObjectArguments,
+  requireProjectRoot,
   requireStringArgument,
 } from './shared.ts';
 import {
@@ -101,35 +113,7 @@ function optionalIntegerArgument(
   return value;
 }
 
-function normalizeProjectRoot(input: string): string {
-  return path.resolve(input);
-}
-
-type PreviewSessionRuntime = Awaited<ReturnType<typeof runPreviewWorkflow>>;
-
-type PreviewSession = {
-  id: string;
-  projectRoot: string;
-  projectId: string;
-  host: string;
-  port: number;
-  url: string;
-  docsPath: string;
-  previewUrl: string;
-  pid: number;
-  publishedPages: number;
-  startedAt: string;
-  status: 'running' | 'stopping' | 'stopped' | 'exited';
-  exitCode?: number | null;
-  signal?: NodeJS.Signals | null;
-  endedAt?: string;
-  runtime: Pick<PreviewSessionRuntime, 'stop' | 'waitUntilExit'>;
-  stopPromise?: Promise<void>;
-};
-
-const previewSessions = new Map<string, PreviewSession>();
-
-function summarizePreviewSession(session: PreviewSession) {
+function summarizePreviewSession(session: PreviewSessionRecord) {
   return {
     id: session.id,
     projectRoot: session.projectRoot,
@@ -147,43 +131,6 @@ function summarizePreviewSession(session: PreviewSession) {
     ...(session.signal !== undefined ? { signal: session.signal } : {}),
     ...(session.endedAt ? { endedAt: session.endedAt } : {}),
   };
-}
-
-function listProjectPreviewSessions(projectRoot: string): PreviewSession[] {
-  const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
-  return [...previewSessions.values()].filter(
-    (session) => normalizeProjectRoot(session.projectRoot) === normalizedProjectRoot,
-  );
-}
-
-function listRunningPreviewSessions(projectRoot?: string): PreviewSession[] {
-  const normalizedProjectRoot = projectRoot == null ? undefined : normalizeProjectRoot(projectRoot);
-  return [...previewSessions.values()].filter((session) =>
-    session.status === 'running'
-      && (normalizedProjectRoot == null || normalizeProjectRoot(session.projectRoot) === normalizedProjectRoot)
-  );
-}
-
-function attachPreviewExitWatcher(session: PreviewSession) {
-  void session.runtime.waitUntilExit().then(({ exitCode, signal }) => {
-    if (session.status === 'stopped') {
-      return;
-    }
-
-    session.status = session.status === 'stopping' ? 'stopped' : 'exited';
-    session.exitCode = exitCode;
-    session.signal = signal;
-    session.endedAt = new Date().toISOString();
-  }).catch(() => {
-    if (session.status === 'stopped') {
-      return;
-    }
-
-    session.status = session.status === 'stopping' ? 'stopped' : 'exited';
-    session.exitCode = null;
-    session.signal = null;
-    session.endedAt = new Date().toISOString();
-  });
 }
 
 async function assertPreviewSearchArtifactsExist(artifactRoot: string, language: string): Promise<void> {
@@ -214,28 +161,8 @@ async function assertPreviewSearchArtifactsExist(artifactRoot: string, language:
   }
 }
 
-async function stopPreviewSession(session: PreviewSession): Promise<void> {
-  if (session.status === 'stopped' || session.status === 'exited') {
-    return;
-  }
-
-  if (session.stopPromise) {
-    await session.stopPromise;
-    return;
-  }
-
-  session.status = 'stopping';
-  session.stopPromise = (async () => {
-    await session.runtime.stop();
-    const exit = await session.runtime.waitUntilExit();
-    session.status = 'stopped';
-    session.exitCode = exit.exitCode;
-    session.signal = exit.signal;
-    session.endedAt = new Date().toISOString();
-  })().finally(() => {
-    session.stopPromise = undefined;
-  });
-  await session.stopPromise;
+export async function shutdownAllPreviewSessions(): Promise<void> {
+  await stopAllPreviewSessions();
 }
 
 function parseProjectConfigPatch(
@@ -407,6 +334,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_open',
     description:
       'Open an Anydocs project contract and return the canonical config, key paths, and enabled languages.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -420,7 +348,7 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_open', argumentsValue);
-      const projectRoot = requireStringArgument('project_open', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_open', args);
 
       return executeTool('project_open', { projectRoot }, async () => {
         const { contract } = await loadProjectContext('project_open', projectRoot);
@@ -460,6 +388,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_update_config',
     description:
       'Update supported project configuration fields through the canonical config validation and workflow-sync path.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -471,16 +400,27 @@ export const projectTools: ToolDefinition[] = [
           type: 'object',
           description: 'Supported project config fields to update.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'patch'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_update_config', argumentsValue);
-      const projectRoot = requireStringArgument('project_update_config', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_update_config', args);
       const patch = parseProjectConfigPatch('project_update_config', args);
+      const dryRun = optionalBooleanArgument('project_update_config', args, 'dryRun') ?? false;
 
-      return executeTool('project_update_config', { projectRoot }, async () => {
+      return executeTool('project_update_config', { projectRoot, ...(dryRun ? { dryRun } : {}) }, async () => {
+        if (dryRun) {
+          const { contract } = await loadProjectContext('project_update_config', projectRoot);
+          return buildDryRunPreview(
+            'project_update_config',
+            'update-project-config',
+            { projectRoot, patchFields: Object.keys(patch) },
+            { filePath: contract.paths.configFile, config: contract.config },
+          );
+        }
         const result = await updateProjectConfig(projectRoot, patch);
         if (!result.ok) {
           throw result.error;
@@ -497,6 +437,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_build',
     description:
       'Run the canonical build workflow for an Anydocs project, or dry-run it to inspect planned artifacts.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -514,7 +455,7 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_build', argumentsValue);
-      const projectRoot = requireStringArgument('project_build', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_build', args);
       const dryRun = optionalBooleanArgument('project_build', args, 'dryRun');
 
       return executeTool('project_build', { projectRoot, ...(dryRun !== undefined ? { dryRun } : {}) }, async () =>
@@ -529,6 +470,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_preview_start',
     description:
       'Start a live docs preview server session for an Anydocs project and return a session id plus preview URL.',
+    annotations: TOOL_ANNOTATIONS.OPEN_WORLD_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -558,7 +500,7 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_preview_start', argumentsValue);
-      const projectRoot = requireStringArgument('project_preview_start', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_preview_start', args);
       const host = optionalStringArgument('project_preview_start', args, 'host');
       const port = optionalIntegerArgument('project_preview_start', args, 'port', { min: 1, max: 65535 });
       const startTimeoutMs = optionalIntegerArgument('project_preview_start', args, 'startTimeoutMs', { min: 1 });
@@ -567,7 +509,7 @@ export const projectTools: ToolDefinition[] = [
       return executeTool('project_preview_start', { projectRoot }, async () => {
         const { contract } = await loadProjectContext('project_preview_start', projectRoot);
         const canonicalProjectRoot = contract.paths.projectRoot;
-        const runningSessions = listRunningPreviewSessions();
+        const runningSessions = await listRunningPreviewSessions();
 
         if (runningSessions.length > 0 && !stopExisting) {
           throw new ValidationError('A preview session is already running. Stop it first or set stopExisting=true.', {
@@ -583,7 +525,7 @@ export const projectTools: ToolDefinition[] = [
 
         if (runningSessions.length > 0 && stopExisting) {
           for (const session of runningSessions) {
-            await stopPreviewSession(session);
+            await stopPreviewSession(session.id);
           }
         }
 
@@ -601,29 +543,29 @@ export const projectTools: ToolDefinition[] = [
           throw error;
         }
         const sessionId = randomUUID();
-        const session: PreviewSession = {
-          id: sessionId,
-          projectRoot: canonicalProjectRoot,
-          projectId: runtime.projectId,
-          host: runtime.host,
-          port: runtime.port,
-          url: runtime.url,
-          docsPath: runtime.docsPath,
-          previewUrl: `${runtime.url}${runtime.docsPath}`,
-          pid: runtime.pid,
-          publishedPages: runtime.publishedPages,
-          startedAt: new Date().toISOString(),
-          status: 'running',
-          runtime: {
+        const registered = registerPreviewSession(
+          {
+            id: sessionId,
+            projectRoot: canonicalProjectRoot,
+            projectId: runtime.projectId,
+            host: runtime.host,
+            port: runtime.port,
+            url: runtime.url,
+            docsPath: runtime.docsPath,
+            previewUrl: `${runtime.url}${runtime.docsPath}`,
+            pid: runtime.pid,
+            publishedPages: runtime.publishedPages,
+            startedAt: new Date().toISOString(),
+            status: 'running',
+          },
+          {
             stop: runtime.stop,
             waitUntilExit: runtime.waitUntilExit,
           },
-        };
-        previewSessions.set(sessionId, session);
-        attachPreviewExitWatcher(session);
+        );
 
         return {
-          session: summarizePreviewSession(session),
+          session: summarizePreviewSession(registered),
         };
       });
     },
@@ -631,6 +573,7 @@ export const projectTools: ToolDefinition[] = [
   {
     name: 'project_preview_status',
     description: 'Inspect live preview session status for a project, or for one specific session id.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -648,14 +591,17 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_preview_status', argumentsValue);
-      const projectRoot = requireStringArgument('project_preview_status', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_preview_status', args);
       const sessionId = optionalStringArgument('project_preview_status', args, 'sessionId');
-      const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
 
       return executeTool('project_preview_status', { projectRoot }, async () => {
+        const normalizedProjectRoot = path.resolve(projectRoot);
+        // Reconcile persisted sessions so a crash-recovered sessionId is visible
+        // to direct-by-id lookup (not only to project-scoped list calls).
+        await ensurePreviewRegistryReconciled(normalizedProjectRoot);
         if (sessionId) {
-          const session = previewSessions.get(sessionId);
-          if (!session || normalizeProjectRoot(session.projectRoot) !== normalizedProjectRoot) {
+          const session = await getPreviewSessionFromRegistry(sessionId);
+          if (!session || path.resolve(session.projectRoot) !== normalizedProjectRoot) {
             throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
               entity: 'mcp-tool',
               rule: 'project-preview-session-not-found',
@@ -669,10 +615,11 @@ export const projectTools: ToolDefinition[] = [
           };
         }
 
-        const sessions = listProjectPreviewSessions(normalizedProjectRoot).map((session) => summarizePreviewSession(session));
+        const records = await listPreviewSessionsForProject(normalizedProjectRoot);
+        const list = records.map((session) => summarizePreviewSession(session));
         return {
-          count: sessions.length,
-          sessions,
+          count: list.length,
+          sessions: list,
         };
       });
     },
@@ -680,6 +627,7 @@ export const projectTools: ToolDefinition[] = [
   {
     name: 'project_preview_stop',
     description: 'Stop one preview session or all running preview sessions for a project.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -697,33 +645,39 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_preview_stop', argumentsValue);
-      const projectRoot = requireStringArgument('project_preview_stop', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_preview_stop', args);
       const sessionId = optionalStringArgument('project_preview_stop', args, 'sessionId');
-      const normalizedProjectRoot = normalizeProjectRoot(projectRoot);
 
       return executeTool('project_preview_stop', { projectRoot }, async () => {
-        const targets = sessionId
-          ? (() => {
-              const session = previewSessions.get(sessionId);
-              if (!session || normalizeProjectRoot(session.projectRoot) !== normalizedProjectRoot) {
-                throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
-                  entity: 'mcp-tool',
-                  rule: 'project-preview-session-not-found',
-                  remediation: 'Call project_preview_status without sessionId to list known sessions first.',
-                  metadata: { projectRoot, sessionId },
-                });
-              }
-              return [session];
-            })()
-          : listRunningPreviewSessions(normalizedProjectRoot);
-
-        for (const session of targets) {
-          await stopPreviewSession(session);
+        const normalizedProjectRoot = path.resolve(projectRoot);
+        await ensurePreviewRegistryReconciled(normalizedProjectRoot);
+        let targets: PreviewSessionRecord[];
+        if (sessionId) {
+          const session = await getPreviewSessionFromRegistry(sessionId);
+          if (!session || path.resolve(session.projectRoot) !== normalizedProjectRoot) {
+            throw new ValidationError(`Preview session "${sessionId}" was not found for this project.`, {
+              entity: 'mcp-tool',
+              rule: 'project-preview-session-not-found',
+              remediation: 'Call project_preview_status without sessionId to list known sessions first.',
+              metadata: { projectRoot, sessionId },
+            });
+          }
+          targets = [session];
+        } else {
+          targets = await listRunningPreviewSessions(normalizedProjectRoot);
         }
 
+        for (const session of targets) {
+          await stopPreviewSession(session.id);
+        }
+
+        const updated = await Promise.all(
+          targets.map(async (session) => (await getPreviewSessionFromRegistry(session.id)) ?? session),
+        );
+
         return {
-          stopped: targets.length,
-          sessions: targets.map((session) => summarizePreviewSession(session)),
+          stopped: updated.length,
+          sessions: updated.map((session) => summarizePreviewSession(session)),
         };
       });
     },
@@ -732,6 +686,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_sync_workflow',
     description:
       'Diff the persisted anydocs.workflow.json against the canonical contract and optionally apply the canonical definition.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -750,7 +705,7 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_sync_workflow', argumentsValue);
-      const projectRoot = requireStringArgument('project_sync_workflow', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_sync_workflow', args);
       const mode =
         args.mode == null ? 'dryRun' : requireStringArgument('project_sync_workflow', args, 'mode');
       if (!['dryRun', 'apply'].includes(mode)) {
@@ -773,6 +728,7 @@ export const projectTools: ToolDefinition[] = [
     name: 'project_set_languages',
     description:
       'Update the enabled language set for an Anydocs project and optionally switch the default language.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -789,13 +745,14 @@ export const projectTools: ToolDefinition[] = [
           type: 'string',
           description: 'Optional default language. Must be included in languages.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'languages'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_set_languages', argumentsValue);
-      const projectRoot = requireStringArgument('project_set_languages', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_set_languages', args);
       const languages = args.languages;
       if (!Array.isArray(languages) || languages.some((value) => typeof value !== 'string')) {
         throw new ValidationError('Tool "project_set_languages" requires "languages" to be a string array.', {
@@ -810,20 +767,35 @@ export const projectTools: ToolDefinition[] = [
         args.defaultLanguage == null
           ? undefined
           : requireStringArgument('project_set_languages', args, 'defaultLanguage');
+      const dryRun = optionalBooleanArgument('project_set_languages', args, 'dryRun') ?? false;
 
-      return executeTool('project_set_languages', { projectRoot }, async () =>
-        setProjectLanguages({
+      return executeTool('project_set_languages', { projectRoot, ...(dryRun ? { dryRun } : {}) }, async () => {
+        if (dryRun) {
+          const { contract } = await loadProjectContext('project_set_languages', projectRoot);
+          return buildDryRunPreview(
+            'project_set_languages',
+            'set-project-languages',
+            { projectRoot, languages, ...(defaultLanguage ? { defaultLanguage } : {}) },
+            {
+              filePath: contract.paths.configFile,
+              currentLanguages: contract.config.languages,
+              currentDefaultLanguage: contract.config.defaultLanguage,
+            },
+          );
+        }
+        return setProjectLanguages({
           projectRoot,
           languages: languages as Array<'en' | 'zh'>,
           ...(defaultLanguage ? { defaultLanguage: defaultLanguage as 'en' | 'zh' } : {}),
-        }),
-      );
+        });
+      });
     },
   },
   {
     name: 'project_validate',
     description:
       'Validate an Anydocs project and return workflow compatibility details for agent-safe authoring.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -837,7 +809,7 @@ export const projectTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('project_validate', argumentsValue);
-      const projectRoot = requireStringArgument('project_validate', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('project_validate', args);
 
       return executeTool('project_validate', { projectRoot }, async () => {
         const configResult = await validateProjectContract(projectRoot);

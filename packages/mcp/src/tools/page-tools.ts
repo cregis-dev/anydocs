@@ -25,12 +25,16 @@ import {
 
 import {
   type ToolDefinition,
+  DRY_RUN_SCHEMA_FIELD,
+  TOOL_ANNOTATIONS,
+  buildDryRunPreview,
   createRepository,
   executeTool,
   loadProjectContext,
   pageFilePath,
   requireKnownPageStatus,
   requireObjectArguments,
+  requireProjectRoot,
   requireStringArgument,
   summarizePage,
   optionalStringArgument,
@@ -53,6 +57,19 @@ type ResolvedTemplate = ReturnType<typeof listResolvedProjectPageTemplates>[numb
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function loadCurrentPageForDryRun(
+  contractProjectRoot: string,
+  lang: 'en' | 'zh',
+  pageId: string,
+) {
+  const repository = createRepository(contractProjectRoot);
+  const existing = await loadPage(repository, lang, pageId);
+  return {
+    file: pageFilePath(contractProjectRoot, lang, pageId),
+    existing: existing ?? null,
+  };
 }
 
 function filterPages(
@@ -426,6 +443,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_list',
     description: 'List Anydocs pages for an enabled language, with optional status and tag filters.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -439,7 +457,7 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_list', argumentsValue);
-      const projectRoot = requireStringArgument('page_list', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_list', args);
       const lang = requireStringArgument('page_list', args, 'lang');
       const status = args.status == null ? undefined : requireKnownPageStatus('page_list', args.status);
       const tag = optionalStringArgument('page_list', args, 'tag');
@@ -462,6 +480,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_get',
     description: 'Load a canonical Anydocs page document by page id.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -474,7 +493,7 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_get', argumentsValue);
-      const projectRoot = requireStringArgument('page_get', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_get', args);
       const lang = requireStringArgument('page_get', args, 'lang');
       const pageId = requireStringArgument('page_get', args, 'pageId');
 
@@ -506,6 +525,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_find',
     description:
       'Find Anydocs pages by page id or slug, with optional status and tag filters. Omitting both returns all pages.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -521,7 +541,7 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_find', argumentsValue);
-      const projectRoot = requireStringArgument('page_find', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_find', args);
       const lang = requireStringArgument('page_find', args, 'lang');
       const pageId = optionalStringArgument('page_find', args, 'pageId');
       const slug = optionalStringArgument('page_find', args, 'slug');
@@ -564,6 +584,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_clone_to_language',
     description:
       'Clone a page into another enabled language as a draft skeleton, with optional content copying but no translation.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -572,24 +593,46 @@ export const pageTools: ToolDefinition[] = [
         targetLang: { type: 'string' },
         sourcePageId: { type: 'string' },
         includeContent: { type: 'boolean' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'sourceLang', 'targetLang', 'sourcePageId'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_clone_to_language', argumentsValue);
-      const projectRoot = requireStringArgument('page_clone_to_language', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_clone_to_language', args);
       const sourceLang = requireStringArgument('page_clone_to_language', args, 'sourceLang');
       const targetLang = requireStringArgument('page_clone_to_language', args, 'targetLang');
       const sourcePageId = requireStringArgument('page_clone_to_language', args, 'sourcePageId');
       const includeContent = optionalBooleanArgument('page_clone_to_language', args, 'includeContent');
+      const dryRun = optionalBooleanArgument('page_clone_to_language', args, 'dryRun') ?? false;
 
       return executeTool(
         'page_clone_to_language',
-        { projectRoot, sourceLang, targetLang, sourcePageId },
+        { projectRoot, sourceLang, targetLang, sourcePageId, ...(dryRun ? { dryRun } : {}) },
         async () => {
-          await loadProjectContext('page_clone_to_language', projectRoot, sourceLang);
-          await loadProjectContext('page_clone_to_language', projectRoot, targetLang);
+          const sourceContext = await loadProjectContext('page_clone_to_language', projectRoot, sourceLang);
+          const targetContext = await loadProjectContext('page_clone_to_language', projectRoot, targetLang);
+          if (dryRun) {
+            const repository = createRepository(sourceContext.contract.paths.projectRoot);
+            const source = await loadPage(repository, sourceContext.lang!, sourcePageId);
+            const target = await loadPage(repository, targetContext.lang!, sourcePageId);
+            return buildDryRunPreview(
+              'page_clone_to_language',
+              'clone-page-to-language',
+              { projectRoot, sourceLang, targetLang, sourcePageId },
+              {
+                source: {
+                  file: pageFilePath(sourceContext.contract.paths.projectRoot, sourceContext.lang!, sourcePageId),
+                  existing: source ?? null,
+                },
+                target: {
+                  file: pageFilePath(targetContext.contract.paths.projectRoot, targetContext.lang!, sourcePageId),
+                  existing: target ?? null,
+                },
+              },
+            );
+          }
           return clonePageToLanguage({
             projectRoot,
             sourceLang: sourceLang as 'en' | 'zh',
@@ -605,6 +648,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_list_translation_status',
     description:
       'List page pairing status between two enabled languages without invoking translation or changing content.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -617,7 +661,7 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_list_translation_status', argumentsValue);
-      const projectRoot = requireStringArgument('page_list_translation_status', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_list_translation_status', args);
       const sourceLang = requireStringArgument('page_list_translation_status', args, 'sourceLang');
       const targetLang = requireStringArgument('page_list_translation_status', args, 'targetLang');
 
@@ -644,10 +688,12 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_template_save',
     description:
       'Create or update a project-defined authoring page template by id without touching unrelated project config.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
         projectRoot: { type: 'string' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
         template: {
           type: 'object',
           properties: {
@@ -711,15 +757,30 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_template_save', argumentsValue);
-      const projectRoot = requireStringArgument('page_template_save', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_template_save', args);
       const templatePayload = requireTemplatePayloadArgument('page_template_save', args, 'template');
       const templateId = requireStringArgument('page_template_save', templatePayload, 'id');
+      const dryRun = optionalBooleanArgument('page_template_save', args, 'dryRun') ?? false;
 
-      return executeTool('page_template_save', { projectRoot, templateId }, async () => {
+      return executeTool(
+        'page_template_save',
+        { projectRoot, templateId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const { contract } = await loadProjectContext('page_template_save', projectRoot);
         const existingTemplates = contract.config.authoring?.pageTemplates ?? [];
         const existingIndex = existingTemplates.findIndex((template) => template.id === templateId);
         const existingTemplate = existingIndex >= 0 ? existingTemplates[existingIndex] : undefined;
+        if (dryRun) {
+          return buildDryRunPreview(
+            'page_template_save',
+            existingIndex >= 0 ? 'update-page-template' : 'create-page-template',
+            { projectRoot, templateId },
+            {
+              configFile: contract.paths.configFile,
+              existing: existingTemplate ?? null,
+            },
+          );
+        }
         const nextTemplate = {
           ...(existingTemplate ?? {}),
           ...templatePayload,
@@ -755,6 +816,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_template_query',
     description: 'Query built-in and project-defined page templates, or inspect one by template id.',
+    annotations: TOOL_ANNOTATIONS.READ_ONLY,
     inputSchema: {
       type: 'object',
       properties: {
@@ -766,7 +828,7 @@ export const pageTools: ToolDefinition[] = [
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_template_query', argumentsValue);
-      const projectRoot = requireStringArgument('page_template_query', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_template_query', args);
       const templateId = optionalStringArgument('page_template_query', args, 'templateId');
 
       return executeTool('page_template_query', { projectRoot }, async () => {
@@ -794,6 +856,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_create',
     description: 'Create a canonical Anydocs page document through the shared authoring service.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -810,13 +873,14 @@ export const pageTools: ToolDefinition[] = [
         content: { type: 'object' },
         render: { type: 'object' },
         review: { type: 'object' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'slug', 'title'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_create', argumentsValue);
-      const projectRoot = requireStringArgument('page_create', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_create', args);
       const lang = requireStringArgument('page_create', args, 'lang');
       const pageId = requireStringArgument('page_create', args, 'pageId');
       const slug = requireStringArgument('page_create', args, 'slug');
@@ -829,11 +893,22 @@ export const pageTools: ToolDefinition[] = [
       const content = optionalObjectArgument('page_create', args, 'content');
       const render = optionalPageRender('page_create', args, 'render');
       const review = optionalPageReview('page_create', args, 'review');
+      const dryRun = optionalBooleanArgument('page_create', args, 'dryRun') ?? false;
 
-      return executeTool('page_create', { projectRoot, lang, pageId }, async () => {
-        const result = await createPage({
+      return executeTool('page_create', { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) }, async () => {
+        const context = await loadProjectContext('page_create', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_create',
+            'create-page',
+            { projectRoot, lang, pageId, slug, title },
+            current,
+          );
+        }
+        return createPage({
           projectRoot,
-          lang: (await loadProjectContext('page_create', projectRoot, lang)).lang!,
+          lang: context.lang!,
           page: {
             id: pageId,
             slug,
@@ -848,8 +923,6 @@ export const pageTools: ToolDefinition[] = [
             review,
           },
         });
-
-        return result;
       });
     },
   },
@@ -857,6 +930,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_create_from_markdown',
     description:
       'Create a canonical Anydocs page from markdown or MDX text, inferring title/description/tags from document content when possible.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -875,13 +949,14 @@ export const pageTools: ToolDefinition[] = [
         tags: { type: 'array', items: { type: 'string' } },
         status: { type: 'string', enum: ['draft', 'in_review', 'published'] },
         review: { type: 'object' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'slug', 'markdown'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_create_from_markdown', argumentsValue);
-      const projectRoot = requireStringArgument('page_create_from_markdown', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_create_from_markdown', args);
       const lang = requireStringArgument('page_create_from_markdown', args, 'lang');
       const pageId = requireStringArgument('page_create_from_markdown', args, 'pageId');
       const slug = requireStringArgument('page_create_from_markdown', args, 'slug');
@@ -897,9 +972,22 @@ export const pageTools: ToolDefinition[] = [
       const status =
         args.status == null ? undefined : requireKnownPageStatus('page_create_from_markdown', args.status);
       const review = optionalPageReview('page_create_from_markdown', args, 'review');
+      const dryRun = optionalBooleanArgument('page_create_from_markdown', args, 'dryRun') ?? false;
 
-      return executeTool('page_create_from_markdown', { projectRoot, lang, pageId }, async () => {
+      return executeTool(
+        'page_create_from_markdown',
+        { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_create_from_markdown', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_create_from_markdown',
+            'create-page-from-markdown',
+            { projectRoot, lang, pageId, slug },
+            current,
+          );
+        }
         return createPageFromMarkdown({
           projectRoot,
           lang: context.lang!,
@@ -926,6 +1014,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_create_from_template',
     description:
       'Create a canonical Anydocs page from a structured rich-content template, generating DocContentV1 and render output.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -944,13 +1033,14 @@ export const pageTools: ToolDefinition[] = [
         sections: { type: 'array', items: { type: 'object' } },
         steps: { type: 'array', items: { type: 'object' } },
         callouts: { type: 'array', items: { type: 'object' } },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'slug', 'title', 'template'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_create_from_template', argumentsValue);
-      const projectRoot = requireStringArgument('page_create_from_template', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_create_from_template', args);
       const lang = requireStringArgument('page_create_from_template', args, 'lang');
       const pageId = requireStringArgument('page_create_from_template', args, 'pageId');
       const slug = requireStringArgument('page_create_from_template', args, 'slug');
@@ -966,8 +1056,12 @@ export const pageTools: ToolDefinition[] = [
       const sections = parseTemplateSections('page_create_from_template', args, 'sections');
       const steps = parseTemplateSteps('page_create_from_template', args, 'steps');
       const callouts = parseTemplateCallouts('page_create_from_template', args, 'callouts');
+      const dryRun = optionalBooleanArgument('page_create_from_template', args, 'dryRun') ?? false;
 
-      return executeTool('page_create_from_template', { projectRoot, lang, pageId }, async () => {
+      return executeTool(
+        'page_create_from_template',
+        { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_create_from_template', projectRoot, lang);
         const resolvedTemplate = requireTemplateDefinition(
           'page_create_from_template',
@@ -975,6 +1069,15 @@ export const pageTools: ToolDefinition[] = [
           templateId,
           context.contract.config,
         );
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_create_from_template',
+            'create-page-from-template',
+            { projectRoot, lang, pageId, slug, title, template: resolvedTemplate.id },
+            current,
+          );
+        }
         const summaryForTemplate = summary ?? resolvedTemplate.defaultSummary;
         const sectionsForTemplate = resolveTemplateSections(sections, resolvedTemplate);
         const composition = composePageFromTemplate({
@@ -1009,6 +1112,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_update_from_template',
     description:
       'Update an existing canonical Anydocs page from a structured rich-content template, regenerating DocContentV1 and render output.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1026,13 +1130,14 @@ export const pageTools: ToolDefinition[] = [
         sections: { type: 'array', items: { type: 'object' } },
         steps: { type: 'array', items: { type: 'object' } },
         callouts: { type: 'array', items: { type: 'object' } },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'template'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_update_from_template', argumentsValue);
-      const projectRoot = requireStringArgument('page_update_from_template', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_update_from_template', args);
       const lang = requireStringArgument('page_update_from_template', args, 'lang');
       const pageId = requireStringArgument('page_update_from_template', args, 'pageId');
       const templateId = requireTemplateId('page_update_from_template', args.template);
@@ -1046,8 +1151,12 @@ export const pageTools: ToolDefinition[] = [
       const sections = parseTemplateSections('page_update_from_template', args, 'sections');
       const steps = parseTemplateSteps('page_update_from_template', args, 'steps');
       const callouts = parseTemplateCallouts('page_update_from_template', args, 'callouts');
+      const dryRun = optionalBooleanArgument('page_update_from_template', args, 'dryRun') ?? false;
 
-      return executeTool('page_update_from_template', { projectRoot, lang, pageId }, async () => {
+      return executeTool(
+        'page_update_from_template',
+        { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_update_from_template', projectRoot, lang);
         const resolvedTemplate = requireTemplateDefinition(
           'page_update_from_template',
@@ -1055,6 +1164,15 @@ export const pageTools: ToolDefinition[] = [
           templateId,
           context.contract.config,
         );
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_update_from_template',
+            'update-page-from-template',
+            { projectRoot, lang, pageId, template: resolvedTemplate.id },
+            current,
+          );
+        }
         const summaryForTemplate = summary ?? resolvedTemplate.defaultSummary;
         const sectionsForTemplate = resolveTemplateSections(sections, resolvedTemplate);
         const composition = composePageFromTemplate({
@@ -1087,6 +1205,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_batch_create',
     description: 'Create multiple canonical page documents in one validated batch.',
+    annotations: TOOL_ANNOTATIONS.NON_IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1097,14 +1216,16 @@ export const pageTools: ToolDefinition[] = [
           description: 'Array of page create payloads.',
           items: { type: 'object' },
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pages'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_batch_create', argumentsValue);
-      const projectRoot = requireStringArgument('page_batch_create', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_batch_create', args);
       const lang = requireStringArgument('page_batch_create', args, 'lang');
+      const dryRun = optionalBooleanArgument('page_batch_create', args, 'dryRun') ?? false;
       const pages = requireObjectArrayArgument('page_batch_create', args, 'pages').map((page, index) => ({
         id: requireStringArgument('page_batch_create', page, 'id'),
         slug: requireStringArgument('page_batch_create', page, 'slug'),
@@ -1121,8 +1242,27 @@ export const pageTools: ToolDefinition[] = [
         __index: index,
       }));
 
-      return executeTool('page_batch_create', { projectRoot, lang }, async () => {
+      return executeTool(
+        'page_batch_create',
+        { projectRoot, lang, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_batch_create', projectRoot, lang);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const existingChecks = await Promise.all(
+            pages.map(async (page) => ({
+              pageId: page.id,
+              file: pageFilePath(context.contract.paths.projectRoot, context.lang!, page.id),
+              existing: (await loadPage(repository, context.lang!, page.id)) ?? null,
+            })),
+          );
+          return buildDryRunPreview(
+            'page_batch_create',
+            'create-page-batch',
+            { projectRoot, lang, pageCount: pages.length },
+            { pages: existingChecks },
+          );
+        }
         return createPagesBatch({
           projectRoot,
           lang: context.lang!,
@@ -1135,6 +1275,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_update',
     description:
       'Shallow-merge an explicit whitelist of mutable page fields onto an existing canonical page document.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1152,20 +1293,34 @@ export const pageTools: ToolDefinition[] = [
           description:
             'When true and patch.render is omitted, regenerate render.markdown/plainText from the resulting canonical content.',
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'patch'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_update', argumentsValue);
-      const projectRoot = requireStringArgument('page_update', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_update', args);
       const lang = requireStringArgument('page_update', args, 'lang');
       const pageId = requireStringArgument('page_update', args, 'pageId');
+      const dryRun = optionalBooleanArgument('page_update', args, 'dryRun') ?? false;
 
-      return executeTool('page_update', { projectRoot, lang, pageId }, async () => {
+      return executeTool(
+        'page_update',
+        { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const patch = parsePatch('page_update', args);
         const regenerateRender = optionalBooleanArgument('page_update', args, 'regenerateRender');
         const context = await loadProjectContext('page_update', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_update',
+            'update-page',
+            { projectRoot, lang, pageId, patchFields: Object.keys(patch) },
+            current,
+          );
+        }
         return updatePage({
           projectRoot,
           lang: context.lang!,
@@ -1180,6 +1335,7 @@ export const pageTools: ToolDefinition[] = [
     name: 'page_update_from_markdown',
     description:
       'Replace or append markdown-derived content on an existing page, supporting both whole-document and fragment conversion workflows.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1198,13 +1354,14 @@ export const pageTools: ToolDefinition[] = [
         metadata: { type: 'object' },
         tags: { type: 'array', items: { type: 'string' } },
         review: { type: 'object' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'markdown'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_update_from_markdown', argumentsValue);
-      const projectRoot = requireStringArgument('page_update_from_markdown', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_update_from_markdown', args);
       const lang = requireStringArgument('page_update_from_markdown', args, 'lang');
       const pageId = requireStringArgument('page_update_from_markdown', args, 'pageId');
       const markdown = requireStringArgument('page_update_from_markdown', args, 'markdown');
@@ -1219,9 +1376,22 @@ export const pageTools: ToolDefinition[] = [
       const metadata = optionalObjectArgument('page_update_from_markdown', args, 'metadata');
       const tags = optionalStringArrayArgument('page_update_from_markdown', args, 'tags');
       const review = optionalPageReview('page_update_from_markdown', args, 'review');
+      const dryRun = optionalBooleanArgument('page_update_from_markdown', args, 'dryRun') ?? false;
 
-      return executeTool('page_update_from_markdown', { projectRoot, lang, pageId }, async () => {
+      return executeTool(
+        'page_update_from_markdown',
+        { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_update_from_markdown', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_update_from_markdown',
+            'update-page-from-markdown',
+            { projectRoot, lang, pageId, operation: operation ?? 'replace' },
+            current,
+          );
+        }
         return updatePageFromMarkdown({
           projectRoot,
           lang: context.lang!,
@@ -1247,6 +1417,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_batch_update',
     description: 'Apply shallow page patches to multiple canonical page documents in one validated batch.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1257,22 +1428,41 @@ export const pageTools: ToolDefinition[] = [
           description: 'Array of { pageId, patch, regenerateRender? } entries.',
           items: { type: 'object' },
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'updates'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_batch_update', argumentsValue);
-      const projectRoot = requireStringArgument('page_batch_update', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_batch_update', args);
       const lang = requireStringArgument('page_batch_update', args, 'lang');
+      const dryRun = optionalBooleanArgument('page_batch_update', args, 'dryRun') ?? false;
       const updates = requireObjectArrayArgument('page_batch_update', args, 'updates').map((entry) => ({
         pageId: requireStringArgument('page_batch_update', entry, 'pageId'),
         patch: parsePatch('page_batch_update', entry),
         regenerateRender: optionalBooleanArgument('page_batch_update', entry, 'regenerateRender'),
       }));
 
-      return executeTool('page_batch_update', { projectRoot, lang }, async () => {
+      return executeTool('page_batch_update', { projectRoot, lang, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('page_batch_update', projectRoot, lang);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const checks = await Promise.all(
+            updates.map(async (entry) => ({
+              pageId: entry.pageId,
+              file: pageFilePath(context.contract.paths.projectRoot, context.lang!, entry.pageId),
+              existing: (await loadPage(repository, context.lang!, entry.pageId)) ?? null,
+              patchFields: Object.keys(entry.patch),
+            })),
+          );
+          return buildDryRunPreview(
+            'page_batch_update',
+            'update-page-batch',
+            { projectRoot, lang, updateCount: updates.length },
+            { pages: checks },
+          );
+        }
         return updatePagesBatch({
           projectRoot,
           lang: context.lang!,
@@ -1284,24 +1474,36 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_delete',
     description: 'Delete a canonical Anydocs page and remove matching navigation references in that language.',
+    annotations: TOOL_ANNOTATIONS.DESTRUCTIVE,
     inputSchema: {
       type: 'object',
       properties: {
         projectRoot: { type: 'string' },
         lang: { type: 'string' },
         pageId: { type: 'string' },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_delete', argumentsValue);
-      const projectRoot = requireStringArgument('page_delete', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_delete', args);
       const lang = requireStringArgument('page_delete', args, 'lang');
       const pageId = requireStringArgument('page_delete', args, 'pageId');
+      const dryRun = optionalBooleanArgument('page_delete', args, 'dryRun') ?? false;
 
-      return executeTool('page_delete', { projectRoot, lang, pageId }, async () => {
+      return executeTool('page_delete', { projectRoot, lang, pageId, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('page_delete', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_delete',
+            'delete-page',
+            { projectRoot, lang, pageId },
+            current,
+          );
+        }
         return deleteAuthoredPage({
           projectRoot,
           lang: context.lang!,
@@ -1313,6 +1515,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_batch_set_status',
     description: 'Set canonical page statuses for multiple pages in one validated batch.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1323,21 +1526,44 @@ export const pageTools: ToolDefinition[] = [
           description: 'Array of { pageId, status } entries.',
           items: { type: 'object' },
         },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'updates'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_batch_set_status', argumentsValue);
-      const projectRoot = requireStringArgument('page_batch_set_status', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_batch_set_status', args);
       const lang = requireStringArgument('page_batch_set_status', args, 'lang');
+      const dryRun = optionalBooleanArgument('page_batch_set_status', args, 'dryRun') ?? false;
       const updates = requireObjectArrayArgument('page_batch_set_status', args, 'updates').map((entry) => ({
         pageId: requireStringArgument('page_batch_set_status', entry, 'pageId'),
         status: requireKnownPageStatus('page_batch_set_status', entry.status),
       }));
 
-      return executeTool('page_batch_set_status', { projectRoot, lang }, async () => {
+      return executeTool('page_batch_set_status', { projectRoot, lang, ...(dryRun ? { dryRun } : {}) }, async () => {
         const context = await loadProjectContext('page_batch_set_status', projectRoot, lang);
+        if (dryRun) {
+          const repository = createRepository(context.contract.paths.projectRoot);
+          const checks = await Promise.all(
+            updates.map(async (entry) => {
+              const existing = await loadPage(repository, context.lang!, entry.pageId);
+              return {
+                pageId: entry.pageId,
+                file: pageFilePath(context.contract.paths.projectRoot, context.lang!, entry.pageId),
+                currentStatus: existing?.status ?? null,
+                nextStatus: entry.status,
+                existing: existing ?? null,
+              };
+            }),
+          );
+          return buildDryRunPreview(
+            'page_batch_set_status',
+            'set-page-statuses-batch',
+            { projectRoot, lang, updateCount: updates.length },
+            { pages: checks },
+          );
+        }
         return setPageStatusesBatch({
           projectRoot,
           lang: context.lang!,
@@ -1349,6 +1575,7 @@ export const pageTools: ToolDefinition[] = [
   {
     name: 'page_set_status',
     description: 'Set the canonical page status while preserving shared publication validation rules.',
+    annotations: TOOL_ANNOTATIONS.IDEMPOTENT_WRITE,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1356,19 +1583,33 @@ export const pageTools: ToolDefinition[] = [
         lang: { type: 'string' },
         pageId: { type: 'string' },
         status: { type: 'string', enum: ['draft', 'in_review', 'published'] },
+        dryRun: DRY_RUN_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang', 'pageId', 'status'],
       additionalProperties: false,
     },
     handler: async (argumentsValue) => {
       const args = requireObjectArguments('page_set_status', argumentsValue);
-      const projectRoot = requireStringArgument('page_set_status', args, 'projectRoot');
+      const projectRoot = requireProjectRoot('page_set_status', args);
       const lang = requireStringArgument('page_set_status', args, 'lang');
       const pageId = requireStringArgument('page_set_status', args, 'pageId');
       const status = requireKnownPageStatus('page_set_status', args.status);
+      const dryRun = optionalBooleanArgument('page_set_status', args, 'dryRun') ?? false;
 
-      return executeTool('page_set_status', { projectRoot, lang, pageId, status }, async () => {
+      return executeTool(
+        'page_set_status',
+        { projectRoot, lang, pageId, status, ...(dryRun ? { dryRun } : {}) },
+        async () => {
         const context = await loadProjectContext('page_set_status', projectRoot, lang);
+        if (dryRun) {
+          const current = await loadCurrentPageForDryRun(context.contract.paths.projectRoot, context.lang!, pageId);
+          return buildDryRunPreview(
+            'page_set_status',
+            'set-page-status',
+            { projectRoot, lang, pageId, nextStatus: status },
+            { ...current, currentStatus: current.existing?.status ?? null },
+          );
+        }
         return setPageStatus({
           projectRoot,
           lang: context.lang!,

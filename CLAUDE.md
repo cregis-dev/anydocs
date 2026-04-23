@@ -8,24 +8,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Current Capabilities
 
-The system consists of three main components:
+The system consists of four main components:
 
 1. **Docs Site** (Reading): GitBook-style reading experience at `/[lang]/docs/[...slug]`
    - Navigation, TOC, breadcrumbs, prev/next links
-   - Internal search (build-time static index with browser-based retrieval)
+   - Internal search (build-time static index + `search-find` artifact, browser-side retrieval)
    - Only displays `status=published` pages
 
 2. **Studio** (Local Editing): Notion-like editor at `/studio`
    - Three-column layout: navigation orchestration + Yoopta editor + metadata panel
-   - Writes directly to local filesystem (`content/projects/*/pages/`, `navigation/`)
+   - Writes directly to the active project's filesystem (`<projectRoot>/pages/<lang>/`, `<projectRoot>/navigation/`)
    - Supports all page statuses (draft/in_review/published)
    - **Disabled in production** (returns 404)
 
-3. **CLI**: Project initialization, build, preview, and legacy import
-   - `init`: Create new documentation projects
-   - `build`: Generate search indexes, llms.txt, and MCP files
-   - `preview`: Show entry URL for published content
-   - `import`: Convert Markdown/MDX to Yoopta JSON
+3. **CLI** (`@anydocs/cli`, bin `anydocs`): Project lifecycle and authoring automation
+   - `init`: Scaffold a new documentation project
+   - `build`: Generate search indexes, `llms.txt`, and build artifacts under `dist/`
+   - `preview`: Serve the built site / print entry URL
+   - `studio`: Launch Studio pointed at a project directory
+   - `project` (`create`|`inspect`|`validate`|`paths`): Inspect/validate project contract and paths
+   - `page` (`list`|`get`|`find`): Read-side page queries
+   - `nav get`: Read navigation document
+   - `workflow inspect`: Inspect `anydocs.workflow.json`
+   - `import` / `convert-import`: Stage and convert legacy Markdown/MDX docs
+
+4. **MCP Server** (`@anydocs/mcp`, bin `anydocs-mcp`): Authoring MCP over **stdio** (`@modelcontextprotocol/sdk`)
+   - 33 tools: `project_*` (9), `page_*` (18), `nav_*` (6) covering CRUD, batch, templates, translation, build, preview
+   - Resources under `anydocs://` URIs: authoring guidance, templates, allowed block types, block examples
+   - JSON-RPC only, **no HTTP transport**. Not currently mountable as a remote service without an adapter.
 
 ### Future Direction (vNext)
 
@@ -45,17 +55,20 @@ pnpm dev:desktop      # Start Tauri desktop app
 
 ### Build & Validation
 ```bash
-pnpm build            # Full workspace build
-pnpm build:web        # Build Next.js app (includes gen:public)
-pnpm build:cli        # Build CLI package
-pnpm build:desktop    # Build Tauri desktop app
-pnpm typecheck        # TypeScript type checking
-pnpm lint             # ESLint
-pnpm test             # Package-level regression gate
+pnpm build            # Full workspace build (pnpm -r build)
+pnpm build:web        # Build Next.js app
+pnpm build:cli        # Build @anydocs/cli
+pnpm build:mcp        # Build @anydocs/mcp
+pnpm build:desktop    # Build Tauri desktop app (web export + desktop-server + tauri)
+pnpm typecheck        # TypeScript type checking (pnpm -r)
+pnpm lint             # ESLint (pnpm -r)
+pnpm test             # Regression gate: runs core + cli + mcp unit tests
+pnpm test:web         # Web package tests
 pnpm test:e2e:p0      # Critical-path Playwright gate
-pnpm test:acceptance  # GitHub submission gate
-pnpm check            # Full validation: gen:public + typecheck + lint
+pnpm test:acceptance  # GitHub submission gate (pnpm test + test:e2e:p0)
+pnpm test:full        # test + test:web
 ```
+Note: there is no `pnpm check` script; use `pnpm typecheck && pnpm lint` (optionally with `pnpm test`) for a full local gate.
 
 ## Pre-GitHub Submission Gate
 
@@ -68,19 +81,40 @@ pnpm check            # Full validation: gen:public + typecheck + lint
 ```bash
 # Direct node execution (recommended in monorepo)
 node --experimental-strip-types packages/cli/src/index.ts <command> [options]
+# or after install:
+pnpm --filter @anydocs/cli cli <command> [options]
 
 # Project lifecycle
-node --experimental-strip-types packages/cli/src/index.ts init <targetDir>
-node --experimental-strip-types packages/cli/src/index.ts build <targetDir> [--output <dir>] [--watch]
-node --experimental-strip-types packages/cli/src/index.ts preview <targetDir> [--watch]
+init     <targetDir> [--agent <codex|...>]
+build    <targetDir> [--output <dir>] [--watch]
+preview  <targetDir> [--watch]
+studio   <targetDir> [--no-open]
 
-# Build options
---output, -o <dir>   # Custom output directory (default: {targetDir}/dist)
---watch              # Watch for changes and rebuild
+# Project introspection
+project create   <targetDir> [--project-id <id>]
+project inspect  <targetDir> [--json]
+project validate <targetDir>
+project paths    <targetDir>
+
+# Read-side queries
+page list <targetDir> --lang <lang>
+page get  <pageId>    <targetDir> --lang <lang>
+page find <targetDir> --lang <lang> [--slug <slug>] [--tag <tag>]
+nav  get  <targetDir> --lang <lang>
+workflow inspect <targetDir>
 
 # Legacy import
-node --experimental-strip-types packages/cli/src/index.ts import <sourceDir> <targetDir> [lang]
-node --experimental-strip-types packages/cli/src/index.ts convert-import <importId> <targetDir>
+import         <sourceDir> <targetDir> [lang] [--convert]
+convert-import <importId>  <targetDir>
+
+# MCP server (separate package)
+npx @anydocs/mcp            # starts stdio MCP server against cwd's project
+
+# Common options
+--output, -o <dir>    # Custom output directory (default: {targetDir}/dist)
+--watch               # Watch for changes and rebuild
+--json                # Structured JSON output
+--target <dir>        # Alternative to positional <targetDir>
 
 # Examples
 node --experimental-strip-types packages/cli/src/index.ts build .
@@ -103,61 +137,72 @@ node --experimental-strip-types packages/cli/src/index.ts build . --watch
 ```
 anydocs/                                     # Tool repository
 ├── packages/
-│   ├── cli/                                 # CLI tool
-│   ├── core/                                # Core library
-│   ├── web/                                 # Next.js Studio & reader
-│   └── desktop/                             # Tauri app
+│   ├── cli/                                 # @anydocs/cli — anydocs bin
+│   ├── core/                                # @anydocs/core — shared types, fs repos, services
+│   ├── mcp/                                 # @anydocs/mcp — stdio MCP server (anydocs-mcp bin)
+│   ├── web/                                 # @anydocs/web — Next.js Studio & reader
+│   ├── desktop/                             # @anydocs/desktop — Tauri app shell
+│   └── desktop-server/                      # @anydocs/desktop-server — local HTTP server for Tauri
 │
-└── content/projects/                        # Example docs projects
-    └── default/                             # Demo project
-        ├── anydocs.config.json             # Project config
-        ├── anydocs.workflow.json           # Workflow definition
-        ├── .gitignore                      # Ignores dist/, .anydocs/
-        ├── README.md                       # Project documentation
-        ├── pages/
-        │   ├── zh/*.json                   # Chinese pages (Yoopta JSON)
-        │   └── en/*.json                   # English pages
-        ├── navigation/
-        │   ├── zh.json                     # Chinese nav tree
-        │   └── en.json                     # English nav tree
-        └── imports/                        # Import staging area
+├── examples/                                # Sample projects (starter-docs, codex-authoring-docs,
+│   │                                        #   codex-mcp-docs, openapi-reference-docs,
+│   │                                        #   page-template-docs, import-staging-docs)
+│   └── starter-docs/                        # Minimal reference project
+│       ├── anydocs.config.json             # Project config (projectId, languages, site/theme)
+│       ├── anydocs.workflow.json           # Workflow definition
+│       ├── README.md
+│       ├── pages/
+│       │   ├── zh/*.json                   # doc-content-v1 blocks (JSON)
+│       │   └── en/*.json
+│       └── navigation/
+│           ├── zh.json                     # Chinese nav tree
+│           └── en.json                     # English nav tree
+│
+├── docs/                                    # Project-level docs (usage/developer guides)
+├── artifacts/                               # BMAD planning artifacts (PRD, architecture, epics)
+└── scripts/                                 # Repo-level scripts (dev-desktop, release-npm)
 
-dist/                                        # Build output (git-ignored)
-└── projects/
-    └── default/
-        ├── build-manifest.json             # Build metadata
-        ├── site/
-        │   └── assets/
-        │       ├── search-index.zh.json
-        │       └── search-index.en.json
-        ├── mcp/
-        │   ├── index.json
-        │   ├── navigation.*.json
-        │   └── pages.*.json
-        └── llms.txt
+# Build output for a single project (written relative to that project, e.g. <projectRoot>/dist/)
+dist/
+├── build-manifest.json                     # Build metadata
+├── <lang>/                                  # Per-language static reading site
+├── assets/
+│   ├── search-index.<lang>.json            # MiniSearch index
+│   └── search-find.<lang>.json             # Retrieval artifact
+├── mcp/
+│   ├── index.json
+│   ├── navigation.<lang>.json
+│   └── pages.<lang>.json
+└── llms.txt
 ```
-    ├── core/                                # Shared types & utilities
-    ├── desktop/                             # Tauri app
-    └── web/                                 # Next.js web app
-```
 
-**Compatibility Notes:**
-- Legacy flat paths (`public/llms.txt`, `public/search-index.*.json`, `public/mcp/*`) are generated for the default project
-- Current implementation still has single-project constraints in routing and data layer
+**Notes:**
+- There is **no** `content/projects/default/` at repo root. Each project is a standalone directory containing `anydocs.config.json`; the monorepo ships several under `examples/`.
+- Project root is resolved by `@anydocs/core` `resolveProjectRoot(repoRoot, projectId)` and currently maps directly to the passed directory.
+- The `@anydocs/web` app has its own `public/` directory used for local dev assets; Studio/reader read the active project via `packages/web/lib/docs/*`.
 
-### Routes
+### Routes & Surfaces
+
+HTTP routes (Next.js app under `packages/web/app/`):
 
 | Route | Description | Environment |
 |-------|-------------|-------------|
 | `/` | Editor homepage → Studio | Development only |
 | `/studio` | Studio editing interface | Development only |
-| `/[lang]/docs/[...slug]` | Reading site (published only) | All environments |
-| `/api/mcp/*` | Read-only WebMCP APIs | All environments |
-| `/api/local/*` | Local write APIs | Development only |
+| `/[lang]/docs/[[...slug]]` | Reading site (published only) | All environments |
+| `/reference/...` | API reference pages | All environments |
+| `/api/local/page` · `/pages` · `/navigation` · `/project` · `/api-sources` · `/preview` | Local read/write APIs used by Studio | Development only |
+| `/api/docs/search-index` · `/api/docs/search-find` | Static search artifacts served for the reader | All environments |
+
+**There is no `/api/mcp/*` HTTP endpoint.** MCP is exposed out-of-band:
+
+- **Stdio MCP server**: `npx @anydocs/mcp` (or `packages/mcp/src/index.ts` in dev) — proper JSON-RPC over stdio via `@modelcontextprotocol/sdk`.
+- **Static MCP artifacts**: `dist/.../mcp/{index,navigation.<lang>,pages.<lang>}.json` produced by `build` for consumers who only need read-only snapshots.
 
 ### Content Model
 
-**Page JSON Structure:**
+**Page JSON Structure** — canonical storage is the `doc-content-v1` block format, not raw Yoopta. Yoopta is only used as the Studio editor runtime, with `docContentToYoopta` / `yooptaToDocContent` converters in `@anydocs/core` bridging storage ↔ editor.
+
 ```json
 {
   "id": "getting-started-intro",
@@ -169,10 +214,16 @@ dist/                                        # Build output (git-ignored)
   "status": "draft" | "in_review" | "published",
   "updatedAt": "2026-03-08T00:00:00.000Z",
   "content": {
-    "yoopta": "...blocks..."
+    "version": 1,
+    "blocks": [
+      { "type": "heading", "id": "block-1", "level": 1,
+        "children": [{ "type": "text", "text": "..." }] }
+    ]
   }
 }
 ```
+
+Allowed block types and marks are defined by the `doc-content-v1` schema and published as the `anydocs://content/allowed-types` MCP resource.
 
 **Navigation Tree Structure:**
 ```json
@@ -195,28 +246,34 @@ Supported node types: `section`, `folder`, `page`, `link`
 
 ### Key Libraries
 
-- **Editor**: Yoopta (Slate-based block editor, Notion-like)
+- **Editor**: Yoopta (Slate-based block editor, Notion-like) — Studio-only runtime, storage is `doc-content-v1`
 - **UI**: shadcn/ui (Radix UI + Tailwind CSS v4)
-- **Search**: MiniSearch (build-time static index, client-side retrieval)
+- **Search**: MiniSearch — build-time static index + `search-find` artifact, retrieved client-side
 - **Framework**: Next.js 15 App Router
+- **MCP**: `@modelcontextprotocol/sdk` (stdio transport)
+- **Desktop**: Tauri + `@anydocs/desktop-server` (local HTTP bridge to the web app export)
 
 ### Data Flow
 
 1. **Editing Flow** (Development):
-   - Studio reads/writes via `/api/local/*` (Node.js filesystem)
-   - Content written to `content/projects/<projectId>/pages/` and `navigation/`
+   - Studio reads/writes via `/api/local/*` (Node.js filesystem), which wraps `@anydocs/core` repositories
+   - Content written under `<projectRoot>/pages/<lang>/*.json` and `<projectRoot>/navigation/<lang>.json`
    - All page statuses visible in Studio
 
-2. **Build Flow**:
-   - CLI or build script generates static assets
-   - Input: `content/projects/<projectId>/pages/` + `navigation/`
-   - Output: `public/projects/<projectId>/` (search index, llms.txt, MCP files)
+2. **MCP Authoring Flow**:
+   - External AI agents spawn `anydocs-mcp` (stdio) and call `project_*` / `page_*` / `nav_*` tools
+   - Same underlying `@anydocs/core` repositories as Studio — authoring guidance and templates delivered via `anydocs://` resources
+   - No auth, no HTTP transport — designed for local/trusted agent contexts
+
+3. **Build Flow**:
+   - `anydocs build <targetDir>` (CLI) or `packages/web/scripts/gen-public-assets.mjs` (web build)
+   - Input: `<projectRoot>/pages/<lang>/` + `<projectRoot>/navigation/`
+   - Output: `<projectRoot>/dist/` — per-language reader, `assets/search-index.*.json`, `assets/search-find.*.json`, `mcp/*.json`, `llms.txt`, `build-manifest.json`
    - Only `status=published` pages included in build artifacts
 
-3. **Reading Flow** (All Environments):
-   - Docs site reads from `content/projects/<projectId>/pages/`
-   - Filters to `status=published` only
-   - MCP APIs serve only published content
+4. **Reading Flow** (All Environments):
+   - Docs site reads the active project via `packages/web/lib/docs/data.ts` (published-only filter)
+   - Search index and `search-find` artifacts served at `/api/docs/search-*`
 
 ### Key Files & Directories
 
@@ -226,21 +283,28 @@ Supported node types: `section`, `folder`, `page`, `link`
 - **Epics**: `artifacts/bmad/planning-artifacts/epics.md` (delivery breakdown)
 - **Usage Manual**: `docs/usage-manual.md` (detailed operational guide)
 - **Dev Guide**: `docs/developer-guide.md` (developer workflow guide)
-- **Data Layer**:
-  - `packages/core/src/lib/docs/fs.ts` - Local read/write with validation
-  - `packages/core/src/lib/docs/data.ts` - Published-only data layer
-- **Studio**: `packages/web/src/components/studio/` - Editor components
-- **Reading Site**: `packages/web/src/app/[lang]/docs/[[...slug]]/page.tsx`
-- **Build Script**: `scripts/gen-public-assets.mjs` - Generate static assets
-- **MCP APIs**: `packages/web/src/app/api/mcp/*` - Read-only endpoints
+- **Agent guidance**: `AGENTS.md` (mirrored into the MCP `anydocs://authoring/guidance` resource)
+- **Core data layer**: `packages/core/src/fs/` — `docs-repository.ts`, `content-repository.ts`, `api-source-repository.ts`, `project-paths.ts`
+- **Core services**: `packages/core/src/services/` — build, preview, authoring, markdown authoring, templates, legacy import, workflow sync
+- **Core schemas**: `packages/core/src/schemas/` — `doc-content-v1` and related validators
+- **Web data adapter**:
+  - `packages/web/lib/docs/fs.ts` — Studio-side read/write wrapper over core repositories (also runs Yoopta ↔ doc-content conversion)
+  - `packages/web/lib/docs/data.ts` — published-only data layer for the reader
+- **Studio**: `packages/web/components/studio/` — Editor components (`local-studio-app.tsx`, `navigation-composer.tsx`, ...)
+- **Reading Site**: `packages/web/app/[lang]/docs/[[...slug]]/page.tsx`
+- **Local APIs**: `packages/web/app/api/local/*/route.ts`
+- **Search API**: `packages/web/app/api/docs/search-index/`, `packages/web/app/api/docs/search-find/`
+- **Build Script**: `packages/web/scripts/gen-public-assets.mjs` — generates static assets
+- **MCP Server**: `packages/mcp/src/` — `server.ts`, `resources.ts`, `tools/{project,page,navigation}-tools.ts`
 
 ## Production Constraints (Critical)
 
 **Security & Privacy:**
 - `/` and `/studio` MUST return 404 in production
 - `/api/local/*` MUST be disabled in production
-- `/api/mcp/*`, `llms.txt`, and `public/mcp/*.json` MUST only expose `published` content
-- Never expose `draft` or `in_review` pages to public
+- Build artifacts (`llms.txt`, `dist/.../mcp/*.json`, `assets/search-*.json`) MUST only derive from `status=published` content
+- The stdio MCP server grants full read/write access to the project filesystem — treat it as local-trust only; do not expose it over a network without adding auth + a read-only tool profile
+- Never expose `draft` or `in_review` pages to public consumers
 
 **Git Management:**
 - This project does NOT provide commit/review/publish APIs
@@ -261,36 +325,43 @@ Studio should restrict available Yoopta plugins to documentation essentials:
 
 ## Workflow Examples
 
-### Workflow A: Edit Default Project
+### Workflow A: Edit a sample project
 ```bash
 pnpm install
-pnpm dev                                          # Start Studio
-# Edit in Studio at http://localhost:3000/studio
-pnpm --filter @anydocs/cli cli build .        # Generate public assets
+pnpm --filter @anydocs/cli cli studio ./examples/starter-docs   # Launch Studio against that project
+# Edit at http://localhost:3000/studio
+pnpm --filter @anydocs/cli cli build ./examples/starter-docs    # Generate dist/ artifacts
 ```
 
-### Workflow B: Create New Project
+### Workflow B: Create a new project
 ```bash
 pnpm --filter @anydocs/cli cli init ./my-docs-project
 pnpm --filter @anydocs/cli cli build ./my-docs-project
-pnpm --filter @anydocs/cli preview ./my-docs-project
+pnpm --filter @anydocs/cli cli preview ./my-docs-project
 ```
 
-### Workflow C: Import Legacy Docs
+### Workflow C: Import legacy docs
 ```bash
-pnpm --filter @anydocs/cli cli import ./legacy-docs . zh
-# Review import at content/projects/default/imports/<importId>/
-pnpm --filter @anydocs/cli cli convert-import <importId> .
-# Generated draft pages will be in content/projects/default/pages/zh/
+pnpm --filter @anydocs/cli cli import ./legacy-docs ./my-docs-project zh
+# Review import at <projectRoot>/imports/<importId>/
+pnpm --filter @anydocs/cli cli convert-import <importId> ./my-docs-project
+# Generated draft pages land under ./my-docs-project/pages/zh/
 # Review and publish in Studio
 ```
 
-## Current Gaps (vs Multi-Project Target)
+### Workflow D: Drive authoring via MCP
+```bash
+# Most clients spawn the server themselves; run directly to sanity-check:
+npx @anydocs/mcp                                  # from inside the project directory
+# Then a client calls project_open, page_create, nav_insert, project_build, etc.
+```
 
-- **Data Layer**: `contentRoot()` currently fixed to `content/`, no `projectId` scoping
-- **Studio**: Single-context only (`/studio`), no project selector or session isolation
-- **Routing**: Reading site and APIs don't support project parameters
-- **Build**: Search index, llms.txt, and MCP outputs not yet project-scoped
-- **Validation**: Need to enforce minimal block set and add duplicate slug detection
+## Current Gaps
+
+- **Data Layer**: `resolveProjectRoot()` currently returns the passed directory directly; multi-project in a single workspace is not yet modeled at the data layer
+- **Studio**: Single-context only (`/studio`), no project switcher or session isolation
+- **Routing**: Reader and local APIs assume one active project per server process
+- **Validation**: Minimal block-set enforcement is schema-driven (doc-content-v1), but tooling to surface violations in Studio is still catching up
+- **MCP as a service**: Stdio only — no HTTP transport, no auth, no pagination, no read-only tool profile; not ready for public/remote exposure without an adapter layer
 
 For the current documentation map, see: `docs/README.md`

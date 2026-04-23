@@ -457,8 +457,11 @@ test('stdio server returns a structured error envelope for unknown tool calls', 
     assert.equal(envelope.ok, false);
     assert.equal(envelope.error?.code, 'MCP_TOOL_ERROR');
     assert.match(String(envelope.error?.message), /Unknown tool "not_a_real_tool"/);
-    assert.equal(envelope.meta.tool, 'call_tool');
-    assert.equal(envelope.meta.requestedTool, 'not_a_real_tool');
+    assert.equal(envelope.meta.tool, 'not_a_real_tool');
+    assert.ok(
+      Array.isArray(envelope.meta.knownTools) && envelope.meta.knownTools.length > 0,
+      'knownTools should be a non-empty array',
+    );
   } finally {
     await client.close();
   }
