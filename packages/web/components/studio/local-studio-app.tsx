@@ -251,14 +251,36 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
   }, [bootContext.canManageRecentProjects, bootContext.canOpenExternalProject, recentProjects, stopPreviewSessions]);
 
+  // Dirty/autosave refs are declared up front so flushDirtyActive (and the
+  // context-change handlers below) can reach them without depending on
+  // declaration order. The `.current = ...` sync assignments still live next
+  // to the autosave effect where the source state is set up.
+  const dirtyRef = useRef(false);
+  const dirtyTickRef = useRef(0);
+  const activeRef = useRef<PageDoc | null>(null);
+  const onSaveRef = useRef<((next: PageDoc) => Promise<PageDoc | null>) | null>(null);
+
+  // Flush pending edits on the current page before the surrounding context
+  // (page, language, project) is torn down. Returns false if the save failed
+  // or if the user kept editing during the save (dirtyTick bumped), so callers
+  // can bail out of the transition and preserve in-progress work.
+  const flushDirtyActive = useCallback(async (): Promise<boolean> => {
+    if (!dirtyRef.current || !activeRef.current) return true;
+    const save = onSaveRef.current;
+    if (!save) return false;
+    const saved = await save(activeRef.current);
+    return saved !== null;
+  }, []);
+
   const handleProjectSelect = useCallback(async (project: StudioProject) => {
     if (!bootContext.canSwitchProjects) {
       return;
     }
 
+    if (!(await flushDirtyActive())) return;
     await stopPreviewSessions();
-    const updated = recentProjects.map(p => 
-      p.id === project.id 
+    const updated = recentProjects.map(p =>
+      p.id === project.id
         ? { ...p, lastOpened: Date.now() }
         : p
     ).sort((a, b) => b.lastOpened - a.lastOpened);
@@ -267,12 +289,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
     setRecentProjects(updated);
     setProjectId(project.id);
-  }, [bootContext.canManageRecentProjects, bootContext.canSwitchProjects, recentProjects, stopPreviewSessions]);
+  }, [bootContext.canManageRecentProjects, bootContext.canSwitchProjects, flushDirtyActive, recentProjects, stopPreviewSessions]);
 
   const handleCloseProject = useCallback(async () => {
+    if (!(await flushDirtyActive())) return;
     await stopPreviewSessions();
     setProjectId('');
-  }, [stopPreviewSessions]);
+  }, [flushDirtyActive, stopPreviewSessions]);
 
   const handleRecentProjectRemove = useCallback((project: StudioProject) => {
     if (!bootContext.canManageRecentProjects) {
@@ -587,28 +610,39 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   }, [activePageTopNavGroupId, showStudioTopNav, topNavGroupEntries]);
 
   const onSave = useCallback(
-    async (next: PageDoc) => {
+    async (next: PageDoc): Promise<PageDoc | null> => {
       if (!lang) {
-        return;
+        return null;
       }
       setSaving(true);
       setSaveError(null);
       if (!selectedProject?.path) {
         setSaveError('请重新打开外部项目根目录。');
         setSaving(false);
-        return;
+        return null;
       }
+      const startTick = dirtyTickRef.current;
       try {
         const saved = await studioHost.savePage(lang, next, projectId, selectedProject.path);
-        setActive(saved);
         setLoad((current) => ({
           ...current,
           pages: upsertPageInList(current.pages, saved),
         }));
-        setDirty(false);
+        // Only reset `active`/`dirty` when nothing was typed during the save.
+        // If `dirtyTick` advanced, the editor state has strictly newer content
+        // than `saved`; overwriting with the server response would silently
+        // drop those keystrokes, and clearing `dirty` would defeat the next
+        // autosave. Leave both alone and signal "not clean" to the caller.
+        if (dirtyTickRef.current === startTick) {
+          setActive(saved);
+          setDirty(false);
+          return saved;
+        }
+        return null;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : '保存失败';
         setSaveError(msg);
+        return null;
       } finally {
         setSaving(false);
       }
@@ -756,12 +790,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     return () => clearTimeout(timer);
   }, [navDirty, navDirtyTick, onSaveNav]);
 
-  const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
-  const dirtyTickRef = useRef(0);
   dirtyTickRef.current = dirtyTick;
-  const activeRef = useRef<PageDoc | null>(null);
   activeRef.current = active;
+  onSaveRef.current = onSave;
   useEffect(() => {
     if (!dirty) return;
     const scheduledTick = dirtyTick;
@@ -772,6 +804,14 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }, 1500);
     return () => clearTimeout(timer);
   }, [dirty, dirtyTick, onSave]);
+
+  const changeActivePage = useCallback(
+    async (nextActiveId: string | null) => {
+      if (!(await flushDirtyActive())) return;
+      setActiveId(nextActiveId);
+    },
+    [flushDirtyActive],
+  );
 
   const projectDirtyRef = useRef(false);
   projectDirtyRef.current = projectDirty;
@@ -880,7 +920,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         projectId,
         selectedProject.path,
       );
-      setActiveId(created.id);
+      void changeActivePage(created.id);
       setLoad((current) => ({
         ...current,
         pages: upsertPageInList(current.pages, created),
@@ -892,7 +932,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setNavDirty(true);
       setNavDirtyTick((tick) => tick + 1);
     },
-    [lang, navDraft, projectId, selectedProject, sidebarCreateDialog, studioHost],
+    [changeActivePage, lang, navDraft, projectId, selectedProject, sidebarCreateDialog, studioHost],
   );
 
   const createPageForNavigation = useCallback(
@@ -908,7 +948,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         selectedProject.path,
       );
 
-      setActiveId(created.id);
+      void changeActivePage(created.id);
       setLoad((current) => ({
         ...current,
         pages: upsertPageInList(current.pages, created),
@@ -916,13 +956,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
 
       return created;
     },
-    [lang, projectId, selectedProject, studioHost],
+    [changeActivePage, lang, projectId, selectedProject, studioHost],
   );
 
   const openPageSettings = useCallback((pageId: string) => {
-    setActiveId(pageId);
+    void changeActivePage(pageId);
     setRightSidebarMode('page');
-  }, []);
+  }, [changeActivePage]);
 
   const toggleProjectSettings = useCallback(() => {
     setRightSidebarMode((current) => (current === 'project' ? null : 'project'));
@@ -945,11 +985,11 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
 
       const nextPageId = findFirstPageIdInGroup(navDraft.items, groupId);
       if (nextPageId) {
-        setActiveId(nextPageId);
+        void changeActivePage(nextPageId);
         setRightSidebarMode(null);
       }
     },
-    [activeId, navDraft],
+    [activeId, changeActivePage, navDraft],
   );
 
   const runPreview = useCallback(async () => {
@@ -1111,12 +1151,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   );
 
   const handleLanguageChange = useCallback(
-    (value: string) => {
+    async (value: string) => {
       const nextLang = value as DocsLang;
-      pendingLanguagePageSlugRef.current = active?.slug ?? null;
+      if (!(await flushDirtyActive())) return;
+      pendingLanguagePageSlugRef.current = activeRef.current?.slug ?? null;
       setLang((current) => (current === nextLang ? current : nextLang));
     },
-    [active],
+    [flushDirtyActive],
   );
 
   const handleDesktopMenuAction = useCallback(
@@ -1421,7 +1462,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     pages={filteredPages}
                     activePageId={activeId}
                     onSelectPage={(id) => {
-                      setActiveId(id);
+                      void changeActivePage(id);
                       setRightSidebarMode(null);
                     }}
                     onOpenPageSettings={openPageSettings}
@@ -1715,6 +1756,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                 {active ? (
                   <>
                     <YooptaDocEditor
+                      key={active.id}
                       id={active.id}
                       value={active.content}
                       onChange={(nextContent, derived) => {
