@@ -266,9 +266,16 @@ Avoid expanding the editor toward layout-heavy page-builder behavior unless the 
 ### Validation Expectations
 
 - `slug` must be unique within a language
-- page references in navigation must resolve to existing `pageId`s
+- page references in navigation must resolve to existing `pageId`s — `nav_set` and `nav_insert` enforce this at call time; always create all pages before setting or inserting navigation entries
 - enabled languages must have both `pages/<lang>/` and `navigation/<lang>.json`
 - only `published` content may enter build artifacts
+
+### MCP Tool Integration Notes
+
+- **Check `ok` on every response.** MCP tool calls never throw for application-level errors (duplicate page, slug collision, page not found, validation failure, etc.). Every response carries `ok: true` or `ok: false` with a `message` field. Always check `ok` before treating a result as a success.
+- **Page-first, navigation-second ordering.** `nav_set`, `nav_replace_items`, and `nav_insert` validate that every referenced `pageId` exists at call time. In a batch authoring flow, create all pages before writing navigation.
+- **`pageId` vs `id`.** The MCP parameter name is `pageId`; the stored page JSON field is `id`. They are the same value — the page identifier that becomes the filename (`pages/<lang>/<pageId>.json`).
+- **`dryRun` available on write tools.** Most write tools accept `dryRun: true` to preview the planned change without writing to disk. Use this to validate inputs before committing.
 
 ## Workflow Examples
 

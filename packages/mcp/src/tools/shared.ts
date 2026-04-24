@@ -350,6 +350,21 @@ export const DRY_RUN_SCHEMA_FIELD = {
   description: 'When true, validate inputs and report would-be effect without writing to disk.',
 } as const;
 
+export const PROJECT_ROOT_SCHEMA_FIELD = {
+  type: 'string',
+  description: 'Absolute path to the Anydocs project root directory (must contain anydocs.config.json).',
+} as const;
+
+export const LANG_SCHEMA_FIELD = {
+  type: 'string',
+  description: 'Language code matching an enabled project language (e.g. "en", "zh"). Use project_open to inspect enabled languages.',
+} as const;
+
+export const PAGE_ID_SCHEMA_FIELD = {
+  type: 'string',
+  description: 'Stable page identifier. Stored as "id" in the page JSON file and becomes the filename (pages/<lang>/<pageId>.json). Must be unique within the project. Different from "slug" which is the URL path.',
+} as const;
+
 export type DryRunPreview<TCurrent = unknown> = {
   dryRun: true;
   action: string;
