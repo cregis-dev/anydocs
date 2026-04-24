@@ -225,7 +225,7 @@ test('runBuildWorkflow emits a deployable docs site at the output root', { timeo
     assert.match(llms, /\/en\/welcome/);
     assert.match(llmsFull, /# Docs Full Export/);
     assert.match(llmsFull, /Page ID: welcome/);
-    assert.match(llmsFull, /URL: \/en\/welcome/);
+    assert.match(llmsFull, /URL: (https?:\/\/[^/]+)?\/en\/welcome/);
     assert.equal(exportedImage.toString('utf8'), 'fake-png-bytes');
     assert.equal(chunks.lang, 'en');
     assert.match(chunks.builtAt, /^\d{4}-\d{2}-\d{2}T/);

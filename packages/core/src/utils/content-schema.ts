@@ -187,9 +187,12 @@ function validateBlock(value: unknown, path: string): DocContentValidationResult
       if (value.title != null && typeof value.title !== 'string') {
         return fail(`${path}.title`, 'must be a string when present');
       }
-      return typeof value.code === 'string' ? ok() : fail(`${path}.code`, 'must be a string');
+      return typeof value.code === 'string' && value.code.trim().length > 0
+        ? ok()
+        : fail(`${path}.code`, 'must be a non-empty string');
     case 'codeGroup':
       if (!Array.isArray(value.items)) return fail(`${path}.items`, 'must be an array');
+      if (value.items.length === 0) return fail(`${path}.items`, 'must have at least one item');
 
       for (let i = 0; i < value.items.length; i += 1) {
         const item = value.items[i];
@@ -203,8 +206,8 @@ function validateBlock(value: unknown, path: string): DocContentValidationResult
         if (item.title != null && typeof item.title !== 'string') {
           return fail(`${path}.items[${i}].title`, 'must be a string when present');
         }
-        if (typeof item.code !== 'string') {
-          return fail(`${path}.items[${i}].code`, 'must be a string');
+        if (typeof item.code !== 'string' || item.code.trim().length === 0) {
+          return fail(`${path}.items[${i}].code`, 'must be a non-empty string');
         }
       }
 

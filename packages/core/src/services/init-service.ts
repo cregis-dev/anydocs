@@ -174,7 +174,7 @@ async function copyClaudeCommandTemplates(projectRoot: string, agent?: InitProje
   return createdFiles;
 }
 
-function createStarterPage(language: DocsLanguage): PageDoc<Record<string, never>> {
+function createStarterPage(language: DocsLanguage): PageDoc {
   const isEnglish = language === 'en';
 
   return {
@@ -186,7 +186,7 @@ function createStarterPage(language: DocsLanguage): PageDoc<Record<string, never
       ? 'Starter page created by anydocs init.'
       : '由 anydocs init 创建的起始页面。',
     status: 'published',
-    content: {},
+    content: { version: 1 as const, blocks: [] },
     render: {
       markdown: isEnglish ? '# Welcome' : '# 欢迎',
       plainText: isEnglish ? 'Welcome' : '欢迎',
