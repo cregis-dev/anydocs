@@ -167,7 +167,7 @@ test('validateDocContentV1 rejects malformed code group items', () => {
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.equal(result.path, 'content.blocks[0].items[0].code');
-    assert.match(result.error, /non-empty string/);
+    assert.match(result.error, /must be a string/);
   }
 });
 
@@ -189,7 +189,7 @@ test('validateDocContentV1 rejects codeGroup with empty items array', () => {
   }
 });
 
-test('validateDocContentV1 rejects codeGroup with empty code string', () => {
+test('validateDocContentV1 accepts codeGroup with empty code string', () => {
   const result = validateDocContentV1({
     version: DOC_CONTENT_VERSION,
     blocks: [
@@ -200,11 +200,7 @@ test('validateDocContentV1 rejects codeGroup with empty code string', () => {
     ],
   });
 
-  assert.equal(result.ok, false);
-  if (!result.ok) {
-    assert.equal(result.path, 'content.blocks[0].items[0].code');
-    assert.match(result.error, /non-empty string/);
-  }
+  assert.equal(result.ok, true);
 });
 
 test('validateDocContentV1 rejects codeBlock with empty code string', () => {

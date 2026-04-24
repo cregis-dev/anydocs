@@ -32,6 +32,7 @@ import {
 import {
   type ToolDefinition,
   DRY_RUN_SCHEMA_FIELD,
+  PROJECT_ROOT_SCHEMA_FIELD,
   TOOL_ANNOTATIONS,
   buildDryRunPreview,
   executeTool,
@@ -338,10 +339,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
       },
       required: ['projectRoot'],
       additionalProperties: false,
@@ -392,10 +390,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         patch: {
           type: 'object',
           description: 'Supported project config fields to update.',
@@ -441,10 +436,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         dryRun: {
           type: 'boolean',
           description: 'When true, return build metadata without writing artifacts.',
@@ -474,10 +466,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         host: {
           type: 'string',
           description: 'Optional host for the preview server (default: 127.0.0.1).',
@@ -577,10 +566,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         sessionId: {
           type: 'string',
           description: 'Optional preview session id returned by project_preview_start.',
@@ -631,10 +617,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         sessionId: {
           type: 'string',
           description: 'Optional preview session id returned by project_preview_start.',
@@ -690,10 +673,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         mode: {
           type: 'string',
           enum: ['dryRun', 'apply'],
@@ -732,14 +712,11 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
         languages: {
           type: 'array',
           items: { type: 'string' },
-          description: 'The full enabled language set to persist in anydocs.config.json.',
+          description: 'New list of enabled language codes (e.g. ["en", "zh"]). Existing page and navigation files are preserved.',
         },
         defaultLanguage: {
           type: 'string',
@@ -799,10 +776,7 @@ export const projectTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: {
-          type: 'string',
-          description: 'Path to the Anydocs project root.',
-        },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
       },
       required: ['projectRoot'],
       additionalProperties: false,

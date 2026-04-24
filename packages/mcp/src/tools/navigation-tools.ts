@@ -13,6 +13,8 @@ import {
 import {
   type ToolDefinition,
   DRY_RUN_SCHEMA_FIELD,
+  LANG_SCHEMA_FIELD,
+  PROJECT_ROOT_SCHEMA_FIELD,
   TOOL_ANNOTATIONS,
   buildDryRunPreview,
   createRepository,
@@ -88,8 +90,8 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
       },
       required: ['projectRoot', 'lang'],
       additionalProperties: false,
@@ -119,11 +121,11 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
         navigation: {
           type: 'object',
-          description: 'A canonical navigation document with version and items.',
+          description: 'Canonical navigation document: { "version": 1, "items": [...] }. Supported item types: section, folder, page, link. All referenced pageIds must already exist — create pages before calling nav_set.',
         },
         dryRun: DRY_RUN_SCHEMA_FIELD,
       },
@@ -163,12 +165,12 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
         items: {
           type: 'array',
           items: { type: 'object' },
-          description: 'The replacement top-level navigation item array.',
+          description: 'Replacement top-level navigation item array. All referenced pageIds must already exist.',
         },
         dryRun: DRY_RUN_SCHEMA_FIELD,
       },
@@ -208,8 +210,8 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
         parentPath: {
           type: 'string',
           description: 'Optional slash-separated path to a section or folder. Omit for the root.',
@@ -220,7 +222,7 @@ export const navigationTools: ToolDefinition[] = [
         },
         item: {
           type: 'object',
-          description: 'The navigation item to insert.',
+          description: 'Navigation item to insert. Supported types: section, folder, page ({ type: "page", pageId }), link ({ type: "link", title, href }). The referenced pageId must already exist.',
         },
         dryRun: DRY_RUN_SCHEMA_FIELD,
       },
@@ -275,8 +277,8 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
         itemPath: {
           type: 'string',
           description: 'Slash-separated zero-based item path.',
@@ -319,8 +321,8 @@ export const navigationTools: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        projectRoot: { type: 'string' },
-        lang: { type: 'string' },
+        projectRoot: PROJECT_ROOT_SCHEMA_FIELD,
+        lang: LANG_SCHEMA_FIELD,
         itemPath: {
           type: 'string',
           description: 'Slash-separated zero-based item path for the item to move.',

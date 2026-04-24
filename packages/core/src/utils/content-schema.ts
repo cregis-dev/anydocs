@@ -206,8 +206,8 @@ function validateBlock(value: unknown, path: string): DocContentValidationResult
         if (item.title != null && typeof item.title !== 'string') {
           return fail(`${path}.items[${i}].title`, 'must be a string when present');
         }
-        if (typeof item.code !== 'string' || item.code.trim().length === 0) {
-          return fail(`${path}.items[${i}].code`, 'must be a non-empty string');
+        if (typeof item.code !== 'string') {
+          return fail(`${path}.items[${i}].code`, 'must be a string');
         }
       }
 
