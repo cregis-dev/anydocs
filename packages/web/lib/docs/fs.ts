@@ -23,6 +23,7 @@ import {
   saveNavigation as saveNavigationToRepository,
   savePage as savePageToRepository,
   validateDocContentV1,
+  ValidationError,
   yooptaToDocContent,
   type ApiSourceDoc,
   type PageDoc as CorePageDoc,
@@ -282,16 +283,29 @@ export async function createPage(
 ): Promise<PageDoc> {
   const normalizedSlug = normalizeSlug(input.slug);
   const title = input.title.trim() || 'Untitled';
+  const repository = await getDocsRepository(input.projectId, input.customPath);
+  const pageId = derivePageIdFromSlug(normalizedSlug);
+
+  const existing = await loadPageFromRepository(repository, lang, pageId);
+  if (existing !== null) {
+    throw new ValidationError(`Page "${pageId}" already exists.`, {
+      entity: 'page-doc',
+      rule: 'page-id-unique-per-language',
+      remediation: 'Use PUT /api/local/page to update an existing page, or choose a different slug.',
+      metadata: { pageId, slug: normalizedSlug, lang },
+    });
+  }
 
   return savePageToRepository(
-    await getDocsRepository(input.projectId, input.customPath),
+    repository,
     lang,
     {
-      id: derivePageIdFromSlug(normalizedSlug),
+      id: pageId,
       lang,
       slug: normalizedSlug,
       title,
       status: 'draft',
+      updatedAt: new Date().toISOString(),
       content: {
         version: 1,
         blocks: [],
@@ -347,10 +361,14 @@ export async function updateStudioProjectSettings(
   customPath?: string,
 ) {
   const resolvedProject = await resolveCanonicalProject(projectId || DEFAULT_PROJECT_ID, customPath);
-  const currentSite = resolvedProject.config.site;
+  const { url: currentUrl, ...currentSiteRest } = resolvedProject.config.site;
   const currentTheme = resolvedProject.config.site.theme;
   const themePatch = patch.site?.theme;
   const navigationPatch = patch.site?.navigation;
+  const nextUrl =
+    patch.site?.url !== undefined
+      ? patch.site.url.trim() || undefined
+      : currentUrl;
   const nextPatch: Partial<ProjectConfig> = {
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.languages !== undefined ? { languages: patch.languages } : {}),
@@ -359,8 +377,8 @@ export async function updateStudioProjectSettings(
     ...((patch.site?.url !== undefined || themePatch || navigationPatch)
       ? {
           site: {
-            ...currentSite,
-            ...(patch.site?.url !== undefined ? { url: patch.site.url } : {}),
+            ...currentSiteRest,
+            ...(nextUrl !== undefined ? { url: nextUrl } : {}),
             theme: {
               ...currentTheme,
               ...(themePatch?.id !== undefined ? { id: themePatch.id } : {}),

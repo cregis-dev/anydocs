@@ -298,12 +298,13 @@ function getPageText(page: PageDoc) {
   };
 }
 
-function buildLlmsTxt(siteArtifacts: BuildWorkflowPublishedSiteResult[]): string {
+function buildLlmsTxt(contract: ProjectContract, siteArtifacts: BuildWorkflowPublishedSiteResult[]): string {
+  const baseUrl = contract.config.site.url?.replace(/\/$/, '') ?? '';
   const lines: string[] = [];
   lines.push('# Docs (LLM-friendly index)');
   lines.push('');
   lines.push(`- Languages: ${siteArtifacts.map((entry) => entry.lang).join(', ')}`);
-  lines.push(`- Base routes: ${siteArtifacts.map((entry) => `/${entry.lang}`).join(', ')}`);
+  lines.push(`- Base routes: ${siteArtifacts.map((entry) => `${baseUrl}/${entry.lang}`).join(', ')}`);
   lines.push('');
 
   for (const site of siteArtifacts) {
@@ -317,7 +318,7 @@ function buildLlmsTxt(siteArtifacts: BuildWorkflowPublishedSiteResult[]): string
     for (const page of site.content.pages) {
       const title = page.title ?? page.slug;
       const description = page.description ? ` — ${page.description}` : '';
-      lines.push(`- ${title} — /${site.lang}/${page.slug}${description}`);
+      lines.push(`- ${title} — ${baseUrl}/${site.lang}/${page.slug}${description}`);
     }
 
     lines.push('');
@@ -348,9 +349,12 @@ function buildLlmsFullTxt(
       const body = stripLeadingTitleText(plainText, page.title) || plainText.trim() || page.title.trim();
       const breadcrumbs = buildPageBreadcrumbs(site.content.navigation.items).get(page.id) ?? [];
 
+      const pageUrl = contract.config.site.url
+        ? `${contract.config.site.url.replace(/\/$/, '')}/${site.lang}/${page.slug}`
+        : `/${site.lang}/${page.slug}`;
       lines.push('### Page');
       lines.push(`- Page ID: ${page.id}`);
-      lines.push(`- URL: /${site.lang}/${page.slug}`);
+      lines.push(`- URL: ${pageUrl}`);
       lines.push(`- Title: ${page.title}`);
       lines.push(`- Breadcrumbs: ${breadcrumbs.length ? breadcrumbs.join(' > ') : '(none)'}`);
       lines.push(`- Tags: ${page.tags?.length ? page.tags.join(', ') : '(none)'}`);
@@ -897,7 +901,7 @@ export async function writePublishedArtifacts(
   };
   await writeJson(path.join(contract.paths.machineReadableRoot, 'index.json'), machineReadableIndex);
 
-  const llms = buildLlmsTxt(siteArtifacts);
+  const llms = buildLlmsTxt(contract, siteArtifacts);
   await writeText(contract.paths.llmsFile, llms);
   const llmsFull = buildLlmsFullTxt(contract, siteArtifacts, generatedAt);
   await writeText(path.join(outputRoot, 'llms-full.txt'), llmsFull);

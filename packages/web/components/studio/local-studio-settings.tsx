@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 
 type ProjectSettingsValue = {
+  projectId: string;
   name: string;
   languages: DocsLang[];
   defaultLanguage: DocsLang;
@@ -45,6 +46,7 @@ type ProjectSettingsValue = {
   authoringTemplates: ResolvedProjectPageTemplateDefinition[];
   apiSources: ApiSourceDoc[];
   outputDir: string;
+  siteUrl: string;
 };
 
 type ProjectSettingsPatch = {
@@ -67,6 +69,7 @@ type ProjectSettingsPatch = {
   apiSources?: ApiSourceDoc[];
   languages?: DocsLang[];
   outputDir?: string;
+  siteUrl?: string;
 };
 
 function parseTags(raw: string) {
@@ -590,12 +593,39 @@ function ProjectSettingsContent({
     <div className="space-y-4">
       <SettingsSection title="General" description="Project identity and supported languages.">
         <div>
+          <div className="mb-1 text-xs text-fd-muted-foreground">Project ID</div>
+          <div
+            className="rounded-md border border-fd-border bg-fd-muted/50 px-3 py-2 font-mono text-sm text-fd-muted-foreground"
+            data-testid="studio-project-id-display"
+          >
+            {project.projectId}
+          </div>
+          <div className="mt-1 text-xs text-fd-muted-foreground">
+            Used by CLI and MCP tools. Set at project creation and cannot be changed.
+          </div>
+        </div>
+
+        <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Project Name</div>
           <Input
             value={project.name}
             onChange={(e) => onProjectChange({ name: e.target.value })}
             data-testid="studio-project-name-input"
           />
+        </div>
+
+        <div>
+          <div className="mb-1 text-xs text-fd-muted-foreground">Site URL</div>
+          <Input
+            type="url"
+            value={project.siteUrl}
+            onChange={(e) => onProjectChange({ siteUrl: e.target.value })}
+            placeholder="https://docs.example.com"
+            data-testid="studio-project-site-url-input"
+          />
+          <div className="mt-1 text-xs text-fd-muted-foreground">
+            Used as base URL in llms.txt and canonical links. Leave empty for relative paths.
+          </div>
         </div>
 
         <div>

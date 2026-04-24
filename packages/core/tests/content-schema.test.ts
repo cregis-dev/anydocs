@@ -167,7 +167,69 @@ test('validateDocContentV1 rejects malformed code group items', () => {
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.equal(result.path, 'content.blocks[0].items[0].code');
-    assert.match(result.error, /must be a string/);
+    assert.match(result.error, /non-empty string/);
+  }
+});
+
+test('validateDocContentV1 rejects codeGroup with empty items array', () => {
+  const result = validateDocContentV1({
+    version: DOC_CONTENT_VERSION,
+    blocks: [
+      {
+        type: 'codeGroup',
+        items: [],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.path, 'content.blocks[0].items');
+    assert.match(result.error, /at least one item/);
+  }
+});
+
+test('validateDocContentV1 rejects codeGroup with empty code string', () => {
+  const result = validateDocContentV1({
+    version: DOC_CONTENT_VERSION,
+    blocks: [
+      {
+        type: 'codeGroup',
+        items: [{ id: 'item-1', code: '' }],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.path, 'content.blocks[0].items[0].code');
+    assert.match(result.error, /non-empty string/);
+  }
+});
+
+test('validateDocContentV1 rejects codeBlock with empty code string', () => {
+  const result = validateDocContentV1({
+    version: DOC_CONTENT_VERSION,
+    blocks: [{ type: 'codeBlock', code: '' }],
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.path, 'content.blocks[0].code');
+    assert.match(result.error, /non-empty string/);
+  }
+});
+
+test('validateDocContentV1 rejects codeBlock with whitespace-only code', () => {
+  const result = validateDocContentV1({
+    version: DOC_CONTENT_VERSION,
+    blocks: [{ type: 'codeBlock', code: '   ' }],
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.path, 'content.blocks[0].code');
+    assert.match(result.error, /non-empty string/);
   }
 });
 

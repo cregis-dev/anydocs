@@ -385,6 +385,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         authoringTemplates: listResolvedProjectPageTemplates(project.config),
         apiSources: apiSources.sources,
         outputDir: project.config.build?.outputDir ?? '',
+        siteUrl: project.config.site?.url ?? '',
+        projectId: project.config.projectId,
       });
       const preserveDraftNavigation = navDirtyRef.current || savingNavRef.current;
       setLoad({
@@ -701,6 +703,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         languages: projectState.languages,
         defaultLanguage: projectState.defaultLanguage,
         site: {
+          url: projectState.siteUrl.trim(),
           theme: {
             id: projectState.themeId,
             ...(Object.keys(branding).length > 0 ? { branding } : {}),
@@ -763,6 +766,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               authoringTemplates: listResolvedProjectPageTemplates(response.config),
               apiSources: apiSourcesResponse.sources,
               outputDir: response.config.build?.outputDir ?? '',
+              siteUrl: response.config.site?.url ?? '',
+              projectId: current.projectId,
             }
           : current,
       );

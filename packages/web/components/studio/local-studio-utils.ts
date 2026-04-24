@@ -31,6 +31,8 @@ export type ProjectState = {
   authoringTemplates: ReturnType<typeof listResolvedProjectPageTemplates>;
   apiSources: ApiSourceDoc[];
   outputDir: string;
+  siteUrl: string;
+  projectId: string;
 } | null;
 
 export type RightSidebarMode = 'page' | 'project' | null;

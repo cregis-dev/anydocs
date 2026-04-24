@@ -33,6 +33,7 @@ export type StudioProjectSettingsPatch = {
   languages?: DocsLang[];
   defaultLanguage?: DocsLang;
   site?: {
+    url?: string;
     theme?: {
       id?: string;
       branding?: {
