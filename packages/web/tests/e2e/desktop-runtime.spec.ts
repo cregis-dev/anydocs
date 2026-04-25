@@ -2,12 +2,13 @@ import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { studioUrl } from './support/studio';
 
 const repoRoot = path.resolve(__dirname, '../../../..');
 const starterDocsRoot = path.join(repoRoot, 'examples', 'starter-docs');
+const isDesktopRuntime = process.env.ANYDOCS_E2E_STUDIO_MODE === 'desktop';
 
 async function createTempDocsProject() {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-desktop-smoke-'));
@@ -18,7 +19,14 @@ async function createTempDocsProject() {
   return projectRoot;
 }
 
+async function selectWorkflowAction(page: Page, buttonTestId: string, label: 'Build' | 'Preview') {
+  await page.getByTestId('studio-workflow-menu-trigger').click();
+  await page.getByTestId(buttonTestId).click();
+  await expect(page.getByTestId('studio-workflow-action-button')).toContainText(label);
+}
+
 test.describe.configure({ mode: 'serial' });
+test.skip(!isDesktopRuntime, 'Needs desktop Studio runtime.');
 
 test('desktop runtime smoke: open project, save, create page, build, preview', async ({ page, request }) => {
   test.setTimeout(120_000);
@@ -77,15 +85,15 @@ test('desktop runtime smoke: open project, save, create page, build, preview', a
       timeout: 10000,
     });
 
-    await page.getByTestId('studio-workflow-menu-trigger').click();
-    await page.getByTestId('studio-build-button').click();
+    await selectWorkflowAction(page, 'studio-build-button', 'Build');
+    await page.getByTestId('studio-workflow-action-button').click();
     const buildValidatedMessage = page.getByText(/Build validated ->/).first();
     await expect(buildValidatedMessage).toContainText('Build validated', {
       timeout: 60000,
     });
 
-    await page.getByTestId('studio-workflow-menu-trigger').click();
-    await page.getByTestId('studio-preview-button').click();
+    await selectWorkflowAction(page, 'studio-preview-button', 'Preview');
+    await page.getByTestId('studio-workflow-action-button').click();
     const previewReadyMessage = page.getByText(/Preview ready:/).first();
     await expect(previewReadyMessage).toContainText('Preview ready', {
       timeout: 60000,
@@ -197,6 +205,124 @@ test('desktop runtime language switch clears stale page selection before request
   }
 });
 
+test('desktop runtime passive language traversal does not rewrite page files', async ({ page }) => {
+  test.setTimeout(60_000);
+  const projectRoot = await createTempDocsProject();
+  const enWelcomePath = path.join(projectRoot, 'pages', 'en', 'welcome.json');
+  const zhWelcomePath = path.join(projectRoot, 'pages', 'zh', 'welcome.json');
+  const initialEnWelcome = await readFile(enWelcomePath, 'utf8');
+  const initialZhWelcome = await readFile(zhWelcomePath, 'utf8');
+  const pagePutRequests: string[] = [];
+
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/studio/page/put')) {
+      pagePutRequests.push(request.url());
+    }
+  });
+
+  const expectNoPassiveWrites = async () => {
+    await page.waitForTimeout(1800);
+    expect(await readFile(enWelcomePath, 'utf8')).toBe(initialEnWelcome);
+    expect(await readFile(zhWelcomePath, 'utf8')).toBe(initialZhWelcome);
+    expect(pagePutRequests).toHaveLength(0);
+  };
+
+  try {
+    await page.goto(studioUrl);
+
+    await page.getByTestId('studio-open-project-button').click();
+    await page.getByTestId('studio-project-path-input').fill(projectRoot);
+    await page.getByTestId('studio-project-path-submit').click();
+
+    await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
+    await expect(page.getByTestId('studio-save-status')).toContainText('All changes saved');
+    await expectNoPassiveWrites();
+
+    await page.getByTestId('studio-language-switcher').click();
+    await page.getByRole('option', { name: 'EN' }).click();
+    await expect(page.getByTestId('studio-language-switcher')).toContainText('EN');
+    await expect(page.getByTestId('studio-save-status')).toContainText('All changes saved');
+    await expectNoPassiveWrites();
+
+    await page.getByTestId('studio-language-switcher').click();
+    await page.getByRole('option', { name: '中文' }).click();
+    await expect(page.getByTestId('studio-language-switcher')).toContainText('中文');
+    await expect(page.getByTestId('studio-save-status')).toContainText('All changes saved');
+    await expectNoPassiveWrites();
+
+    expect(await readFile(enWelcomePath, 'utf8')).toBe(initialEnWelcome);
+    expect(await readFile(zhWelcomePath, 'utf8')).toBe(initialZhWelcome);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop runtime workflow menu selection waits for the primary action button', async ({ page }) => {
+  const projectRoot = await createTempDocsProject();
+  let buildRequests = 0;
+  let previewRequests = 0;
+  const previewUrl = 'http://127.0.0.1:43123/zh/welcome';
+
+  await page.route('**/studio/build/post', async (route) => {
+    buildRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          artifactRoot: `${projectRoot}/dist`,
+          languages: [{ lang: 'zh', publishedPages: 1 }],
+        },
+      }),
+    });
+  });
+
+  await page.route('**/studio/preview/post', async (route) => {
+    previewRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          docsPath: '/zh/welcome',
+          previewUrl,
+        },
+      }),
+    });
+  });
+
+  try {
+    await page.goto(studioUrl);
+
+    await page.getByTestId('studio-open-project-button').click();
+    await page.getByTestId('studio-project-path-input').fill(projectRoot);
+    await page.getByTestId('studio-project-path-submit').click();
+
+    await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
+    await expect(page.getByTestId('studio-connection-status')).toContainText('Connected');
+
+    await selectWorkflowAction(page, 'studio-build-button', 'Build');
+    await page.waitForTimeout(500);
+    expect(buildRequests).toBe(0);
+    await page.getByTestId('studio-workflow-action-button').click();
+    await expect(page.getByTestId('studio-workflow-message')).toContainText('Build completed');
+    expect(buildRequests).toBe(1);
+
+    await selectWorkflowAction(page, 'studio-preview-button', 'Preview');
+    await page.waitForTimeout(500);
+    expect(previewRequests).toBe(0);
+    await page.getByTestId('studio-workflow-action-button').click();
+    await expect(page.getByTestId('studio-workflow-message')).toContainText('Preview ready');
+    expect(previewRequests).toBe(1);
+  } finally {
+    await page.unroute('**/studio/build/post').catch(() => {});
+    await page.unroute('**/studio/preview/post').catch(() => {});
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test('desktop runtime shows workflow progress details for slower builds', async ({ page }) => {
   test.setTimeout(120_000);
   const projectRoot = await createTempDocsProject();
@@ -226,8 +352,8 @@ test('desktop runtime shows workflow progress details for slower builds', async 
     await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
     await expect(page.getByTestId('studio-connection-status')).toContainText('Connected');
 
-    await page.getByTestId('studio-workflow-menu-trigger').click();
-    await page.getByTestId('studio-build-button').click();
+    await selectWorkflowAction(page, 'studio-build-button', 'Build');
+    await page.getByTestId('studio-workflow-action-button').click();
 
     await expect(page.getByTestId('studio-workflow-progress')).toContainText('Build in progress');
     await expect(page.getByTestId('studio-save-status')).toContainText('Build in progress (', {
@@ -273,8 +399,8 @@ test('desktop runtime classifies workflow failures with actionable guidance', as
     await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
     await expect(page.getByTestId('studio-connection-status')).toContainText('Connected');
 
-    await page.getByTestId('studio-workflow-menu-trigger').click();
-    await page.getByTestId('studio-build-button').click();
+    await selectWorkflowAction(page, 'studio-build-button', 'Build');
+    await page.getByTestId('studio-workflow-action-button').click();
 
     await expect(page.getByTestId('studio-workflow-error')).toContainText(
       'Build blocked by another docs runtime task',
@@ -297,18 +423,7 @@ test('desktop runtime exposes workflow success actions for build results', async
   const previewUrl = 'http://127.0.0.1:43123/zh/welcome';
 
   await page.addInitScript((nextProjectRoot: string) => {
-    (
-      window as Window & {
-        __openedLocalPath?: string;
-        __openedPreviewUrl?: string;
-      }
-    ).__openedLocalPath = undefined;
-    (
-      window as Window & {
-        __openedLocalPath?: string;
-        __openedPreviewUrl?: string;
-      }
-    ).__openedPreviewUrl = undefined;
+    (window as Window & { __openedLocalPath?: string }).__openedLocalPath = undefined;
     window.__ANYDOCS_DESKTOP_BRIDGE__ = {
       pickProjectDirectory: async () => nextProjectRoot,
       openLocalPath: async (path: string) => {
@@ -316,27 +431,6 @@ test('desktop runtime exposes workflow success actions for build results', async
         return true;
       },
     };
-    window.open = ((url?: string | URL) => {
-      const nextUrl = typeof url === 'string' ? url : url?.toString() ?? '';
-      (window as Window & { __openedPreviewUrl?: string }).__openedPreviewUrl = nextUrl;
-      let currentHref = nextUrl;
-      return {
-        closed: false,
-        location: {
-          get href() {
-            return currentHref;
-          },
-          set href(value: string) {
-            currentHref = value;
-            (window as Window & { __openedPreviewUrl?: string }).__openedPreviewUrl = value;
-          },
-        },
-        focus() {},
-        close() {
-          this.closed = true;
-        },
-      } as unknown as Window;
-    }) as typeof window.open;
   }, projectRoot);
 
   await page.route('**/studio/build/post', async (route) => {
@@ -375,8 +469,8 @@ test('desktop runtime exposes workflow success actions for build results', async
     await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
     await expect(page.getByTestId('studio-connection-status')).toContainText('Connected');
 
-    await page.getByTestId('studio-workflow-menu-trigger').click();
-    await page.getByTestId('studio-build-button').click();
+    await selectWorkflowAction(page, 'studio-build-button', 'Build');
+    await page.getByTestId('studio-workflow-action-button').click();
 
     await expect(page.getByTestId('studio-workflow-message')).toContainText('Build completed');
     await expect(page.getByTestId('studio-workflow-open-artifacts-button')).toBeVisible();
@@ -394,10 +488,9 @@ test('desktop runtime exposes workflow success actions for build results', async
     await page.getByTestId('studio-workflow-run-preview-button').click();
     await expect(page.getByTestId('studio-workflow-message')).toContainText('Preview ready');
     await expect(page.getByTestId('studio-workflow-open-preview-button')).toBeVisible();
+    await expect(page.getByTestId('studio-workflow-open-preview-button')).toHaveAttribute('href', previewUrl);
+    await expect(page.getByTestId('studio-workflow-open-preview-button')).toHaveAttribute('target', '_blank');
     await expect(page.getByTestId('studio-workflow-history')).toContainText('Build completed');
-    await expect.poll(() =>
-      page.evaluate(() => (window as Window & { __openedPreviewUrl?: string }).__openedPreviewUrl ?? null),
-    ).toBe(previewUrl);
     await page.getByTestId('studio-dismiss-workflow-result-button').click();
     await expect(page.getByTestId('studio-workflow-message')).toBeHidden();
   } finally {

@@ -22,6 +22,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
+import { renderPageContent } from '@anydocs/core/render-page-content';
 
 import type { ApiSourceDoc, DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
 import { Button } from '@/components/ui/button';
@@ -150,7 +151,6 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     setWorkflowMenuOpen,
     workflowHistory,
     workflowMenuRef,
-    previewWindowRef,
     workflowBusyLabel,
     workflowElapsedLabel,
     workflowStageHint,
@@ -161,7 +161,6 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     clearWorkflowResult,
     persistWorkflowResult,
     handleOpenWorkflowArtifactRoot,
-    handleOpenWorkflowPreview,
   } = useWorkflowState(projectId);
 
   const [navDirtyTick, setNavDirtyTick] = useState(0);
@@ -1005,13 +1004,6 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       return;
     }
 
-    const existingPreviewWindow = previewWindowRef.current;
-    const shouldOpenPreviewWindow = !existingPreviewWindow || existingPreviewWindow.closed;
-    const reservedPreviewWindow = shouldOpenPreviewWindow ? window.open('about:blank', '_blank') : existingPreviewWindow;
-    if (reservedPreviewWindow) {
-      previewWindowRef.current = reservedPreviewWindow;
-    }
-
     setWorkflowBusy('preview');
     setWorkflowStartedAt(Date.now());
     clearWorkflowResult();
@@ -1026,21 +1018,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setWorkflowMessage(success.message);
       setWorkflowSuccess(success);
       persistWorkflowResult('preview', { success });
-      const nextPreviewWindow = previewWindowRef.current;
-
-      if (nextPreviewWindow && !nextPreviewWindow.closed) {
-        nextPreviewWindow.location.href = targetUrl;
-        nextPreviewWindow.focus();
-      } else {
-        previewWindowRef.current = window.open(targetUrl, '_blank');
-      }
     } catch (e: unknown) {
-      if (shouldOpenPreviewWindow && reservedPreviewWindow && !reservedPreviewWindow.closed) {
-        reservedPreviewWindow.close();
-        if (previewWindowRef.current === reservedPreviewWindow) {
-          previewWindowRef.current = null;
-        }
-      }
       clearWorkflowResult();
       setWorkflowError(e instanceof Error ? e.message : 'Preview workflow failed');
       persistWorkflowResult('preview', { error: e instanceof Error ? e.message : 'Preview workflow failed' });
@@ -1147,12 +1125,11 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   }, [triggerWorkflowAction, workflowAction]);
 
   const selectWorkflowAction = useCallback(
-    async (action: WorkflowAction) => {
+    (action: WorkflowAction) => {
       setWorkflowAction(action);
       setWorkflowMenuOpen(false);
-      await triggerWorkflowAction(action);
     },
-    [triggerWorkflowAction],
+    [setWorkflowAction, setWorkflowMenuOpen],
   );
 
   const handleLanguageChange = useCallback(
@@ -1707,14 +1684,15 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                             </>
                           ) : (
                             <Button
-                              type="button"
                               variant="secondary"
                               size="sm"
-                              onClick={handleOpenWorkflowPreview}
+                              asChild
                               data-testid="studio-workflow-open-preview-button"
                             >
-                              <ArrowUpRight className="size-4" />
-                              Open Preview
+                              <a href={workflowSuccess.previewUrl} target="_blank" rel="noopener noreferrer">
+                                <ArrowUpRight className="size-4" />
+                                Open Preview
+                              </a>
                             </Button>
                           )}
                         </div>
@@ -1764,16 +1742,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                       key={active.id}
                       id={active.id}
                       value={active.content}
-                      onChange={(nextContent, derived) => {
+                      onChange={(nextContent) => {
                         setActive((p) => {
                           const next = applyPagePatch(
                             p,
                             {
                               content: nextContent,
-                              render: {
-                                ...p?.render,
-                                ...derived,
-                              },
+                              render: renderPageContent(nextContent),
                               updatedAt: new Date().toISOString(),
                             },
                             true,

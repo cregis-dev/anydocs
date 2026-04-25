@@ -15,13 +15,16 @@ const artifactRoot = path.join(e2eProjectRoot, 'dist');
 test.describe.configure({ mode: 'serial' });
 
 async function triggerWorkflowAction<T>(page: Page, buttonTestId: string, endpoint: 'build' | 'preview') {
+  const label = endpoint === 'build' ? 'Build' : 'Preview';
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await page.getByTestId('studio-workflow-menu-trigger').click();
+    await page.getByTestId(buttonTestId).click();
+    await expect(page.getByTestId('studio-workflow-action-button')).toContainText(label);
     const responsePromise = page.waitForResponse(
       (response) => response.url().includes(`/api/local/${endpoint}?`) && response.request().method() === 'POST',
       { timeout: 45000 },
     );
-    await page.getByTestId(buttonTestId).click();
+    await page.getByTestId('studio-workflow-action-button').click();
 
     try {
       const response = await responsePromise;

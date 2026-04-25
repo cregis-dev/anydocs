@@ -15,6 +15,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(webRoot, '../..');
 const exportWorkspaceRoot = path.join(repoRoot, 'packages', '.tmp', 'web-export-runtime');
+const previewWorkspaceRoot = path.join(repoRoot, 'packages', '.web-preview-runtime');
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve('next/dist/bin/next');
 const RUNTIME_ENV_ALLOWLIST = new Set([
@@ -185,16 +186,20 @@ function shouldCopyRuntimeEntry(srcPath) {
   return !/^\.next($|-)/.test(topLevelName);
 }
 
-async function prepareExportWorkspace() {
-  await rm(exportWorkspaceRoot, { recursive: true, force: true });
-  await mkdir(path.dirname(exportWorkspaceRoot), { recursive: true });
-  await cp(webRoot, exportWorkspaceRoot, {
+async function prepareRuntimeWorkspace(runtimeWorkspaceRoot) {
+  await rm(runtimeWorkspaceRoot, { recursive: true, force: true });
+  await mkdir(path.dirname(runtimeWorkspaceRoot), { recursive: true });
+  await cp(webRoot, runtimeWorkspaceRoot, {
     recursive: true,
     force: true,
     filter: shouldCopyRuntimeEntry,
   });
-  await symlink(path.join(webRoot, 'node_modules'), path.join(exportWorkspaceRoot, 'node_modules'), 'dir');
-  return exportWorkspaceRoot;
+  await symlink(path.join(webRoot, 'node_modules'), path.join(runtimeWorkspaceRoot, 'node_modules'), 'dir');
+  return runtimeWorkspaceRoot;
+}
+
+async function prepareExportWorkspace() {
+  return prepareRuntimeWorkspace(exportWorkspaceRoot);
 }
 
 async function cleanupExportOutput(outputRoot) {
@@ -338,18 +343,26 @@ async function exportDocsSite(mode) {
 async function runPreviewProxy() {
   const args = process.argv.slice(3);
   const distDir = '.next-cli-preview';
-  const tsconfigPath = path.join(webRoot, 'tsconfig.json');
+  const runtimeWebRoot = await prepareRuntimeWorkspace(previewWorkspaceRoot);
+  const tsconfigPath = path.join(runtimeWebRoot, 'tsconfig.json');
   const originalTsconfig = await snapshotTsconfig(tsconfigPath);
   await prepareTsconfigForDist(tsconfigPath, originalTsconfig, distDir);
-  await rm(path.join(webRoot, distDir), { recursive: true, force: true });
+  await rm(path.join(runtimeWebRoot, distDir), { recursive: true, force: true });
   let shuttingDown = false;
   const child = spawn(process.execPath, [nextBin, 'dev', ...args], {
-    cwd: webRoot,
+    cwd: runtimeWebRoot,
     stdio: 'inherit',
     env: createRuntimeEnv('preview', {
       ANYDOCS_NEXT_DIST_DIR: distDir,
     }),
   });
+
+  let cleanupPromise;
+  const cleanupPreviewWorkspace = async () => {
+    cleanupPromise ??= restoreTsconfig(tsconfigPath, originalTsconfig)
+      .finally(() => rm(runtimeWebRoot, { recursive: true, force: true }));
+    await cleanupPromise;
+  };
 
   const forwardSignal = (signal) => {
     shuttingDown = true;
@@ -364,7 +377,7 @@ async function runPreviewProxy() {
   child.on('exit', (code, signal) => {
     process.off('SIGINT', forwardSignal);
     process.off('SIGTERM', forwardSignal);
-    restoreTsconfig(tsconfigPath, originalTsconfig)
+    cleanupPreviewWorkspace()
       .catch((error) => {
         console.error(error);
       })
@@ -375,7 +388,13 @@ async function runPreviewProxy() {
 
   child.on('error', (error) => {
     console.error(error);
-    process.exit(1);
+    cleanupPreviewWorkspace()
+      .catch((cleanupError) => {
+        console.error(cleanupError);
+      })
+      .finally(() => {
+        process.exit(1);
+      });
   });
 }
 
