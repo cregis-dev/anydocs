@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { access, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +8,8 @@ import { createCliStudioRuntimeEnv } from '@anydocs/core/runtime-contract';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '../../..');
-const webRoot = path.resolve(scriptDir, '..');
+const sourceWebRoot = path.resolve(scriptDir, '..');
+const webRoot = path.join(repoRoot, 'packages', '.web-studio-e2e-runtime');
 const nextDistDir = '.next-cli-studio-e2e';
 const appApiRoot = path.join(webRoot, 'app', 'api');
 const hiddenApiRoot = path.join(webRoot, 'app', '__api_export_hidden__');
@@ -162,6 +163,40 @@ async function appendPageToNavigation(pageId) {
   const navigation = JSON.parse(await readFile(navigationPath, 'utf8'));
   navigation.items.push({ type: 'page', pageId });
   await writeFile(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`, 'utf8');
+}
+
+function shouldCopyRuntimeEntry(srcPath) {
+  const relativePath = path.relative(sourceWebRoot, srcPath);
+  if (!relativePath || relativePath === '') {
+    return true;
+  }
+
+  if (relativePath.startsWith(`..${path.sep}`) || relativePath === '..') {
+    return false;
+  }
+
+  const [topLevelName] = relativePath.split(path.sep);
+  if (
+    topLevelName === 'node_modules' ||
+    topLevelName === 'test-results' ||
+    topLevelName === 'playwright-report' ||
+    topLevelName === 'coverage'
+  ) {
+    return false;
+  }
+
+  return !/^\.next($|-)/.test(topLevelName);
+}
+
+async function prepareRuntimeWorkspace() {
+  await rm(webRoot, { recursive: true, force: true });
+  await mkdir(path.dirname(webRoot), { recursive: true });
+  await cp(sourceWebRoot, webRoot, {
+    recursive: true,
+    force: true,
+    filter: shouldCopyRuntimeEntry,
+  });
+  await symlink(path.join(sourceWebRoot, 'node_modules'), path.join(webRoot, 'node_modules'), 'dir');
 }
 
 async function ensureStudioApiRoutesPresent() {
@@ -464,14 +499,21 @@ function startStudioServer() {
   process.on('SIGTERM', () => forwardSignal('SIGTERM'));
 
   child.on('exit', (code, signal) => {
-    if (signal) {
-      process.kill(process.pid, signal);
-      return;
-    }
+    rm(webRoot, { recursive: true, force: true })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        if (signal) {
+          process.kill(process.pid, signal);
+          return;
+        }
 
-    process.exit(code ?? 0);
+        process.exit(code ?? 0);
+      });
   });
 }
 
+await prepareRuntimeWorkspace();
 await prepareProject();
 startStudioServer();

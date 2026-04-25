@@ -75,3 +75,57 @@ test('renderPageContent uses canonical rendering directly for DocContentV1', () 
   assert.equal(render.markdown, '```mermaid\nflowchart LR\nA-->B\n```');
   assert.equal(render.plainText, 'flowchart LR A-->B');
 });
+
+test('renderDocContent preserves bulleted and numbered list item text', () => {
+  const render = renderDocContent({
+    version: 1,
+    blocks: [
+      {
+        type: 'list',
+        style: 'bulleted',
+        items: [
+          {
+            children: [
+              { type: 'text', text: 'Install ' },
+              { type: 'text', text: 'dependencies', marks: ['bold'] },
+            ],
+            items: [
+              {
+                children: [
+                  {
+                    type: 'link',
+                    href: 'https://pnpm.io',
+                    children: [{ type: 'text', text: 'pnpm' }],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            children: [{ type: 'text', text: 'Start Studio' }],
+          },
+        ],
+      },
+      {
+        type: 'list',
+        style: 'numbered',
+        items: [
+          {
+            children: [{ type: 'text', text: 'Build artifacts' }],
+          },
+          {
+            children: [{ type: 'text', text: 'Open preview' }],
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.match(render.markdown ?? '', /^- Install \*\*dependencies\*\*$/m);
+  assert.match(render.markdown ?? '', /^  - \[pnpm\]\(https:\/\/pnpm\.io\)$/m);
+  assert.match(render.markdown ?? '', /^- Start Studio$/m);
+  assert.match(render.markdown ?? '', /^1\. Build artifacts$/m);
+  assert.match(render.markdown ?? '', /^2\. Open preview$/m);
+  assert.doesNotMatch(render.markdown ?? '', /^- $/m);
+  assert.equal(render.plainText, 'Install dependencies\npnpm\nStart Studio\n\nBuild artifacts\nOpen preview');
+});

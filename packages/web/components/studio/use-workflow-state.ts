@@ -41,7 +41,6 @@ export type UseWorkflowStateReturn = {
   workflowHistory: WorkflowResultHistoryEntry[];
   // Refs
   workflowMenuRef: React.RefObject<HTMLDivElement | null>;
-  previewWindowRef: React.RefObject<Window | null>;
   // Derived
   workflowBusyLabel: string | null;
   workflowElapsedLabel: string | null;
@@ -54,7 +53,6 @@ export type UseWorkflowStateReturn = {
   clearWorkflowResult: (targetProjectId?: string, options?: { clearHistory?: boolean }) => void;
   persistWorkflowResult: (action: WorkflowAction, result: { success?: WorkflowSuccess | null; error?: string | null }) => void;
   handleOpenWorkflowArtifactRoot: () => Promise<void>;
-  handleOpenWorkflowPreview: () => void;
 };
 
 export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
@@ -71,7 +69,6 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
   const [workflowMenuOpen, setWorkflowMenuOpen] = useState(false);
 
   const workflowMenuRef = useRef<HTMLDivElement | null>(null);
-  const previewWindowRef = useRef<Window | null>(null);
 
   // Elapsed timer while a workflow is running. Synchronously setting 0 is avoided;
   // derived labels below are already gated on `workflowBusy`, so a stale value is
@@ -202,19 +199,6 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
     }
   }, [workflowSuccess]);
 
-  const handleOpenWorkflowPreview = useCallback(() => {
-    if (workflowSuccess?.type !== 'preview') {
-      return;
-    }
-    const existingPreviewWindow = previewWindowRef.current;
-    if (existingPreviewWindow && !existingPreviewWindow.closed) {
-      existingPreviewWindow.location.href = workflowSuccess.previewUrl;
-      existingPreviewWindow.focus();
-      return;
-    }
-    previewWindowRef.current = window.open(workflowSuccess.previewUrl, '_blank');
-  }, [workflowSuccess]);
-
   // Derived display values
   const workflowBusyLabel = workflowBusy ? formatWorkflowActionLabel(workflowBusy) : null;
   const workflowElapsedLabel = workflowBusy ? formatWorkflowElapsed(workflowElapsedMs) : null;
@@ -245,7 +229,6 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
     setWorkflowMenuOpen,
     workflowHistory,
     workflowMenuRef,
-    previewWindowRef,
     workflowBusyLabel,
     workflowElapsedLabel,
     workflowStageHint,
@@ -256,6 +239,5 @@ export function useWorkflowState(projectId: string): UseWorkflowStateReturn {
     clearWorkflowResult,
     persistWorkflowResult,
     handleOpenWorkflowArtifactRoot,
-    handleOpenWorkflowPreview,
   };
 }

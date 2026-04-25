@@ -27,6 +27,9 @@
       "@/*": [
         "./*"
       ],
+      "@anydocs/core/render-page-content": [
+        "../core/src/utils/render-page-content.ts"
+      ],
       "@anydocs/core": [
         "../core/src/index.ts"
       ]

@@ -55,6 +55,11 @@ export function YooptaDocEditor({
   ) => void;
 }) {
   const isInitializedRef = useRef(false);
+  const hydrationGuardRef = useRef<{ serializedValue: string }>({
+    serializedValue: JSON.stringify(value ?? {}),
+  });
+  const sawUserInputRef = useRef(false);
+  const latestValueRef = useRef(value);
 
   const plugins = useMemo(() => {
     type AnyPlugin = YooptaPlugin<
@@ -108,12 +113,31 @@ export function YooptaDocEditor({
     }),
   );
 
+  const startHydrationGuard = useCallback(
+    (nextValue: unknown) => {
+      hydrationGuardRef.current = {
+        serializedValue: JSON.stringify(nextValue ?? {}),
+      };
+      sawUserInputRef.current = false;
+    },
+    [],
+  );
+
+  const markUserInput = useCallback(() => {
+    sawUserInputRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    latestValueRef.current = value;
+  }, [value]);
+
   useEffect(() => {
     if (!isInitializedRef.current) {
       isInitializedRef.current = true;
       const timer = setTimeout(() => {
         try {
           if (editor.isEmpty()) {
+            startHydrationGuard(latestValueRef.current);
             editor.insertBlock("Paragraph", { focus: true });
           } else {
             editor.focus();
@@ -124,21 +148,30 @@ export function YooptaDocEditor({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [editor]);
+  }, [editor, startHydrationGuard]);
 
   useEffect(() => {
-    editor.setEditorValue((value ?? {}) as YooptaContentValue);
+    const nextValue = latestValueRef.current;
+    startHydrationGuard(nextValue);
+    editor.setEditorValue((nextValue ?? {}) as YooptaContentValue);
     const timer = setTimeout(() => {
       if (editor.isEmpty()) {
+        startHydrationGuard(latestValueRef.current);
         editor.insertBlock("Paragraph", { focus: true });
       }
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [editor, id]);
+  }, [editor, id, startHydrationGuard]);
 
   const handleChange = useCallback(
     (next: YooptaContentValue) => {
+      const serializedNext = JSON.stringify(next ?? {});
+      const hydrationGuard = hydrationGuardRef.current;
+      if (!sawUserInputRef.current || serializedNext === hydrationGuard.serializedValue) {
+        return;
+      }
+
       const markdown = editor.getMarkdown(next);
       const plainText = editor.getPlainText(next);
       onChange(next, { markdown, plainText });
@@ -159,6 +192,10 @@ export function YooptaDocEditor({
       className="mx-auto w-full max-w-4xl"
       style={{ paddingBottom: 100 }}
       data-testid="studio-yoopta-editor"
+      onBeforeInput={markUserInput}
+      onKeyDown={markUserInput}
+      onPaste={markUserInput}
+      onPointerDown={markUserInput}
     >
       <BlockDndContext editor={editor}>
         <YooptaEditor
