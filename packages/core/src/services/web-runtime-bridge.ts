@@ -373,7 +373,7 @@ export async function startDocsPreviewServer(
     const host = options.host ?? '127.0.0.1';
     const port = options.port ?? (await pickAvailablePort(host));
     const readyPath = options.readyPath ?? '/';
-    const startTimeoutMs = options.startTimeoutMs ?? 30_000;
+    const startTimeoutMs = options.startTimeoutMs ?? 120_000;
     const child = await createBridgeChild(
       'preview',
       ['--hostname', host, '--port', String(port)],
