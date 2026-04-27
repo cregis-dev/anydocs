@@ -58,6 +58,8 @@ export function NavigationComposer({
   onOpenPageSettings,
   onCreatePage,
   onChange,
+  onDeletePage,
+  onApprovePage,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
@@ -66,6 +68,8 @@ export function NavigationComposer({
   onOpenPageSettings: (pageId: string) => void;
   onCreatePage: (input: CreatePageInput) => Promise<PageDoc | null>;
   onChange: (next: NavigationDoc) => void;
+  onDeletePage: (pageId: string) => void;
+  onApprovePage: (pageId: string) => void;
 }) {
   const [dialog, setDialog] = useState<NavigationDialogState | null>(null);
 
@@ -241,6 +245,8 @@ export function NavigationComposer({
         addChild={addChild}
         onRequestRenameGroup={(path, title) => setDialog({ type: 'rename-group', path, title })}
         onRequestEditLink={(path, title, href) => setDialog({ type: 'edit-link', path, title, href })}
+        onDeletePage={onDeletePage}
+        onApprovePage={onApprovePage}
       />
       <NavigationItemDialog
         open={dialog !== null}

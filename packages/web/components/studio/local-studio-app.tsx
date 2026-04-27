@@ -1075,6 +1075,93 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
   }, [active, clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
 
+  const onDeletePageById = useCallback(async (pageId: string) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const target = load.pages.find((p) => p.id === pageId);
+    if (!target) {
+      return;
+    }
+
+    const detail = target.status === 'published'
+      ? '删除后，下一次 preview/build 将不会再对外可见。'
+      : '删除后将无法再从当前语言工程中恢复该页面。';
+    const ok = window.confirm(
+      `确认删除当前语言页面 "${target.title}" 吗？这会同时移除该语言导航中的全部页面引用。${detail}`,
+    );
+    if (!ok) {
+      return;
+    }
+
+    try {
+      const deleted: DeletePageResponse = await studioHost.deletePage(lang, pageId, projectId, selectedProject.path);
+
+      const nextPages = sortPagesBySlug(load.pages.filter((page) => page.id !== deleted.pageId));
+      const cleanedNav = navDraft
+        ? {
+            ...navDraft,
+            items: removePageRefsFromNav(navDraft.items, deleted.pageId).items,
+          }
+        : null;
+
+      setLoad((current) => ({
+        ...current,
+        pages: nextPages,
+        nav: cleanedNav ?? current.nav,
+      }));
+      setNavDraft(cleanedNav);
+      setNavDirty(false);
+      setNavSaveError(null);
+
+      // Only switch active page if the deleted page was active
+      if (activeIdRef.current === deleted.pageId) {
+        const nextActive = nextPages[0] ?? null;
+        setActiveId(nextActive?.id ?? null);
+        setActive(nextActive);
+        setActiveLoading(false);
+        setRightSidebarMode(null);
+        setDirty(false);
+        setSaveError(null);
+      }
+      clearWorkflowResult(undefined, { clearHistory: true });
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : '页面删除失败');
+    }
+  }, [clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
+
+  const onApprovePageById = useCallback(async (pageId: string) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const target = load.pages.find((p) => p.id === pageId);
+    if (!target?.review?.required || target.review.approvedAt) {
+      return;
+    }
+
+    try {
+      const updated = {
+        ...target,
+        status: 'published' as const,
+        review: { ...target.review, approvedAt: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+      };
+      const saved = await studioHost.savePage(lang, updated, projectId, selectedProject.path);
+      setLoad((current) => ({
+        ...current,
+        pages: current.pages.map((p) => (p.id === pageId ? saved : p)),
+      }));
+      if (activeIdRef.current === pageId) {
+        setActive(saved);
+      }
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : '页面审批失败');
+    }
+  }, [lang, load.pages, projectId, selectedProject, studioHost]);
+
+
   const runBuild = useCallback(async () => {
     if (!selectedProject?.path) {
       clearWorkflowResult(undefined, { clearHistory: true });
@@ -1449,6 +1536,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     }}
                     onOpenPageSettings={openPageSettings}
                     onCreatePage={createPageForNavigation}
+                    onDeletePage={(id) => void onDeletePageById(id)}
+                    onApprovePage={(id) => void onApprovePageById(id)}
                     onChange={(next) => {
                       setNavDraft((current) => {
                         if (!current || !activeStudioTopNavGroupId) {

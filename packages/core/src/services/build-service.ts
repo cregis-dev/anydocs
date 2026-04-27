@@ -5,6 +5,7 @@ import { loadProjectContract } from '../fs/content-repository.ts';
 import { createDocsRepository, listPages, loadNavigation } from '../fs/docs-repository.ts';
 import {
   buildPublishedSiteLanguageContent,
+  isPageApprovedForPublication,
   type PublishedLanguageContent,
   type PublishedSiteLanguageContent,
 } from '../publishing/publication-filter.ts';
@@ -26,6 +27,7 @@ export type BuildWorkflowLanguageSummary = {
   lang: DocsLanguage;
   totalPages: number;
   publishedPages: number;
+  pendingReviewPages: number;
   navigationItems: number;
 };
 
@@ -150,6 +152,9 @@ export async function loadPublishedSiteBuildArtifacts<TContent = unknown>(
       listPages<TContent>(repository, lang),
     ]);
     const content = buildPublishedSiteLanguageContent(lang, navigation, pages);
+    const pendingReviewPages = pages.filter(
+      (page) => page.status === 'published' && !isPageApprovedForPublication(page),
+    ).length;
     results.push({
       lang,
       content,
@@ -157,6 +162,7 @@ export async function loadPublishedSiteBuildArtifacts<TContent = unknown>(
         lang,
         totalPages: pages.length,
         publishedPages: content.pages.length,
+        pendingReviewPages,
         navigationItems: countNavigationItems(content.navigation.items),
       },
     });
