@@ -17,6 +17,8 @@ Deferred when splitting from multi-issue intent. Resume by passing an issue numb
 
 ### Refactor
 - Extract `tryOpenBrowser()` from `studio-command.ts` and `preview-command.ts` into a shared CLI utility (e.g., `packages/cli/src/utils/browser.ts`) to avoid maintenance duplication.
+- Add setext heading support to `createMarkdownYooptaContent` in `markdown-content.ts`: currently `text\n---` produces `paragraph("text") + divider` instead of `heading`. The divider behavior (from #53/#54 fix) is semantically better than the previous `paragraph("---")`, but setext H2 headings are lost.
+- Consider restructuring `toYooptaListItems` children array to avoid mixing inline leaf nodes and `list-item` block nodes — currently works due to `yooptaListItemInlineChildrenToCanonical`'s filter, but is an undocumented structural contract.
 
 ### Features
 - **#56** [Feature] Studio 侧边栏页面缺少删除/重命名操作入口
