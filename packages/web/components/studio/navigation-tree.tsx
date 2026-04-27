@@ -503,7 +503,7 @@ export function NavigationTree({
 
     const p = pagesById.get(item.pageId);
     const title = item.titleOverride?.trim() || p?.title || item.pageId;
-    
+
     // Check if this specific node should be selected
     let selected = false;
     if (activePageId === item.pageId) {
@@ -515,7 +515,7 @@ export function NavigationTree({
         selected = paths[0] === k;
       }
     }
-    
+
     const hidden = !!item.hidden;
 
     const hasPendingReview = !!(p?.review?.required && !p?.review?.approvedAt);
