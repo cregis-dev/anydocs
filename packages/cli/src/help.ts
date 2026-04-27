@@ -92,6 +92,7 @@ export function printCommandHelp(command: string): boolean {
         '',
         'Options:',
         '  --watch              Compatibility flag; preview already runs live',
+        '  --no-open            Do not attempt to open a browser automatically',
         '  --json               Print structured JSON output',
       ]);
       return true;

@@ -14,7 +14,9 @@ Deferred when splitting from multi-issue intent. Resume by passing an issue numb
 - **#52** [Bug] MCP project_build 工具报错：Unable to locate the docs web runtime
 - **#53** [Bug] page_update_from_markdown 不解析内联 Markdown 语法（粗体/链接/行内代码）
 - **#54** [Bug] page_update_from_markdown 将 Markdown --- 转为 paragraph 而非 divider 块
-- **#55** [Feature] anydocs preview 支持 --no-open 参数，避免自动打开浏览器
+
+### Refactor
+- Extract `tryOpenBrowser()` from `studio-command.ts` and `preview-command.ts` into a shared CLI utility (e.g., `packages/cli/src/utils/browser.ts`) to avoid maintenance duplication.
 
 ### Features
 - **#56** [Feature] Studio 侧边栏页面缺少删除/重命名操作入口
