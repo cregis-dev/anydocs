@@ -18,6 +18,7 @@ import {
   parsePageFindCommandArgs,
   parsePageGetCommandArgs,
   parsePageListCommandArgs,
+  parsePreviewCommandArgs,
   parseProjectReadCommandArgs,
   parseStudioCommandArgs,
   parseWorkflowCommandArgs,
@@ -109,7 +110,7 @@ async function main() {
     }
     case 'preview': {
       return runCommand(
-        () => runPreviewCommand({ ...parseWorkflowCommandArgs(commandArgs), json }),
+        () => runPreviewCommand({ ...parsePreviewCommandArgs(commandArgs), json }),
         'preview',
         json,
       );

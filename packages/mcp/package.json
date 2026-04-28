@@ -32,6 +32,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
+    "@anydocs/cli": "workspace:*",
     "@anydocs/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.4"
   },

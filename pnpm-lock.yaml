@@ -200,6 +200,9 @@ importers:
 
   packages/mcp:
     dependencies:
+      '@anydocs/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@anydocs/core':
         specifier: workspace:*
         version: link:../core

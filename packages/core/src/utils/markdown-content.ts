@@ -11,7 +11,7 @@ function toYooptaParagraphBlock(blockId: string, elementId: string, text: string
         {
           id: elementId,
           type: 'paragraph',
-          children: [{ text }],
+          children: parseInlineMarkdown(text),
           props: { nodeType: 'block' },
         },
       ],
@@ -29,7 +29,7 @@ function toYooptaBlockquoteBlock(blockId: string, elementId: string, text: strin
         {
           id: elementId,
           type: 'blockquote',
-          children: [{ text }],
+          children: parseInlineMarkdown(text),
           props: { nodeType: 'block' },
         },
       ],
@@ -54,7 +54,7 @@ function toYooptaHeadingBlock(
         {
           id: elementId,
           type: elementType,
-          children: [{ text }],
+          children: parseInlineMarkdown(text),
           props: { nodeType: 'block' },
         },
       ],
@@ -76,7 +76,7 @@ function toYooptaListBlock(
       id: `${prefix}-item-${index + 1}`,
       type: 'list-item',
       children: [
-        { text: item.text },
+        ...parseInlineMarkdown(item.text),
         ...toYooptaListItems(item.items ?? [], `${prefix}-item-${index + 1}`),
       ],
       props: {
@@ -144,7 +144,7 @@ function toYooptaTableBlock(blockId: string, elementId: string, rows: string[][]
             children: row.map((cell, cellIndex) => ({
               id: `${elementId}-cell-${rowIndex + 1}-${cellIndex + 1}`,
               type: 'table-data-cell',
-              children: [{ text: cell }],
+              children: parseInlineMarkdown(cell),
               props: { nodeType: 'block' },
             })),
             props: { nodeType: 'block' },
@@ -155,6 +155,46 @@ function toYooptaTableBlock(blockId: string, elementId: string, rows: string[][]
       meta: { order, depth: 0 },
     },
   };
+}
+
+// Parses inline Markdown tokens into Yoopta leaf/link nodes.
+// Handles: `code`, **bold**, *italic*, [text](url). Nested bold+link not supported.
+function parseInlineMarkdown(text: string): Array<Record<string, unknown>> {
+  const TOKEN_RE = /(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\([^)\n]+\))/g;
+  const nodes: Array<Record<string, unknown>> = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(TOKEN_RE)) {
+    const before = text.slice(lastIndex, match.index);
+    if (before) {
+      nodes.push({ text: before });
+    }
+
+    const token = match[0]!;
+    if (token.startsWith('`')) {
+      nodes.push({ text: token.slice(1, -1), code: true });
+    } else if (token.startsWith('**')) {
+      nodes.push({ text: token.slice(2, -2), bold: true });
+    } else if (token.startsWith('*')) {
+      nodes.push({ text: token.slice(1, -1), italic: true });
+    } else {
+      const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
+      if (linkMatch) {
+        nodes.push({ type: 'link', props: { href: linkMatch[2] }, children: [{ text: linkMatch[1] }] });
+      } else {
+        nodes.push({ text: token });
+      }
+    }
+
+    lastIndex = (match.index ?? 0) + token.length;
+  }
+
+  const tail = text.slice(lastIndex);
+  if (tail) {
+    nodes.push({ text: tail });
+  }
+
+  return nodes.length > 0 ? nodes : [{ text }];
 }
 
 function normalizeMarkdownParagraphText(lines: string[]): string {
@@ -180,6 +220,24 @@ function isMarkdownTableSeparator(line: string): boolean {
   }
 
   return splitMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function toYooptaDividerBlock(blockId: string, elementId: string, order: number) {
+  return {
+    [blockId]: {
+      id: blockId,
+      type: 'Divider',
+      value: [
+        {
+          id: elementId,
+          type: 'divider',
+          children: [{ text: '' }],
+          props: { nodeType: 'void' },
+        },
+      ],
+      meta: { order, depth: 0 },
+    },
+  };
 }
 
 function normalizeMarkdownBlockquoteText(lines: string[]): string {
@@ -464,6 +522,12 @@ export function createMarkdownYooptaContent(markdown: string): Record<string, un
       if (rows.length > 0) {
         pushBlock(toYooptaTableBlock(`block-${nextIndex}`, `element-${nextIndex}`, rows, blockOrder));
       }
+      continue;
+    }
+
+    if (/^[-*_]{3,}\s*$/.test(trimmedLine)) {
+      flushParagraph();
+      pushBlock(toYooptaDividerBlock(`block-${nextIndex}`, `element-${nextIndex}`, blockOrder));
       continue;
     }
 
