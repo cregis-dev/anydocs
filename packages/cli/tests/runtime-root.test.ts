@@ -11,10 +11,17 @@ test('isInsideNodeModules detects packaged runtime paths', () => {
   assert.equal(isInsideNodeModules('/tmp/anydocs-cli-runtime/docs-runtime'), false);
 });
 
-test('materializeRuntimeRoot copies packaged runtimes out of node_modules and vendors dependencies locally', async () => {
+test('materializeRuntimeRoot copies packaged runtimes out of node_modules and restores packaged dependency links', async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-cli-runtime-test-'));
   const packagedRuntimeRoot = path.join(tempRoot, 'node_modules', '@anydocs', 'cli', 'docs-runtime');
-  const sharedDependencyRoot = path.join(tempRoot, 'linked-deps', 'sample-dep');
+  const sharedDependencyRoot = path.join(
+    tempRoot,
+    'node_modules',
+    '.pnpm',
+    'sample-dep@1.0.0',
+    'node_modules',
+    'sample-dep',
+  );
 
   try {
     await mkdir(path.join(packagedRuntimeRoot, 'scripts'), { recursive: true });
@@ -23,7 +30,14 @@ test('materializeRuntimeRoot copies packaged runtimes out of node_modules and ve
     await writeFile(path.join(packagedRuntimeRoot, 'scripts', 'gen-public-assets.mjs'), 'export {};\n', 'utf8');
     await writeFile(path.join(packagedRuntimeRoot, 'next.config.mjs'), 'export default {};\n', 'utf8');
     await writeFile(path.join(sharedDependencyRoot, 'index.js'), 'export default "ok";\n', 'utf8');
-    await symlink(sharedDependencyRoot, path.join(tempRoot, 'node_modules', 'sample-dep'), 'dir');
+    await writeFile(
+      path.join(tempRoot, 'node_modules', '.anydocs-symlinks.json'),
+      JSON.stringify({
+        version: 1,
+        symlinks: [{ path: 'sample-dep', target: '.pnpm/sample-dep@1.0.0/node_modules/sample-dep' }],
+      }),
+      'utf8',
+    );
 
     const materializedRoot = await materializeRuntimeRoot(packagedRuntimeRoot, 'docs');
 
@@ -35,7 +49,7 @@ test('materializeRuntimeRoot copies packaged runtimes out of node_modules and ve
     assert.equal(copiedNodeModules.isSymbolicLink(), false);
     assert.equal(copiedNodeModules.isDirectory(), true);
     const copiedDependency = await lstat(path.join(materializedRoot, 'node_modules', 'sample-dep'));
-    assert.equal(copiedDependency.isSymbolicLink(), false);
+    assert.equal(copiedDependency.isSymbolicLink(), true);
     assert.equal(await readFile(path.join(materializedRoot, 'node_modules', 'sample-dep', 'index.js'), 'utf8'), 'export default "ok";\n');
 
     await rm(materializedRoot, { recursive: true, force: true });

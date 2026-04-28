@@ -1,6 +1,9 @@
 import { ANYDOCS_RUNTIME_ENV, DOCS_RUNTIME_MODES } from '@anydocs/core/runtime-contract';
 
-const shouldStaticExport = process.env[ANYDOCS_RUNTIME_ENV.docsRuntime] === DOCS_RUNTIME_MODES.export;
+const forceDesktopStaticExport = process.env.ANYDOCS_DESKTOP_STATIC_EXPORT === '1';
+
+const shouldStaticExport =
+  forceDesktopStaticExport || process.env[ANYDOCS_RUNTIME_ENV.docsRuntime] === DOCS_RUNTIME_MODES.export;
 
 const nextConfig = {
   reactStrictMode: true,

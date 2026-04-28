@@ -28,11 +28,8 @@
     "targets": "all",
     "icon": ["icons/icon.png"],
     "resources": {
-      "../../desktop-server/package.json": "desktop-server/package.json",
-      "../../desktop-server/dist": "desktop-server/dist",
-      "../../core/package.json": "core/package.json",
-      "../../core/node_modules/minisearch": "core/node_modules/minisearch",
-      "../../core/dist": "core/dist"
+      "../resources/cli-runtime": "cli",
+      "../resources/node-runtime": "node-runtime"
     }
   }
 }

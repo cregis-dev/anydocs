@@ -1,3 +1,3 @@
 fn main() {
-  anydocs_desktop::run();
+    anydocs_desktop::run();
 }
