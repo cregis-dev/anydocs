@@ -1,4 +1,7 @@
 import path from 'node:path';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import {
   createApiSourceRepository,
@@ -16,8 +19,6 @@ import {
   loadPage,
   loadProjectContract,
   normalizeSlug,
-  runBuildWorkflow,
-  runPreviewWorkflow,
   saveApiSource,
   saveNavigation,
   savePage,
@@ -32,12 +33,56 @@ import {
   type DocsRepository,
   type NavigationDoc,
   type PageDoc,
+  type PreviewWorkflowResult,
   type ProjectConfig,
   type ProjectContract,
 } from '../../../core/dist/index.js';
 
 import type { StudioPageCreateInput, StudioProjectScope, StudioProjectSettingsPatch } from '../types.ts';
 import { getActivePreviewEntry, registerPreview, stopAllActivePreviews } from '../runtime/preview-registry.ts';
+
+type CliJsonEnvelope<T> =
+  | {
+      ok: true;
+      data: T;
+      meta?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      error?: {
+        code?: string;
+        message?: string;
+        rule?: string;
+        remediation?: string;
+        details?: Record<string, unknown>;
+      };
+      meta?: Record<string, unknown>;
+    };
+
+type CliBuildResult = Pick<
+  BuildWorkflowResult,
+  'projectId' | 'artifactRoot' | 'machineReadableRoot' | 'entryHtmlFile' | 'defaultDocsPath' | 'languages'
+>;
+
+type CliPreviewResult = {
+  projectId: string;
+  host: string;
+  port: number;
+  url: string;
+  docsPath: string;
+  previewUrl: string;
+  publishedPages: number;
+  pid: number;
+};
+
+const CLI_JSON_TIMEOUT_MS = 60_000;
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+
+type CliInvocation = {
+  command: string;
+  args: string[];
+  env: NodeJS.ProcessEnv;
+};
 
 function resolveRepoRoot(scope: StudioProjectScope = {}, defaultProjectRoot?: string): string {
   if (!scope.projectPath && !defaultProjectRoot) {
@@ -100,6 +145,244 @@ function toStoredPageDoc(page: PageDoc): PageDoc<unknown> {
   return {
     ...page,
     content: yooptaToDocContent(page.content),
+  };
+}
+
+function resolveNodeExecutable(): string {
+  return process.env.ANYDOCS_NODE_BINARY?.trim() || process.execPath;
+}
+
+function resolveCliEntry(): { path: string; configured: boolean } {
+  const configuredEntry = process.env.ANYDOCS_DESKTOP_CLI_ENTRY?.trim();
+  if (configuredEntry) {
+    return { path: configuredEntry, configured: true };
+  }
+
+  return { path: path.resolve(moduleDir, '../../../cli/dist/index.js'), configured: false };
+}
+
+function resolveSystemCliBinary(): string {
+  return process.env.ANYDOCS_DESKTOP_CLI_BINARY?.trim() || 'anydocs';
+}
+
+function isDirectWindowsExecutable(command: string): boolean {
+  const extension = path.extname(command).toLowerCase();
+  return extension === '.exe' || extension === '.com';
+}
+
+function resolveCliInvocation(commandArgs: string[]): CliInvocation {
+  const cliMode = process.env.ANYDOCS_DESKTOP_CLI_MODE?.trim().toLowerCase();
+  const cliEntry = resolveCliEntry();
+  const useBundledCli = cliMode !== 'system' && (cliEntry.configured || existsSync(cliEntry.path));
+
+  if (!useBundledCli) {
+    const command = resolveSystemCliBinary();
+    if (process.platform === 'win32' && !isDirectWindowsExecutable(command)) {
+      throw new Error(
+        [
+          'Windows system CLI mode no longer launches shell wrappers.',
+          'Set ANYDOCS_DESKTOP_CLI_ENTRY to the @anydocs/cli dist/index.js file, or point ANYDOCS_DESKTOP_CLI_BINARY to a direct .exe/.com executable.',
+          'The full Desktop package includes the CLI runtime and does not require this setup.',
+        ].join(' '),
+      );
+    }
+
+    return {
+      command,
+      args: [...commandArgs, '--json'],
+      env: { ...process.env },
+    };
+  }
+
+  const nodeExecutable = resolveNodeExecutable();
+  return {
+    command: nodeExecutable,
+    args: [cliEntry.path, ...commandArgs, '--json'],
+    env: {
+      ...process.env,
+      ANYDOCS_DESKTOP_CLI_MODE: 'bundled',
+      ANYDOCS_FORCE_MATERIALIZE_RUNTIME: '1',
+      ANYDOCS_NODE_BINARY: nodeExecutable,
+    },
+  };
+}
+
+function formatCliError(commandName: string, stderr: string, stdout: string): Error {
+  const details = [stderr.trim(), stdout.trim()].filter(Boolean).join('\n');
+  return new Error(details ? `${commandName} failed.\n${details}` : `${commandName} failed.`);
+}
+
+function formatCliSpawnError(error: NodeJS.ErrnoException): Error {
+  if (error.code !== 'ENOENT') {
+    return error;
+  }
+
+  return new Error(
+    [
+      'Anydocs CLI was not found.',
+      'Install the CLI with `npm install -g @anydocs/cli`, set ANYDOCS_DESKTOP_CLI_ENTRY to the @anydocs/cli dist/index.js file, or set ANYDOCS_DESKTOP_CLI_BINARY to a direct executable.',
+      'The full Desktop package includes the CLI runtime and does not require this setup.',
+    ].join(' '),
+  );
+}
+
+function parseCliEnvelope<T>(commandName: string, text: string): T | null {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  let parsed: CliJsonEnvelope<T>;
+  try {
+    parsed = JSON.parse(trimmed) as CliJsonEnvelope<T>;
+  } catch {
+    return null;
+  }
+
+  if (parsed.ok) {
+    return parsed.data;
+  }
+
+  const message = parsed.error?.message ?? `${commandName} failed.`;
+  const remediation = parsed.error?.remediation ? `\nFix: ${parsed.error.remediation}` : '';
+  throw new Error(`${message}${remediation}`);
+}
+
+function spawnCliCommand(commandArgs: string[], cwd: string): ChildProcessWithoutNullStreams {
+  const invocation = resolveCliInvocation(commandArgs);
+
+  return spawn(invocation.command, invocation.args, {
+    cwd,
+    env: invocation.env,
+    stdio: 'pipe',
+  });
+}
+
+function waitForCliJson<T>(
+  commandName: string,
+  child: ChildProcessWithoutNullStreams,
+  timeoutMs = CLI_JSON_TIMEOUT_MS,
+): Promise<T> {
+  let stdout = '';
+  let stderr = '';
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+      callback();
+    };
+
+    const tryResolve = () => {
+      try {
+        const parsed = parseCliEnvelope<T>(commandName, stdout);
+        if (parsed) {
+          finish(() => resolve(parsed));
+        }
+      } catch (error) {
+        finish(() => reject(error));
+      }
+    };
+
+    const timer = setTimeout(() => {
+      finish(() => reject(formatCliError(commandName, stderr, stdout || `Timed out waiting for ${commandName} JSON output.`)));
+    }, timeoutMs);
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+      tryResolve();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.once('error', (error: NodeJS.ErrnoException) => {
+      finish(() => reject(formatCliSpawnError(error)));
+    });
+    child.once('exit', (code, signal) => {
+      if (settled) {
+        return;
+      }
+
+      try {
+        const parsed = parseCliEnvelope<T>(commandName, stdout);
+        if (parsed) {
+          finish(() => resolve(parsed));
+          return;
+        }
+      } catch (error) {
+        finish(() => reject(error));
+        return;
+      }
+
+      finish(() =>
+        reject(
+          formatCliError(
+            commandName,
+            stderr,
+            stdout || `${commandName} exited before producing JSON (exit=${code ?? 'null'}, signal=${signal ?? 'null'}).`,
+          ),
+        ),
+      );
+    });
+  });
+}
+
+function waitForCliExit(
+  child: ChildProcessWithoutNullStreams,
+): Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }> {
+  return new Promise((resolve) => {
+    child.once('exit', (exitCode, signal) => {
+      resolve({ exitCode, signal });
+    });
+  });
+}
+
+async function runCliBuild(projectRoot: string): Promise<Pick<BuildWorkflowResult, 'artifactRoot' | 'languages'>> {
+  const child = spawnCliCommand(['build', projectRoot], projectRoot);
+  const [result, exitResult] = await Promise.all([
+    waitForCliJson<CliBuildResult>('anydocs build', child),
+    waitForCliExit(child),
+  ]);
+
+  if (exitResult.exitCode !== 0) {
+    throw new Error(`anydocs build exited with code ${exitResult.exitCode ?? 'null'}.`);
+  }
+
+  return {
+    artifactRoot: result.artifactRoot,
+    languages: result.languages,
+  };
+}
+
+async function startCliPreview(contract: ProjectContract): Promise<PreviewWorkflowResult> {
+  const child = spawnCliCommand(['preview', contract.paths.projectRoot], contract.paths.projectRoot);
+  const result = await waitForCliJson<CliPreviewResult>('anydocs preview', child);
+  const exitPromise = waitForCliExit(child);
+
+  return {
+    projectId: result.projectId,
+    language: contract.config.defaultLanguage,
+    docsPath: result.docsPath,
+    publishedPages: result.publishedPages,
+    host: result.host,
+    port: result.port,
+    url: result.url,
+    pid: result.pid,
+    stop: async () => {
+      if (child.exitCode !== null) {
+        await exitPromise;
+        return;
+      }
+
+      child.kill('SIGTERM');
+      await exitPromise;
+    },
+    waitUntilExit: () => exitPromise,
   };
 }
 
@@ -304,15 +587,7 @@ export async function postBuild(
   const contract = await resolveProjectContract(scope, defaultProjectRoot);
   await stopAllActivePreviews();
 
-  const result = await runBuildWorkflow({
-    repoRoot: contract.paths.repoRoot,
-    projectId: contract.config.projectId,
-  });
-
-  return {
-    artifactRoot: result.artifactRoot,
-    languages: result.languages,
-  };
+  return runCliBuild(contract.paths.projectRoot);
 }
 
 export async function postPreview(
@@ -324,10 +599,7 @@ export async function postPreview(
 
   await stopAllActivePreviews();
 
-  const result = await runPreviewWorkflow({
-    repoRoot: contract.paths.repoRoot,
-    projectId: contract.config.projectId,
-  });
+  const result = await startCliPreview(contract);
   const entry = registerPreview(projectRoot, result);
   const activePreview = getActivePreviewEntry(projectRoot) ?? entry;
 

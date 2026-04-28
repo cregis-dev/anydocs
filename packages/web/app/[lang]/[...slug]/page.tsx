@@ -38,10 +38,6 @@ import {
   extractTocFromDocContent,
   getRenderableDocContent,
 } from "@/lib/docs/canonical-reader";
-import {
-  extractTocFromLegacyYooptaContent,
-  getRenderableLegacyYooptaContent,
-} from "@/lib/docs/legacy-yoopta-reader";
 import { cn } from "@/lib/utils";
 import {
   formatBlueprintDate,
@@ -280,16 +276,13 @@ export default async function Page({
   const isBlueprintReviewTheme = siteTheme.id === BLUEPRINT_REVIEW_THEME_ID;
   const classicMarkdownClassName =
     "prose-p:my-3 prose-p:text-[15px] prose-p:leading-7 prose-li:text-[15px] prose-li:leading-7 prose-h2:mb-3 prose-h2:mt-10 prose-h3:mb-2 prose-h3:mt-7 prose-table:mt-6 prose-code:rounded-sm prose-code:bg-[color:var(--classic-muted)] prose-pre:rounded-lg prose-pre:border-[color:var(--docs-divider,var(--fd-border))] prose-pre:bg-[#171717] prose-pre:shadow-none prose-blockquote:border-l-2 prose-blockquote:border-[color:var(--docs-divider,var(--fd-border))] prose-blockquote:pl-4 prose-blockquote:text-[15px] prose-blockquote:leading-7 [&_pre_code]:block [&_pre_code]:px-4 [&_pre_code]:py-3.5 [&_pre_code]:text-[13px] [&_pre_code]:leading-6 [&_table]:w-full [&_table]:rounded-none [&_table]:border-x-0 [&_table]:border-y [&_table]:border-[color:var(--docs-divider,var(--fd-border))] [&_th]:border-x-0 [&_th]:bg-transparent [&_th]:px-3 [&_th]:py-2.5 [&_th]:text-[12px] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] [&_td]:border-x-0 [&_td]:px-3 [&_td]:py-2.5 [&_td]:text-[14px] [&_td]:leading-6 [&_hr]:my-10 [&_img]:rounded-lg [&_img]:shadow-none";
-  const classicStructuredClassName =
-    "[&_h2]:mb-3 [&_h2]:mt-10 [&_h3]:mb-2 [&_h3]:mt-7 [&_li]:text-[15px] [&_li]:leading-7 [&_p]:my-3 [&_p]:text-[15px] [&_p]:leading-7 [&_blockquote]:my-6 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--docs-divider,var(--fd-border))] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[15px] [&_blockquote]:leading-7 [&_code]:rounded-sm [&_code]:bg-[color:var(--classic-muted)] [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:my-6 [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-[color:var(--docs-divider,var(--fd-border))] [&_pre]:bg-[#171717] [&_pre]:px-0 [&_pre]:py-0 [&_pre]:shadow-none [&_pre_code]:block [&_pre_code]:px-4 [&_pre_code]:py-3.5 [&_pre_code]:text-[13px] [&_pre_code]:leading-6 [&_table]:mt-6 [&_table]:w-full [&_table]:rounded-none [&_table]:border-x-0 [&_table]:border-y [&_table]:border-[color:var(--docs-divider,var(--fd-border))] [&_th]:border-x-0 [&_th]:bg-transparent [&_th]:px-3 [&_th]:py-2.5 [&_th]:text-[12px] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] [&_td]:border-x-0 [&_td]:px-3 [&_td]:py-2.5 [&_td]:text-[14px] [&_td]:leading-6 [&_hr]:my-10 [&_img]:rounded-lg [&_img]:shadow-none [&_[data-doc-callout]]:rounded-lg [&_[data-doc-callout]]:border-[color:var(--docs-divider,var(--fd-border))] [&_[data-doc-callout]]:bg-transparent [&_[data-doc-callout]]:px-4 [&_[data-doc-callout]]:py-3.5 [&_[data-doc-callout]]:shadow-none [&_[data-doc-callout-title]]:mb-2 [&_[data-doc-callout-title]]:text-[11px] [&_[data-doc-callout-title]]:font-semibold [&_[data-doc-callout-title]]:uppercase [&_[data-doc-callout-title]]:tracking-[0.12em] [&_[data-doc-callout-title]]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] [&_[data-doc-callout-body]]:text-[15px] [&_[data-doc-callout-body]]:leading-7 [&_[data-doc-code-group]]:my-8 [&_[data-doc-code-panel]]:border-t [&_[data-doc-code-panel]]:border-[color:var(--docs-divider,var(--fd-border))] [&_[data-doc-code-panel]]:pt-3.5 [&_[data-doc-code-group]_[data-doc-code-panel]:first-child]:border-t-0 [&_[data-doc-code-group]_[data-doc-code-panel]:first-child]:pt-0 [&_[data-doc-code-title]]:mb-2 [&_[data-doc-code-title]]:text-[11px] [&_[data-doc-code-title]]:font-semibold [&_[data-doc-code-title]]:uppercase [&_[data-doc-code-title]]:tracking-[0.12em] [&_[data-doc-code-title]]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]";
   const markdown = normalizeMarkdownForRendering(
     stripLeadingTitleHeading(page.render?.markdown ?? "", page.title),
   );
   const docContent = getRenderableDocContent(page.content, page.title);
-  const legacyYooptaContent = docContent ? null : getRenderableLegacyYooptaContent(page.content, page.title);
+  const hasUnsupportedLegacyContent = !docContent && Boolean(page.content);
   const toc = docContent ? extractTocFromDocContent(docContent) : extractTocFromMarkdown(markdown);
-  const effectiveToc =
-    toc.length > 0 ? toc : extractTocFromLegacyYooptaContent(legacyYooptaContent);
+  const effectiveToc = toc;
   const hasBlueprintToc = effectiveToc.length > 0;
   const crumbs = buildBreadcrumbsByPageId(nav).get(page.id) ?? [];
   const showBreadcrumbs = crumbs.length > 0;
@@ -518,9 +511,8 @@ export default async function Page({
                     <DocContentView
                       docContent={docContent}
                       markdown={markdown}
-                      legacyYooptaContent={legacyYooptaContent}
+                      hasUnsupportedLegacyContent={hasUnsupportedLegacyContent}
                       markdownClassName="prose-p:my-3 prose-p:text-[16px] prose-p:leading-7 prose-li:text-[16px] prose-li:leading-7 prose-h2:mb-4 prose-h2:mt-10 prose-h3:mb-3 prose-h3:mt-8 prose-table:mt-6"
-                      legacyYooptaClassName="[&_h2]:mb-4 [&_h2]:mt-10 [&_h3]:mb-3 [&_h3]:mt-8 [&_li]:text-[16px] [&_li]:leading-7 [&_p]:my-3 [&_p]:text-[16px] [&_p]:leading-7 [&_table]:mt-6"
                     />
                   </div>
                 </div>
@@ -616,18 +608,12 @@ export default async function Page({
           <DocContentView
             docContent={docContent}
             markdown={markdown}
-            legacyYooptaContent={legacyYooptaContent}
+            hasUnsupportedLegacyContent={hasUnsupportedLegacyContent}
             markdownClassName={cn(
               isClassicTheme &&
                 classicMarkdownClassName,
               isAtlasTheme &&
                 "prose-p:my-3.5 prose-p:text-[15px] prose-p:leading-7 prose-li:text-[15px] prose-li:leading-7 prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-[1.55rem] prose-h2:font-semibold prose-h2:tracking-[-0.025em] prose-h3:mb-2.5 prose-h3:mt-8 prose-h3:text-[1.05rem] prose-h3:font-semibold prose-h3:tracking-[-0.02em] prose-table:mt-7 [&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-[18px] [&_table]:border [&_table]:border-[color:var(--atlas-content-border)] [&_table]:bg-white [&_table]:shadow-[0_10px_30px_rgba(15,23,42,0.05)] [&_thead]:bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle)_82%,white)] [&_th]:border-b [&_th]:border-[color:var(--atlas-content-border)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[12px] [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-[0.01em] [&_th]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] [&_td]:border-b [&_td]:border-[color:color-mix(in_srgb,var(--atlas-content-border)_92%,white)] [&_td]:px-4 [&_td]:py-3.5 [&_td]:align-top [&_td]:text-[14px] [&_td]:leading-6 [&_tbody_tr:last-child_td]:border-b-0 [&_pre]:my-7 [&_pre]:overflow-x-auto [&_pre]:rounded-[18px] [&_pre]:border [&_pre]:border-[color:var(--atlas-content-border)] [&_pre]:shadow-[0_14px_32px_rgba(15,23,42,0.08)] [&_code]:rounded-md [&_code]:px-1.5 [&_code]:py-0.5",
-            )}
-            legacyYooptaClassName={cn(
-              isClassicTheme &&
-                classicStructuredClassName,
-              isAtlasTheme &&
-                "[&_h2]:mb-4 [&_h2]:mt-12 [&_h2]:text-[1.55rem] [&_h2]:font-semibold [&_h2]:tracking-[-0.025em] [&_h3]:mb-2.5 [&_h3]:mt-8 [&_h3]:text-[1.05rem] [&_h3]:font-semibold [&_h3]:tracking-[-0.02em] [&_li]:text-[15px] [&_li]:leading-7 [&_p]:my-3.5 [&_p]:text-[15px] [&_p]:leading-7 [&_table]:mt-7 [&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-[18px] [&_table]:border [&_table]:border-[color:var(--atlas-content-border)] [&_table]:bg-white [&_table]:shadow-[0_10px_30px_rgba(15,23,42,0.05)] [&_thead]:bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle)_82%,white)] [&_th]:border-b [&_th]:border-[color:var(--atlas-content-border)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[12px] [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-[0.01em] [&_th]:text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] [&_td]:border-b [&_td]:border-[color:color-mix(in_srgb,var(--atlas-content-border)_92%,white)] [&_td]:px-4 [&_td]:py-3.5 [&_td]:align-top [&_td]:text-[14px] [&_td]:leading-6 [&_tbody_tr:last-child_td]:border-b-0 [&_pre]:my-7 [&_pre]:overflow-x-auto [&_pre]:rounded-[18px] [&_pre]:border [&_pre]:border-[color:var(--atlas-content-border)] [&_pre]:shadow-[0_14px_32px_rgba(15,23,42,0.08)] [&_code]:rounded-md [&_code]:px-1.5 [&_code]:py-0.5",
             )}
           />
 

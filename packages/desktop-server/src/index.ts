@@ -5,9 +5,19 @@ export * from './server.ts';
 export * from './services/studio-service.ts';
 export * from './types.ts';
 
-import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { startDesktopServer } from './server.ts';
+
+function normalizeEntryPath(entryPath: string): string {
+  try {
+    return realpathSync(entryPath);
+  } catch {
+    return path.resolve(entryPath);
+  }
+}
 
 function isMainModule(): boolean {
   const entryPoint = process.argv[1];
@@ -15,7 +25,7 @@ function isMainModule(): boolean {
     return false;
   }
 
-  return import.meta.url === pathToFileURL(entryPoint).href;
+  return normalizeEntryPath(fileURLToPath(import.meta.url)) === normalizeEntryPath(entryPoint);
 }
 
 if (isMainModule()) {

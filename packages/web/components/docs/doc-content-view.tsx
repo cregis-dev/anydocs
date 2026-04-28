@@ -1,49 +1,37 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
 import type { DocContentV1 } from '@anydocs/core';
-import type { YooptaContentValue } from '@yoopta/editor';
 
 import { CanonicalDocView } from '@/components/docs/canonical-doc-view';
 import { MarkdownView } from '@/components/docs/markdown-view';
-
-const LegacyYooptaDocView = dynamic(
-  () => import('@/components/docs/legacy-yoopta-doc-view').then((module) => module.LegacyYooptaDocView),
-  { ssr: false },
-);
 
 export function DocContentView({
   docContent,
   markdown,
   markdownClassName,
-  legacyYooptaContent,
-  legacyYooptaClassName,
+  hasUnsupportedLegacyContent,
 }: {
   docContent: DocContentV1 | null;
   markdown: string;
   markdownClassName?: string;
-  legacyYooptaContent: YooptaContentValue | null;
-  legacyYooptaClassName?: string;
+  hasUnsupportedLegacyContent?: boolean;
 }) {
-  const [preferYoopta, setPreferYoopta] = useState(false);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setPreferYoopta(Boolean(legacyYooptaContent));
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [legacyYooptaContent]);
-
   if (docContent) {
-    return <CanonicalDocView content={docContent} className={legacyYooptaClassName ?? markdownClassName} />;
+    return <CanonicalDocView content={docContent} className={markdownClassName} />;
   }
 
-  // Legacy pages still start on markdown, then upgrade to the Yoopta fallback after hydration.
-  if (!preferYoopta || !legacyYooptaContent) {
-    return <MarkdownView markdown={markdown} className={markdownClassName} />;
+  if (hasUnsupportedLegacyContent) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
+        <div className="font-semibold">This page uses the legacy Yoopta content format.</div>
+        <p className="mt-2">
+          The reader no longer renders legacy content directly. Open this page in Studio and save it again to write the
+          canonical DocContentV1 format. For imported documentation, run <code>anydocs import --convert</code> or{' '}
+          <code>anydocs convert-import &lt;importId&gt;</code>, then review and publish the converted page.
+        </p>
+      </div>
+    );
   }
 
-  return <LegacyYooptaDocView content={legacyYooptaContent} className={legacyYooptaClassName ?? markdownClassName} />;
+  return <MarkdownView markdown={markdown} className={markdownClassName} />;
 }

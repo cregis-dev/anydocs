@@ -63,7 +63,36 @@ function createRuntimePackageJson(name) {
   };
 }
 
-async function prepareRuntime(rootDir, copiedEntries, packageName) {
+async function pruneDocsRuntime(rootDir) {
+  await rm(path.join(rootDir, 'app', 'studio'), { recursive: true, force: true });
+  await rm(path.join(rootDir, 'app', 'api', 'local'), { recursive: true, force: true });
+  await rm(path.join(rootDir, 'components', 'studio'), { recursive: true, force: true });
+  await rm(path.join(rootDir, 'lib', 'studio'), { recursive: true, force: true });
+  await writeFile(
+    path.join(rootDir, 'app', '(home)', 'page.tsx'),
+    `import { redirect } from 'next/navigation';
+
+import { getDefaultPublishedLanguage } from '@/lib/docs/data';
+
+export default async function Page() {
+  const defaultLanguage = await getDefaultPublishedLanguage();
+  redirect(\`/\${defaultLanguage}\`);
+}
+`,
+    'utf8',
+  );
+  await mkdir(path.join(rootDir, 'components', 'studio', 'plugins'), { recursive: true });
+  await cp(
+    path.join(webRoot, 'components', 'studio', 'plugins', 'mermaid'),
+    path.join(rootDir, 'components', 'studio', 'plugins', 'mermaid'),
+    {
+      recursive: true,
+      force: true,
+    },
+  );
+}
+
+async function prepareRuntime(rootDir, copiedEntries, packageName, options = {}) {
   await rm(rootDir, { recursive: true, force: true });
   await mkdir(rootDir, { recursive: true });
 
@@ -72,6 +101,10 @@ async function prepareRuntime(rootDir, copiedEntries, packageName) {
       recursive: true,
       force: true,
     });
+  }
+
+  if (options.readerOnly) {
+    await pruneDocsRuntime(rootDir);
   }
 
   await writeFile(
@@ -89,7 +122,7 @@ async function prepareRuntime(rootDir, copiedEntries, packageName) {
 
 async function main() {
   await prepareRuntime(studioRuntimeRoot, studioCopiedEntries, '@anydocs/cli-studio-runtime');
-  await prepareRuntime(docsRuntimeRoot, docsCopiedEntries, '@anydocs/cli-docs-runtime');
+  await prepareRuntime(docsRuntimeRoot, docsCopiedEntries, '@anydocs/cli-docs-runtime', { readerOnly: true });
 }
 
 main().catch((error) => {

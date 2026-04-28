@@ -1,6 +1,8 @@
 node_modules
 dist
 out
+resources/node-runtime
+resources/cli-runtime
 .DS_Store
 .eslintcache
 *.log*

@@ -1,11 +1,13 @@
-import { existsSync } from 'node:fs';
-import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { existsSync, realpathSync } from 'node:fs';
+import { cp, lstat, mkdir, mkdtemp, readFile, rm, symlink, unlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CLI_PACKAGE_ROOT = path.dirname(fileURLToPath(new URL('../../package.json', import.meta.url)));
 const TEMP_RUNTIME_ROOT = path.join(os.tmpdir(), 'anydocs-cli-runtime');
+const FORCE_MATERIALIZE_RUNTIME_ENV = 'ANYDOCS_FORCE_MATERIALIZE_RUNTIME';
+const SYMLINK_MANIFEST_FILE = '.anydocs-symlinks.json';
 
 export function isInsideNodeModules(candidate: string) {
   return candidate.split(path.sep).includes('node_modules');
@@ -21,6 +23,72 @@ function resolvePackagedInstallNodeModulesRoot(runtimeRoot: string): string {
   return segments.slice(0, nodeModulesIndex + 1).join(path.sep) || path.sep;
 }
 
+function resolveRuntimeNodeModulesRoot(runtimeRoot: string): string {
+  if (isInsideNodeModules(runtimeRoot)) {
+    return resolvePackagedInstallNodeModulesRoot(runtimeRoot);
+  }
+
+  const localNodeModules = path.join(runtimeRoot, 'node_modules');
+  if (existsSync(localNodeModules)) {
+    return realpathSync(localNodeModules);
+  }
+
+  const siblingNodeModules = path.join(runtimeRoot, '..', 'node_modules');
+  if (existsSync(siblingNodeModules)) {
+    return realpathSync(siblingNodeModules);
+  }
+
+  throw new Error(`Unable to determine the packaged install root for "${runtimeRoot}".`);
+}
+
+function shouldMaterializeRuntimeRoot(runtimeRoot: string): boolean {
+  return isInsideNodeModules(runtimeRoot) || process.env[FORCE_MATERIALIZE_RUNTIME_ENV] === '1';
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await lstat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function restorePnpmSymlinks(nodeModulesRoot: string): Promise<void> {
+  const manifestPath = path.join(nodeModulesRoot, SYMLINK_MANIFEST_FILE);
+  if (!(await pathExists(manifestPath))) {
+    return;
+  }
+
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+    version?: number;
+    symlinks?: Array<{ path: string; target: string }>;
+  };
+
+  if (manifest.version !== 1 || !Array.isArray(manifest.symlinks)) {
+    return;
+  }
+
+  for (const link of manifest.symlinks) {
+    if (!link.path || !link.target) {
+      continue;
+    }
+
+    const linkPath = path.join(nodeModulesRoot, link.path);
+    if (path.relative(nodeModulesRoot, linkPath).startsWith('..')) {
+      continue;
+    }
+
+    await mkdir(path.dirname(linkPath), { recursive: true });
+    if (await pathExists(linkPath)) {
+      await unlink(linkPath).catch(() => undefined);
+    }
+    if (!(await pathExists(linkPath))) {
+      await symlink(link.target, linkPath, 'dir');
+    }
+  }
+}
+
 function isDocsRuntimeRoot(candidate: string) {
   return existsSync(path.join(candidate, 'scripts', 'gen-public-assets.mjs'));
 }
@@ -30,7 +98,7 @@ function isStudioRuntimeRoot(candidate: string) {
 }
 
 export async function materializeRuntimeRoot(runtimeRoot: string, runtimeName: 'docs' | 'studio'): Promise<string> {
-  if (!isInsideNodeModules(runtimeRoot)) {
+  if (!shouldMaterializeRuntimeRoot(runtimeRoot)) {
     return runtimeRoot;
   }
 
@@ -41,15 +109,16 @@ export async function materializeRuntimeRoot(runtimeRoot: string, runtimeName: '
     force: true,
     filter: (source) => {
       const base = path.basename(source);
-      return base !== '.next' && !base.startsWith('.next-cli-');
+      return base !== 'node_modules' && base !== '.next' && !base.startsWith('.next-cli-');
     },
   });
-  const packagedNodeModulesRoot = resolvePackagedInstallNodeModulesRoot(runtimeRoot);
+  const packagedNodeModulesRoot = resolveRuntimeNodeModulesRoot(runtimeRoot);
   await cp(packagedNodeModulesRoot, path.join(targetRoot, 'node_modules'), {
     recursive: true,
     force: true,
-    dereference: true,
+    dereference: false,
   });
+  await restorePnpmSymlinks(path.join(targetRoot, 'node_modules'));
 
   const cleanup = () => {
     void rm(targetRoot, { recursive: true, force: true });

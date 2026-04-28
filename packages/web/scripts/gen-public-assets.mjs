@@ -68,7 +68,10 @@ function createRuntimeEnv(mode, overrides = {}) {
     ...baseEnv,
     NODE_ENV: mode === 'export' || mode === 'public' || mode === 'desktop' ? 'production' : 'development',
     ...(mode === 'desktop'
-      ? createDesktopRuntimeEnv()
+      ? {
+          ...createDesktopRuntimeEnv(),
+          ANYDOCS_DESKTOP_STATIC_EXPORT: '1',
+        }
       : {
           ...createCliDocsRuntimeEnv({
             mode: mode === 'public' ? DOCS_RUNTIME_MODES.export : mode,
