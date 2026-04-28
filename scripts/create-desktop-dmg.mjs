@@ -51,7 +51,7 @@ if (existsSync(staging)) {
 }
 mkdirSync(staging, { recursive: true });
 
-const stageAppPath = path.join(staging, appNameNoExt);
+const stageAppPath = path.join(staging, appName);
 cpSync(appPath, stageAppPath, { recursive: true });
 execFileSync("ln", ["-sfn", "/Applications", path.join(staging, "Applications")]);
 

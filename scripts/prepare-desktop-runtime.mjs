@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { chmod, copyFile, cp, lstat, mkdir, readFile, readlink, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,6 +51,7 @@ const desktopRuntimePackages = new Set([
   'tailwindcss',
   'typescript',
 ]);
+const cliRuntimeEntries = ['package.json', 'dist', 'docs-runtime'];
 
 async function pathExists(filePath) {
   try {
@@ -58,6 +60,44 @@ async function pathExists(filePath) {
   } catch {
     return false;
   }
+}
+
+function runCommand(command, args, cwd = repoRoot) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      stdio: 'inherit',
+      env: process.env,
+    });
+
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`${command} ${args.join(' ')} failed (exit=${code ?? 'null'}, signal=${signal ?? 'null'}).`));
+    });
+  });
+}
+
+async function ensureCliRuntimeArtifacts() {
+  const missingEntries = [];
+
+  for (const entry of cliRuntimeEntries) {
+    if (!(await pathExists(path.join(cliRoot, entry)))) {
+      missingEntries.push(entry);
+    }
+  }
+
+  if (missingEntries.length === 0) {
+    return;
+  }
+
+  const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  console.log(`[desktop-runtime] missing CLI artifacts (${missingEntries.join(', ')}); building @anydocs/cli first`);
+  await runCommand(pnpmCommand, ['--filter', '@anydocs/cli', 'build']);
 }
 
 function isInsidePath(candidate, parent) {
@@ -303,7 +343,8 @@ if (process.platform !== 'win32') {
 
 await rm(cliRuntimeRoot, { recursive: true, force: true });
 await mkdir(cliRuntimeRoot, { recursive: true });
-for (const entry of ['package.json', 'dist', 'docs-runtime']) {
+await ensureCliRuntimeArtifacts();
+for (const entry of cliRuntimeEntries) {
   await cp(path.join(cliRoot, entry), path.join(cliRuntimeRoot, entry), {
     recursive: true,
     force: true,
