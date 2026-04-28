@@ -82,7 +82,6 @@ type CliInvocation = {
   command: string;
   args: string[];
   env: NodeJS.ProcessEnv;
-  shell?: boolean;
 };
 
 function resolveRepoRoot(scope: StudioProjectScope = {}, defaultProjectRoot?: string): string {
@@ -166,17 +165,32 @@ function resolveSystemCliBinary(): string {
   return process.env.ANYDOCS_DESKTOP_CLI_BINARY?.trim() || 'anydocs';
 }
 
+function isDirectWindowsExecutable(command: string): boolean {
+  const extension = path.extname(command).toLowerCase();
+  return extension === '.exe' || extension === '.com';
+}
+
 function resolveCliInvocation(commandArgs: string[]): CliInvocation {
   const cliMode = process.env.ANYDOCS_DESKTOP_CLI_MODE?.trim().toLowerCase();
   const cliEntry = resolveCliEntry();
   const useBundledCli = cliMode !== 'system' && (cliEntry.configured || existsSync(cliEntry.path));
 
   if (!useBundledCli) {
+    const command = resolveSystemCliBinary();
+    if (process.platform === 'win32' && !isDirectWindowsExecutable(command)) {
+      throw new Error(
+        [
+          'Windows system CLI mode no longer launches shell wrappers.',
+          'Set ANYDOCS_DESKTOP_CLI_ENTRY to the @anydocs/cli dist/index.js file, or point ANYDOCS_DESKTOP_CLI_BINARY to a direct .exe/.com executable.',
+          'The full Desktop package includes the CLI runtime and does not require this setup.',
+        ].join(' '),
+      );
+    }
+
     return {
-      command: resolveSystemCliBinary(),
+      command,
       args: [...commandArgs, '--json'],
       env: { ...process.env },
-      shell: process.platform === 'win32',
     };
   }
 
@@ -206,7 +220,7 @@ function formatCliSpawnError(error: NodeJS.ErrnoException): Error {
   return new Error(
     [
       'Anydocs CLI was not found.',
-      'Install the CLI with `npm install -g @anydocs/cli`, or set ANYDOCS_DESKTOP_CLI_BINARY to the anydocs executable.',
+      'Install the CLI with `npm install -g @anydocs/cli`, set ANYDOCS_DESKTOP_CLI_ENTRY to the @anydocs/cli dist/index.js file, or set ANYDOCS_DESKTOP_CLI_BINARY to a direct executable.',
       'The full Desktop package includes the CLI runtime and does not require this setup.',
     ].join(' '),
   );
@@ -240,7 +254,6 @@ function spawnCliCommand(commandArgs: string[], cwd: string): ChildProcessWithou
   return spawn(invocation.command, invocation.args, {
     cwd,
     env: invocation.env,
-    shell: invocation.shell,
     stdio: 'pipe',
   });
 }
