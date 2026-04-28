@@ -1057,10 +1057,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
 
     const detail = active.status === 'published'
-      ? '删除后，下一次 preview/build 将不会再对外可见。'
-      : '删除后将无法再从当前语言工程中恢复该页面。';
+      ? 'It will no longer appear in the next preview/build.'
+      : 'This action cannot be undone for this language.';
     const ok = window.confirm(
-      `确认删除当前语言页面 “${active.title}” 吗？这会同时移除该语言导航中的全部页面引用。${detail}`,
+      `Delete page “${active.title}”? All navigation references in this language will be removed. ${detail}`,
     );
     if (!ok) {
       return;
@@ -1094,7 +1094,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setSaveError(null);
       clearWorkflowResult(undefined, { clearHistory: true });
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : '页面删除失败');
+      setSaveError(e instanceof Error ? e.message : 'Failed to delete page');
     }
   }, [active, clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
 
@@ -1109,10 +1109,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
 
     const detail = target.status === 'published'
-      ? '删除后，下一次 preview/build 将不会再对外可见。'
-      : '删除后将无法再从当前语言工程中恢复该页面。';
+      ? 'It will no longer appear in the next preview/build.'
+      : 'This action cannot be undone for this language.';
     const ok = window.confirm(
-      `确认删除当前语言页面 "${target.title}" 吗？这会同时移除该语言导航中的全部页面引用。${detail}`,
+      `Delete page "${target.title}"? All navigation references in this language will be removed. ${detail}`,
     );
     if (!ok) {
       return;
@@ -1150,7 +1150,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       }
       clearWorkflowResult(undefined, { clearHistory: true });
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : '页面删除失败');
+      setSaveError(e instanceof Error ? e.message : 'Failed to delete page');
     }
   }, [clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
 
@@ -1180,7 +1180,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         setActive(saved);
       }
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : '页面审批失败');
+      setSaveError(e instanceof Error ? e.message : 'Failed to approve page');
     }
   }, [lang, load.pages, projectId, selectedProject, studioHost]);
 
