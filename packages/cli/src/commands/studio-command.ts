@@ -144,7 +144,21 @@ function formatChildFailure(command: string, exitCode: number | null, signal: No
   return new Error(`${command} failed (exit=${exitCode ?? 'null'}, signal=${signal ?? 'null'}).${suffix}`);
 }
 
+const STUDIO_DEFAULT_PORT = 3000;
+
+function tryPort(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.listen(port, host, () => server.close(() => resolve(true)));
+  });
+}
+
 async function pickAvailablePort(host: string): Promise<number> {
+  if (await tryPort(host, STUDIO_DEFAULT_PORT)) {
+    return STUDIO_DEFAULT_PORT;
+  }
+
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.once('error', reject);

@@ -38,6 +38,11 @@ function logBuildSuccess(result: BuildWorkflowResult, context?: ProjectWatchRunC
     info(
       `- ${language.lang}: ${language.totalPages} pages, ${language.publishedPages} published, ${language.navigationItems} nav items`,
     );
+    if (language.pendingReviewPages > 0) {
+      info(
+        `  ⚠ ${language.pendingReviewPages} published page(s) skipped — pending review approval. Use Studio to approve them.`,
+      );
+    }
   }
 }
 

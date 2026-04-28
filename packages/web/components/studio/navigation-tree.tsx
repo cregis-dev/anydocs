@@ -12,6 +12,8 @@ import {
   Link2,
   Pencil,
   Plus,
+  Trash2,
+  CheckCircle,
 } from 'lucide-react';
 
 import type { NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
@@ -175,6 +177,8 @@ export function NavigationTree({
   addChild,
   onRequestRenameGroup,
   onRequestEditLink,
+  onDeletePage,
+  onApprovePage,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
@@ -186,6 +190,8 @@ export function NavigationTree({
   addChild: (parentPath: IndexPath, kind: 'group' | 'page' | 'link') => Promise<void> | void;
   onRequestRenameGroup: (path: IndexPath, title: string) => void;
   onRequestEditLink: (path: IndexPath, title: string, href: string) => void;
+  onDeletePage: (pageId: string) => void;
+  onApprovePage: (pageId: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
@@ -497,7 +503,7 @@ export function NavigationTree({
 
     const p = pagesById.get(item.pageId);
     const title = item.titleOverride?.trim() || p?.title || item.pageId;
-    
+
     // Check if this specific node should be selected
     let selected = false;
     if (activePageId === item.pageId) {
@@ -509,8 +515,16 @@ export function NavigationTree({
         selected = paths[0] === k;
       }
     }
-    
+
     const hidden = !!item.hidden;
+
+    const hasPendingReview = !!(p?.review?.required && !p?.review?.approvedAt);
+    const statusIconClass =
+      hasPendingReview ? 'size-4 text-orange-500' :
+      p?.status === 'in_review' ? 'size-4 text-blue-500' :
+      p?.status === 'draft' ? 'size-4 text-amber-500' :
+      'size-4 text-fd-muted-foreground';
+
 
     const select = () => {
       onSelectPage(item.pageId);
@@ -528,7 +542,7 @@ export function NavigationTree({
           depth={depth}
           selected={selected}
           hidden={hidden}
-          leading={<FileText className="size-4 text-fd-muted-foreground" />}
+          leading={<FileText className={statusIconClass} />}
           title={title}
           onClick={select}
           actions={
@@ -576,6 +590,30 @@ export function NavigationTree({
                 }}
               >
                 <ArrowDown className="size-4" /> Move Down
+              </MenuItem>
+              {hasPendingReview ? (
+                <>
+                  <MenuSep />
+                  <MenuItem
+                    onClick={() => {
+                      onApprovePage(item.pageId);
+                      setMenuOpen(false);
+                    }}
+                    testId={`studio-nav-page-approve-button-${item.pageId}`}
+                  >
+                    <CheckCircle className="size-4 text-green-500" /> Approve
+                  </MenuItem>
+                </>
+              ) : null}
+              <MenuSep />
+              <MenuItem
+                onClick={() => {
+                  onDeletePage(item.pageId);
+                  setMenuOpen(false);
+                }}
+                testId={`studio-nav-page-delete-button-${item.pageId}`}
+              >
+                <Trash2 className="size-4 text-red-500" /> Delete
               </MenuItem>
             </Menu>
           }

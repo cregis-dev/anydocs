@@ -349,7 +349,7 @@ async function runPreviewProxy() {
   await prepareTsconfigForDist(tsconfigPath, originalTsconfig, distDir);
   await rm(path.join(runtimeWebRoot, distDir), { recursive: true, force: true });
   let shuttingDown = false;
-  const child = spawn(process.execPath, [nextBin, 'dev', ...args], {
+  const child = spawn(process.execPath, [nextBin, 'dev', '--webpack', ...args], {
     cwd: runtimeWebRoot,
     stdio: 'inherit',
     env: createRuntimeEnv('preview', {

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 
 import {
   runPreviewWorkflow,
@@ -13,8 +14,38 @@ import { configureDocsRuntimeEnv } from '../runtime/runtime-root.ts';
 type PreviewCommandOptions = {
   targetDir?: string;
   watch?: boolean;
+  open?: boolean;
   json?: boolean;
 };
+
+async function tryOpenBrowser(url: string): Promise<void> {
+  let command: string;
+  let args: string[];
+
+  if (process.platform === 'darwin') {
+    command = 'open';
+    args = [url];
+  } else if (process.platform === 'win32') {
+    command = 'cmd';
+    args = ['/c', 'start', '', url];
+  } else {
+    command = 'xdg-open';
+    args = [url];
+  }
+
+  await new Promise<void>((resolve) => {
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: 'ignore',
+    });
+
+    child.once('error', () => resolve());
+    child.once('spawn', () => {
+      child.unref();
+      resolve();
+    });
+  });
+}
 
 type PreviewFailureKind = 'startup' | 'shutdown';
 
@@ -41,7 +72,7 @@ function logPreviewFailure(caughtError: unknown, kind: PreviewFailureKind = 'sta
 }
 
 export async function runPreviewCommand(options: PreviewCommandOptions = {}): Promise<number> {
-  const { targetDir, watch = false, json = false } = options;
+  const { targetDir, watch = false, open = true, json = false } = options;
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
@@ -72,6 +103,9 @@ export async function runPreviewCommand(options: PreviewCommandOptions = {}): Pr
       );
     } else {
       logPreviewSuccess(result);
+      if (open) {
+        void tryOpenBrowser(`${result.url}${result.docsPath}`);
+      }
     }
 
     let stopping = false;

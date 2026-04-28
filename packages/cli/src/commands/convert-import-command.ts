@@ -59,8 +59,10 @@ export async function runConvertImportCommand(options: ConvertImportCommandOptio
     }
     info('Next:');
     info('- Review the generated draft pages and publish the ones you want to ship.');
+    info(`- ⚠ All ${result.convertedCount} converted page(s) require review approval before appearing in build output.`);
+    info('  In Studio: open the page menu (⋮) → Approve, or change status to Published then approve.');
     info(
-      `- After publishing, rebuild the site: ${formatCliCommand([
+      `- After approving and publishing, rebuild the site: ${formatCliCommand([
         'build',
         ...(options.targetDir ? [options.targetDir] : []),
       ])}`,

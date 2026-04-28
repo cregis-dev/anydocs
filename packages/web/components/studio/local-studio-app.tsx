@@ -20,6 +20,7 @@ import {
   Sparkles,
   FolderOpen,
   ArrowUpRight,
+  AlertTriangle,
 } from 'lucide-react';
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 import { renderPageContent } from '@anydocs/core/render-page-content';
@@ -183,7 +184,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     const projects = loadProjectsFromStorage();
     setRecentProjects(projects);
     
-    // Check URL params for project ID
+    // Check URL params for project ID and initial page ID
     const params = new URLSearchParams(window.location.search);
     const projectIdParam = params.get('p');
     if (projectIdParam) {
@@ -191,6 +192,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       if (project) {
         setProjectId(project.id);
       }
+    }
+    const pageIdParam = params.get('page');
+    if (pageIdParam) {
+      pendingPageIdFromUrlRef.current = pageIdParam;
     }
   }, [lockedProject]);
   
@@ -310,6 +315,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   activeIdRef.current = activeId;
   const previousLangRef = useRef<DocsLang | null>(lang);
   const pendingLanguagePageSlugRef = useRef<string | null>(null);
+  const pendingPageIdFromUrlRef = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!projectId) {
@@ -404,8 +410,11 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       const fallbackPageId =
         pendingLanguagePageSlugRef.current
           ? pages.pages.find((page) => page.slug === pendingLanguagePageSlugRef.current)?.id ?? null
-          : null;
+          : pendingPageIdFromUrlRef.current
+            ? pages.pages.find((page) => page.id === pendingPageIdFromUrlRef.current)?.id ?? null
+            : null;
       pendingLanguagePageSlugRef.current = null;
+      pendingPageIdFromUrlRef.current = null;
 
       // Only reset activeId if it's not valid for the newly loaded language/project.
       if (!currentActiveId || !pages.pages.find((p) => p.id === currentActiveId)) {
@@ -439,6 +448,20 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
   }, [isProjectLocked, projectId]);
+
+  useEffect(() => {
+    if (isProjectLocked) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (activeId) {
+      url.searchParams.set('page', activeId);
+    } else {
+      url.searchParams.delete('page');
+    }
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [isProjectLocked, activeId]);
 
   // Clear the previous-language page selection before passive effects run so
   // desktop mode does not fetch a pageId that only exists in the old language.
@@ -1034,10 +1057,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
 
     const detail = active.status === 'published'
-      ? '删除后，下一次 preview/build 将不会再对外可见。'
-      : '删除后将无法再从当前语言工程中恢复该页面。';
+      ? 'It will no longer appear in the next preview/build.'
+      : 'This action cannot be undone for this language.';
     const ok = window.confirm(
-      `确认删除当前语言页面 “${active.title}” 吗？这会同时移除该语言导航中的全部页面引用。${detail}`,
+      `Delete page “${active.title}”? All navigation references in this language will be removed. ${detail}`,
     );
     if (!ok) {
       return;
@@ -1071,9 +1094,96 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setSaveError(null);
       clearWorkflowResult(undefined, { clearHistory: true });
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : '页面删除失败');
+      setSaveError(e instanceof Error ? e.message : 'Failed to delete page');
     }
   }, [active, clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
+
+  const onDeletePageById = useCallback(async (pageId: string) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const target = load.pages.find((p) => p.id === pageId);
+    if (!target) {
+      return;
+    }
+
+    const detail = target.status === 'published'
+      ? 'It will no longer appear in the next preview/build.'
+      : 'This action cannot be undone for this language.';
+    const ok = window.confirm(
+      `Delete page "${target.title}"? All navigation references in this language will be removed. ${detail}`,
+    );
+    if (!ok) {
+      return;
+    }
+
+    try {
+      const deleted: DeletePageResponse = await studioHost.deletePage(lang, pageId, projectId, selectedProject.path);
+
+      const nextPages = sortPagesBySlug(load.pages.filter((page) => page.id !== deleted.pageId));
+      const cleanedNav = navDraft
+        ? {
+            ...navDraft,
+            items: removePageRefsFromNav(navDraft.items, deleted.pageId).items,
+          }
+        : null;
+
+      setLoad((current) => ({
+        ...current,
+        pages: nextPages,
+        nav: cleanedNav ?? current.nav,
+      }));
+      setNavDraft(cleanedNav);
+      setNavDirty(false);
+      setNavSaveError(null);
+
+      // Only switch active page if the deleted page was active
+      if (activeIdRef.current === deleted.pageId) {
+        const nextActive = nextPages[0] ?? null;
+        setActiveId(nextActive?.id ?? null);
+        setActive(nextActive);
+        setActiveLoading(false);
+        setRightSidebarMode(null);
+        setDirty(false);
+        setSaveError(null);
+      }
+      clearWorkflowResult(undefined, { clearHistory: true });
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to delete page');
+    }
+  }, [clearWorkflowResult, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
+
+  const onApprovePageById = useCallback(async (pageId: string) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const target = load.pages.find((p) => p.id === pageId);
+    if (!target?.review?.required || target.review.approvedAt) {
+      return;
+    }
+
+    try {
+      const updated = {
+        ...target,
+        status: 'published' as const,
+        review: { ...target.review, approvedAt: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+      };
+      const saved = await studioHost.savePage(lang, updated, projectId, selectedProject.path);
+      setLoad((current) => ({
+        ...current,
+        pages: current.pages.map((p) => (p.id === pageId ? saved : p)),
+      }));
+      if (activeIdRef.current === pageId) {
+        setActive(saved);
+      }
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to approve page');
+    }
+  }, [lang, load.pages, projectId, selectedProject, studioHost]);
+
 
   const runBuild = useCallback(async () => {
     if (!selectedProject?.path) {
@@ -1449,6 +1559,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     }}
                     onOpenPageSettings={openPageSettings}
                     onCreatePage={createPageForNavigation}
+                    onDeletePage={(id) => void onDeletePageById(id)}
+                    onApprovePage={(id) => void onApprovePageById(id)}
                     onChange={(next) => {
                       setNavDraft((current) => {
                         if (!current || !activeStudioTopNavGroupId) {
@@ -1878,6 +1990,17 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {(validation.errors.length > 0 || validation.warnings.length > 0) ? (
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded px-1 hover:text-fd-foreground"
+              onClick={toggleProjectSettings}
+              data-testid="studio-validation-badge"
+            >
+              <AlertTriangle className={`size-3 ${validation.errors.length > 0 ? 'text-red-500' : 'text-amber-500'}`} />
+              {validation.errors.length + validation.warnings.length} {validation.errors.length + validation.warnings.length === 1 ? 'Issue' : 'Issues'}
+            </button>
+          ) : null}
           <div className="flex items-center gap-1">UTF-8</div>
           <div className="flex items-center gap-1">JSON + DocContentV1</div>
         </div>

@@ -4,6 +4,12 @@ export type WorkflowCommandArgs = {
   output?: string;
 };
 
+export type PreviewCommandArgs = {
+  targetDir?: string;
+  watch: boolean;
+  open: boolean;
+};
+
 export type GlobalCommandArgs = {
   args: string[];
   json: boolean;
@@ -126,6 +132,38 @@ export function parseWorkflowCommandArgs(args: string[]): WorkflowCommandArgs {
   }
 
   return { targetDir, watch, output };
+}
+
+export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
+  let targetDir: string | undefined;
+  let watch = false;
+  let open = true;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '--watch') {
+      watch = true;
+      continue;
+    }
+
+    if (arg === '--no-open') {
+      open = false;
+      continue;
+    }
+
+    if (arg.startsWith('-')) {
+      throw new Error(`Unknown option "${arg}".`);
+    }
+
+    if (targetDir !== undefined) {
+      throw new Error('Too many positional arguments provided.');
+    }
+
+    targetDir = arg;
+  }
+
+  return { targetDir, watch, open };
 }
 
 export function parseOptionalTargetDirCommandArgs(args: string[]): OptionalTargetDirCommandArgs {

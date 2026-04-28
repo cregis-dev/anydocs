@@ -10,9 +10,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Disable image optimization for static export
   images: {
     unoptimized: true
