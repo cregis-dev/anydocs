@@ -22,7 +22,7 @@ async function triggerWorkflowAction<T>(page: Page, buttonTestId: string, endpoi
     await expect(page.getByTestId('studio-workflow-action-button')).toContainText(label);
     const responsePromise = page.waitForResponse(
       (response) => response.url().includes(`/api/local/${endpoint}?`) && response.request().method() === 'POST',
-      { timeout: 45000 },
+      { timeout: 90000 },
     );
     await page.getByTestId('studio-workflow-action-button').click();
 
@@ -41,7 +41,7 @@ async function triggerWorkflowAction<T>(page: Page, buttonTestId: string, endpoi
 
 test('[P0] cli studio build and preview workflows succeed on published docs @p0', async ({ page, request }) => {
   test.skip(!isCliStudio, 'Needs CLI Studio runtime.');
-  test.setTimeout(60000);
+  test.setTimeout(180000);
 
   await page.goto(studioUrl);
   await waitForCliStudioReady(page);

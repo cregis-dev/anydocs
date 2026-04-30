@@ -48,6 +48,8 @@ export async function waitForStudioSaved(page: Page) {
   await expect(page.getByTestId('studio-connection-status')).toContainText('Connected', {
     timeout: 15000,
   });
+  // Let React commit the dirty/saving state before asserting the final saved state.
+  await page.waitForTimeout(250);
   await expect(page.getByTestId('studio-save-status')).toContainText('All changes saved', {
     timeout: 15000,
   });

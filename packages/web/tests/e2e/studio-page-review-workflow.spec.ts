@@ -22,6 +22,20 @@ test('[P0] cli studio enforces review approval before publish transitions @p0', 
   await waitForCliStudioReady(page);
 
   await page.getByTestId('studio-nav-page-menu-trigger-review-gate').click();
+  await expect(page.getByTestId('studio-nav-page-status-published-button-review-gate')).toBeVisible();
+  page.once('dialog', (dialog) => {
+    expect(dialog.message()).toContain('requires an explicit review approval');
+    return dialog.accept();
+  });
+  await page.getByTestId('studio-nav-page-status-published-button-review-gate').click();
+  await expect
+    .poll(async () => {
+      const persisted = JSON.parse(await readFile(reviewGatePagePath, 'utf8')) as { status: string };
+      return persisted.status;
+    }, { timeout: 15000 })
+    .toBe('in_review');
+
+  await page.getByTestId('studio-nav-page-menu-trigger-review-gate').click();
   await page.getByTestId('studio-nav-page-edit-button-review-gate').click();
   await expect(page.getByTestId('studio-settings-sidebar')).toBeVisible();
   await expect(page.getByTestId('studio-approve-publication-button')).toBeVisible();

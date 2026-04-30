@@ -157,41 +157,67 @@ function toYooptaTableBlock(blockId: string, elementId: string, rows: string[][]
   };
 }
 
-// Parses inline Markdown tokens into Yoopta leaf/link nodes.
-// Handles: `code`, **bold**, *italic*, [text](url). Nested bold+link not supported.
 function parseInlineMarkdown(text: string): Array<Record<string, unknown>> {
-  const TOKEN_RE = /(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\([^)\n]+\))/g;
   const nodes: Array<Record<string, unknown>> = [];
-  let lastIndex = 0;
+  let cursor = 0;
 
-  for (const match of text.matchAll(TOKEN_RE)) {
-    const before = text.slice(lastIndex, match.index);
-    if (before) {
-      nodes.push({ text: before });
+  const pushText = (value: string) => {
+    if (value) {
+      nodes.push({ text: value });
     }
+  };
 
-    const token = match[0]!;
-    if (token.startsWith('`')) {
-      nodes.push({ text: token.slice(1, -1), code: true });
-    } else if (token.startsWith('**')) {
-      nodes.push({ text: token.slice(2, -2), bold: true });
-    } else if (token.startsWith('*')) {
-      nodes.push({ text: token.slice(1, -1), italic: true });
-    } else {
-      const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
-      if (linkMatch) {
-        nodes.push({ type: 'link', props: { href: linkMatch[2] }, children: [{ text: linkMatch[1] }] });
-      } else {
-        nodes.push({ text: token });
+  while (cursor < text.length) {
+    if (text[cursor] === '`') {
+      const end = text.indexOf('`', cursor + 1);
+      if (end > cursor + 1 && !text.slice(cursor + 1, end).includes('\n')) {
+        nodes.push({ text: text.slice(cursor + 1, end), code: true });
+        cursor = end + 1;
+        continue;
       }
     }
 
-    lastIndex = (match.index ?? 0) + token.length;
-  }
+    if (text.startsWith('**', cursor)) {
+      const end = text.indexOf('**', cursor + 2);
+      if (end > cursor + 2 && !text.slice(cursor + 2, end).includes('\n')) {
+        nodes.push({ text: text.slice(cursor + 2, end), bold: true });
+        cursor = end + 2;
+        continue;
+      }
+    }
 
-  const tail = text.slice(lastIndex);
-  if (tail) {
-    nodes.push({ text: tail });
+    if (text[cursor] === '*' && text[cursor + 1] !== '*') {
+      const end = text.indexOf('*', cursor + 1);
+      if (end > cursor + 1 && text[end + 1] !== '*' && !text.slice(cursor + 1, end).includes('\n')) {
+        nodes.push({ text: text.slice(cursor + 1, end), italic: true });
+        cursor = end + 1;
+        continue;
+      }
+    }
+
+    if (text[cursor] === '[') {
+      const labelEnd = text.indexOf(']', cursor + 1);
+      if (labelEnd > cursor + 1 && text[labelEnd + 1] === '(') {
+        const hrefEnd = text.indexOf(')', labelEnd + 2);
+        if (hrefEnd > labelEnd + 2 && !text.slice(cursor + 1, hrefEnd).includes('\n')) {
+          nodes.push({
+            type: 'link',
+            props: { href: text.slice(labelEnd + 2, hrefEnd).trim() },
+            children: parseInlineMarkdown(text.slice(cursor + 1, labelEnd)).filter((node) => typeof node.text === 'string'),
+          });
+          cursor = hrefEnd + 1;
+          continue;
+        }
+      }
+    }
+
+    const nextSpecial = ['`', '*', '[']
+      .map((marker) => text.indexOf(marker, cursor + 1))
+      .filter((index) => index >= 0)
+      .sort((a, b) => a - b)[0];
+    const nextCursor = nextSpecial ?? text.length;
+    pushText(text.slice(cursor, nextCursor));
+    cursor = nextCursor;
   }
 
   return nodes.length > 0 ? nodes : [{ text }];

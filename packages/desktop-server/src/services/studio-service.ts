@@ -23,6 +23,7 @@ import {
   saveNavigation,
   savePage,
   updateProjectConfig,
+  ValidationError,
   validateDocContentV1,
   yooptaToDocContent,
   type ApiSourceDoc,
@@ -38,7 +39,13 @@ import {
   type ProjectContract,
 } from '../../../core/dist/index.js';
 
-import type { StudioPageCreateInput, StudioProjectScope, StudioProjectSettingsPatch } from '../types.ts';
+import type {
+  StudioPageCreateInput,
+  StudioProjectCreateInput,
+  StudioProjectCreateResponse,
+  StudioProjectScope,
+  StudioProjectSettingsPatch,
+} from '../types.ts';
 import { getActivePreviewEntry, registerPreview, stopAllActivePreviews } from '../runtime/preview-registry.ts';
 
 type CliJsonEnvelope<T> =
@@ -82,6 +89,9 @@ type CliInvocation = {
   command: string;
   args: string[];
   env: NodeJS.ProcessEnv;
+  mode: 'bundled' | 'system';
+  cliEntryPath?: string;
+  nodeExecutable?: string;
 };
 
 function resolveRepoRoot(scope: StudioProjectScope = {}, defaultProjectRoot?: string): string {
@@ -132,6 +142,32 @@ function derivePageIdFromSlug(slug: string): string {
   return safe || fallback;
 }
 
+function normalizeOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function inferProjectId(value: string): string | undefined {
+  const normalized = value
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function inferProjectName(value: string): string | undefined {
+  const words = value
+    .trim()
+    .split(/[^A-Za-z0-9]+/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  return words.length > 0
+    ? words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : undefined;
+}
+
 function toStudioPageDoc(page: PageDoc<unknown>): PageDoc {
   const canonical = validateDocContentV1(page.content);
 
@@ -152,13 +188,14 @@ function resolveNodeExecutable(): string {
   return process.env.ANYDOCS_NODE_BINARY?.trim() || process.execPath;
 }
 
-function resolveCliEntry(): { path: string; configured: boolean } {
+function resolveCliEntry(): { path: string; configured: boolean; exists: boolean } {
   const configuredEntry = process.env.ANYDOCS_DESKTOP_CLI_ENTRY?.trim();
   if (configuredEntry) {
-    return { path: configuredEntry, configured: true };
+    return { path: configuredEntry, configured: true, exists: existsSync(configuredEntry) };
   }
 
-  return { path: path.resolve(moduleDir, '../../../cli/dist/index.js'), configured: false };
+  const fallbackPath = path.resolve(moduleDir, '../../../cli/dist/index.js');
+  return { path: fallbackPath, configured: false, exists: existsSync(fallbackPath) };
 }
 
 function resolveSystemCliBinary(): string {
@@ -173,7 +210,28 @@ function isDirectWindowsExecutable(command: string): boolean {
 function resolveCliInvocation(commandArgs: string[]): CliInvocation {
   const cliMode = process.env.ANYDOCS_DESKTOP_CLI_MODE?.trim().toLowerCase();
   const cliEntry = resolveCliEntry();
-  const useBundledCli = cliMode !== 'system' && (cliEntry.configured || existsSync(cliEntry.path));
+  const useBundledCli = cliMode !== 'system' && cliEntry.exists;
+
+  if (cliMode !== 'system' && cliEntry.configured && !cliEntry.exists) {
+    throw new Error(
+      [
+        'Configured Anydocs CLI entry was not found.',
+        `Mode: ${cliMode || 'bundled'}.`,
+        `Path: ${cliEntry.path}.`,
+        'Set ANYDOCS_DESKTOP_CLI_ENTRY to an existing @anydocs/cli dist/index.js file, or use the full Desktop package with bundled CLI resources.',
+      ].join(' '),
+    );
+  }
+
+  if (cliMode === 'bundled' && !cliEntry.exists) {
+    throw new Error(
+      [
+        'Bundled Anydocs CLI entry was not found.',
+        `Mode: bundled. Path: ${cliEntry.path}.`,
+        'Rebuild the full Desktop package so Resources/cli/dist/index.js is included, or switch ANYDOCS_DESKTOP_CLI_MODE=system and install the CLI on PATH.',
+      ].join(' '),
+    );
+  }
 
   if (!useBundledCli) {
     const command = resolveSystemCliBinary();
@@ -191,6 +249,7 @@ function resolveCliInvocation(commandArgs: string[]): CliInvocation {
       command,
       args: [...commandArgs, '--json'],
       env: { ...process.env },
+      mode: 'system',
     };
   }
 
@@ -204,6 +263,9 @@ function resolveCliInvocation(commandArgs: string[]): CliInvocation {
       ANYDOCS_FORCE_MATERIALIZE_RUNTIME: '1',
       ANYDOCS_NODE_BINARY: nodeExecutable,
     },
+    mode: 'bundled',
+    cliEntryPath: cliEntry.path,
+    nodeExecutable,
   };
 }
 
@@ -212,16 +274,28 @@ function formatCliError(commandName: string, stderr: string, stdout: string): Er
   return new Error(details ? `${commandName} failed.\n${details}` : `${commandName} failed.`);
 }
 
-function formatCliSpawnError(error: NodeJS.ErrnoException): Error {
+function formatCliSpawnError(error: NodeJS.ErrnoException, invocation: CliInvocation): Error {
   if (error.code !== 'ENOENT') {
     return error;
   }
 
+  if (invocation.mode === 'bundled') {
+    return new Error(
+      [
+        'Bundled Anydocs CLI could not be launched.',
+        `Node path: ${invocation.nodeExecutable ?? invocation.command}.`,
+        `CLI entry: ${invocation.cliEntryPath ?? 'unknown'}.`,
+        'Rebuild the full Desktop package with node-runtime and cli-runtime resources, or set ANYDOCS_NODE_BINARY and ANYDOCS_DESKTOP_CLI_ENTRY to existing files.',
+      ].join(' '),
+    );
+  }
+
   return new Error(
     [
-      'Anydocs CLI was not found.',
+      'Anydocs system CLI was not found.',
+      `Mode: system. Command: ${invocation.command}.`,
       'Install the CLI with `npm install -g @anydocs/cli`, set ANYDOCS_DESKTOP_CLI_ENTRY to the @anydocs/cli dist/index.js file, or set ANYDOCS_DESKTOP_CLI_BINARY to a direct executable.',
-      'The full Desktop package includes the CLI runtime and does not require this setup.',
+      'The full Desktop package includes the CLI runtime and should run with ANYDOCS_DESKTOP_CLI_MODE=bundled.',
     ].join(' '),
   );
 }
@@ -250,12 +324,18 @@ function parseCliEnvelope<T>(commandName: string, text: string): T | null {
 
 function spawnCliCommand(commandArgs: string[], cwd: string): ChildProcessWithoutNullStreams {
   const invocation = resolveCliInvocation(commandArgs);
-
-  return spawn(invocation.command, invocation.args, {
+  const child = spawn(invocation.command, invocation.args, {
     cwd,
     env: invocation.env,
     stdio: 'pipe',
   });
+  Object.defineProperty(child, '__anydocsCliInvocation', {
+    value: invocation,
+    enumerable: false,
+    configurable: true,
+  });
+
+  return child;
 }
 
 function waitForCliJson<T>(
@@ -301,7 +381,9 @@ function waitForCliJson<T>(
       stderr += chunk.toString();
     });
     child.once('error', (error: NodeJS.ErrnoException) => {
-      finish(() => reject(formatCliSpawnError(error)));
+      const invocation = (child as ChildProcessWithoutNullStreams & { __anydocsCliInvocation?: CliInvocation })
+        .__anydocsCliInvocation;
+      finish(() => reject(invocation ? formatCliSpawnError(error, invocation) : error));
     });
     child.once('exit', (code, signal) => {
       if (settled) {
@@ -612,6 +694,33 @@ export async function postPreview(
 export async function postPreviewStop(): Promise<{ stopped: number }> {
   const stopped = await stopAllActivePreviews();
   return { stopped };
+}
+
+export async function createProject(input: Partial<StudioProjectCreateInput> = {}): Promise<StudioProjectCreateResponse> {
+  const projectPath = normalizeOptionalString(input.projectPath);
+  if (!projectPath) {
+    throw new ValidationError('Project path is required.', {
+      entity: 'project-path',
+      rule: 'project-path-required',
+      remediation: 'Choose an absolute target directory for the new Anydocs project.',
+    });
+  }
+
+  const repoRoot = path.resolve(projectPath);
+  const inferredSource = normalizeOptionalString(input.projectName) ?? path.basename(repoRoot);
+  const result = await initializeProject({
+    repoRoot,
+    projectId: normalizeOptionalString(input.projectId) ?? inferProjectId(inferredSource),
+    projectName: normalizeOptionalString(input.projectName) ?? inferProjectName(path.basename(repoRoot)),
+    defaultLanguage: input.defaultLanguage,
+    languages: input.languages,
+    agent: input.agent,
+  });
+
+  return {
+    project: result.contract,
+    createdFiles: result.createdFiles,
+  };
 }
 
 export async function ensureProject(projectPath: string): Promise<ProjectContract> {

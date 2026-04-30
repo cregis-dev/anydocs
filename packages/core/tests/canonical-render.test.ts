@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { renderDocContent, renderPageContent } from '../src/utils/index.ts';
+import { createMarkdownYooptaContent, renderDocContent, renderPageContent, yooptaToDocContent } from '../src/utils/index.ts';
 
 test('renderDocContent serializes canonical lists, callouts, and code groups without Yoopta intermediates', () => {
   const content = {
@@ -128,4 +128,22 @@ test('renderDocContent preserves bulleted and numbered list item text', () => {
   assert.match(render.markdown ?? '', /^2\. Open preview$/m);
   assert.doesNotMatch(render.markdown ?? '', /^- $/m);
   assert.equal(render.plainText, 'Install dependencies\npnpm\nStart Studio\n\nBuild artifacts\nOpen preview');
+});
+
+test('markdown import preserves bold warnings and relative links through canonical rendering', () => {
+  const content = yooptaToDocContent(
+    createMarkdownYooptaContent([
+      '**Warning**: review [Provider Runtime](./provider-routing) and [Tools & Toolsets](./tools).',
+      '',
+      '| Name | Link |',
+      '| --- | --- |',
+      '| **Warning** | [Tools & Toolsets](./tools) |',
+    ].join('\n')),
+  );
+
+  const render = renderDocContent(content);
+  assert.match(render.markdown ?? '', /\*\*Warning\*\*: review \[Provider Runtime\]\(\.\/provider-routing\)/);
+  assert.match(render.markdown ?? '', /\[Tools & Toolsets\]\(\.\/tools\)/);
+  assert.doesNotMatch(render.plainText, /\*\*/);
+  assert.match(render.plainText, /Warning/);
 });

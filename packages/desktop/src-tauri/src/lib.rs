@@ -204,6 +204,20 @@ fn spawn_managed_server() -> Result<Option<Child>, String> {
             "system".to_string()
         }
     });
+    let bundled_cli_present = bundled_cli_entry
+        .as_ref()
+        .map(|entry| entry.exists())
+        .unwrap_or(false);
+
+    eprintln!(
+        "Starting Anydocs managed desktop server: node={}, cli_mode={}, bundled_cli_entry={}",
+        node_executable.display(),
+        cli_mode,
+        bundled_cli_entry
+            .as_ref()
+            .map(|entry| entry.display().to_string())
+            .unwrap_or_else(|| "none".to_string())
+    );
 
     let mut command = Command::new(&node_executable);
     command
@@ -219,6 +233,10 @@ fn spawn_managed_server() -> Result<Option<Child>, String> {
     if cli_mode != "system" {
         if let Some(cli_entry) = bundled_cli_entry {
             command.env("ANYDOCS_DESKTOP_CLI_ENTRY", cli_entry);
+        } else if cli_mode == "bundled" || !bundled_cli_present {
+            eprintln!(
+                "Anydocs bundled CLI entry is not present; preview/build will require a configured CLI entry or system CLI fallback."
+            );
         }
     }
 

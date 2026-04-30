@@ -4,6 +4,20 @@ import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
 
 export type StudioProjectResponse = ProjectContract;
 
+export type StudioProjectCreateInput = {
+  projectPath: string;
+  projectId?: string;
+  projectName?: string;
+  defaultLanguage?: DocsLang;
+  languages?: DocsLang[];
+  agent?: 'codex' | 'claude-code';
+};
+
+export type StudioProjectCreateResponse = {
+  project: ProjectContract;
+  createdFiles: string[];
+};
+
 export type DeletePageResponse = {
   pageId: string;
   lang: DocsLang;
@@ -66,6 +80,7 @@ export type StudioProjectSettingsPatch = {
 
 export interface StudioHost {
   getProject(projectId: string, projectPath?: string): Promise<StudioProjectResponse>;
+  createProject(input: StudioProjectCreateInput): Promise<StudioProjectCreateResponse>;
   updateProject(
     patch: StudioProjectSettingsPatch,
     projectId: string,

@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import { ValidationError } from '../../../core/dist/index.js';
+
 import { readJsonBody, sendJson } from '../http.ts';
 import type {
   ApiSourceDoc,
@@ -12,10 +14,13 @@ import type {
   ProjectContract,
   DeletePageResult,
   StudioPageCreateInput,
+  StudioProjectCreateInput,
+  StudioProjectCreateResponse,
   StudioProjectScope,
   StudioProjectSettingsPatch,
 } from '../types.ts';
 import {
+  createProject,
   getApiSources,
   getNavigation,
   getPage,
@@ -100,6 +105,12 @@ async function handleStudioRoute(
       const patch = isJsonObject(body.patch) ? (body.patch as StudioProjectSettingsPatch) : {};
       const project = await putProject(patch, scope, context.defaultProjectRoot);
       sendJson(response, 200, success(project satisfies ProjectContract));
+      return;
+    }
+    case '/studio/project/create': {
+      const input = isJsonObject(body.input) ? (body.input as StudioProjectCreateInput) : (body as StudioProjectCreateInput);
+      const result = await createProject(input);
+      sendJson(response, 200, success(result satisfies StudioProjectCreateResponse));
       return;
     }
     case '/studio/pages/get': {
@@ -231,7 +242,11 @@ export function createStudioRouteHandler(context: RouteContext) {
 
       const parsedBody = await readJsonBody<unknown>(request);
       if (parsedBody !== null && !isJsonObject(parsedBody)) {
-        throw new Error('Request body must be a JSON object.');
+        throw new ValidationError('Request body must be a JSON object.', {
+          entity: 'request-body',
+          rule: 'request-body-json-object',
+          remediation: 'Send a JSON object body, for example {"input":{"projectPath":"/absolute/path"}}.',
+        });
       }
 
       await handleStudioRoute(pathname, (parsedBody ?? {}) as Record<string, unknown>, context, response);

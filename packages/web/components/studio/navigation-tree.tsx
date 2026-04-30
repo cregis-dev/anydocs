@@ -12,6 +12,7 @@ import {
   Link2,
   Pencil,
   Plus,
+  Copy,
   Trash2,
   CheckCircle,
 } from 'lucide-react';
@@ -179,6 +180,8 @@ export function NavigationTree({
   onRequestEditLink,
   onDeletePage,
   onApprovePage,
+  onDuplicatePage,
+  onSetPageStatus,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
@@ -192,6 +195,8 @@ export function NavigationTree({
   onRequestEditLink: (path: IndexPath, title: string, href: string) => void;
   onDeletePage: (pageId: string) => void;
   onApprovePage: (pageId: string) => void;
+  onDuplicatePage: (pageId: string) => void;
+  onSetPageStatus: (pageId: string, status: PageDoc['status']) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
@@ -574,6 +579,32 @@ export function NavigationTree({
               >
                   <Pencil className="size-4" /> Edit
               </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  onDuplicatePage(item.pageId);
+                  setMenuOpen(false);
+                }}
+                testId={`studio-nav-page-duplicate-button-${item.pageId}`}
+              >
+                <Copy className="size-4" /> Duplicate Page
+              </MenuItem>
+              <MenuSep />
+              <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-fd-muted-foreground">
+                Page Status
+              </div>
+              {(['draft', 'in_review', 'published'] as const).map((nextStatus) => (
+                <MenuItem
+                  key={nextStatus}
+                  onClick={() => {
+                    onSetPageStatus(item.pageId, nextStatus);
+                    setMenuOpen(false);
+                  }}
+                  testId={`studio-nav-page-status-${nextStatus}-button-${item.pageId}`}
+                >
+                  <CheckCircle className={cn('size-4', p?.status === nextStatus ? 'text-green-500' : 'text-fd-muted-foreground')} />
+                  {nextStatus === 'draft' ? 'Draft' : nextStatus === 'in_review' ? 'In Review' : 'Published'}
+                </MenuItem>
+              ))}
               <MenuSep />
               <MenuItem
                 onClick={() => {

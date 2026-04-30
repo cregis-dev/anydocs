@@ -31,6 +31,7 @@
       "../../desktop-server/package.json": "desktop-server/package.json",
       "../../desktop-server/dist": "desktop-server/dist",
       "../../core/package.json": "core/package.json",
+      "../../core/docs": "core/docs",
       "../../core/node_modules/minisearch": "core/node_modules/minisearch",
       "../../core/dist": "core/dist"
     }
