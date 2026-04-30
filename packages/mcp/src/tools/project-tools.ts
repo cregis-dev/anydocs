@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   DOC_CONTENT_AUTHORING_GUIDANCE,
@@ -132,6 +134,65 @@ function summarizePreviewSession(session: PreviewSessionRecord) {
     ...(session.signal !== undefined ? { signal: session.signal } : {}),
     ...(session.endedAt ? { endedAt: session.endedAt } : {}),
   };
+}
+
+const MCP_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const WEB_RUNTIME_ROOT_ENV = 'ANYDOCS_WEB_RUNTIME_ROOT';
+
+function isDocsRuntimeRoot(candidate: string): boolean {
+  return existsSync(path.join(candidate, 'scripts', 'gen-public-assets.mjs'));
+}
+
+async function configureDocsRuntimeEnvFromCli(): Promise<boolean> {
+  const runtimeRootModules = [
+    path.resolve(MCP_PACKAGE_ROOT, '../cli/dist/runtime/runtime-root.js'),
+    path.resolve(MCP_PACKAGE_ROOT, '../cli/src/runtime/runtime-root.ts'),
+  ];
+
+  for (const modulePath of runtimeRootModules) {
+    if (!existsSync(modulePath)) {
+      continue;
+    }
+
+    try {
+      const module = await import(pathToFileURL(modulePath).href) as {
+        configureDocsRuntimeEnv?: () => Promise<string>;
+      };
+      if (typeof module.configureDocsRuntimeEnv !== 'function') {
+        continue;
+      }
+
+      await module.configureDocsRuntimeEnv();
+      return true;
+    } catch {
+      // Fall back to direct runtime discovery below so source workspaces still behave like core.
+    }
+  }
+
+  return false;
+}
+
+async function ensureMcpDocsRuntimeEnv(): Promise<void> {
+  const configuredRoot = process.env[WEB_RUNTIME_ROOT_ENV]?.trim();
+  if (configuredRoot && isDocsRuntimeRoot(path.resolve(process.cwd(), configuredRoot))) {
+    return;
+  }
+
+  if (await configureDocsRuntimeEnvFromCli()) {
+    return;
+  }
+
+  const candidates = [
+    path.resolve(MCP_PACKAGE_ROOT, '../cli/docs-runtime'),
+    path.resolve(MCP_PACKAGE_ROOT, '../web'),
+    path.join(process.cwd(), 'packages', 'web'),
+    process.cwd(),
+  ];
+
+  const runtimeRoot = candidates.find(isDocsRuntimeRoot);
+  if (runtimeRoot) {
+    process.env[WEB_RUNTIME_ROOT_ENV] = runtimeRoot;
+  }
 }
 
 async function assertPreviewSearchArtifactsExist(artifactRoot: string, language: string): Promise<void> {
@@ -450,12 +511,15 @@ export const projectTools: ToolDefinition[] = [
       const projectRoot = requireProjectRoot('project_build', args);
       const dryRun = optionalBooleanArgument('project_build', args, 'dryRun');
 
-      return executeTool('project_build', { projectRoot, ...(dryRun !== undefined ? { dryRun } : {}) }, async () =>
-        runBuildWorkflow({
+      return executeTool('project_build', { projectRoot, ...(dryRun !== undefined ? { dryRun } : {}) }, async () => {
+        if (!dryRun) {
+          await ensureMcpDocsRuntimeEnv();
+        }
+        return runBuildWorkflow({
           repoRoot: projectRoot,
           ...(dryRun !== undefined ? { dryRun } : {}),
-        }),
-      );
+        });
+      });
     },
   },
   {
@@ -518,6 +582,7 @@ export const projectTools: ToolDefinition[] = [
           }
         }
 
+        await ensureMcpDocsRuntimeEnv();
         const runtime = await runPreviewWorkflow({
           repoRoot: canonicalProjectRoot,
           ...(host ? { host } : {}),

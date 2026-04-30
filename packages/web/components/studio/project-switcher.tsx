@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronsUpDown, Folder, Trash2, Loader2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Folder, Trash2, Loader2, Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -29,14 +29,22 @@ import { cn } from '@/lib/utils';
 interface ProjectSwitcherProps {
   currentProjectId: string;
   onProjectChange: (projectId: string) => void;
+  allowProjectCreate?: boolean;
+  onProjectCreate?: (projectPath: string) => Promise<void> | void;
 }
 
-export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSwitcherProps) {
+export function ProjectSwitcher({
+  currentProjectId,
+  onProjectChange,
+  allowProjectCreate = false,
+  onProjectCreate,
+}: ProjectSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [mounted, setMounted] = useState(false);
   const [isSelectingFolder, setIsSelectingFolder] = useState(false);
   const [isProjectPathDialogOpen, setIsProjectPathDialogOpen] = useState(false);
+  const [projectPathDialogMode, setProjectPathDialogMode] = useState<'open' | 'create'>('open');
 
   useEffect(() => {
     setMounted(true);
@@ -54,11 +62,21 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
   }, [open, loadProjects]);
 
   const handleProjectPathSelection = useCallback(async (projectPath: string) => {
+    if (projectPathDialogMode === 'create') {
+      if (!onProjectCreate) {
+        throw new Error('Create Project is not available in this Studio runtime.');
+      }
+
+      await onProjectCreate(projectPath);
+      setProjects(loadProjectsFromStorage());
+      return;
+    }
+
     const { current, projects: updated } = registerRecentProject(projects, normalizeAbsoluteProjectPath(projectPath));
     saveProjectsToStorage(updated);
     setProjects(updated);
     onProjectChange(current.id);
-  }, [onProjectChange, projects]);
+  }, [onProjectChange, onProjectCreate, projectPathDialogMode, projects]);
 
   const handleSelectFolder = async () => {
     if (isSelectingFolder) return;
@@ -67,6 +85,7 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
 
     try {
       if (!hasNativeDirectoryPicker()) {
+        setProjectPathDialogMode('open');
         setIsProjectPathDialogOpen(true);
         return;
       }
@@ -84,6 +103,12 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
     } finally {
       setIsSelectingFolder(false);
     }
+  };
+
+  const handleCreateProject = () => {
+    setProjectPathDialogMode('create');
+    setOpen(false);
+    setIsProjectPathDialogOpen(true);
   };
 
   const handleDeleteProject = (e: React.MouseEvent, projectId: string) => {
@@ -128,6 +153,18 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
         open={isProjectPathDialogOpen}
         onOpenChange={setIsProjectPathDialogOpen}
         onSubmit={handleProjectPathSelection}
+        title={projectPathDialogMode === 'create' ? 'Create Project' : 'Open External Project'}
+        description={
+          projectPathDialogMode === 'create'
+            ? 'Enter the absolute path for a new Anydocs project.'
+            : 'Enter the absolute path to your docs project root.'
+        }
+        submitLabel={projectPathDialogMode === 'create' ? 'Create Project' : 'Open Project'}
+        fieldHelp={
+          projectPathDialogMode === 'create'
+            ? 'Use an absolute path for an empty directory or a directory without anydocs.config.json.'
+            : 'Use an absolute path that contains `anydocs.config.json`.'
+        }
       />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -176,6 +213,16 @@ export function ProjectSwitcher({ currentProjectId, onProjectChange }: ProjectSw
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup>
+                {allowProjectCreate ? (
+                  <CommandItem
+                    onSelect={handleCreateProject}
+                    disabled={!onProjectCreate}
+                    data-testid="studio-project-switcher-create-project-button"
+                  >
+                    <Plus className="mr-2 size-4" />
+                    New Project
+                  </CommandItem>
+                ) : null}
                 <CommandItem onSelect={handleSelectFolder} disabled={isSelectingFolder}>
                   {isSelectingFolder ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />

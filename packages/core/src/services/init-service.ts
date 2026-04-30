@@ -33,6 +33,11 @@ export type InitProjectResult = {
   createdFiles: string[];
 };
 
+type TemplateCopyPlan = {
+  targetRelativePath: string;
+  sourcePath: string;
+};
+
 const DEFAULT_INIT_LANGUAGE: DocsLanguage = 'zh';
 const DEFAULT_INIT_LANGUAGES: DocsLanguage[] = ['zh', 'en'];
 
@@ -116,32 +121,50 @@ async function resolveBundledTemplatePath(
 
 async function copyBundledTemplate(
   projectRoot: string,
-  targetRelativePath: string,
-  sourceCandidates: string[],
-  entity: string,
-  remediation: string,
+  plan: TemplateCopyPlan,
 ): Promise<string | null> {
-  const targetPath = path.join(projectRoot, targetRelativePath);
+  const targetPath = path.join(projectRoot, plan.targetRelativePath);
 
   try {
     await fs.access(targetPath);
     return null;
   } catch {
-    const sourcePath = await resolveBundledTemplatePath(sourceCandidates, entity, remediation);
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.copyFile(sourcePath, targetPath);
+    await fs.copyFile(plan.sourcePath, targetPath);
     return targetPath;
   }
 }
 
-async function copyProjectSkillGuide(
+async function resolveBundledTemplateCopyPlan(
+  projectRoot: string,
+  targetRelativePath: string,
+  sourceCandidates: string[],
+  entity: string,
+  remediation: string,
+): Promise<TemplateCopyPlan | null> {
+  const targetPath = path.join(projectRoot, targetRelativePath);
+  try {
+    await fs.access(targetPath);
+    return null;
+  } catch {
+    // Continue with template resolution; missing bundled templates must fail
+    // before project initialization writes any source files.
+  }
+
+  return {
+    targetRelativePath,
+    sourcePath: await resolveBundledTemplatePath(sourceCandidates, entity, remediation),
+  };
+}
+
+async function resolveProjectSkillGuideCopyPlan(
   projectRoot: string,
   agent?: InitProjectOptions['agent'],
-): Promise<string | null> {
+): Promise<TemplateCopyPlan | null> {
   const templatePath =
     PROJECT_GUIDE_TEMPLATE_FILES[agent ?? 'default'];
 
-  return copyBundledTemplate(
+  return resolveBundledTemplateCopyPlan(
     projectRoot,
     resolveAgentGuideFileName(agent),
     createBundledDocCandidates(templatePath),
@@ -150,21 +173,42 @@ async function copyProjectSkillGuide(
   );
 }
 
-async function copyClaudeCommandTemplates(projectRoot: string, agent?: InitProjectOptions['agent']): Promise<string[]> {
+async function copyProjectSkillGuide(projectRoot: string, plan: TemplateCopyPlan | null): Promise<string | null> {
+  if (!plan) {
+    return null;
+  }
+
+  return copyBundledTemplate(projectRoot, plan);
+}
+
+async function resolveClaudeCommandTemplateCopyPlans(
+  projectRoot: string,
+  agent?: InitProjectOptions['agent'],
+): Promise<TemplateCopyPlan[]> {
   if (agent !== 'claude-code') {
     return [];
   }
 
+  const plans = await Promise.all(
+    CLAUDE_COMMAND_TEMPLATES.map((template) =>
+      resolveBundledTemplateCopyPlan(
+        projectRoot,
+        template.targetRelativePath,
+        createBundledDocCandidates(template.sourceRelativePath),
+        'claude-command-template',
+        `Reinstall @anydocs/core or restore docs/${template.sourceRelativePath} in the Anydocs repository before running anydocs init again.`,
+      ),
+    ),
+  );
+
+  return plans.filter((plan): plan is TemplateCopyPlan => !!plan);
+}
+
+async function copyClaudeCommandTemplates(projectRoot: string, plans: TemplateCopyPlan[]): Promise<string[]> {
   const createdFiles: string[] = [];
 
-  for (const template of CLAUDE_COMMAND_TEMPLATES) {
-    const copiedPath = await copyBundledTemplate(
-      projectRoot,
-      template.targetRelativePath,
-      createBundledDocCandidates(template.sourceRelativePath),
-      'claude-command-template',
-      `Reinstall @anydocs/core or restore docs/${template.sourceRelativePath} in the Anydocs repository before running anydocs init again.`,
-    );
+  for (const plan of plans) {
+    const copiedPath = await copyBundledTemplate(projectRoot, plan);
 
     if (copiedPath) {
       createdFiles.push(copiedPath);
@@ -234,6 +278,9 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
     'Choose a different target directory or remove the existing anydocs.config.json before running anydocs init again.',
   );
 
+  const skillGuideCopyPlan = await resolveProjectSkillGuideCopyPlan(paths.projectRoot, options.agent);
+  const claudeCommandCopyPlans = await resolveClaudeCommandTemplateCopyPlans(paths.projectRoot, options.agent);
+
   await initializeDocsRepository(createDocsRepository(paths.projectRoot), config.languages);
   await writeJson(paths.configFile, config);
   await writeJson(
@@ -245,11 +292,11 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
   );
 
   const createdFiles = [paths.configFile, paths.workflowFile];
-  const skillGuideFile = await copyProjectSkillGuide(paths.projectRoot, options.agent);
+  const skillGuideFile = await copyProjectSkillGuide(paths.projectRoot, skillGuideCopyPlan);
   if (skillGuideFile) {
     createdFiles.push(skillGuideFile);
   }
-  createdFiles.push(...(await copyClaudeCommandTemplates(paths.projectRoot, options.agent)));
+  createdFiles.push(...(await copyClaudeCommandTemplates(paths.projectRoot, claudeCommandCopyPlans)));
   const repository = createDocsRepository(paths.projectRoot);
 
   for (const language of config.languages) {

@@ -10,6 +10,8 @@ import type {
   StudioApiSourcesResponse,
   StudioBuildResponse,
   StudioHost,
+  StudioProjectCreateInput,
+  StudioProjectCreateResponse,
   StudioPreviewResponse,
   StudioPreviewStopResponse,
   StudioProjectResponse,
@@ -59,6 +61,9 @@ export function createWebLocalHost(): StudioHost {
           path: projectPath,
         }),
       );
+    },
+    createProject(_input: StudioProjectCreateInput): Promise<StudioProjectCreateResponse> {
+      throw new Error('Create Project is available in the desktop Studio runtime. CLI Studio is locked to the opened project.');
     },
     updateProject(
       patch: StudioProjectSettingsPatch,

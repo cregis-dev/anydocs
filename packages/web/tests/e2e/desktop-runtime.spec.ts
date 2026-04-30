@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { access, cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -27,6 +27,32 @@ async function selectWorkflowAction(page: Page, buttonTestId: string, label: 'Bu
 
 test.describe.configure({ mode: 'serial' });
 test.skip(!isDesktopRuntime, 'Needs desktop Studio runtime.');
+
+test('desktop runtime creates a new project from the welcome screen', async ({ page }) => {
+  test.setTimeout(60_000);
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-desktop-create-'));
+  const projectRoot = path.join(tempRoot, 'created-docs');
+
+  try {
+    await page.goto(studioUrl);
+
+    await page.getByTestId('studio-create-project-button').click();
+    await page.getByTestId('studio-project-path-input').fill(projectRoot);
+    await page.getByTestId('studio-project-path-submit').click();
+
+    await expect(page.getByTestId('studio-pages-sidebar')).toBeVisible();
+    await expect(page.getByTestId('studio-connection-status')).toContainText('Connected');
+    await expect(page.getByRole('button', { name: '欢迎', exact: true })).toBeVisible();
+
+    await access(path.join(projectRoot, 'anydocs.config.json'));
+    await access(path.join(projectRoot, 'anydocs.workflow.json'));
+    await access(path.join(projectRoot, 'AGENTS.md'));
+    await access(path.join(projectRoot, 'navigation', 'en.json'));
+    await access(path.join(projectRoot, 'pages', 'en', 'welcome.json'));
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
 
 test('desktop runtime smoke: open project, save, create page, build, preview', async ({ page, request }) => {
   test.setTimeout(120_000);

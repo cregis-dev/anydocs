@@ -20,6 +20,7 @@ export function ProjectPathDialog({
   title = "Open External Project",
   description = "Enter the absolute path to your docs project root.",
   submitLabel = "Open Project",
+  fieldHelp = "Use an absolute path that contains `anydocs.config.json`.",
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -27,6 +28,7 @@ export function ProjectPathDialog({
   title?: string;
   description?: string;
   submitLabel?: string;
+  fieldHelp?: string;
 }) {
   const [projectPath, setProjectPath] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +88,7 @@ export function ProjectPathDialog({
                 data-testid="studio-project-path-input"
               />
               <div className="text-xs text-fd-muted-foreground">
-                Use an absolute path that contains `anydocs.config.json`.
+                {fieldHelp}
               </div>
             </div>
 

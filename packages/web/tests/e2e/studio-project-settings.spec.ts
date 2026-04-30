@@ -26,11 +26,14 @@ test('[P0] cli studio persists project settings and reader theme fields @p0', as
   await expect(page.getByTestId('studio-settings-sidebar')).toBeVisible();
 
   await page.getByTestId('studio-project-name-input').fill('Anydocs E2E Workspace');
-  await page.getByTestId('studio-site-title-input').fill('Regression Docs');
-  await page.getByTestId('studio-home-label-input').fill('Back to Docs');
 
+  await page.getByTestId('studio-project-settings-section-reader').click();
   await page.getByTestId('studio-project-theme-trigger').click();
   await page.getByRole('option', { name: 'Classic Docs' }).click();
+
+  await page.getByTestId('studio-project-settings-section-branding').click();
+  await page.getByTestId('studio-site-title-input').fill('Regression Docs');
+  await page.getByTestId('studio-home-label-input').fill('Back to Docs');
   await expect(page.getByTestId('studio-classic-docs-logo-src-input')).toBeVisible();
 
   await page.getByTestId('studio-project-code-theme-trigger').click();
@@ -50,6 +53,8 @@ test('[P0] cli studio persists project settings and reader theme fields @p0', as
   await page.getByTestId('studio-classic-docs-accent-foreground-color-input').fill('#1f2937');
   await page.getByTestId('studio-classic-docs-sidebar-active-color-input').fill('#0f172a');
   await page.getByTestId('studio-classic-docs-sidebar-active-foreground-color-input').fill('#ffffff');
+
+  await page.getByTestId('studio-project-settings-section-build').click();
   await page.getByTestId('studio-build-output-dir-input').fill('dist');
 
   await waitForStudioSaved(page);
@@ -103,10 +108,13 @@ test('[P0] cli studio persists project settings and reader theme fields @p0', as
   await page.getByTestId('studio-open-project-settings-button').click();
 
   await expect(page.getByTestId('studio-project-name-input')).toHaveValue('Anydocs E2E Workspace');
+  await page.getByTestId('studio-project-settings-section-branding').click();
   await expect(page.getByTestId('studio-site-title-input')).toHaveValue('Regression Docs');
   await expect(page.getByTestId('studio-home-label-input')).toHaveValue('Back to Docs');
-  await expect(page.getByTestId('studio-project-theme-trigger')).toContainText('Classic Docs');
   await expect(page.getByTestId('studio-project-code-theme-trigger')).toContainText('GitHub Light');
   await expect(page.getByTestId('studio-classic-docs-logo-src-input')).toHaveValue('/brand/regression.svg');
+  await page.getByTestId('studio-project-settings-section-reader').click();
+  await expect(page.getByTestId('studio-project-theme-trigger')).toContainText('Classic Docs');
+  await page.getByTestId('studio-project-settings-section-build').click();
   await expect(page.getByTestId('studio-build-output-dir-input')).toHaveValue('dist');
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type {
   ProjectLocalizedLabel,
   ProjectSiteTopNavItem,
@@ -557,6 +558,8 @@ function ProjectSettingsContent({
   navGroupOptions: Array<{ id: string; title: string }>;
   onProjectChange: (patch: ProjectSettingsPatch) => void;
 }) {
+  const [activeSection, setActiveSection] = useState<'general' | 'reader' | 'branding' | 'api' | 'build'>('general');
+
   if (!project) {
     return <div className="text-sm text-fd-muted-foreground">Project settings unavailable.</div>;
   }
@@ -591,6 +594,30 @@ function ProjectSettingsContent({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-1 rounded-lg border border-fd-border bg-fd-background p-1" data-testid="studio-project-settings-sections">
+        {([
+          ['general', 'General'],
+          ['reader', 'Reader'],
+          ['branding', 'Branding'],
+          ['api', 'API Sources'],
+          ['build', 'Build'],
+        ] as const).map(([section, label]) => (
+          <button
+            key={section}
+            type="button"
+            className={cn(
+              'rounded-md px-2.5 py-1.5 text-xs font-medium transition',
+              activeSection === section ? 'bg-fd-card text-fd-foreground shadow-sm' : 'text-fd-muted-foreground hover:bg-fd-muted',
+            )}
+            onClick={() => setActiveSection(section)}
+            data-testid={`studio-project-settings-section-${section}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeSection === 'general' ? (
       <SettingsSection title="General" description="Project identity and supported languages.">
         <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Project ID</div>
@@ -683,8 +710,10 @@ function ProjectSettingsContent({
           </div>
         </div>
       </SettingsSection>
+      ) : null}
 
-      <SettingsSection title="Reader" description="Reader theme, branding, and surface-specific labels. This affects the public docs shell only.">
+      {activeSection === 'reader' ? (
+      <SettingsSection title="Reader" description="Reader theme and navigation structure for the public docs shell.">
         <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Docs Theme</div>
           <Select value={project.themeId} onValueChange={(value) => onProjectChange({ themeId: value })}>
@@ -709,15 +738,8 @@ function ProjectSettingsContent({
                 <Badge variant="secondary">Reader only</Badge>
               </div>
               <div className="text-sm font-medium text-fd-foreground">{selectedTheme.label}</div>
-              <div className="text-xs text-fd-muted-foreground">{selectedTheme.description}</div>
               <div className="text-xs text-fd-muted-foreground">
-                Best for: {selectedTheme.recommendedFor}
-              </div>
-              <div className="text-xs text-fd-muted-foreground">
-                Why this shell: {themePreviewData?.previewSummary}
-              </div>
-              <div className="text-xs text-fd-muted-foreground">
-                Navigation logic: {themePreviewData?.structureSummary}
+                {selectedTheme.description} {themePreviewData?.structureSummary}
               </div>
             </div>
           ) : null}
@@ -727,7 +749,11 @@ function ProjectSettingsContent({
             </div>
           ) : null}
         </div>
+      </SettingsSection>
+      ) : null}
 
+      {activeSection === 'branding' ? (
+      <SettingsSection title="Branding" description="Reader labels, logo, theme colors, and code style.">
         <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Site Title</div>
           <Input
@@ -764,9 +790,10 @@ function ProjectSettingsContent({
           </Select>
         </div>
       </SettingsSection>
+      ) : null}
 
-      {project.themeId === 'classic-docs' ? (
-        <SettingsSection title="Classic Docs" description="Branding and color overrides for the classic theme.">
+      {activeSection === 'branding' && project.themeId === 'classic-docs' ? (
+        <SettingsSection title="Classic Docs" description="Logo and color overrides for the classic theme.">
           <div>
             <div className="mb-1 text-xs text-fd-muted-foreground">Logo Source</div>
             <Input
@@ -790,7 +817,7 @@ function ProjectSettingsContent({
           <label className="flex items-center justify-between gap-3 rounded-md border border-fd-border px-3 py-2 text-sm">
             <div>
               <div className="font-medium">Show Sidebar Search</div>
-              <div className="text-xs text-fd-muted-foreground">Hide the sidebar search input.</div>
+              <div className="text-xs text-fd-muted-foreground">Show the sidebar search input in the reader.</div>
             </div>
             <input
               type="checkbox"
@@ -870,7 +897,7 @@ function ProjectSettingsContent({
         </SettingsSection>
       ) : null}
 
-      {topNavSupported ? (
+      {activeSection === 'reader' && topNavSupported ? (
         <SettingsSection title="Top Navigation" description="Header items for themes that support top navigation.">
           <div className="flex items-center gap-2">
             <Button
@@ -1100,6 +1127,7 @@ function ProjectSettingsContent({
         </SettingsSection>
       ) : null}
 
+      {activeSection === 'api' ? (
       <SettingsSection title="API Sources" description="Manage OpenAPI-backed references published by this docs project.">
         <div className="flex items-center gap-2">
           <Button
@@ -1339,7 +1367,9 @@ function ProjectSettingsContent({
           </div>
         )}
       </SettingsSection>
+      ) : null}
 
+      {activeSection === 'build' ? (
       <SettingsSection title="Build" description="Output location for preview/build artifacts.">
         <div>
           <div className="mb-1 text-xs text-fd-muted-foreground">Build Output Directory</div>
@@ -1351,6 +1381,7 @@ function ProjectSettingsContent({
           />
         </div>
       </SettingsSection>
+      ) : null}
     </div>
   );
 }

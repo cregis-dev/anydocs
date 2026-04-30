@@ -1,6 +1,6 @@
 'use client';
 
-import { FolderOpen, Loader2, Trash2 } from 'lucide-react';
+import { FilePlus2, FolderOpen, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,9 @@ interface WelcomeScreenProps {
   supportsNativeDirectoryPicker: boolean;
   allowExternalProjectOpen: boolean;
   allowRecentProjects: boolean;
+  allowProjectCreate: boolean;
   onOpenProject: (projectPath?: string) => Promise<void> | void;
+  onCreateProject: (projectPath: string) => Promise<void> | void;
   onSelectProject: (project: StudioProject) => void;
   onRemoveProject: (project: StudioProject) => void;
 }
@@ -24,24 +26,39 @@ export function WelcomeScreen({
   supportsNativeDirectoryPicker,
   allowExternalProjectOpen,
   allowRecentProjects,
+  allowProjectCreate,
   onOpenProject,
+  onCreateProject,
   onSelectProject,
   onRemoveProject,
 }: WelcomeScreenProps) {
   const [isProjectPathDialogOpen, setIsProjectPathDialogOpen] = useState(false);
+  const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
 
   return (
     <div className="min-h-dvh bg-fd-background text-fd-foreground flex flex-col items-center justify-center p-8">
       <div className="max-w-md w-full text-center space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">DocEditor Studio</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Anydocs Studio</h1>
           <p className="text-fd-muted-foreground">
-            选择外部文档项目根目录后开始编辑
+            Open an existing docs project or create a new local project.
           </p>
         </div>
 
         {allowExternalProjectOpen ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
+            {allowProjectCreate ? (
+              <Button
+                onClick={() => setIsCreateProjectDialogOpen(true)}
+                disabled={isOpeningFolder}
+                className="w-full h-12 text-lg gap-2"
+                size="lg"
+                data-testid="studio-create-project-button"
+              >
+                <FilePlus2 className="size-5" />
+                New Project
+              </Button>
+            ) : null}
             <Button
               onClick={() => {
                 if (supportsNativeDirectoryPicker) {
@@ -64,14 +81,14 @@ export function WelcomeScreen({
               ) : (
                 <>
                   <FolderOpen className="size-5" />
-                  Open External Project
+                  Open Project
                 </>
               )}
             </Button>
           </div>
         ) : (
           <div className="rounded-lg border border-fd-border bg-fd-card px-4 py-3 text-sm text-fd-muted-foreground">
-            当前 Studio 入口已锁定到单个项目，不支持切换或打开其他目录。
+            This Studio session is locked to one project and cannot open another directory.
           </div>
         )}
 
@@ -81,6 +98,20 @@ export function WelcomeScreen({
             onOpenChange={setIsProjectPathDialogOpen}
             onSubmit={async (projectPath) => {
               await onOpenProject(projectPath);
+            }}
+          />
+        ) : null}
+
+        {allowProjectCreate ? (
+          <ProjectPathDialog
+            open={isCreateProjectDialogOpen}
+            onOpenChange={setIsCreateProjectDialogOpen}
+            title="Create Project"
+            description="Enter the absolute path for the new docs project root."
+            submitLabel="Create Project"
+            fieldHelp="Use an empty directory or a new directory path. Existing Anydocs project files will not be overwritten."
+            onSubmit={async (projectPath) => {
+              await onCreateProject(projectPath);
             }}
           />
         ) : null}

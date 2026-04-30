@@ -25,7 +25,7 @@ import {
 import type { ProjectSiteTopNavItem } from '@anydocs/core';
 import { renderPageContent } from '@anydocs/core/render-page-content';
 
-import type { ApiSourceDoc, DocsLang, NavItem, NavigationDoc, PageDoc } from '@/lib/docs/types';
+import type { ApiSourceDoc, DocsLang, NavItem, NavigationDoc, PageDoc, PageStatus } from '@/lib/docs/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LocalStudioSettings } from '@/components/studio/local-studio-settings';
@@ -109,6 +109,58 @@ type LocalStudioAppProps = {
   host: StudioHost;
 };
 
+function createCopySlug(baseSlug: string, pages: PageDoc[]) {
+  const normalizedBase = `${baseSlug.replace(/\/+$/g, '') || 'page'}-copy`;
+  const used = new Set(pages.map((page) => page.slug));
+  const usedIds = new Set(pages.map((page) => page.id));
+
+  if (!used.has(normalizedBase) && !usedIds.has(derivePageIdFromSlug(normalizedBase))) {
+    return normalizedBase;
+  }
+
+  for (let index = 2; index < 1000; index += 1) {
+    const candidate = `${normalizedBase}-${index}`;
+    if (!used.has(candidate) && !usedIds.has(derivePageIdFromSlug(candidate))) {
+      return candidate;
+    }
+  }
+
+  return `${normalizedBase}-${Date.now().toString(36)}`;
+}
+
+function derivePageIdFromSlug(slug: string) {
+  const leaf = slug.split('/').filter(Boolean).at(-1) ?? slug;
+  const safe = leaf
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return safe || `page-${Date.now().toString(36)}`;
+}
+
+function insertPageAfterSource(items: NavItem[], sourcePageId: string, newPageId: string): { items: NavItem[]; inserted: boolean } {
+  let inserted = false;
+  const nextItems: NavItem[] = [];
+
+  for (const item of items) {
+    if (item.type === 'section' || item.type === 'folder') {
+      const nested = insertPageAfterSource(item.children, sourcePageId, newPageId);
+      inserted = inserted || nested.inserted;
+      nextItems.push({ ...item, children: nested.items });
+      continue;
+    }
+
+    nextItems.push(item);
+    if (!inserted && item.type === 'page' && item.pageId === sourcePageId) {
+      nextItems.push({ type: 'page', pageId: newPageId });
+      inserted = true;
+    }
+  }
+
+  return { items: nextItems, inserted };
+}
+
 export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const studioHost = host;
   const lockedProject = useMemo(() => createLockedStudioProject(bootContext), [bootContext]);
@@ -169,6 +221,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarMode, setRightSidebarMode] = useState<RightSidebarMode>(null);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const [sidebarCreateDialog, setSidebarCreateDialog] = useState<SidebarCreateDialog>(null);
   const [isOpeningFolder, setIsOpeningFolder] = useState(false);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>(lockedProject ? [lockedProject] : []);
@@ -201,7 +254,15 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   
   // Connection status (simulated as always connected for local)
   const isConnected = !load.error && !load.loading;
-  const lastSavedTime = saving ? 'Saving...' : (dirty ? 'Unsaved changes' : (saveError ? 'Save failed' : 'All changes saved'));
+  const lastSavedTime = saving
+    ? 'Saving...'
+    : dirty
+      ? 'Unsaved changes'
+      : navDirty
+        ? 'Unsaved navigation changes'
+        : saveError
+          ? 'Save failed'
+          : 'All changes saved';
   const projectSaveStatus = projectSaving ? 'Saving project...' : projectDirty ? 'Unsaved project settings' : projectSaveError ? 'Project save failed' : null;
   const selectedProject = useMemo(
     () => recentProjects.find((project) => project.id === projectId) ?? null,
@@ -276,6 +337,35 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     return saved !== null;
   }, []);
 
+  const handleCreateProject = useCallback(async (projectPathInput: string) => {
+    if (bootContext.mode !== 'desktop') {
+      throw new Error('Create Project is available in the desktop Studio runtime.');
+    }
+
+    if (!(await flushDirtyActive())) return;
+
+    const projectPath = normalizeAbsoluteProjectPath(projectPathInput);
+    await stopPreviewSessions();
+    const created = await studioHost.createProject({ projectPath, agent: 'codex' });
+    const projectRoot = created.project.paths.projectRoot;
+    const { current, projects } = registerRecentProject(recentProjects, projectRoot);
+    if (bootContext.canManageRecentProjects) {
+      saveProjectsToStorage(projects);
+    }
+    setRecentProjects(projects);
+    setProjectId(current.id);
+    setLang(created.project.config.defaultLanguage);
+    setWorkflowMessage(`Project created at ${projectRoot}`);
+  }, [
+    bootContext.canManageRecentProjects,
+    bootContext.mode,
+    flushDirtyActive,
+    recentProjects,
+    setWorkflowMessage,
+    stopPreviewSessions,
+    studioHost,
+  ]);
+
   const handleProjectSelect = useCallback(async (project: StudioProject) => {
     if (!bootContext.canSwitchProjects) {
       return;
@@ -329,7 +419,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     if (!selectedProject?.path) {
       setProjectState(null);
       setRightSidebarMode(null);
-      setLoad({ nav: null, pages: [], loading: false, error: '请重新打开外部项目根目录。' });
+      setLoad({ nav: null, pages: [], loading: false, error: 'Reopen the project root to continue.' });
       return;
     }
     setLoad((s) => ({ ...s, loading: true, error: null }));
@@ -421,7 +511,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         setActiveId(fallbackPageId ?? pages.pages[0]?.id ?? null);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '加载失败';
+      const msg = e instanceof Error ? e.message : 'Failed to load project';
       setProjectState(null);
       setRightSidebarMode(null);
       setLoad({ nav: null, pages: [], loading: false, error: msg });
@@ -522,7 +612,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     };
   }, [lang, activeId, projectId, selectedProject, studioHost]);
 
-  const title = active?.title ?? '未选择文档';
+  const title = active?.title ?? 'No page selected';
   const status = active?.status ?? 'draft';
 
   const filteredPages = useMemo(() => {
@@ -641,7 +731,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setSaving(true);
       setSaveError(null);
       if (!selectedProject?.path) {
-        setSaveError('请重新打开外部项目根目录。');
+        setSaveError('Reopen the project root to continue.');
         setSaving(false);
         return null;
       }
@@ -664,7 +754,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         }
         return null;
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : '保存失败';
+        const msg = e instanceof Error ? e.message : 'Failed to save page';
         setSaveError(msg);
         return null;
       } finally {
@@ -678,13 +768,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     if (!navDraft) return;
     if (!lang) return;
     if (validation.errors.length) {
-      setNavSaveError(validation.errors[0] ?? '导航校验失败');
+      setNavSaveError(validation.errors[0] ?? 'Navigation validation failed');
       return;
     }
     setSavingNav(true);
     setNavSaveError(null);
     if (!selectedProject?.path) {
-      setNavSaveError('请重新打开外部项目根目录。');
+      setNavSaveError('Reopen the project root to continue.');
       setSavingNav(false);
       return;
     }
@@ -697,7 +787,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setNavDraft(saved);
       setNavDirty(false);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '导航保存失败';
+      const msg = e instanceof Error ? e.message : 'Failed to save navigation';
       setNavSaveError(msg);
     } finally {
       setSavingNav(false);
@@ -709,7 +799,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     setProjectSaving(true);
     setProjectSaveError(null);
     if (!selectedProject?.path) {
-      setProjectSaveError('请重新打开外部项目根目录。');
+      setProjectSaveError('Reopen the project root to continue.');
       setProjectSaving(false);
       return;
     }
@@ -799,7 +889,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       setProjectDirty(false);
       await reload();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '项目设置保存失败';
+      const msg = e instanceof Error ? e.message : 'Failed to save project settings';
       setProjectSaveError(msg);
     } finally {
       setProjectSaving(false);
@@ -905,10 +995,10 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const handleSidebarCreateSubmit = useCallback(
     async (values: NavigationItemDialogValues) => {
       if (!lang) {
-        throw new Error('请选择语言');
+        throw new Error('Select a language first.');
       }
       if (!navDraft) {
-        throw new Error('导航尚未加载完成');
+        throw new Error('Navigation is not loaded yet.');
       }
 
       if (sidebarCreateDialog?.type === 'group') {
@@ -938,7 +1028,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       }
 
       if (!selectedProject?.path) {
-        throw new Error('请重新打开外部项目根目录。');
+        throw new Error('Reopen the project root to continue.');
       }
 
       const created = await studioHost.createPage(
@@ -1022,7 +1112,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const runPreview = useCallback(async () => {
     if (!selectedProject?.path) {
       clearWorkflowResult(undefined, { clearHistory: true });
-      setWorkflowError('请重新打开外部项目根目录。');
+      setWorkflowError('Reopen the project root to continue.');
       setWorkflowResultAction('preview');
       return;
     }
@@ -1184,11 +1274,103 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     }
   }, [lang, load.pages, projectId, selectedProject, studioHost]);
 
+  const onSetPageStatusById = useCallback(async (pageId: string, nextStatus: PageStatus) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const target = load.pages.find((p) => p.id === pageId);
+    if (!target || target.status === nextStatus) {
+      return;
+    }
+
+    if (nextStatus === 'published' && target.review?.required && !target.review.approvedAt) {
+      window.alert('This page requires an explicit review approval before it can be published.');
+      return;
+    }
+    if (nextStatus === 'published') {
+      const ok = window.confirm(
+        'Publishing makes this page visible in the next reader build, search index, llms.txt, and MCP artifacts. Continue?',
+      );
+      if (!ok) return;
+    }
+    if (target.status === 'published') {
+      const ok = window.confirm('Moving this page out of published will remove it from the next public build. Continue?');
+      if (!ok) return;
+    }
+
+    try {
+      const fullPage = activeIdRef.current === pageId && active ? active : await studioHost.getPage(lang, pageId, projectId, selectedProject.path);
+      const updated = { ...fullPage, status: nextStatus, updatedAt: new Date().toISOString() };
+      const saved = await studioHost.savePage(lang, updated, projectId, selectedProject.path);
+      setLoad((current) => ({
+        ...current,
+        pages: current.pages.map((p) => (p.id === pageId ? saved : p)),
+      }));
+      if (activeIdRef.current === pageId) {
+        setActive(saved);
+        setDirty(false);
+      }
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to update page status');
+    }
+  }, [active, lang, load.pages, projectId, selectedProject, studioHost]);
+
+  const onDuplicatePageById = useCallback(async (pageId: string) => {
+    if (!lang || !selectedProject?.path) {
+      return;
+    }
+
+    const source = load.pages.find((p) => p.id === pageId);
+    if (!source) {
+      return;
+    }
+
+    try {
+      const fullPage = activeIdRef.current === pageId && active ? active : await studioHost.getPage(lang, pageId, projectId, selectedProject.path);
+      const nextTitle = `${fullPage.title} Copy`;
+      const nextSlug = createCopySlug(fullPage.slug, load.pages);
+      const nextPageId = derivePageIdFromSlug(nextSlug);
+      const duplicated: PageDoc = {
+        ...fullPage,
+        id: nextPageId,
+        slug: nextSlug,
+        title: nextTitle,
+        status: 'draft',
+        review: undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      const saved = await studioHost.savePage(lang, duplicated, projectId, selectedProject.path);
+      const nextPages = sortPagesBySlug([...load.pages, saved]);
+      const nextNav = navDraft
+        ? (() => {
+            const inserted = insertPageAfterSource(navDraft.items, pageId, saved.id);
+            return {
+              ...navDraft,
+              items: inserted.inserted ? inserted.items : [...navDraft.items, { type: 'page' as const, pageId: saved.id }],
+            };
+          })()
+        : navDraft;
+
+      setLoad((current) => ({
+        ...current,
+        pages: nextPages,
+        nav: nextNav ?? current.nav,
+      }));
+      setNavDraft(nextNav);
+      setNavDirty(true);
+      setNavDirtyTick((tick) => tick + 1);
+      void changeActivePage(saved.id);
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to duplicate page');
+    }
+  }, [active, changeActivePage, lang, load.pages, navDraft, projectId, selectedProject, studioHost]);
+
 
   const runBuild = useCallback(async () => {
     if (!selectedProject?.path) {
       clearWorkflowResult(undefined, { clearHistory: true });
-      setWorkflowError('请重新打开外部项目根目录。');
+      setWorkflowError('Reopen the project root to continue.');
       setWorkflowResultAction('build');
       return;
     }
@@ -1305,7 +1487,9 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         supportsNativeDirectoryPicker={hasNativeDirectoryPicker()}
         allowExternalProjectOpen={bootContext.canOpenExternalProject}
         allowRecentProjects={bootContext.canManageRecentProjects}
+        allowProjectCreate={bootContext.mode === 'desktop'}
         onOpenProject={(projectPath) => handleOpenFolder(projectPath)}
+        onCreateProject={(projectPath) => handleCreateProject(projectPath)}
         onSelectProject={(project) => void handleProjectSelect(project)}
         onRemoveProject={handleRecentProjectRemove}
       />
@@ -1394,16 +1578,35 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               {leftSidebarOpen ? <SidebarClose className="size-4 text-slate-500" /> : <SidebarOpen className="size-4 text-slate-500" />}
             </Button>
             <div className="h-9 w-px bg-fd-border" />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-none border-0"
-              title="Workspace tools"
-              data-testid="studio-tools-button"
-            >
-              <Sparkles className="size-4 text-slate-500" />
-            </Button>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-9 w-9 rounded-none border-0',
+                  workspaceToolsOpen ? 'bg-fd-muted text-fd-foreground' : '',
+                )}
+                aria-label={workspaceToolsOpen ? 'Close Workspace tools' : 'Open Workspace tools'}
+                aria-expanded={workspaceToolsOpen}
+                title="Workspace tools"
+                data-testid="studio-tools-button"
+                onClick={() => setWorkspaceToolsOpen((open) => !open)}
+              >
+                <Sparkles className="size-4 text-slate-500" />
+              </Button>
+              {workspaceToolsOpen ? (
+                <div
+                  className="absolute right-0 top-full z-50 mt-3 w-64 rounded-lg border border-fd-border bg-fd-card p-3 text-sm shadow-lg"
+                  data-testid="studio-tools-menu"
+                >
+                  <div className="font-medium text-fd-foreground">Workspace tools</div>
+                  <div className="mt-1 text-xs text-fd-muted-foreground">
+                    No workspace tools are available for this runtime yet.
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div ref={workflowMenuRef} className="relative">
@@ -1469,8 +1672,13 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
             type="button"
             variant={rightSidebarMode === 'project' ? 'secondary' : 'ghost'}
             size="icon"
-            className="h-9 w-9 rounded-lg border border-transparent text-slate-500 shadow-none hover:bg-fd-card"
+            className={cn(
+              'h-9 w-9 rounded-lg border text-slate-500 shadow-none hover:bg-fd-card',
+              rightSidebarMode === 'project' ? 'border-fd-border bg-fd-card text-fd-foreground' : 'border-transparent',
+            )}
             onClick={toggleProjectSettings}
+            aria-label={rightSidebarMode === 'project' ? 'Close Project Settings' : 'Open Project Settings'}
+            aria-pressed={rightSidebarMode === 'project'}
             title={rightSidebarMode === 'project' ? 'Hide Project Settings' : 'Show Project Settings'}
             data-testid="studio-open-project-settings-button"
           >
@@ -1529,7 +1737,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               {load.loading ? (
                 <div className="flex items-center gap-2 px-2 py-3 text-sm text-fd-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
-                  正在加载...
+                  Loading...
                 </div>
               ) : load.error ? (
                 <div className="px-2 py-3 text-sm text-fd-muted-foreground">{load.error}</div>
@@ -1561,6 +1769,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     onCreatePage={createPageForNavigation}
                     onDeletePage={(id) => void onDeletePageById(id)}
                     onApprovePage={(id) => void onApprovePageById(id)}
+                    onDuplicatePage={(id) => void onDuplicatePageById(id)}
+                    onSetPageStatus={(id, nextStatus) => void onSetPageStatusById(id, nextStatus)}
                     onChange={(next) => {
                       setNavDraft((current) => {
                         if (!current || !activeStudioTopNavGroupId) {
@@ -1575,7 +1785,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                   />
                 </div>
               ) : (
-                <div className="px-2 py-3 text-sm text-fd-muted-foreground">暂无数据</div>
+                <div className="px-2 py-3 text-sm text-fd-muted-foreground">No data</div>
               )}
             </div>
             <div className="sticky bottom-0 z-10 shrink-0 border-t border-fd-border bg-fd-card/95 p-4 shadow-[0_-10px_24px_rgba(15,23,42,0.06)] backdrop-blur supports-[backdrop-filter]:bg-fd-card/90">
@@ -1874,7 +2084,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-fd-muted-foreground">
-                    选择或创建文档
+                    Select or create a page
                   </div>
                 )}
               </div>

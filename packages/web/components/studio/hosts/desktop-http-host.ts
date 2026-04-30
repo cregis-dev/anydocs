@@ -9,6 +9,8 @@ import type {
   StudioApiSourcesResponse,
   StudioBuildResponse,
   StudioHost,
+  StudioProjectCreateInput,
+  StudioProjectCreateResponse,
   StudioPreviewResponse,
   StudioPreviewStopResponse,
   StudioProjectResponse,
@@ -49,6 +51,9 @@ export function createDesktopHttpHost(baseUrl: string): StudioHost {
   return {
     getProject(projectId: string, projectPath?: string): Promise<StudioProjectResponse> {
       return jsonPost(baseUrl, '/studio/project/get', { projectId, projectPath });
+    },
+    createProject(input: StudioProjectCreateInput): Promise<StudioProjectCreateResponse> {
+      return jsonPost(baseUrl, '/studio/project/create', { input });
     },
     updateProject(
       patch: StudioProjectSettingsPatch,

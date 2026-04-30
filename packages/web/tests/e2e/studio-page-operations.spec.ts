@@ -10,9 +10,12 @@ const navigationPath = path.join(e2eProjectRoot, 'navigation', 'en.json');
 const createdPageId = 'studio-page-ops';
 const createdPagePath = path.join(e2eProjectRoot, 'pages', 'en', `${createdPageId}.json`);
 const createdTitle = 'Studio Page Ops';
+const duplicatedPageId = `${createdPageId}-copy`;
+const duplicatedPagePath = path.join(e2eProjectRoot, 'pages', 'en', `${duplicatedPageId}.json`);
 const updatedTitle = 'Studio Page Ops Updated';
 const updatedDescription = 'Regression coverage for create, edit, publish, preview, build, and delete.';
 const updatedSlug = `flows/${createdPageId}`;
+const duplicatedSlug = `${updatedSlug}-copy`;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -33,6 +36,39 @@ test('[P0] cli studio covers page create/edit/publish/delete @p0', async ({ page
   await page.getByRole('button', { name: 'Create Page' }).click();
 
   await expect(page.getByTestId(`studio-nav-page-menu-trigger-${createdPageId}`)).toBeVisible();
+  await waitForStudioSaved(page);
+
+  await page.getByTestId(`studio-nav-page-menu-trigger-${createdPageId}`).click();
+  await expect(page.getByTestId(`studio-nav-page-duplicate-button-${createdPageId}`)).toBeVisible();
+  await expect(page.getByTestId(`studio-nav-page-status-draft-button-${createdPageId}`)).toBeVisible();
+  await expect(page.getByTestId(`studio-nav-page-status-in_review-button-${createdPageId}`)).toBeVisible();
+  await expect(page.getByTestId(`studio-nav-page-status-published-button-${createdPageId}`)).toBeVisible();
+  await page.getByTestId(`studio-nav-page-status-in_review-button-${createdPageId}`).click();
+  await expect
+    .poll(async () => {
+      const persisted = JSON.parse(await readFile(createdPagePath, 'utf8')) as { status: string };
+      return persisted.status;
+    }, { timeout: 15000 })
+    .toBe('in_review');
+
+  await page.getByTestId(`studio-nav-page-menu-trigger-${createdPageId}`).click();
+  await page.getByTestId(`studio-nav-page-duplicate-button-${createdPageId}`).click();
+  await expect(page.getByTestId(`studio-nav-page-menu-trigger-${duplicatedPageId}`)).toBeVisible();
+  await waitForStudioSaved(page);
+
+  const duplicatedPage = JSON.parse(await readFile(duplicatedPagePath, 'utf8')) as {
+    title: string;
+    slug: string;
+    status: string;
+  };
+  expect(duplicatedPage.title).toBe(`${createdTitle} Copy`);
+  expect(duplicatedPage.slug).toBe(duplicatedSlug);
+  expect(duplicatedPage.status).toBe('draft');
+
+  await page.getByTestId(`studio-nav-page-menu-trigger-${duplicatedPageId}`).click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByTestId(`studio-nav-page-delete-button-${duplicatedPageId}`).click();
+  await expect(page.getByTestId(`studio-nav-page-menu-trigger-${duplicatedPageId}`)).toHaveCount(0);
   await waitForStudioSaved(page);
 
   await page.getByTestId(`studio-nav-page-menu-trigger-${createdPageId}`).click();

@@ -60,6 +60,8 @@ export function NavigationComposer({
   onChange,
   onDeletePage,
   onApprovePage,
+  onDuplicatePage,
+  onSetPageStatus,
 }: {
   nav: NavigationDoc;
   pages: PageDoc[];
@@ -70,6 +72,8 @@ export function NavigationComposer({
   onChange: (next: NavigationDoc) => void;
   onDeletePage: (pageId: string) => void;
   onApprovePage: (pageId: string) => void;
+  onDuplicatePage: (pageId: string) => void;
+  onSetPageStatus: (pageId: string, status: PageDoc['status']) => void;
 }) {
   const [dialog, setDialog] = useState<NavigationDialogState | null>(null);
 
@@ -247,6 +251,8 @@ export function NavigationComposer({
         onRequestEditLink={(path, title, href) => setDialog({ type: 'edit-link', path, title, href })}
         onDeletePage={onDeletePage}
         onApprovePage={onApprovePage}
+        onDuplicatePage={onDuplicatePage}
+        onSetPageStatus={onSetPageStatus}
       />
       <NavigationItemDialog
         open={dialog !== null}

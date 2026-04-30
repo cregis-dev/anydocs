@@ -46,13 +46,17 @@ export const YooptaFloatingBlockActions = () => {
           <FloatingBlockActions.Button
             onClick={() => onPlusClick(blockId)}
             title="Add block"
+            aria-label="Add paragraph block"
+            data-testid="studio-yoopta-add-block-button"
           >
             <PlusIcon />
           </FloatingBlockActions.Button>
           <DragHandle blockId={blockId} ref={handleDragHandleRef} asChild>
             <FloatingBlockActions.Button
               onClick={() => onDragClick(blockId)}
-              title="Drag to reorder"
+              title="Drag to reorder, or click for block options"
+              aria-label="Drag to reorder or open block options"
+              data-testid="studio-yoopta-drag-block-button"
             >
               <GripVertical />
             </FloatingBlockActions.Button>

@@ -70,6 +70,20 @@ export type StudioProjectScope = {
   projectPath?: string;
 };
 
+export type StudioProjectCreateInput = {
+  projectPath: string;
+  projectId?: string;
+  projectName?: string;
+  defaultLanguage?: import('../../core/dist/index.js').DocsLang;
+  languages?: import('../../core/dist/index.js').DocsLang[];
+  agent?: 'codex' | 'claude-code';
+};
+
+export type StudioProjectCreateResponse = {
+  project: import('../../core/dist/index.js').ProjectContract;
+  createdFiles: string[];
+};
+
 export type StudioPageCreateInput = {
   slug: string;
   title: string;
