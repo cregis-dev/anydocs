@@ -176,8 +176,9 @@ export function AtlasDocsReaderLayout({
     }
   }, [router, topNavLinks]);
 
-  const effectiveActiveGroupId =
-    optimisticNavState && optimisticNavState.sourcePath === pathname
+  const effectiveActiveGroupId = isReferenceRoute
+    ? null
+    : optimisticNavState && optimisticNavState.sourcePath === pathname
       ? optimisticNavState.groupId
       : activeGroupId;
   const effectiveFilteredNav = useMemo(() => {
