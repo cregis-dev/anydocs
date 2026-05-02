@@ -232,6 +232,7 @@ my-docs-project/
 
 如果你已经能跑起来，后续按场景查这些文档：
 
+- [ROADMAP.md](ROADMAP.md)：项目定位、近期路线图与中长期方向
 - [docs/usage-manual.md](docs/usage-manual.md)：详细操作手册
 - [docs/runtime-architecture.md](docs/runtime-architecture.md)：运行时边界、env contract 和路由策略
 - [docs/agent.md](docs/agent.md)：项目根最小 agent guide 模板
