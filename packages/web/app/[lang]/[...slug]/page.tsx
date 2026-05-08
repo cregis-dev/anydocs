@@ -619,7 +619,7 @@ export default async function Page({
 
           <div
             className={cn(
-              "mt-14 flex items-center justify-between border-t border-fd-border pt-6",
+              "mt-14 flex flex-col items-stretch justify-between gap-4 border-t border-fd-border pt-6 sm:flex-row sm:items-center",
               isClassicTheme && "mt-12 pt-5",
               isAtlasTheme &&
                 "mt-14 border-t border-[color:color-mix(in_srgb,var(--docs-divider,var(--fd-border))_72%,white)] pt-5",
@@ -629,11 +629,11 @@ export default async function Page({
               <Link
                 href={`/${lang}/${prevPage.slug}`}
                 className={cn(
-                  "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
+                  "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-primary/30",
                   isClassicTheme &&
                     "flex min-w-[220px] flex-col items-start gap-1 rounded-2xl border-[color:color-mix(in_srgb,var(--fd-border)_88%,white)] bg-white px-4 py-3 text-left shadow-[0_6px_18px_rgba(15,23,42,0.03)]",
                   isAtlasTheme &&
-                    "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
+                    "group flex min-h-[68px] w-full min-w-0 items-center gap-3 rounded-[18px] border border-[color:color-mix(in_srgb,var(--docs-divider,var(--fd-border))_78%,white)] bg-white px-4 py-3 text-left text-[13px] shadow-[0_12px_32px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-[color:color-mix(in_srgb,var(--fd-primary)_54%,var(--docs-divider,var(--fd-border)))] hover:bg-[color:color-mix(in_srgb,var(--fd-primary)_5%,white)] hover:text-fd-foreground sm:w-auto sm:max-w-[min(48%,26rem)]",
                 )}
               >
                 {isClassicTheme ? (
@@ -645,10 +645,17 @@ export default async function Page({
                   </>
                 ) : isAtlasTheme ? (
                   <>
-                    <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
-                      Prev
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:color-mix(in_srgb,var(--docs-divider,var(--fd-border))_82%,white)] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle)_78%,white)] text-[17px] font-medium text-fd-foreground transition group-hover:border-[color:color-mix(in_srgb,var(--fd-primary)_45%,var(--docs-divider,var(--fd-border)))] group-hover:bg-white">
+                      ←
                     </span>
-                    <span>{prevPage.title}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                        Prev
+                      </span>
+                      <span className="mt-0.5 block truncate text-[14px] font-semibold leading-6 text-fd-foreground">
+                        {prevPage.title}
+                      </span>
+                    </span>
                   </>
                 ) : (
                   <>← {prevPage.title}</>
@@ -661,11 +668,11 @@ export default async function Page({
               <Link
                 href={`/${lang}/${nextPage.slug}`}
                 className={cn(
-                  "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted",
+                  "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-primary/30",
                   isClassicTheme &&
                     "flex min-w-[220px] flex-col items-end gap-1 rounded-2xl border-[color:color-mix(in_srgb,var(--fd-border)_88%,white)] bg-white px-4 py-3 text-right shadow-[0_6px_18px_rgba(15,23,42,0.03)]",
                   isAtlasTheme &&
-                    "rounded-none border-0 bg-transparent px-0 py-0 text-[13px] text-[color:var(--docs-body-copy,var(--fd-foreground))] hover:text-fd-primary",
+                    "group flex min-h-[68px] w-full min-w-0 items-center justify-end gap-3 rounded-[18px] border border-[color:color-mix(in_srgb,var(--docs-divider,var(--fd-border))_78%,white)] bg-white px-4 py-3 text-right text-[13px] shadow-[0_12px_32px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-[color:color-mix(in_srgb,var(--fd-primary)_54%,var(--docs-divider,var(--fd-border)))] hover:bg-[color:color-mix(in_srgb,var(--fd-primary)_5%,white)] hover:text-fd-foreground sm:w-auto sm:max-w-[min(48%,26rem)]",
                 )}
               >
                 {isClassicTheme ? (
@@ -677,9 +684,16 @@ export default async function Page({
                   </>
                 ) : isAtlasTheme ? (
                   <>
-                    <span>{nextPage.title}</span>
-                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
-                      Next
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
+                        Next
+                      </span>
+                      <span className="mt-0.5 block truncate text-[14px] font-semibold leading-6 text-fd-foreground">
+                        {nextPage.title}
+                      </span>
+                    </span>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:color-mix(in_srgb,var(--docs-divider,var(--fd-border))_82%,white)] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle)_78%,white)] text-[17px] font-medium text-fd-foreground transition group-hover:border-[color:color-mix(in_srgb,var(--fd-primary)_45%,var(--docs-divider,var(--fd-border)))] group-hover:bg-white">
+                      →
                     </span>
                   </>
                 ) : (
