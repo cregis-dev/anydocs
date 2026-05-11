@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 
 import { ScalarApiReference } from "@/components/docs/scalar-api-reference";
 import {
-  getPublishedApiSourceById,
+  getApiSourceRouteSlug,
+  getPublishedApiSourceByRouteSlug,
   getPublishedApiSourceSpec,
   getPublishedApiSources,
 } from "@/lib/docs/api-sources";
@@ -74,7 +75,7 @@ function renderApiReferenceIndex(
         {sources.map((apiSource) => (
           <Link
             key={apiSource.id}
-            href={`/${lang}/reference/${apiSource.id}`}
+            href={`/${lang}/reference/${getApiSourceRouteSlug(apiSource)}`}
             className="rounded-2xl border border-fd-border bg-white p-5 shadow-sm transition hover:border-fd-foreground/20 hover:shadow-md"
           >
             <div className="space-y-2">
@@ -133,10 +134,10 @@ export default async function ApiReferencePage({
     notFound();
   }
 
-  const sourceId = segments[0]!;
-  const apiSource = await getPublishedApiSourceById(
+  const routeSlug = segments[0]!;
+  const apiSource = await getPublishedApiSourceByRouteSlug(
     lang,
-    sourceId,
+    routeSlug,
     source.projectId,
     source.customPath,
   );
@@ -146,7 +147,7 @@ export default async function ApiReferencePage({
 
   const spec = await getPublishedApiSourceSpec(
     lang,
-    sourceId,
+    apiSource.id,
     source.projectId,
     source.customPath,
   );
@@ -199,7 +200,8 @@ export async function generateStaticParams() {
       source.customPath,
     );
     for (const apiSource of apiSources) {
-      params.push({ lang, slug: [apiSource.id] });
+      const routeSlug = getApiSourceRouteSlug(apiSource);
+      params.push({ lang, slug: [routeSlug] });
     }
   }
 
@@ -288,7 +290,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const apiSource = await getPublishedApiSourceById(
+  const apiSource = await getPublishedApiSourceByRouteSlug(
     lang,
     segments[0]!,
     source.projectId,
@@ -297,19 +299,20 @@ export async function generateMetadata({
   if (!apiSource) {
     return {};
   }
+  const routeSlug = getApiSourceRouteSlug(apiSource);
 
   const languageAlternatesEntries = await Promise.all(
     languages.map(async (language) => {
-      const localizedSource = await getPublishedApiSourceById(
+      const localizedSource = await getPublishedApiSourceByRouteSlug(
         language,
-        segments[0]!,
+        routeSlug,
         source.projectId,
         source.customPath,
       );
       const url = localizedSource
         ? buildPublishedAbsoluteUrl(
             siteUrl,
-            `${language}/reference/${localizedSource.id}`,
+            `${language}/reference/${getApiSourceRouteSlug(localizedSource)}`,
           )
         : undefined;
       return url ? [language, url] : null;
@@ -322,7 +325,7 @@ export async function generateMetadata({
   );
   const canonical = buildPublishedAbsoluteUrl(
     siteUrl,
-    `${lang}/reference/${apiSource.id}`,
+    `${lang}/reference/${routeSlug}`,
   );
 
   return {

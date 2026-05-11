@@ -20,7 +20,6 @@ export function ScalarApiReference({
   showTryIt,
   title,
   description,
-  sourceId,
 }: {
   specContent: unknown;
   showTryIt: boolean;
@@ -47,11 +46,7 @@ export function ScalarApiReference({
               </div>
             </div>
 
-            {sourceId ? (
-              <div className="inline-flex w-fit items-center rounded-full border border-[color:var(--atlas-top-nav-active-border,var(--fd-border))] bg-[color:var(--atlas-top-nav-active-background,var(--fd-muted))] px-3 py-1.5 text-[12px] font-medium tracking-[-0.01em] text-[color:var(--docs-body-copy,var(--fd-foreground))]">
-                {sourceId}
-              </div>
-            ) : null}
+            {/* Source IDs are internal and intentionally hidden. */}
           </div>
         </div>
       </div>

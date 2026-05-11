@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type { ProjectSiteTopNavItem } from "@anydocs/core";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
 import { SearchPanel } from "@/components/docs/search-panel";
@@ -19,11 +19,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { DocsThemeReaderLayoutProps } from "@/lib/themes/types";
 import { cn } from "@/lib/utils";
 import {
@@ -121,7 +121,9 @@ export function AtlasDocsReaderLayout({
     (!logoSrc ? "Atlas Docs" : "");
   const themeStyle = getAtlasDocsThemeStyle(siteTheme);
   const showLanguageSwitcher = availableLanguages.length > 1;
-  const activeLanguageLabel = getLanguageLabel(lang);
+  const alternateLanguages = availableLanguages.filter(
+    (language) => language !== lang,
+  );
 
   const activePageId = useMemo(() => {
     for (const page of pages) {
@@ -204,15 +206,6 @@ export function AtlasDocsReaderLayout({
     startTransition(() => {
       router.push(href);
     });
-  };
-
-  const handleLanguageChange = (value: string) => {
-    const nextLang = value as typeof lang;
-    if (nextLang === lang) {
-      return;
-    }
-
-    router.push(buildLanguageHref(pathname, lang, nextLang));
   };
 
   const isTopNavEntryActive = (entry: TopNavLinkEntry) =>
@@ -343,26 +336,37 @@ export function AtlasDocsReaderLayout({
               })}
 
               {showLanguageSwitcher ? (
-                <Select value={lang} onValueChange={handleLanguageChange}>
-                  <SelectTrigger className="inline-flex h-9 min-w-[9.5rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                    <span className="truncate pr-2">{activeLanguageLabel}</span>
-                  </SelectTrigger>
-                  <SelectContent
-                    inPortal={false}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={lang === "zh" ? "切换语言" : "Switch language"}
+                      className="inline-flex h-9 min-w-[9.5rem] items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))] data-[state=open]:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
+                    >
+                      <span>{getLanguageLabel(lang)}</span>
+                      <ChevronDown className="size-4 opacity-60" aria-hidden />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
                     sideOffset={8}
-                    className="atlas-language-select-content min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg"
+                    className="min-w-[9.5rem]"
                   >
-                    {availableLanguages.map((language) => (
-                      <SelectItem
-                        key={language}
-                        value={language}
-                        className="rounded-lg py-2.5 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
-                      >
-                        <span>{getLanguageLabel(language)}</span>
-                      </SelectItem>
+                    {alternateLanguages.map((language) => (
+                      <DropdownMenuItem key={language} asChild>
+                        <Link
+                          href={buildLanguageHref(
+                            pathname,
+                            lang,
+                            language as typeof lang,
+                          )}
+                        >
+                          {getLanguageLabel(language)}
+                        </Link>
+                      </DropdownMenuItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : null}
             </div>
 
@@ -398,28 +402,42 @@ export function AtlasDocsReaderLayout({
                   ) : null}
 
                   {showLanguageSwitcher ? (
-                    <Select value={lang} onValueChange={handleLanguageChange}>
-                      <SelectTrigger className="inline-flex h-10 w-full rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                        <span className="truncate pr-2">
-                          {activeLanguageLabel}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent
-                        inPortal={false}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={
+                            lang === "zh" ? "切换语言" : "Switch language"
+                          }
+                          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))] data-[state=open]:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
+                        >
+                          <span>{getLanguageLabel(lang)}</span>
+                          <ChevronDown
+                            className="size-4 opacity-60"
+                            aria-hidden
+                          />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
                         sideOffset={8}
-                        className="atlas-language-select-content min-w-[12rem] rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg"
+                        className="min-w-44"
                       >
-                        {availableLanguages.map((language) => (
-                          <SelectItem
-                            key={language}
-                            value={language}
-                            className="rounded-lg py-2.5 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
-                          >
-                            <span>{getLanguageLabel(language)}</span>
-                          </SelectItem>
+                        {alternateLanguages.map((language) => (
+                          <DropdownMenuItem key={language} asChild>
+                            <Link
+                              href={buildLanguageHref(
+                                pathname,
+                                lang,
+                                language as typeof lang,
+                              )}
+                            >
+                              {getLanguageLabel(language)}
+                            </Link>
+                          </DropdownMenuItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : null}
 
                   {utilityNavLinks.length ? (

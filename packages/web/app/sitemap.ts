@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 
-import { getPublishedApiSources } from "@/lib/docs/api-sources";
+import {
+  getApiSourceRouteSlug,
+  getPublishedApiSources,
+} from "@/lib/docs/api-sources";
 import {
   getCliDocsSourceFromEnv,
   getPublishedLanguages,
@@ -78,7 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const apiSource of apiSources) {
       const apiSourceUrl = buildPublishedAbsoluteUrl(
         siteUrl,
-        `${language}/reference/${apiSource.id}`,
+        `${language}/reference/${getApiSourceRouteSlug(apiSource)}`,
       );
       if (!apiSourceUrl) {
         continue;

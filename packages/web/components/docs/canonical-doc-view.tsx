@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { CalloutTone, DocBlock, DocContentV1, InlineNode, ListItem, TextMark, TextNode } from '@anydocs/core';
 
 import { DOC_READER_ROOT_CLASSNAME } from '@/components/docs/doc-reader-classnames';
@@ -99,6 +99,81 @@ function calloutToneClasses(tone: CalloutTone | undefined) {
   }
 }
 
+function CodeGroupTabs({
+  block,
+  groupKey,
+}: {
+  block: Extract<DocBlock, { type: 'codeGroup' }>;
+  groupKey: string;
+}) {
+  const getItemId = (item: Extract<DocBlock, { type: 'codeGroup' }>['items'][number], itemIndex: number) =>
+    `${groupKey}-${item.id ?? `item-${itemIndex + 1}`}`;
+  const firstItem = block.items[0];
+  const fallbackActiveId = firstItem ? getItemId(firstItem, 0) : `${groupKey}-item-1`;
+  const [activeId, setActiveId] = useState(fallbackActiveId);
+  const activeItemId = block.items.some((item, index) => getItemId(item, index) === activeId)
+    ? activeId
+    : fallbackActiveId;
+
+  return (
+    <div className="my-6 overflow-hidden rounded-2xl border border-fd-border bg-fd-card shadow-sm" data-doc-code-group>
+      <div
+        className="flex gap-1 overflow-x-auto border-b border-fd-border bg-fd-muted/40 px-2 py-2"
+        role="tablist"
+        aria-label="Code examples"
+        data-doc-code-tab-list
+      >
+        {block.items.map((item, itemIndex) => {
+          const itemId = getItemId(item, itemIndex);
+          const isActive = itemId === activeItemId;
+          const tabId = `${itemId}-tab`;
+          const panelId = `${itemId}-panel`;
+
+          return (
+            <button
+              key={itemId}
+              id={tabId}
+              type="button"
+              role="tab"
+              aria-controls={panelId}
+              aria-selected={isActive}
+              data-active={isActive ? 'true' : undefined}
+              data-doc-code-tab
+              className={cn(
+                'shrink-0 rounded-xl px-3 py-1.5 text-sm font-medium text-fd-muted-foreground transition-colors',
+                'hover:bg-fd-background hover:text-fd-foreground',
+                'data-[active=true]:bg-fd-background data-[active=true]:text-fd-foreground data-[active=true]:shadow-sm',
+              )}
+              onClick={() => setActiveId(itemId)}
+            >
+              {item.title ?? item.language ?? `Example ${itemIndex + 1}`}
+            </button>
+          );
+        })}
+      </div>
+      {block.items.map((item, itemIndex) => {
+        const itemId = getItemId(item, itemIndex);
+        const isActive = itemId === activeItemId;
+
+        return (
+          <section
+            key={itemId}
+            id={`${itemId}-panel`}
+            role="tabpanel"
+            aria-labelledby={`${itemId}-tab`}
+            hidden={!isActive}
+            data-doc-code-tab-panel
+          >
+            <pre className="m-0 rounded-none border-0">
+              <code className={item.language ? `language-${item.language}` : undefined}>{item.code}</code>
+            </pre>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function renderBlock(block: DocBlock, nextHeadingId: (title: string) => string, index: number): ReactNode {
   const key = block.id ?? `block-${index + 1}`;
 
@@ -131,22 +206,7 @@ function renderBlock(block: DocBlock, nextHeadingId: (title: string) => string, 
         </div>
       );
     case 'codeGroup':
-      return (
-        <div key={key} className="my-6 space-y-4" data-doc-code-group>
-          {block.items.map((item, itemIndex) => (
-            <section key={item.id ?? `${key}-item-${itemIndex + 1}`} data-doc-code-panel>
-              {item.title ? (
-                <div className="mb-2 text-sm font-medium text-fd-foreground" data-doc-code-title>
-                  {item.title}
-                </div>
-              ) : null}
-              <pre>
-                <code className={item.language ? `language-${item.language}` : undefined}>{item.code}</code>
-              </pre>
-            </section>
-          ))}
-        </div>
-      );
+      return <CodeGroupTabs key={key} block={block} groupKey={key} />;
     case 'blockquote':
       return <blockquote key={key}>{renderInline(block.children, key)}</blockquote>;
     case 'callout':
