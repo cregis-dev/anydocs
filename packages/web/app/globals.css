@@ -109,6 +109,10 @@ body {
   line-height: 1.6;
 }
 
+body [data-radix-popper-content-wrapper] {
+  z-index: 1000 !important;
+}
+
 .docs-yoopta-view,
 .docs-yoopta-view .yoopta-editor,
 .docs-yoopta-view .yoopta-slate,

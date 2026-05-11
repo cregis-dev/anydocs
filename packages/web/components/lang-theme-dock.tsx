@@ -12,10 +12,38 @@ function detectLang(pathname: string): Lang {
   return 'zh';
 }
 
+const REFERENCE_ROUTE_SLUGS: Record<string, string> = {
+  "payment-engine-api": "payment-engine-api",
+  "waas-api": "waas-api",
+};
+
+function getApiSourceRouteSlug(sourceId: string) {
+  const baseId = sourceId.endsWith("-en") ? sourceId.slice(0, -3) : sourceId;
+  return REFERENCE_ROUTE_SLUGS[baseId] ?? baseId;
+}
+
+function getReferenceTargetPath(pathname: string, target: Lang) {
+  const normalized = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const match = normalized.match(/^\/(?:zh|en)\/reference\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const sourceId = match[1]!;
+  const routeSlug = getApiSourceRouteSlug(sourceId);
+
+  return routeSlug ? `/${target}/reference/${routeSlug}/` : null;
+}
+
 function getTargetPath(pathname: string, target: Lang): string {
   const normalized = pathname.startsWith('/docs')
     ? pathname.replace(/^\/docs(\/|$)/, '/zh$1')
     : pathname;
+
+  const referenceTarget = getReferenceTargetPath(normalized, target);
+  if (referenceTarget) {
+    return referenceTarget;
+  }
 
   if (normalized.startsWith('/zh/')) return normalized.replace(/^\/zh\//, `/${target}/`);
   if (normalized.startsWith('/en/')) return normalized.replace(/^\/en\//, `/${target}/`);
