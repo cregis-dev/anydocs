@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildAskRequestBody,
   formatAskResponseMessage,
+  parseAskResponseText,
   resolveAskEndpoint,
 } from '../components/ask-ai-api.ts';
 
@@ -58,7 +59,7 @@ test('formatAskResponseMessage renders answer citations without losing markdown'
 
   assert.match(message, /Use the official SDK/);
   assert.match(message, /Sources/);
-  assert.match(message, /SDKs & Developer Tools/);
+  assert.match(message, /- \[cit_1\] \[SDKs & Developer Tools\]\(\/en\/sdk-overview#waas-sdk\)/);
 });
 
 test('formatAskResponseMessage localizes structured errors for Chinese docs', () => {
@@ -72,5 +73,33 @@ test('formatAskResponseMessage localizes structured errors for Chinese docs', ()
       'zh',
     ),
     '暂时无法回答：upstream failed',
+  );
+});
+
+test('parseAskResponseText turns gateway HTML into a structured timeout error', () => {
+  const response = parseAskResponseText('<!DOCTYPE html><title>504: Gateway time-out</title>', {
+    contentType: 'text/html; charset=UTF-8',
+    status: 504,
+    statusText: 'Gateway Time-out',
+  });
+
+  assert.deepEqual(response, {
+    type: 'error',
+    code: 'gateway_timeout',
+    message: 'Gateway Time-out',
+  });
+});
+
+test('formatAskResponseMessage hides gateway HTML behind a friendly Chinese error', () => {
+  assert.equal(
+    formatAskResponseMessage(
+      {
+        type: 'error',
+        code: 'gateway_timeout',
+        message: 'Gateway Time-out',
+      },
+      'zh',
+    ),
+    '暂时无法回答：请求超时，请稍后重试。',
   );
 });

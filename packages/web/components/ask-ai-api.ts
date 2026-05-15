@@ -21,6 +21,12 @@ export type AskApiResponse =
       message?: string;
     };
 
+type AskResponseMeta = {
+  contentType?: string | null;
+  status?: number;
+  statusText?: string;
+};
+
 type LocationLike = {
   protocol: string;
   hostname: string;
@@ -78,6 +84,42 @@ export function buildAskRequestBody(
   return body;
 }
 
+export function parseAskResponseText(
+  raw: string,
+  meta: AskResponseMeta = {},
+): AskApiResponse {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return {
+      type: 'error',
+      code: meta.status ? 'http_error' : undefined,
+      message: `${meta.status ?? ''} ${meta.statusText ?? ''}`.trim() || 'empty response',
+    };
+  }
+
+  try {
+    return JSON.parse(trimmed) as AskApiResponse;
+  } catch {
+    // Continue below: gateways such as Cloudflare return HTML error pages.
+  }
+
+  const contentType = meta.contentType?.toLowerCase() ?? '';
+  const looksLikeHtml =
+    contentType.includes('text/html') ||
+    /^<!doctype html/i.test(trimmed) ||
+    /^<html[\s>]/i.test(trimmed);
+
+  if (looksLikeHtml) {
+    return {
+      type: 'error',
+      code: meta.status === 504 ? 'gateway_timeout' : 'http_error',
+      message: meta.statusText || (meta.status ? `HTTP ${meta.status}` : 'gateway error'),
+    };
+  }
+
+  return { type: 'error', message: trimmed };
+}
+
 export function formatAskResponseMessage(response: AskApiResponse, lang: string) {
   if (response.type === 'answer') {
     const citations = response.citations ?? [];
@@ -88,11 +130,14 @@ export function formatAskResponseMessage(response: AskApiResponse, lang: string)
     const heading = lang === 'zh' ? '参考来源' : 'Sources';
     const sourceLines = citations.map((citation, index) => {
       const marker = citation.citation_id || `cit_${index + 1}`;
-      const href = citation.url ? ` - ${citation.url}` : '';
-      return `[${marker}] ${citation.title}${href}`;
+      if (citation.url) {
+        return `- [${marker}] [${citation.title}](${citation.url})`;
+      }
+
+      return `- [${marker}] ${citation.title}`;
     });
 
-    return `${response.answer_md}\n\n${heading}:\n${sourceLines.join('\n')}`;
+    return `${response.answer_md}\n\n---\n\n**${heading}:**\n${sourceLines.join('\n')}`;
   }
 
   if (response.type === 'clarify') {
@@ -102,6 +147,12 @@ export function formatAskResponseMessage(response: AskApiResponse, lang: string)
     }
 
     return `${response.message}\n\n${options.map((option) => `- ${option.label}`).join('\n')}`;
+  }
+
+  if (response.code === 'gateway_timeout') {
+    return lang === 'zh'
+      ? '暂时无法回答：请求超时，请稍后重试。'
+      : 'Unable to answer right now: the request timed out. Please try again.';
   }
 
   const fallback = lang === 'zh' ? '请求失败' : 'request failed';

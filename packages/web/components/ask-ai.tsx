@@ -3,14 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
 import { Bot, Send, Sparkles, User, X } from 'lucide-react';
 
 import {
   buildAskRequestBody,
   formatAskResponseMessage,
+  parseAskResponseText,
   resolveAskEndpoint,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
+
+const AskAIMarkdown = dynamic(() =>
+  import('@/components/ask-ai-markdown').then((module) => module.AskAIMarkdown),
+);
 
 type Message = {
   id: string;
@@ -27,18 +33,11 @@ type AskAIProps = {
 
 async function readAskResponse(response: Response): Promise<AskApiResponse> {
   const raw = await response.text();
-  if (!raw) {
-    return {
-      type: 'error',
-      message: `${response.status} ${response.statusText}`.trim(),
-    };
-  }
-
-  try {
-    return JSON.parse(raw) as AskApiResponse;
-  } catch {
-    return { type: 'error', message: raw };
-  }
+  return parseAskResponseText(raw, {
+    contentType: response.headers.get('content-type'),
+    status: response.status,
+    statusText: response.statusText,
+  });
 }
 
 function createMessage(role: Message['role'], content: string): Message {
@@ -187,13 +186,17 @@ export function AskAI({
                       )}
                     </div>
                     <div
-                      className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                      className={`min-w-0 rounded-2xl text-sm leading-6 ${
                         message.role === 'user'
-                          ? 'bg-[color:var(--atlas-primary,var(--fd-primary))] text-white'
-                          : 'border border-fd-border bg-fd-muted text-fd-foreground'
+                          ? 'max-w-[82%] bg-[color:var(--atlas-primary,var(--fd-primary))] px-4 py-2.5 text-white'
+                          : 'max-w-[min(88%,46rem)] border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_72%,white)] px-4 py-3 text-fd-foreground shadow-[0_8px_24px_rgba(15,23,42,0.04)]'
                       }`}
                     >
-                      <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                      {message.role === 'assistant' ? (
+                        <AskAIMarkdown content={message.content} />
+                      ) : (
+                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                      )}
                     </div>
                   </div>
                 ))}
