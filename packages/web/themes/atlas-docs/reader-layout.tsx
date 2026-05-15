@@ -10,6 +10,7 @@ import { ChevronDown, Menu } from "lucide-react";
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
 import { SearchPanel } from "@/components/docs/search-panel";
 import { DocsSidebar } from "@/components/docs/sidebar";
+import { AskAI } from "@/components/ask-ai";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -335,6 +336,8 @@ export function AtlasDocsReaderLayout({
                 );
               })}
 
+              <AskAI currentPageId={activePageId} lang={lang} />
+
               {showLanguageSwitcher ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -400,6 +403,12 @@ export function AtlasDocsReaderLayout({
                       resultsClassName="rounded-[22px] border-[color:var(--docs-search-border,var(--fd-border))] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.10)]"
                     />
                   ) : null}
+
+                  <AskAI
+                    currentPageId={activePageId}
+                    lang={lang}
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))]"
+                  />
 
                   {showLanguageSwitcher ? (
                     <DropdownMenu>
