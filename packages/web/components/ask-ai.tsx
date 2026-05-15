@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { Bot, Send, Sparkles, User, X } from 'lucide-react';
+import { ArrowUp, BookOpen, Sparkles, User, X } from 'lucide-react';
 
 import {
   buildAskRequestBody,
   formatAskResponseMessage,
-  parseAskResponseText,
-  resolveAskEndpoint,
+  isEmptyAskStreamResponse,
+  readAskStreamResponse,
+  resolveAskStreamEndpoint,
+  type AskApiCitation,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
 
@@ -22,6 +24,7 @@ type Message = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  citations?: AskApiCitation[];
 };
 
 type AskAIProps = {
@@ -31,16 +34,11 @@ type AskAIProps = {
   lang?: string;
 };
 
-async function readAskResponse(response: Response): Promise<AskApiResponse> {
-  const raw = await response.text();
-  return parseAskResponseText(raw, {
-    contentType: response.headers.get('content-type'),
-    status: response.status,
-    statusText: response.statusText,
-  });
-}
-
-function createMessage(role: Message['role'], content: string): Message {
+function createMessage(
+  role: Message['role'],
+  content: string,
+  citations: AskApiCitation[] = [],
+): Message {
   return {
     id:
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -48,7 +46,183 @@ function createMessage(role: Message['role'], content: string): Message {
         : `${Date.now()}-${Math.random()}`,
     role,
     content,
+    citations,
   };
+}
+
+function createIntroMessage(isZh: boolean): Message {
+  return createMessage(
+    'assistant',
+    isZh
+      ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
+      : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.',
+  );
+}
+
+function assistantPayloadFromResponse(
+  response: AskApiResponse,
+  lang: string,
+): Pick<Message, 'content' | 'citations'> {
+  if (response.type === 'answer') {
+    return {
+      content: response.answer_md,
+      citations: response.citations ?? [],
+    };
+  }
+
+  return {
+    content: formatAskResponseMessage(response, lang),
+    citations: [],
+  };
+}
+
+function citationNumber(citation: AskApiCitation, index: number): string {
+  return citation.citation_id?.replace(/^cit_/, '') || `${index + 1}`;
+}
+
+function citationPath(citation: AskApiCitation): string {
+  const parts =
+    citation.breadcrumb
+      ?.map((item) => item.title)
+      .filter((title) => title && title !== citation.title) ?? [];
+  return ['Docs', ...parts].join(' › ');
+}
+
+function SourceCard({
+  citation,
+  index,
+}: {
+  citation: AskApiCitation;
+  index: number;
+}) {
+  const body = (
+    <>
+      <div className="mb-2 flex items-center gap-2 text-xs text-fd-muted-foreground">
+        <span className="inline-flex size-5 items-center justify-center rounded-md bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[11px] font-semibold text-[color:var(--atlas-primary,var(--fd-primary))]">
+          {citationNumber(citation, index)}
+        </span>
+        <span className="truncate">{citationPath(citation)}</span>
+      </div>
+      <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-fd-foreground">
+        <BookOpen className="size-4 shrink-0 text-[color:var(--atlas-primary,var(--fd-primary))]" />
+        <span className="truncate">{citation.title}</span>
+      </div>
+    </>
+  );
+
+  const className =
+    'block rounded-lg border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_72%,white)] p-4 transition hover:border-[color:var(--atlas-primary,var(--fd-primary))]/35 hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]';
+
+  if (citation.url) {
+    return (
+      <a href={citation.url} className={className}>
+        {body}
+      </a>
+    );
+  }
+
+  return <div className={className}>{body}</div>;
+}
+
+function SourceList({
+  citations,
+  isZh,
+}: {
+  citations: AskApiCitation[];
+  isZh: boolean;
+}) {
+  if (citations.length === 0) return null;
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-fd-muted-foreground">
+        {isZh ? '参考来源' : 'Sources'}
+      </div>
+      <div className="space-y-2">
+        {citations.map((citation, index) => (
+          <SourceCard
+            key={`${citation.citation_id}-${citation.url ?? citation.title}-${index}`}
+            citation={citation}
+            index={index}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IntroCopy({ isZh }: { isZh: boolean }) {
+  return (
+    <p className="text-base leading-7 text-fd-foreground">
+      {isZh ? '我是根据 ' : 'I am trained on '}
+      <span className="inline-flex rounded-md bg-[color:var(--atlas-primary,var(--fd-primary))] px-2 py-0.5 font-semibold text-white">
+        Cregis
+      </span>
+      {isZh
+        ? ' 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
+        : ' documentation and can answer questions about payments, WaaS wallets, and API integration.'}
+    </p>
+  );
+}
+
+function LoadingCopy({ isZh }: { isZh: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-fd-muted-foreground">
+      <span>{isZh ? '正在查询 Cregis 文档' : 'Searching Cregis docs'}</span>
+      <span className="flex items-center gap-1">
+        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] [animation-delay:-0.3s]" />
+        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] [animation-delay:-0.15s]" />
+        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))]" />
+      </span>
+    </div>
+  );
+}
+
+function MessageRow({
+  message,
+  isIntro,
+  isLoadingPlaceholder,
+  isZh,
+}: {
+  message: Message;
+  isIntro: boolean;
+  isLoadingPlaceholder: boolean;
+  isZh: boolean;
+}) {
+  if (message.role === 'assistant' && message.content.length === 0 && !isLoadingPlaceholder) {
+    return null;
+  }
+
+  const isUser = message.role === 'user';
+
+  return (
+    <div className="grid grid-cols-[2.75rem_1fr] gap-4 border-b border-[color:var(--docs-divider,var(--fd-border))] py-6 last:border-b-0">
+      <div
+        className={`flex size-10 items-center justify-center rounded-full ${
+          isUser
+            ? 'bg-[color:var(--atlas-primary,var(--fd-primary))] text-white shadow-[0_10px_28px_rgba(34,197,94,0.24)]'
+            : 'border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_76%,white)] text-[color:var(--atlas-primary,var(--fd-primary))]'
+        }`}
+      >
+        {isUser ? <User className="size-5" /> : <Sparkles className="size-5" />}
+      </div>
+
+      <div className="min-w-0 pt-1">
+        {isIntro ? (
+          <IntroCopy isZh={isZh} />
+        ) : isUser ? (
+          <p className="text-base font-medium leading-7 text-fd-foreground">{message.content}</p>
+        ) : message.content.length > 0 ? (
+          <>
+            <AskAIMarkdown content={message.content} />
+            <SourceList citations={message.citations ?? []} isZh={isZh} />
+          </>
+        ) : (
+          <LoadingCopy isZh={isZh} />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function AskAI({
@@ -60,16 +234,25 @@ export function AskAI({
   const isZh = lang === 'zh';
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    createMessage(
-      'assistant',
-      isZh
-        ? '你好，我可以根据 Cregis 文档回答问题。'
-        : 'Hi, I can answer questions using the Cregis documentation.',
-    ),
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => [createIntroMessage(isZh)]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const closeDialog = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+    setOpen(false);
+  }, []);
+
+  const clearConversation = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+    setInput('');
+    setMessages([createIntroMessage(isZh)]);
+  }, [isZh]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -80,48 +263,93 @@ export function AskAI({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setOpen(false);
+        closeDialog();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeDialog]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
   }, []);
+
+  const appendToMessage = (id: string, text: string) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
+      ),
+    );
+  };
+
+  const replaceMessage = (id: string, content: string, citations: AskApiCitation[] = []) => {
+    setMessages((prev) =>
+      prev.map((message) => (message.id === id ? { ...message, content, citations } : message)),
+    );
+  };
 
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
     const question = input.trim();
     if (!question || isLoading) return;
 
-    setMessages((prev) => [...prev, createMessage('user', question)]);
+    const userMessage = createMessage('user', question);
+    const assistantMessage = createMessage('assistant', '');
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInput('');
     setIsLoading(true);
 
+    const requestBody = JSON.stringify(buildAskRequestBody(question, currentPageId));
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
+
     try {
-      const response = await fetch(resolveAskEndpoint(endpointBaseUrl), {
+      const response = await fetch(resolveAskStreamEndpoint(endpointBaseUrl), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildAskRequestBody(question, currentPageId)),
+        headers: {
+          Accept: 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+        signal: controller.signal,
       });
-      const payload = await readAskResponse(response);
-      const content = formatAskResponseMessage(payload, lang);
-      setMessages((prev) => [...prev, createMessage('assistant', content)]);
+      const payload = await readAskStreamResponse(response, {
+        onDelta: (text) => {
+          appendToMessage(assistantMessage.id, text);
+        },
+      });
+      if (isEmptyAskStreamResponse(payload) && !controller.signal.aborted) {
+        throw new Error(
+          isZh ? '流式连接中断，请重试。' : 'The AI stream was interrupted. Please try again.',
+        );
+      }
+
+      const next = assistantPayloadFromResponse(payload, lang);
+      replaceMessage(assistantMessage.id, next.content, next.citations);
     } catch (error) {
+      if (controller.signal.aborted) return;
       const message =
         error instanceof Error
           ? error.message
           : isZh
             ? '网络请求失败'
             : 'Network request failed';
-      setMessages((prev) => [
-        ...prev,
-        createMessage(
-          'assistant',
-          isZh ? `暂时无法回答：${message}` : `Unable to answer right now: ${message}`,
-        ),
-      ]);
+      replaceMessage(
+        assistantMessage.id,
+        isZh ? `暂时无法回答：${message}` : `Unable to answer right now: ${message}`,
+      );
     } finally {
-      setIsLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -142,76 +370,44 @@ export function AskAI({
 
       {open &&
         createPortal(
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm sm:p-6">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm sm:p-6">
             <div
-              className="relative flex h-full max-h-[620px] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[color:var(--docs-divider,var(--fd-border))] bg-fd-background shadow-2xl"
+              className="relative flex h-full max-h-[760px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[color:var(--docs-divider,var(--fd-border))] bg-fd-background shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--atlas-search-background,var(--fd-muted))] px-4 py-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Sparkles className="size-5 shrink-0 text-[color:var(--atlas-primary,var(--fd-primary))]" />
-                  <span className="truncate font-semibold">
-                    {isZh ? 'Cregis AI 助手' : 'Cregis AI Assistant'}
-                  </span>
+              <div className="flex items-center justify-between gap-4 border-b border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--atlas-search-background,var(--fd-muted))] px-5 py-4">
+                <div className="inline-flex h-10 items-center gap-2 rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] px-4 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(34,197,94,0.26)]">
+                  <Sparkles className="size-5" aria-hidden />
+                  <span>Ask AI</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-md p-1.5 text-fd-muted-foreground transition hover:bg-fd-accent hover:text-fd-accent-foreground"
-                >
-                  <X className="size-5" />
-                  <span className="sr-only">{isZh ? '关闭' : 'Close'}</span>
-                </button>
+
+                <div className="flex min-w-0 items-center">
+                  <button
+                    type="button"
+                    onClick={closeDialog}
+                    className="inline-flex size-9 items-center justify-center rounded-lg text-fd-muted-foreground transition hover:bg-fd-accent hover:text-fd-accent-foreground"
+                  >
+                    <X className="size-5" />
+                    <span className="sr-only">{isZh ? '关闭' : 'Close'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
-                {messages.map((message) => (
-                  <div
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5">
+                {messages.map((message, index) => (
+                  <MessageRow
                     key={message.id}
-                    className={`flex gap-3 ${
-                      message.role === 'user' ? 'flex-row-reverse' : ''
-                    }`}
-                  >
-                    <div
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full border ${
-                        message.role === 'user'
-                          ? 'border-[color:var(--atlas-primary,var(--fd-primary))] bg-[color:var(--atlas-primary,var(--fd-primary))] text-white'
-                          : 'border-fd-border bg-fd-muted text-fd-foreground'
-                      }`}
-                    >
-                      {message.role === 'user' ? (
-                        <User className="size-4" />
-                      ) : (
-                        <Bot className="size-4" />
-                      )}
-                    </div>
-                    <div
-                      className={`min-w-0 rounded-2xl text-sm leading-6 ${
-                        message.role === 'user'
-                          ? 'max-w-[82%] bg-[color:var(--atlas-primary,var(--fd-primary))] px-4 py-2.5 text-white'
-                          : 'max-w-[min(88%,46rem)] border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_72%,white)] px-4 py-3 text-fd-foreground shadow-[0_8px_24px_rgba(15,23,42,0.04)]'
-                      }`}
-                    >
-                      {message.role === 'assistant' ? (
-                        <AskAIMarkdown content={message.content} />
-                      ) : (
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                      )}
-                    </div>
-                  </div>
+                    message={message}
+                    isIntro={index === 0 && message.role === 'assistant'}
+                    isLoadingPlaceholder={
+                      isLoading &&
+                      message.role === 'assistant' &&
+                      message.content.length === 0 &&
+                      index === messages.length - 1
+                    }
+                    isZh={isZh}
+                  />
                 ))}
-                {isLoading ? (
-                  <div className="flex gap-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-fd-border bg-fd-muted">
-                      <Bot className="size-4 animate-pulse" />
-                    </div>
-                    <div className="flex items-center gap-1 rounded-2xl border border-fd-border bg-fd-muted px-4 py-3">
-                      <span className="size-1.5 animate-bounce rounded-full bg-fd-foreground/50 [animation-delay:-0.3s]" />
-                      <span className="size-1.5 animate-bounce rounded-full bg-fd-foreground/50 [animation-delay:-0.15s]" />
-                      <span className="size-1.5 animate-bounce rounded-full bg-fd-foreground/50" />
-                    </div>
-                  </div>
-                ) : null}
               </div>
 
               <div className="border-t border-[color:var(--docs-divider,var(--fd-border))] bg-fd-background p-4">
@@ -222,20 +418,29 @@ export function AskAI({
                     placeholder={
                       isZh ? '输入 Cregis 文档问题...' : 'Ask a question about Cregis...'
                     }
-                    className="h-11 flex-1 rounded-xl border border-fd-input bg-fd-background px-4 pr-12 text-sm shadow-sm transition-colors placeholder:text-fd-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))]"
+                    className="h-14 flex-1 rounded-2xl border border-fd-input bg-[color:var(--atlas-search-background,var(--fd-muted))] px-4 pr-14 text-base shadow-sm transition-colors placeholder:text-fd-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))]"
                     autoFocus
                   />
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
-                    className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[color:var(--atlas-primary,var(--fd-primary))] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] disabled:cursor-not-allowed disabled:opacity-45"
+                    className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-45"
                   >
-                    <Send className="size-4" />
+                    <ArrowUp className="size-5" />
                     <span className="sr-only">{isZh ? '发送' : 'Send'}</span>
                   </button>
                 </form>
-                <div className="mt-2 text-center text-xs text-fd-muted-foreground">
-                  {isZh ? 'AI 回答可能不准确。' : 'AI responses may be inaccurate.'}
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-fd-muted-foreground">
+                  <span>{isZh ? 'AI 回答可能不准确。' : 'AI responses may be inaccurate.'}</span>
+                  {messages.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={clearConversation}
+                      className="rounded-full border border-[color:var(--docs-divider,var(--fd-border))] px-3 py-1.5 font-medium text-fd-foreground transition hover:bg-fd-accent"
+                    >
+                      {isZh ? '清空' : 'Clear'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>

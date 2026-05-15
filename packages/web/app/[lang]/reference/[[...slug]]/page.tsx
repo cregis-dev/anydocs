@@ -43,14 +43,13 @@ function getApiSourceSummary(lang: DocsLang, sourceId: string) {
   }
   if (normalized.includes("waas")) {
     return lang === "zh"
-      ? "用于创建地址、查询充值、发起提币与接收 WaaS 回调。"
-      : "Create addresses, query deposits, submit payouts, and receive WaaS callbacks.";
+      ? "用于创建子地址、查询交易信息、发起提币与接收WaaS回调。"
+      : "Create sub-addresses, query transaction information, submit payouts, and receive WaaS callbacks.";
   }
   return lang === "zh"
     ? "查看接口说明、请求参数、返回字段与调用示例。"
     : "View endpoints, request parameters, response fields, and examples.";
 }
-
 function renderApiReferenceIndex(
   lang: DocsLang,
   sources: Awaited<ReturnType<typeof getPublishedApiSources>>,
