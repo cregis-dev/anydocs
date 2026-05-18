@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildAskRequestBody,
   formatAskResponseMessage,
+  groupAskCitationsBySource,
   parseAskResponseText,
   readAskStreamResponse,
   resolveAskEndpoint,
@@ -83,6 +84,46 @@ test('formatAskResponseMessage renders answer citations without losing markdown'
   assert.match(message, /Use the official SDK/);
   assert.match(message, /Sources/);
   assert.match(message, /- \[cit_1\] \[SDKs & Developer Tools\]\(\/en\/sdk-overview#waas-sdk\)/);
+});
+
+test('groupAskCitationsBySource merges multiple chunk citations from the same page', () => {
+  const groups = groupAskCitationsBySource([
+    {
+      citation_id: 'cit_2',
+      title: '支付引擎 30 分钟接入实战',
+      page_id: 'payment-engine-quickstart-30min',
+      lang: 'zh',
+      url: '/zh/payment-engine-quickstart-30min#第-4-步接收订单回调约-7-分钟',
+    },
+    {
+      citation_id: 'cit_4',
+      title: '支付引擎 30 分钟接入实战',
+      page_id: 'payment-engine-quickstart-30min',
+      lang: 'zh',
+      url: '/zh/payment-engine-quickstart-30min#第-0-步准备参数约-5-分钟',
+    },
+    {
+      citation_id: 'cit_5',
+      title: '支付引擎 30 分钟接入实战',
+      page_id: 'payment-engine-quickstart-30min',
+      lang: 'zh',
+      url: '/zh/payment-engine-quickstart-30min#2-为什么会收到同一订单多次回调',
+    },
+    {
+      citation_id: 'cit_1',
+      title: '支付引擎接入准备',
+      page_id: 'payment-engine-setup',
+      lang: 'zh',
+      url: '/zh/payment-engine-setup#步骤五获取-api-key-与项目编号',
+    },
+  ]);
+
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0]?.title, '支付引擎 30 分钟接入实战');
+  assert.equal(groups[0]?.url, '/zh/payment-engine-quickstart-30min');
+  assert.deepEqual(groups[0]?.citationIds, ['cit_2', 'cit_4', 'cit_5']);
+  assert.equal(groups[1]?.title, '支付引擎接入准备');
+  assert.deepEqual(groups[1]?.citationIds, ['cit_1']);
 });
 
 test('formatAskResponseMessage localizes structured errors for Chinese docs', () => {

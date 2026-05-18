@@ -9,9 +9,11 @@ import { ArrowUp, BookOpen, Sparkles, User, X } from 'lucide-react';
 import {
   buildAskRequestBody,
   formatAskResponseMessage,
+  groupAskCitationsBySource,
   isEmptyAskStreamResponse,
   readAskStreamResponse,
   resolveAskStreamEndpoint,
+  type AskCitationSourceGroup,
   type AskApiCitation,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
@@ -76,8 +78,8 @@ function assistantPayloadFromResponse(
   };
 }
 
-function citationNumber(citation: AskApiCitation, index: number): string {
-  return citation.citation_id?.replace(/^cit_/, '') || `${index + 1}`;
+function citationIdNumber(citationId: string): string {
+  return citationId.replace(/^cit_/, '');
 }
 
 function citationPath(citation: AskApiCitation): string {
@@ -89,23 +91,31 @@ function citationPath(citation: AskApiCitation): string {
 }
 
 function SourceCard({
-  citation,
-  index,
+  group,
 }: {
-  citation: AskApiCitation;
-  index: number;
+  group: AskCitationSourceGroup;
 }) {
+  const citation = group.citations[0];
+  if (!citation) return null;
+
   const body = (
     <>
       <div className="mb-2 flex items-center gap-2 text-xs text-fd-muted-foreground">
-        <span className="inline-flex size-5 items-center justify-center rounded-md bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[11px] font-semibold text-[color:var(--atlas-primary,var(--fd-primary))]">
-          {citationNumber(citation, index)}
+        <span className="flex shrink-0 items-center gap-1">
+          {group.citationIds.map((citationId) => (
+            <span
+              key={citationId}
+              className="inline-flex size-5 items-center justify-center rounded-md bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[11px] font-semibold text-[color:var(--atlas-primary,var(--fd-primary))]"
+            >
+              {citationIdNumber(citationId)}
+            </span>
+          ))}
         </span>
         <span className="truncate">{citationPath(citation)}</span>
       </div>
       <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-fd-foreground">
         <BookOpen className="size-4 shrink-0 text-[color:var(--atlas-primary,var(--fd-primary))]" />
-        <span className="truncate">{citation.title}</span>
+        <span className="truncate">{group.title}</span>
       </div>
     </>
   );
@@ -113,9 +123,11 @@ function SourceCard({
   const className =
     'block rounded-lg border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_72%,white)] p-4 transition hover:border-[color:var(--atlas-primary,var(--fd-primary))]/35 hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]';
 
-  if (citation.url) {
+  const href = group.citations.length === 1 ? citation.url : group.url;
+
+  if (href) {
     return (
-      <a href={citation.url} className={className}>
+      <a href={href} className={className}>
         {body}
       </a>
     );
@@ -132,6 +144,7 @@ function SourceList({
   isZh: boolean;
 }) {
   if (citations.length === 0) return null;
+  const sourceGroups = groupAskCitationsBySource(citations);
 
   return (
     <div className="mt-6">
@@ -139,11 +152,10 @@ function SourceList({
         {isZh ? '参考来源' : 'Sources'}
       </div>
       <div className="space-y-2">
-        {citations.map((citation, index) => (
+        {sourceGroups.map((group) => (
           <SourceCard
-            key={`${citation.citation_id}-${citation.url ?? citation.title}-${index}`}
-            citation={citation}
-            index={index}
+            key={group.key}
+            group={group}
           />
         ))}
       </div>

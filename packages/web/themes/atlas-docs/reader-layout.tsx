@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type { ProjectSiteTopNavItem } from "@anydocs/core";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Globe2, Menu } from "lucide-react";
 
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
 import { SearchPanel } from "@/components/docs/search-panel";
@@ -70,6 +70,10 @@ const LANGUAGE_META: Record<string, { label: string }> = {
 
 function getLanguageLabel(language: string) {
   return LANGUAGE_META[language]?.label ?? language.toUpperCase();
+}
+
+function getLanguageShortLabel(language: string) {
+  return language.toUpperCase();
 }
 
 type TopNavLinkEntry = {
@@ -344,9 +348,11 @@ export function AtlasDocsReaderLayout({
                     <button
                       type="button"
                       aria-label={lang === "zh" ? "切换语言" : "Switch language"}
-                      className="inline-flex h-9 min-w-[9.5rem] items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))] data-[state=open]:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
+                      title={lang === "zh" ? "切换语言" : "Switch language"}
+                      className="inline-flex h-9 min-w-[5.5rem] items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))] data-[state=open]:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
                     >
-                      <span>{getLanguageLabel(lang)}</span>
+                      <Globe2 className="size-4" aria-hidden />
+                      <span className="tracking-[0.06em]">{getLanguageShortLabel(lang)}</span>
                       <ChevronDown className="size-4 opacity-60" aria-hidden />
                     </button>
                   </DropdownMenuTrigger>
@@ -418,9 +424,15 @@ export function AtlasDocsReaderLayout({
                           aria-label={
                             lang === "zh" ? "切换语言" : "Switch language"
                           }
+                          title={
+                            lang === "zh" ? "切换语言" : "Switch language"
+                          }
                           className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))] data-[state=open]:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]"
                         >
-                          <span>{getLanguageLabel(lang)}</span>
+                          <Globe2 className="size-4" aria-hidden />
+                          <span className="tracking-[0.06em]">
+                            {getLanguageShortLabel(lang)}
+                          </span>
                           <ChevronDown
                             className="size-4 opacity-60"
                             aria-hidden

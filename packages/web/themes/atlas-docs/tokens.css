@@ -73,6 +73,10 @@
   --docs-sidebar-link-subtle: var(--atlas-muted-foreground);
   --docs-body-copy: var(--atlas-copy);
   --docs-body-copy-subtle: var(--atlas-muted-foreground);
+  --docs-link: #047a3f;
+  --docs-link-hover: #035f34;
+  --docs-link-underline: color-mix(in srgb, var(--docs-link) 42%, white);
+  --docs-link-background: color-mix(in srgb, var(--docs-link) 9%, transparent);
   --docs-search-background: var(--atlas-search-background);
   --docs-search-border: var(--atlas-search-border);
   --docs-search-placeholder: var(--atlas-muted-foreground);
@@ -105,9 +109,17 @@
 }
 
 .theme-atlas-docs .prose a {
-  color: var(--atlas-primary);
-  text-decoration-color: color-mix(in srgb, var(--atlas-primary) 24%, white);
-  text-underline-offset: 0.18em;
+  color: var(--docs-link);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--docs-link-underline);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.22em;
+}
+
+.theme-atlas-docs .prose a:hover {
+  color: var(--docs-link-hover);
+  text-decoration-color: currentcolor;
 }
 
 .theme-atlas-docs .prose h2 {
