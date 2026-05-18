@@ -61,6 +61,10 @@
 
   --docs-body-copy: var(--blueprint-copy);
   --docs-body-copy-subtle: var(--blueprint-muted-foreground);
+  --docs-link: var(--blueprint-accent);
+  --docs-link-hover: color-mix(in srgb, var(--blueprint-accent) 82%, black);
+  --docs-link-underline: color-mix(in srgb, var(--blueprint-accent) 36%, white);
+  --docs-link-background: color-mix(in srgb, var(--blueprint-accent) 8%, transparent);
 
   --docs-search-background: color-mix(in srgb, var(--blueprint-sidebar) 72%, white);
   --docs-search-border: color-mix(in srgb, var(--blueprint-border) 86%, white);
@@ -89,15 +93,16 @@
 }
 
 .theme-blueprint-review .prose a {
-  color: var(--blueprint-accent);
-  font-weight: 500;
-  text-decoration-color: color-mix(in srgb, var(--blueprint-accent) 34%, white);
+  color: var(--docs-link);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--docs-link-underline);
   text-decoration-thickness: 0.08em;
-  text-underline-offset: 0.18em;
+  text-underline-offset: 0.22em;
 }
 
 .theme-blueprint-review .prose a:hover {
-  color: color-mix(in srgb, var(--blueprint-accent) 82%, black);
+  color: var(--docs-link-hover);
   text-decoration-color: currentcolor;
 }
 
