@@ -2,7 +2,17 @@ export type AskApiCitation = {
   citation_id: string;
   title: string;
   url: string | null;
+  page_id?: string;
+  lang?: string;
   breadcrumb?: Array<{ title: string; type?: string }>;
+};
+
+export type AskCitationSourceGroup = {
+  key: string;
+  title: string;
+  url: string | null;
+  citations: AskApiCitation[];
+  citationIds: string[];
 };
 
 export type AskApiResponse =
@@ -274,6 +284,64 @@ function getStringProperty(value: unknown, key: string): string | null {
   return typeof raw === 'string' ? raw : null;
 }
 
+export function citationMarker(citation: AskApiCitation, index: number): string {
+  return citation.citation_id || `cit_${index + 1}`;
+}
+
+export function pageUrlFromCitationUrl(url: string | null): string | null {
+  if (!url) return null;
+  const hashIndex = url.indexOf('#');
+  if (hashIndex < 0) return url;
+  return url.slice(0, hashIndex) || url;
+}
+
+export function groupAskCitationsBySource(
+  citations: AskApiCitation[],
+): AskCitationSourceGroup[] {
+  const groups: AskCitationSourceGroup[] = [];
+  const byKey = new Map<string, AskCitationSourceGroup>();
+
+  citations.forEach((citation, index) => {
+    const key = citationGroupKey(citation);
+    let group = byKey.get(key);
+
+    if (!group) {
+      group = {
+        key,
+        title: citation.title,
+        url: pageUrlFromCitationUrl(citation.url),
+        citations: [],
+        citationIds: [],
+      };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+
+    group.citations.push(citation);
+
+    const marker = citationMarker(citation, index);
+    if (!group.citationIds.includes(marker)) {
+      group.citationIds.push(marker);
+    }
+  });
+
+  return groups;
+}
+
+function citationGroupKey(citation: AskApiCitation): string {
+  if (citation.page_id) {
+    return `page:${citation.lang ?? ''}:${citation.page_id}`;
+  }
+
+  const pageUrl = pageUrlFromCitationUrl(citation.url);
+  if (pageUrl) {
+    return `url:${pageUrl}`;
+  }
+
+  const breadcrumb = citation.breadcrumb?.map((item) => item.title).join('/') ?? '';
+  return `title:${breadcrumb}:${citation.title}`;
+}
+
 export function formatAskResponseMessage(response: AskApiResponse, lang: string) {
   if (response.type === 'answer') {
     const citations = response.citations ?? [];
@@ -282,13 +350,14 @@ export function formatAskResponseMessage(response: AskApiResponse, lang: string)
     }
 
     const heading = lang === 'zh' ? '参考来源' : 'Sources';
-    const sourceLines = citations.map((citation, index) => {
-      const marker = citation.citation_id || `cit_${index + 1}`;
-      if (citation.url) {
-        return `- [${marker}] [${citation.title}](${citation.url})`;
+    const sourceLines = groupAskCitationsBySource(citations).map((group) => {
+      const markers = group.citationIds.join(', ');
+      const href = group.citations.length === 1 ? group.citations[0]?.url : group.url;
+      if (href) {
+        return `- [${markers}] [${group.title}](${href})`;
       }
 
-      return `- [${marker}] ${citation.title}`;
+      return `- [${markers}] ${group.title}`;
     });
 
     return `${response.answer_md}\n\n---\n\n**${heading}:**\n${sourceLines.join('\n')}`;
