@@ -116,7 +116,35 @@ export function buildTopNavHref(
   return targetPage ? `/${lang}/${targetPage.slug}` : `/${lang}`;
 }
 
+const REFERENCE_ROUTE_SLUGS: Record<string, string> = {
+  "payment-engine-api": "payment-engine-api",
+  "waas-api": "waas-api",
+};
+
+function getApiSourceRouteSlug(sourceId: string) {
+  const baseId = sourceId.endsWith("-en") ? sourceId.slice(0, -3) : sourceId;
+  return REFERENCE_ROUTE_SLUGS[baseId] ?? baseId;
+}
+
+function buildReferenceLanguageHref(pathname: string, nextLang: DocsLang) {
+  const normalized = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const match = normalized.match(/^\/(?:zh|en)\/reference\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const sourceId = match[1]!;
+  const routeSlug = getApiSourceRouteSlug(sourceId);
+
+  return routeSlug ? `/${nextLang}/reference/${routeSlug}/` : null;
+}
+
 export function buildLanguageHref(pathname: string, currentLang: DocsLang, nextLang: DocsLang) {
+  const referenceHref = buildReferenceLanguageHref(pathname, nextLang);
+  if (referenceHref) {
+    return referenceHref;
+  }
+
   if (!pathname || pathname === `/${currentLang}`) {
     return `/${nextLang}`;
   }

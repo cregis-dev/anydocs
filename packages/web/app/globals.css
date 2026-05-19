@@ -109,6 +109,10 @@ body {
   line-height: 1.6;
 }
 
+body [data-radix-popper-content-wrapper] {
+  z-index: 1000 !important;
+}
+
 .docs-yoopta-view,
 .docs-yoopta-view .yoopta-editor,
 .docs-yoopta-view .yoopta-slate,
@@ -148,6 +152,37 @@ body {
  */
 .docs-yoopta-view .list-decimal > span[data-slate-node="element"] {
   padding-inline-end: 1px;
+}
+
+.docs-canonical-view a,
+.docs-yoopta-view a,
+.prose a {
+  color: var(--docs-link, var(--fd-primary));
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--docs-link-underline, currentcolor);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.22em;
+  transition:
+    color 150ms ease,
+    text-decoration-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.docs-canonical-view a:hover,
+.docs-yoopta-view a:hover,
+.prose a:hover {
+  color: var(--docs-link-hover, var(--fd-primary));
+  text-decoration-color: currentcolor;
+  background-color: var(--docs-link-background, transparent);
+}
+
+.docs-canonical-view a:focus-visible,
+.docs-yoopta-view a:focus-visible,
+.prose a:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--docs-link-underline, var(--fd-ring));
+  outline-offset: 2px;
 }
 
 .docs-yoopta-view h1,
@@ -197,9 +232,9 @@ body {
   --scalar-radius-xl: 18px;
   --scalar-button-1: var(--atlas-foreground);
   --scalar-button-1-color: #ffffff;
+  --scalar-custom-header-height: 108px;
   --refs-sidebar-width: clamp(280px, 24vw, 336px);
   --refs-content-max-width: min(1180px, calc(100vw - 420px));
-  --refs-header-height: 0px;
 }
 
 .theme-atlas-docs .anydocs-scalar-frame {

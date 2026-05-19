@@ -20,6 +20,29 @@ export async function getPublishedApiSources(lang: DocsLang, projectId: string =
   });
 }
 
+export function getApiSourceRouteSlug(source: Pick<ApiSourceDoc, 'id' | 'runtime'>): string {
+  const routeBase = source.runtime?.routeBase?.trim();
+  if (routeBase) {
+    const normalized = routeBase.replace(/\/+$/, '');
+    const slug = normalized.split('/').filter(Boolean).at(-1);
+    if (slug) {
+      return slug;
+    }
+  }
+
+  return source.id.endsWith('-en') ? source.id.slice(0, -3) : source.id;
+}
+
+export async function getPublishedApiSourceByRouteSlug(
+  lang: DocsLang,
+  routeSlug: string,
+  projectId: string = '',
+  customPath?: string,
+): Promise<ApiSourceDoc | null> {
+  const sources = await getPublishedApiSources(lang, projectId, customPath);
+  return sources.find((source) => getApiSourceRouteSlug(source) === routeSlug) ?? null;
+}
+
 export async function getPublishedApiSourceById(
   lang: DocsLang,
   sourceId: string,

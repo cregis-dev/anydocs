@@ -64,6 +64,10 @@
   --docs-sidebar-link-subtle: var(--classic-muted-foreground);
   --docs-body-copy: var(--classic-copy);
   --docs-body-copy-subtle: var(--classic-muted-foreground);
+  --docs-link: #075f8f;
+  --docs-link-hover: #064a70;
+  --docs-link-underline: color-mix(in srgb, var(--docs-link) 40%, white);
+  --docs-link-background: color-mix(in srgb, var(--docs-link) 8%, transparent);
   --docs-search-background: var(--classic-muted);
   --docs-search-border: var(--classic-border);
   --docs-search-placeholder: var(--classic-muted-foreground);

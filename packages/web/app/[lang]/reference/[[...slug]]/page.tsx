@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 
 import { ScalarApiReference } from "@/components/docs/scalar-api-reference";
 import {
-  getPublishedApiSourceById,
+  getApiSourceRouteSlug,
+  getPublishedApiSourceByRouteSlug,
   getPublishedApiSourceSpec,
   getPublishedApiSources,
 } from "@/lib/docs/api-sources";
@@ -22,6 +23,33 @@ import {
 } from "@/lib/docs/seo";
 import type { DocsLang } from "@/lib/docs/types";
 
+function getApiSourceCategory(lang: DocsLang, sourceId: string) {
+  const normalized = sourceId.toLowerCase();
+  if (normalized.includes("payment-engine")) {
+    return lang === "zh" ? "支付引擎 API" : "Payment Engine API";
+  }
+  if (normalized.includes("waas")) {
+    return lang === "zh" ? "WaaS 钱包 API" : "WaaS API";
+  }
+  return lang === "zh" ? "API 文档" : "API Reference";
+}
+
+function getApiSourceSummary(lang: DocsLang, sourceId: string) {
+  const normalized = sourceId.toLowerCase();
+  if (normalized.includes("payment-engine")) {
+    return lang === "zh"
+      ? "用于创建订单、查询订单、接收支付回调等支付引擎场景。"
+      : "Create orders, query order status, and receive payment callbacks.";
+  }
+  if (normalized.includes("waas")) {
+    return lang === "zh"
+      ? "用于创建子地址、查询交易信息、发起提币与接收WaaS回调。"
+      : "Create sub-addresses, query transaction information, submit payouts, and receive WaaS callbacks.";
+  }
+  return lang === "zh"
+    ? "查看接口说明、请求参数、返回字段与调用示例。"
+    : "View endpoints, request parameters, response fields, and examples.";
+}
 function renderApiReferenceIndex(
   lang: DocsLang,
   sources: Awaited<ReturnType<typeof getPublishedApiSources>>,
@@ -30,14 +58,15 @@ function renderApiReferenceIndex(
     <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-8 px-6 py-8 sm:px-8 lg:px-10">
       <header className="space-y-3">
         <p className="text-sm font-medium uppercase tracking-[0.12em] text-fd-muted-foreground">
-          API Reference
+          {lang === "zh" ? "API 参考" : "API Reference"}
         </p>
         <h1 className="text-4xl font-semibold tracking-[-0.03em] text-fd-foreground">
-          Published API Sources
+          {lang === "zh" ? "选择 API 文档" : "Choose an API Reference"}
         </h1>
         <p className="max-w-3xl text-base leading-7 text-fd-muted-foreground">
-          OpenAPI-backed references rendered with Scalar. This MVP keeps the
-          reader shell and serves one reference route per published API source.
+          {lang === "zh"
+            ? "请选择下方产品线，查看对应接口的请求参数、返回字段、调用示例与错误码。"
+            : "Choose a product area below to view request parameters, response fields, examples, and error codes."}
         </p>
       </header>
 
@@ -45,20 +74,18 @@ function renderApiReferenceIndex(
         {sources.map((apiSource) => (
           <Link
             key={apiSource.id}
-            href={`/${lang}/reference/${apiSource.id}`}
+            href={`/${lang}/reference/${getApiSourceRouteSlug(apiSource)}`}
             className="rounded-2xl border border-fd-border bg-white p-5 shadow-sm transition hover:border-fd-foreground/20 hover:shadow-md"
           >
             <div className="space-y-2">
               <div className="text-xs font-medium uppercase tracking-[0.1em] text-fd-muted-foreground">
-                {apiSource.id}
+                {getApiSourceCategory(lang, apiSource.id)}
               </div>
               <h2 className="text-xl font-semibold text-fd-foreground">
                 {apiSource.display.title}
               </h2>
               <p className="text-sm leading-6 text-fd-muted-foreground">
-                {apiSource.source.kind === "url"
-                  ? apiSource.source.url
-                  : apiSource.source.path}
+                {getApiSourceSummary(lang, apiSource.id)}
               </p>
             </div>
           </Link>
@@ -106,10 +133,10 @@ export default async function ApiReferencePage({
     notFound();
   }
 
-  const sourceId = segments[0]!;
-  const apiSource = await getPublishedApiSourceById(
+  const routeSlug = segments[0]!;
+  const apiSource = await getPublishedApiSourceByRouteSlug(
     lang,
-    sourceId,
+    routeSlug,
     source.projectId,
     source.customPath,
   );
@@ -119,7 +146,7 @@ export default async function ApiReferencePage({
 
   const spec = await getPublishedApiSourceSpec(
     lang,
-    sourceId,
+    apiSource.id,
     source.projectId,
     source.customPath,
   );
@@ -135,8 +162,12 @@ export default async function ApiReferencePage({
         title={apiSource.display.title}
         description={
           apiSource.source.kind === "url"
-            ? `Interactive OpenAPI reference for ${apiSource.display.title}.`
-            : `Interactive OpenAPI reference built from ${apiSource.source.path}.`
+            ? lang === "zh"
+              ? `${apiSource.display.title} 的交互式 API 参考。`
+              : `Interactive API reference for ${apiSource.display.title}.`
+            : lang === "zh"
+              ? `查看 ${apiSource.display.title} 的接口说明、参数与示例。`
+              : `View endpoints, parameters, and examples for ${apiSource.display.title}.`
         }
         sourceId={apiSource.id}
       />
@@ -168,7 +199,8 @@ export async function generateStaticParams() {
       source.customPath,
     );
     for (const apiSource of apiSources) {
-      params.push({ lang, slug: [apiSource.id] });
+      const routeSlug = getApiSourceRouteSlug(apiSource);
+      params.push({ lang, slug: [routeSlug] });
     }
   }
 
@@ -231,8 +263,11 @@ export async function generateMetadata({
     );
     const canonical = buildPublishedAbsoluteUrl(siteUrl, `${lang}/reference`);
     return {
-      title: "API Reference",
-      description: "Published OpenAPI-backed API references.",
+      title: lang === "zh" ? "API 参考" : "API Reference",
+      description:
+        lang === "zh"
+          ? "选择一个 API 文档查看接口说明、参数、示例与错误码。"
+          : "Select an API reference to view endpoints, parameters, examples, and error codes.",
       robots: buildPreviewRobotsMetadata(),
       ...(canonical || Object.keys(languageAlternates).length > 0
         ? {
@@ -254,7 +289,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const apiSource = await getPublishedApiSourceById(
+  const apiSource = await getPublishedApiSourceByRouteSlug(
     lang,
     segments[0]!,
     source.projectId,
@@ -263,19 +298,20 @@ export async function generateMetadata({
   if (!apiSource) {
     return {};
   }
+  const routeSlug = getApiSourceRouteSlug(apiSource);
 
   const languageAlternatesEntries = await Promise.all(
     languages.map(async (language) => {
-      const localizedSource = await getPublishedApiSourceById(
+      const localizedSource = await getPublishedApiSourceByRouteSlug(
         language,
-        segments[0]!,
+        routeSlug,
         source.projectId,
         source.customPath,
       );
       const url = localizedSource
         ? buildPublishedAbsoluteUrl(
             siteUrl,
-            `${language}/reference/${localizedSource.id}`,
+            `${language}/reference/${getApiSourceRouteSlug(localizedSource)}`,
           )
         : undefined;
       return url ? [language, url] : null;
@@ -288,12 +324,15 @@ export async function generateMetadata({
   );
   const canonical = buildPublishedAbsoluteUrl(
     siteUrl,
-    `${lang}/reference/${apiSource.id}`,
+    `${lang}/reference/${routeSlug}`,
   );
 
   return {
     title: apiSource.display.title,
-    description: `API Reference for ${apiSource.display.title}`,
+    description:
+      lang === "zh"
+        ? `${apiSource.display.title} 的 API 参考`
+        : `API Reference for ${apiSource.display.title}`,
     robots: buildPreviewRobotsMetadata(),
     ...(canonical || Object.keys(languageAlternates).length > 0
       ? {

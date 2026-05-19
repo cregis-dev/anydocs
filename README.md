@@ -1,6 +1,14 @@
 # Anydocs
 
-本地优先文档编辑器，面向两件事：
+> 为 AI Agent 而设计的文档系统。
+
+大多数文档工具假设有人会坐下来认真写 Markdown。Anydocs 的前提是：**没人想写**。它是一个本地优先的文档工作台，把 AI Agent 当作一等公民作者——内置 MCP 服务、用受限块 schema 约束 AI 产出的结构、清晰区分起草 / 评审 / 发布三态。
+
+**适用于：** 内部 PRD 与技术设计文档、ADR、API 规范、对外开发者站点——所有需要长期维护、随代码演进的结构化文档。
+
+**不替代：** Notion / 飞书（协作笔记）、GitBook / Mintlify（托管发布）。Anydocs 站在中间——把散落的笔记变成结构化、AI 可持续维护的工程产物。
+
+核心入口：
 
 - 在 `Studio` 里编辑文档页面、导航和项目设置
 - 让 `agent` 通过 `MCP` 稳定地读写文档项目，而不是直接改 JSON
@@ -232,6 +240,7 @@ my-docs-project/
 
 如果你已经能跑起来，后续按场景查这些文档：
 
+- [ROADMAP.md](ROADMAP.md)：项目定位、近期路线图与中长期方向
 - [docs/usage-manual.md](docs/usage-manual.md)：详细操作手册
 - [docs/runtime-architecture.md](docs/runtime-architecture.md)：运行时边界、env contract 和路由策略
 - [docs/agent.md](docs/agent.md)：项目根最小 agent guide 模板
