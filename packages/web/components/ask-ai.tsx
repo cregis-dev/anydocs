@@ -4,15 +4,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { ArrowUp, BookOpen, Sparkles, User, X } from 'lucide-react';
+import { ArrowUp, BookOpen, Sparkles, ThumbsDown, ThumbsUp, User, X } from 'lucide-react';
 
 import {
+  buildAskFeedbackRequestBody,
   buildAskRequestBody,
   formatAskResponseMessage,
   groupAskCitationsBySource,
   isEmptyAskStreamResponse,
   readAskStreamResponse,
+  resolveAskFeedbackEndpoint,
   resolveAskStreamEndpoint,
+  type AskFeedbackRating,
   type AskCitationSourceGroup,
   type AskApiCitation,
   type AskApiResponse,
@@ -26,7 +29,10 @@ type Message = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  answerId?: string;
   citations?: AskApiCitation[];
+  feedbackRating?: AskFeedbackRating;
+  feedbackStatus?: 'sending' | 'sent' | 'error';
 };
 
 type AskAIProps = {
@@ -64,9 +70,10 @@ function createIntroMessage(isZh: boolean): Message {
 function assistantPayloadFromResponse(
   response: AskApiResponse,
   lang: string,
-): Pick<Message, 'content' | 'citations'> {
+): Pick<Message, 'answerId' | 'content' | 'citations'> {
   if (response.type === 'answer') {
     return {
+      answerId: response.answer_id,
       content: response.answer_md,
       citations: response.citations ?? [],
     };
@@ -190,16 +197,82 @@ function LoadingCopy({ isZh }: { isZh: boolean }) {
   );
 }
 
+function FeedbackControls({
+  isZh,
+  message,
+  onFeedback,
+}: {
+  isZh: boolean;
+  message: Message;
+  onFeedback: (messageId: string, rating: AskFeedbackRating) => void;
+}) {
+  if (!message.answerId) return null;
+
+  const isSending = message.feedbackStatus === 'sending';
+  const isSent = message.feedbackStatus === 'sent';
+  const label = isSent
+    ? isZh
+      ? '感谢反馈'
+      : 'Thanks for the feedback'
+    : isZh
+      ? '这个回答有帮助吗？'
+      : 'Was this answer helpful?';
+
+  const buttonClass = (rating: AskFeedbackRating) => {
+    const active = message.feedbackRating === rating && isSent;
+    return [
+      'inline-flex size-8 items-center justify-center rounded-full border transition',
+      active
+        ? 'border-[color:var(--atlas-primary,var(--fd-primary))] bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[color:var(--atlas-primary,var(--fd-primary))]'
+        : 'border-[color:var(--docs-divider,var(--fd-border))] text-fd-muted-foreground hover:border-[color:var(--atlas-primary,var(--fd-primary))]/40 hover:text-fd-foreground',
+      isSending ? 'cursor-wait opacity-60' : '',
+    ].join(' ');
+  };
+
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-fd-muted-foreground">
+      <span>{label}</span>
+      <button
+        type="button"
+        onClick={() => onFeedback(message.id, 1)}
+        disabled={isSending || isSent}
+        aria-label={isZh ? '这个回答有帮助' : 'This answer was helpful'}
+        title={isZh ? '有帮助' : 'Helpful'}
+        className={buttonClass(1)}
+      >
+        <ThumbsUp className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onFeedback(message.id, -1)}
+        disabled={isSending || isSent}
+        aria-label={isZh ? '这个回答没有帮助' : 'This answer was not helpful'}
+        title={isZh ? '没有帮助' : 'Not helpful'}
+        className={buttonClass(-1)}
+      >
+        <ThumbsDown className="size-4" />
+      </button>
+      {message.feedbackStatus === 'error' ? (
+        <span className="text-red-600">
+          {isZh ? '提交失败，请稍后再试' : 'Could not send feedback. Please try again.'}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function MessageRow({
   message,
   isIntro,
   isLoadingPlaceholder,
   isZh,
+  onFeedback,
 }: {
   message: Message;
   isIntro: boolean;
   isLoadingPlaceholder: boolean;
   isZh: boolean;
+  onFeedback: (messageId: string, rating: AskFeedbackRating) => void;
 }) {
   if (message.role === 'assistant' && message.content.length === 0 && !isLoadingPlaceholder) {
     return null;
@@ -228,6 +301,7 @@ function MessageRow({
           <>
             <AskAIMarkdown content={message.content} />
             <SourceList citations={message.citations ?? []} isZh={isZh} />
+            <FeedbackControls isZh={isZh} message={message} onFeedback={onFeedback} />
           </>
         ) : (
           <LoadingCopy isZh={isZh} />
@@ -297,11 +371,86 @@ export function AskAI({
     );
   };
 
-  const replaceMessage = (id: string, content: string, citations: AskApiCitation[] = []) => {
+  const replaceMessage = (
+    id: string,
+    content: string,
+    citations: AskApiCitation[] = [],
+    answerId?: string,
+  ) => {
     setMessages((prev) =>
-      prev.map((message) => (message.id === id ? { ...message, content, citations } : message)),
+      prev.map((message) =>
+        message.id === id
+          ? {
+              ...message,
+              answerId,
+              citations,
+              content,
+              feedbackRating: undefined,
+              feedbackStatus: undefined,
+            }
+          : message,
+      ),
     );
   };
+
+  const handleFeedback = useCallback(
+    async (messageId: string, rating: AskFeedbackRating) => {
+      const target = messages.find((message) => message.id === messageId);
+      if (
+        !target?.answerId ||
+        target.feedbackStatus === 'sending' ||
+        target.feedbackStatus === 'sent'
+      ) {
+        return;
+      }
+
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? { ...message, feedbackRating: rating, feedbackStatus: 'sending' }
+            : message,
+        ),
+      );
+
+      try {
+        const response = await fetch(resolveAskFeedbackEndpoint(endpointBaseUrl), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(
+            buildAskFeedbackRequestBody({
+              answerId: target.answerId,
+              currentPageId,
+              generated: target.content,
+              rating,
+            }),
+          ),
+        });
+
+        if (!response.ok) {
+          throw new Error(`${response.status} ${response.statusText}`.trim());
+        }
+
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === messageId
+              ? { ...message, feedbackRating: rating, feedbackStatus: 'sent' }
+              : message,
+          ),
+        );
+      } catch {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === messageId
+              ? { ...message, feedbackRating: rating, feedbackStatus: 'error' }
+              : message,
+          ),
+        );
+      }
+    },
+    [currentPageId, endpointBaseUrl, messages],
+  );
 
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -342,7 +491,7 @@ export function AskAI({
       }
 
       const next = assistantPayloadFromResponse(payload, lang);
-      replaceMessage(assistantMessage.id, next.content, next.citations);
+      replaceMessage(assistantMessage.id, next.content, next.citations, next.answerId);
     } catch (error) {
       if (controller.signal.aborted) return;
       const message =
@@ -418,6 +567,7 @@ export function AskAI({
                       index === messages.length - 1
                     }
                     isZh={isZh}
+                    onFeedback={handleFeedback}
                   />
                 ))}
               </div>

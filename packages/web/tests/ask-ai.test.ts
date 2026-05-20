@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildAskFeedbackRequestBody,
   buildAskRequestBody,
   formatAskResponseMessage,
   groupAskCitationsBySource,
   parseAskResponseText,
   readAskStreamResponse,
   resolveAskEndpoint,
+  resolveAskFeedbackEndpoint,
   resolveAskStreamEndpoint,
   shouldUseAskJsonFallback,
 } from '../components/ask-ai-api.ts';
@@ -52,6 +54,33 @@ test('resolveAskStreamEndpoint appends the stream route to explicit bases', () =
   );
 });
 
+test('resolveAskFeedbackEndpoint defaults to the same-origin docs proxy feedback route', () => {
+  assert.equal(
+    resolveAskFeedbackEndpoint('', {
+      protocol: 'https:',
+      hostname: 'cregis-developer.cregis.dev',
+    }),
+    '/ask-api/v1/ask/feedback',
+  );
+});
+
+test('resolveAskFeedbackEndpoint derives feedback route from explicit ask URLs', () => {
+  assert.equal(
+    resolveAskFeedbackEndpoint('https://gw.example.com/ask/', {
+      protocol: 'https:',
+      hostname: 'docs.example.com',
+    }),
+    'https://gw.example.com/ask/v1/ask/feedback',
+  );
+  assert.equal(
+    resolveAskFeedbackEndpoint('https://gw.example.com/ask/v1/ask/stream', {
+      protocol: 'https:',
+      hostname: 'docs.example.com',
+    }),
+    'https://gw.example.com/ask/v1/ask/feedback',
+  );
+});
+
 test('buildAskRequestBody includes page context only when known', () => {
   assert.deepEqual(buildAskRequestBody('  How do I sign requests?  ', 'sdk-overview'), {
     question: 'How do I sign requests?',
@@ -63,6 +92,38 @@ test('buildAskRequestBody includes page context only when known', () => {
     question: 'What is Cregis?',
     options: { max_chunks: 5 },
   });
+});
+
+test('buildAskFeedbackRequestBody sends thumbs rating, generated answer, and page context', () => {
+  assert.deepEqual(
+    buildAskFeedbackRequestBody({
+      answerId: 'ans_123',
+      currentPageId: 'payment-engine-setup',
+      generated: 'Use /api/v2/checkout.',
+      rating: 1,
+    }),
+    {
+      answer_id: 'ans_123',
+      current_page_id: 'payment-engine-setup',
+      generated: 'Use /api/v2/checkout.',
+      rating: 1,
+      tags: ['thumbs_up'],
+    },
+  );
+
+  assert.deepEqual(
+    buildAskFeedbackRequestBody({
+      answerId: 'ans_123',
+      generated: 'Wrong endpoint.',
+      rating: -1,
+    }),
+    {
+      answer_id: 'ans_123',
+      generated: 'Wrong endpoint.',
+      rating: -1,
+      tags: ['thumbs_down'],
+    },
+  );
 });
 
 test('formatAskResponseMessage renders answer citations without losing markdown', () => {

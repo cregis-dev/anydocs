@@ -18,11 +18,13 @@ export type AskCitationSourceGroup = {
 export type AskApiResponse =
   | {
       type: 'answer';
+      answer_id?: string;
       answer_md: string;
       citations?: AskApiCitation[];
     }
   | {
       type: 'clarify';
+      answer_id?: string;
       message: string;
       options?: Array<{ label: string }>;
     }
@@ -31,6 +33,8 @@ export type AskApiResponse =
       code?: string;
       message?: string;
     };
+
+export type AskFeedbackRating = 1 | -1;
 
 export function isEmptyAskStreamResponse(response: AskApiResponse): boolean {
   return response.type === 'error' && response.code === 'empty_stream';
@@ -41,6 +45,7 @@ export function shouldUseAskJsonFallback(_input: {
   response?: AskApiResponse;
   error?: unknown;
 }): boolean {
+  void _input;
   return false;
 }
 
@@ -57,6 +62,7 @@ type LocationLike = {
 
 const ASK_PATH = '/v1/ask';
 const ASK_STREAM_PATH = '/v1/ask/stream';
+const ASK_FEEDBACK_PATH = '/v1/ask/feedback';
 const DEFAULT_ASK_PROXY_PATH = '/ask-api';
 const DEFAULT_MAX_CHUNKS = 5;
 
@@ -78,6 +84,7 @@ export function resolveAskEndpoint(
   configuredBaseUrl = getConfiguredAskBaseUrl(),
   _locationLike: LocationLike | null = getBrowserLocation(),
 ) {
+  void _locationLike;
   const trimmed = configuredBaseUrl.trim();
   if (trimmed.length > 0) {
     const normalized = trimmed.replace(/\/+$/, '');
@@ -91,6 +98,7 @@ export function resolveAskStreamEndpoint(
   configuredBaseUrl = getConfiguredAskBaseUrl(),
   _locationLike: LocationLike | null = getBrowserLocation(),
 ) {
+  void _locationLike;
   const trimmed = configuredBaseUrl.trim();
   if (trimmed.length > 0) {
     const normalized = trimmed.replace(/\/+$/, '');
@@ -102,6 +110,27 @@ export function resolveAskStreamEndpoint(
   }
 
   return `${DEFAULT_ASK_PROXY_PATH}${ASK_STREAM_PATH}`;
+}
+
+export function resolveAskFeedbackEndpoint(
+  configuredBaseUrl = getConfiguredAskBaseUrl(),
+  _locationLike: LocationLike | null = getBrowserLocation(),
+) {
+  void _locationLike;
+  const trimmed = configuredBaseUrl.trim();
+  if (trimmed.length > 0) {
+    const normalized = trimmed.replace(/\/+$/, '');
+    if (normalized.endsWith(ASK_FEEDBACK_PATH)) return normalized;
+    if (normalized.endsWith(ASK_STREAM_PATH)) {
+      return `${normalized.slice(0, -'/stream'.length)}/feedback`;
+    }
+    if (normalized.endsWith(ASK_PATH)) {
+      return `${normalized}/feedback`;
+    }
+    return `${normalized}${ASK_FEEDBACK_PATH}`;
+  }
+
+  return `${DEFAULT_ASK_PROXY_PATH}${ASK_FEEDBACK_PATH}`;
 }
 
 export function buildAskRequestBody(
@@ -120,6 +149,32 @@ export function buildAskRequestBody(
 
   if (currentPageId) {
     body.context = { current_page_id: currentPageId };
+  }
+
+  return body;
+}
+
+export function buildAskFeedbackRequestBody(input: {
+  answerId: string;
+  currentPageId?: string | null;
+  generated: string;
+  rating: AskFeedbackRating;
+}) {
+  const body: {
+    answer_id: string;
+    current_page_id?: string;
+    generated: string;
+    rating: AskFeedbackRating;
+    tags: string[];
+  } = {
+    answer_id: input.answerId,
+    generated: input.generated,
+    rating: input.rating,
+    tags: [input.rating > 0 ? 'thumbs_up' : 'thumbs_down'],
+  };
+
+  if (input.currentPageId) {
+    body.current_page_id = input.currentPageId;
   }
 
   return body;
