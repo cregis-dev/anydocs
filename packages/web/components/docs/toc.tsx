@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import type { TocItem } from '@/lib/docs/markdown';
 import { getDocsUiCopy, inferDocsLangFromPathname } from '@/components/docs/docs-ui-copy';
+import { resolveActiveTocId } from '@/components/docs/toc-active';
 import { cn } from '@/lib/utils';
 
 export function DocsToc({
@@ -37,6 +38,7 @@ export function DocsToc({
   const pathname = usePathname();
   const copy = getDocsUiCopy(inferDocsLangFromPathname(pathname));
   const [activeId, setActiveId] = useState<string | null>(toc[0]?.id ?? null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!toc.length) return;
@@ -54,8 +56,13 @@ export function DocsToc({
         })
         .filter((item): item is { id: string; top: number } => item !== null);
 
-      const visible = candidates.filter((item) => item.top <= 180);
-      const next = visible.at(-1)?.id ?? candidates[0]?.id ?? null;
+      const scrollElement = document.scrollingElement ?? document.documentElement;
+      const next = resolveActiveTocId({
+        candidates,
+        scrollY: window.scrollY,
+        viewportHeight: window.innerHeight,
+        scrollHeight: scrollElement.scrollHeight,
+      });
       setActiveId(next);
     };
 
@@ -67,6 +74,29 @@ export function DocsToc({
     };
   }, [toc]);
 
+  useEffect(() => {
+    if (!activeId) return;
+
+    const content = contentRef.current;
+    if (!content) return;
+
+    const activeLink = Array.from(
+      content.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'),
+    ).find((link) => link.getAttribute('href') === `#${activeId}`);
+    if (!activeLink) return;
+
+    const contentRect = content.getBoundingClientRect();
+    const activeRect = activeLink.getBoundingClientRect();
+    const padding = 12;
+
+    if (
+      activeRect.top < contentRect.top + padding ||
+      activeRect.bottom > contentRect.bottom - padding
+    ) {
+      activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [activeId]);
+
   if (!toc.length) return null;
   return (
     <aside
@@ -77,8 +107,9 @@ export function DocsToc({
       )}
     >
       <div
+        ref={contentRef}
         className={cn(
-          disableInnerScroll ? 'pr-0' : 'max-h-full overflow-y-auto pr-1',
+          disableInnerScroll ? 'pr-0' : 'max-h-[calc(100dvh-10rem)] overflow-y-auto pr-1',
           contentClassName,
         )}
       >
