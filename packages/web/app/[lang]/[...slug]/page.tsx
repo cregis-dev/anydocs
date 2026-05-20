@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { DocsPaginationLink } from "@/components/docs/pagination-link";
 import { ScalarApiReference } from "@/components/docs/scalar-api-reference";
 import {
   getPublishedApiSourceById,
@@ -626,7 +626,7 @@ export default async function Page({
             )}
           >
             {prevPage ? (
-              <Link
+              <DocsPaginationLink
                 href={`/${lang}/${prevPage.slug}`}
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-primary/30",
@@ -660,12 +660,12 @@ export default async function Page({
                 ) : (
                   <>← {prevPage.title}</>
                 )}
-              </Link>
+              </DocsPaginationLink>
             ) : (
               <span />
             )}
             {nextPage ? (
-              <Link
+              <DocsPaginationLink
                 href={`/${lang}/${nextPage.slug}`}
                 className={cn(
                   "rounded-xl border border-fd-border px-4 py-2.5 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] transition hover:bg-fd-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-primary/30",
@@ -699,7 +699,7 @@ export default async function Page({
                 ) : (
                   <>{nextPage.title} →</>
                 )}
-              </Link>
+              </DocsPaginationLink>
             ) : (
               <span />
             )}
@@ -724,7 +724,6 @@ export default async function Page({
           )}
           hideTitle={false}
           hideDivider={isClassicTheme || isAtlasTheme}
-          disableInnerScroll={isClassicTheme || isAtlasTheme}
           disableDefaultDepthStyles={isClassicTheme || isAtlasTheme}
           titleClassName={cn(
             isClassicTheme &&
