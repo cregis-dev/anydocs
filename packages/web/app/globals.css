@@ -185,6 +185,25 @@ body [data-radix-popper-content-wrapper] {
   outline-offset: 2px;
 }
 
+.mermaid-wrapper foreignObject,
+.mermaid-wrapper .edgeLabel,
+.mermaid-wrapper .labelBkg {
+  overflow: visible;
+}
+
+.mermaid-wrapper .edgeLabel .background {
+  fill: var(--fd-background, #fff) !important;
+  fill-opacity: 0.68;
+}
+
+.mermaid-wrapper .edgeLabel p {
+  max-width: 100%;
+  margin: 0 !important;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+  line-height: inherit !important;
+}
+
 .docs-yoopta-view h1,
 .docs-yoopta-view h2,
 .docs-yoopta-view h3,

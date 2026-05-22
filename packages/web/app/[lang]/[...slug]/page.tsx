@@ -545,9 +545,9 @@ export default async function Page({
       >
         <div
           className={cn(
-            "mx-auto max-w-[670px] pb-16 pt-8 lg:pb-20",
-            isClassicTheme && "max-w-[820px] pb-16 pt-8",
-            isAtlasTheme && "max-w-[760px] pb-20 pt-10",
+            "mx-auto max-w-[670px] pb-[42vh] pt-8",
+            isClassicTheme && "max-w-[820px] pb-[42vh] pt-8",
+            isAtlasTheme && "max-w-[760px] pb-[42vh] pt-10",
           )}
         >
           {showBreadcrumbs ? (
