@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, MouseEvent } from "react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import type { ProjectSiteTopNavItem } from "@anydocs/core";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -68,6 +68,18 @@ const LANGUAGE_META: Record<string, { label: string }> = {
   zh: { label: "简体中文" },
 };
 
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
+
+function useHydrated() {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydratedSnapshot,
+  );
+}
+
 function getLanguageLabel(language: string) {
   return LANGUAGE_META[language]?.label ?? language.toUpperCase();
 }
@@ -115,6 +127,7 @@ export function AtlasDocsReaderLayout({
     groupId: string;
     sourcePath: string;
   } | null>(null);
+  const hydrated = useHydrated();
   const [, startTransition] = useTransition();
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const configuredSiteTitle = siteTheme.branding?.siteTitle?.trim();
@@ -342,7 +355,7 @@ export function AtlasDocsReaderLayout({
 
               <AskAI currentPageId={activePageId} lang={lang} />
 
-              {showLanguageSwitcher ? (
+              {showLanguageSwitcher && hydrated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -376,9 +389,22 @@ export function AtlasDocsReaderLayout({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              ) : showLanguageSwitcher ? (
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  aria-label={lang === "zh" ? "切换语言" : "Switch language"}
+                  title={lang === "zh" ? "切换语言" : "Switch language"}
+                  className="inline-flex h-9 min-w-[5.5rem] items-center justify-center gap-2 rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white px-3 text-[13px] font-medium text-[color:var(--atlas-top-nav-link)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition"
+                >
+                  <Globe2 className="size-4" aria-hidden />
+                  <span className="tracking-[0.06em]">{getLanguageShortLabel(lang)}</span>
+                  <ChevronDown className="size-4 opacity-60" aria-hidden />
+                </button>
               ) : null}
             </div>
 
+            {hydrated ? (
             <Dialog>
               <DialogTrigger asChild>
                 <Button
@@ -593,6 +619,17 @@ export function AtlasDocsReaderLayout({
                 ) : null}
               </DialogContent>
             </Dialog>
+            ) : (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="ml-auto rounded-lg lg:!hidden"
+                aria-disabled="true"
+              >
+                <Menu className="h-4 w-4" />
+                <span className="sr-only">{copy.common.openNavigation}</span>
+              </Button>
+            )}
           </div>
         </div>
 

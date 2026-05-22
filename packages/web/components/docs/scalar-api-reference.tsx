@@ -205,6 +205,9 @@ export function ScalarApiReference({
             layout: 'modern',
             operationTitleSource: 'summary',
             hideTestRequestButton: !showTryIt,
+            hideClientButton: true,
+            hiddenClients: true,
+            hideDarkModeToggle: true,
             showSidebar: true,
             theme: 'default',
           }}
