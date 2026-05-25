@@ -27,6 +27,7 @@ const RUNTIME_ENV_ALLOWLIST = new Set([
   'LC_ALL',
   'LC_CTYPE',
   'LOGNAME',
+  'NEXT_PUBLIC_ANYDOCS_ASK_URL',
   'PATH',
   'PNPM_HOME',
   'SHELL',
