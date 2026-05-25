@@ -76,7 +76,7 @@ development_status:
   5-3-review-and-correct-external-or-ai-generated-content-before-publication: done
   5-4-expose-published-machine-readable-artifacts-for-external-ai-consumers: done
   5-5-preserve-forward-compatibility-for-workflow-reuse-and-future-ai-native-capabilities: done
-  5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find: in-progress
+  5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find: review
   epic-5-retrospective: optional
 
   epic-6: in-progress

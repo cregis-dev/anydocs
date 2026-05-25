@@ -1,6 +1,6 @@
 # Story 5.6: Expand AI-Readable Artifacts and Reposition Reader Search as Find
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -45,13 +45,13 @@ so that external agents can consume grounded published content and human readers
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][Medium] Correct wrong file paths in Story File List — declared `docs/04-usage-manual.md` and `docs/05-dev-guide.md` but actual files are `docs/usage-manual.md` and `docs/developer-guide.md` [5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find.md:271-278]
-- [ ] [AI-Review][Medium] Add test asserting draft pages are excluded from `llms-full.txt` — AC6 gap: `build-preview-service.test.ts` validates draft exclusion for search index and chunks but never checks `llms-full.txt` content [packages/core/tests/build-preview-service.test.ts:370-412]
-- [ ] [AI-Review][Medium] Add test asserting draft pages are excluded from `mcp/chunks.<lang>.json` — same AC6 gap as above; chunk artifact has no explicit draft-exclusion assertion [packages/core/tests/build-preview-service.test.ts:370-412]
-- [ ] [AI-Review][Medium] Remove or refactor unreachable fallback block in `toChunkDocs` — the `if (chunks.length > 0) return chunks; return [fallback]` block (lines 675-718) is dead code because `getSearchSections` always returns at least one section via page-title fallback; existing test validates the `getSearchSections` path, not this block [packages/core/src/publishing/build-artifacts.ts:675-718]
-- [ ] [AI-Review][Medium] Eliminate double page-parsing in `writePublishedArtifacts` — `toChunkDocs` is called twice per page (once for MCP chunks, once for reader search chunks) causing `getPageText`→`renderPageContent`→`extractMarkdownSections` to run twice; extract shared sections before both calls [packages/core/src/publishing/build-artifacts.ts:818-832]
-- [ ] [AI-Review][Low] Add section-anchored `href` to chunk docs — unlike reader search docs which include `#headingId` anchors, chunk `href` is always page-level only (`/${lang}/${slug}`); external agents cannot deep-link to a specific section from chunk metadata [packages/core/src/publishing/build-artifacts.ts:629]
-- [ ] [AI-Review][Low] Add `llmsFull` and `chunks` artifact entries to `BuildManifest.artifacts` — new artifacts are discoverable via `mcp/index.json` but not via `build-manifest.json`; two discovery paths are inconsistent [packages/core/src/publishing/build-artifacts.ts:169-174]
+- [x] [AI-Review][Medium] Correct wrong file paths in Story File List — declared `docs/04-usage-manual.md` and `docs/05-dev-guide.md` but actual files are `docs/usage-manual.md` and `docs/developer-guide.md` [5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find.md:271-278]
+- [x] [AI-Review][Medium] Add test asserting draft pages are excluded from `llms-full.txt` — AC6 gap: `build-preview-service.test.ts` validates draft exclusion for search index and chunks but never checks `llms-full.txt` content [packages/core/tests/build-preview-service.test.ts:370-412]
+- [x] [AI-Review][Medium] Add test asserting draft pages are excluded from `mcp/chunks.<lang>.json` — same AC6 gap as above; chunk artifact has no explicit draft-exclusion assertion [packages/core/tests/build-preview-service.test.ts:370-412]
+- [x] [AI-Review][Medium] Remove or refactor unreachable fallback block in `toChunkDocs` — the `if (chunks.length > 0) return chunks; return [fallback]` block (lines 675-718) is dead code because `getSearchSections` always returns at least one section via page-title fallback; existing test validates the `getSearchSections` path, not this block [packages/core/src/publishing/build-artifacts.ts:675-718]
+- [x] [AI-Review][Medium] Eliminate double page-parsing in `writePublishedArtifacts` — `toChunkDocs` is called twice per page (once for MCP chunks, once for reader search chunks) causing `getPageText`→`renderPageContent`→`extractMarkdownSections` to run twice; extract shared sections before both calls [packages/core/src/publishing/build-artifacts.ts:818-832]
+- [x] [AI-Review][Low] Add section-anchored `href` to chunk docs — unlike reader search docs which include `#headingId` anchors, chunk `href` is always page-level only (`/${lang}/${slug}`); external agents cannot deep-link to a specific section from chunk metadata [packages/core/src/publishing/build-artifacts.ts:629]
+- [x] [AI-Review][Low] Add `llmsFull` and `chunks` artifact entries to `BuildManifest.artifacts` — new artifacts are discoverable via `mcp/index.json` but not via `build-manifest.json`; two discovery paths are inconsistent [packages/core/src/publishing/build-artifacts.ts:169-174]
 
 ## Implementation Checklist
 
@@ -275,15 +275,36 @@ GPT-5 Codex
 - Verified `@anydocs/core` typecheck, the targeted build artifact regression tests, and the workflow-standard test suite.
 - Full `@anydocs/web` typecheck is currently blocked by missing `.next/types` files in the workspace, and preview-related tests remain constrained by sandbox socket permissions.
 
+#### Review follow-up resolutions (2026-05-25)
+
+- ✅ Resolved review finding [Medium]: Corrected File List paths (`docs/04-usage-manual.md` → `docs/usage-manual.md`, `docs/05-dev-guide.md` → `docs/developer-guide.md`). The Tasks/Subtasks and Implementation Checklist entries retain the original (incorrect) filenames as historical record per BMAD dev-story rule "only modify Tasks/Subtasks checkboxes, Dev Agent Record, File List, Change Log, and Status".
+- ✅ Resolved review finding [Medium]: Added draft-exclusion assertions for `llms-full.txt` and `mcp/chunks.<lang>.json` to the existing "published search index emits section-level records..." test (which already provisioned a `status=draft` fixture). Verifies both the page id and a unique body sentinel never leak into either artifact.
+- ✅ Resolved review finding [Medium]: Removed the unreachable empty-page fallback block in `toChunkDocs` (now `buildChunkDocsFromSections`). `getSearchSections` guarantees ≥1 section for any page with a non-empty title via its plain-text fallback, so the inner fallback was structurally dead. AC5 (every page produces at least one chunk) remains satisfied through `getSearchSections`. Existing "fallback chunk for pages without headings" test continues to pass via the title-fallback path.
+- ✅ Resolved review finding [Medium]: Eliminated double page-parsing in `writePublishedArtifacts` by hoisting `getSearchSections(page)` into a per-language `pageSections` map computed once before the MCP-chunk and reader-search-chunk builds. Both `toReaderSearchDocs` and the new `buildChunkDocsFromSections` now accept pre-computed sections, replacing the prior `toChunkDocs` (which re-parsed pages on each call).
+- ✅ Resolved review finding [Low]: Chunk `href` now includes the `#headingId` anchor when the chunk maps to a heading, matching `toReaderSearchDocs` behavior. `sourcePath` stays page-level (it represents the underlying source location, not the deep-link target). `buildEnrichedText`'s "Page:" label keeps the page-level URL since the "Section:" line already conveys the heading path.
+- ✅ Resolved review finding [Low]: Extended `BuildManifest.artifacts` with required `llmsFull: string` and `chunks: string[]` fields, populated from the same per-language language list used for `searchIndexes`/`searchFindIndexes`. The `mcp/index.json` and `build-manifest.json` discovery paths now agree on the complete published artifact set.
+
+#### Verification (review follow-ups)
+
+- `pnpm --filter @anydocs/core typecheck` → exit 0
+- `pnpm --filter @anydocs/core test` → 155/155 passing (includes 2 new draft-exclusion assertions and the dead-code removal under the existing "fallback chunk for pages without headings" test)
+- `pnpm typecheck` (root, 7 packages) → all clean
+- `pnpm test` (root regression gate) → core 155 + editor 7 + cli 36 (+2 pre-existing skips) + mcp 44 = 242 tests, 0 failures
+- Reviewer-referenced line numbers shifted after the refactor; the equivalent logic now lives at `packages/core/src/publishing/build-artifacts.ts:589-686` (chunk builder) and `:805-862` (per-page sections cache + chunk variants).
+
+#### Out-of-scope finding spotted during review (logged for separate work)
+
+- `packages/web/scripts/gen-public-assets.mjs:pruneInternalExportArtifacts` only preserves `llms.txt` and `robots.txt` in the exported docs site; `llms-full.txt` is dropped during the docs export pipeline even though `runBuildWorkflow` writes it. This is a deployment-pipeline gap (not in the 5.6 review action items) and should be filed as its own follow-up.
+
 ### File List
 
-- /Users/shawn/workspace/code/anydocs/packages/core/src/publishing/build-artifacts.ts
+- /Users/shawn/workspace/code/anydocs/packages/core/src/publishing/build-artifacts.ts (also modified 2026-05-25 — review follow-ups: dead-code removal, single-pass page sections, section-anchored chunk href, BuildManifest.artifacts parity)
 - /Users/shawn/workspace/code/anydocs/packages/core/src/services/workflow-standard-service.ts
 - /Users/shawn/workspace/code/anydocs/packages/core/src/types/workflow-standard.ts
-- /Users/shawn/workspace/code/anydocs/packages/core/tests/build-preview-service.test.ts
+- /Users/shawn/workspace/code/anydocs/packages/core/tests/build-preview-service.test.ts (also modified 2026-05-25 — review follow-ups: added draft-exclusion assertions for llms-full.txt and mcp/chunks.<lang>.json)
 - /Users/shawn/workspace/code/anydocs/packages/web/components/docs/search-panel.tsx
-- /Users/shawn/workspace/code/anydocs/docs/04-usage-manual.md
-- /Users/shawn/workspace/code/anydocs/docs/05-dev-guide.md
+- /Users/shawn/workspace/code/anydocs/docs/usage-manual.md
+- /Users/shawn/workspace/code/anydocs/docs/developer-guide.md
 - /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts/5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find.md
 
 ### Change Log
@@ -291,3 +312,4 @@ GPT-5 Codex
 - 2026-03-19: Added `llms-full.txt` and `mcp/chunks.<lang>.json` as published-only build artifacts for external agents.
 - 2026-03-19: Extended workflow-standard and machine-readable discovery metadata to expose the new artifact family.
 - 2026-03-19: Repositioned reader search copy toward `Find` and updated docs to explain artifact responsibilities and verification flow.
+- 2026-05-25: Addressed code review findings — 7 items resolved (5 Medium + 2 Low) covering doc-path corrections, draft-exclusion test coverage, dead-code removal in chunk builder, single-pass page-section computation, section-anchored chunk `href`, and `BuildManifest.artifacts` parity with `mcp/index.json`. No public API changes; chunk artifact hashes for pages with headings change due to the new `href` shape (acceptable: chunks regenerate on every build).
