@@ -7,6 +7,9 @@ const shouldStaticExport =
 
 const nextConfig = {
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_ANYDOCS_ASK_URL: process.env.NEXT_PUBLIC_ANYDOCS_ASK_URL ?? '',
+  },
   // Studio local APIs require a normal dev server. Static export is only needed for docs export/build flows.
   output: shouldStaticExport ? 'export' : undefined,
   distDir: process.env.ANYDOCS_NEXT_DIST_DIR || '.next',

@@ -1,13 +1,20 @@
-import type { CSSProperties } from 'react';
+// NOTE: this layout is intentionally NOT a Client Component. The only piece
+// of UI here that depends on `usePathname` is the Search / Ask AI sidebar
+// slot, which is isolated in `<ClassicDocsSearchAskSlot>`. Keeping the layout
+// as a Server Component preserves RSC streaming for the docs reader.
+
+import { type CSSProperties } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
+import { SearchPanel } from '@/components/docs/search-panel';
 import { DocsSidebar } from '@/components/docs/sidebar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { DocsThemeReaderLayoutProps } from '@/lib/themes/types';
 import { CLASSIC_DOCS_THEME_CLASS_NAME } from '@/themes/classic-docs/manifest';
+import { ClassicDocsSearchAskSlot } from '@/themes/classic-docs/search-ask-slot';
 
 function getClassicDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteTheme']) {
   const colors = siteTheme.colors ?? {};
@@ -24,6 +31,13 @@ function getClassicDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteThe
 
   return style;
 }
+
+// `NEXT_PUBLIC_*` env vars are inlined into both server and client bundles by
+// Next.js, so this read is safe in both contexts. A missing or whitespace-only
+// value means the Ask AI backend isn't wired up for this deploy; we then fall
+// back to the plain SearchPanel rather than show a broken Ask AI entry.
+const ASK_BACKEND_URL = (process.env.NEXT_PUBLIC_ANYDOCS_ASK_URL ?? '').trim();
+const ASK_BACKEND_CONFIGURED = ASK_BACKEND_URL.length > 0;
 
 export function ClassicDocsReaderLayout({
   children,
@@ -44,6 +58,30 @@ export function ClassicDocsReaderLayout({
   const siteTitle = configuredSiteTitle ?? projectName?.trim() ?? (!logoSrc ? 'Anydocs Docs' : '');
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const themeStyle = getClassicDocsThemeStyle(siteTheme);
+
+  // Ask AI is only offered when the backend URL is configured. Otherwise the
+  // sidebar falls back to a plain SearchPanel — same find-only experience the
+  // other classic-docs sites had before the Ask AI integration landed.
+  const searchSlot = ASK_BACKEND_CONFIGURED ? (
+    <ClassicDocsSearchAskSlot
+      lang={lang}
+      pages={pages}
+      findHref={searchFindHref}
+      indexHref={searchIndexHref}
+      documentationName={siteTitle}
+      endpointBaseUrl={ASK_BACKEND_URL}
+    />
+  ) : (
+    <SearchPanel
+      lang={lang}
+      findHref={searchFindHref}
+      indexHref={searchIndexHref}
+      placeholder={copy.sidebar.searchPlaceholder}
+      inputClassName="h-9 rounded-md border bg-fd-background px-3.5 text-[13px]"
+      resultsClassName="rounded-lg"
+    />
+  );
+
   const classicSidebarProps = {
     lang,
     nav,
@@ -61,8 +99,7 @@ export function ClassicDocsReaderLayout({
       logoAlt,
     },
     brandTitleClassName: 'text-[18px] font-semibold leading-6 tracking-[-0.02em]',
-    searchInputClassName: 'h-9 rounded-md border bg-fd-background px-3.5 text-[13px]',
-    searchResultsClassName: 'rounded-lg',
+    searchPanel: searchSlot,
     groupSummaryClassName: 'rounded-md px-2 py-1.5',
     nestedGroupSummaryClassName: 'rounded-md px-2.5 py-1.5',
     groupTitleClassName: 'text-[13px] font-medium tracking-normal',

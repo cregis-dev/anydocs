@@ -82,6 +82,13 @@
   --docs-toc-link-hover: var(--classic-foreground);
   --docs-toc-link-active: var(--classic-foreground);
   --docs-toc-active-background: transparent;
+  --ask-ai-primary: var(--classic-primary);
+  --ask-ai-primary-foreground: var(--classic-primary-foreground);
+  --ask-ai-link: var(--classic-copy);
+  --ask-ai-ring: var(--classic-ring);
+  --ask-ai-header: var(--classic-muted);
+  --ask-ai-panel-subtle: var(--classic-muted);
+  --ask-ai-input-background: var(--classic-muted);
 }
 
 .theme-classic-docs [data-docs-divider] {

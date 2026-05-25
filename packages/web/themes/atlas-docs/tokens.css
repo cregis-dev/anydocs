@@ -91,6 +91,13 @@
   --docs-toc-link: var(--atlas-copy-subtle);
   --docs-toc-link-active: var(--atlas-foreground);
   --docs-toc-link-hover: var(--atlas-copy);
+  --ask-ai-primary: var(--atlas-primary);
+  --ask-ai-primary-foreground: var(--atlas-primary-foreground);
+  --ask-ai-link: var(--atlas-top-nav-link);
+  --ask-ai-ring: var(--atlas-ring);
+  --ask-ai-header: var(--atlas-search-background);
+  --ask-ai-panel-subtle: var(--atlas-panel-subtle);
+  --ask-ai-input-background: var(--atlas-search-background);
 }
 
 .theme-atlas-docs {

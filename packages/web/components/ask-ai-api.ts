@@ -15,6 +15,14 @@ export type AskCitationSourceGroup = {
   citationIds: string[];
 };
 
+export type AskApiClarifyOption = {
+  scope_id: string;
+  lang?: string;
+  label: string;
+  breadcrumb?: Array<{ id?: string; title: string; type?: string }>;
+  sample_pages?: Array<{ id: string; title: string }>;
+};
+
 export type AskApiResponse =
   | {
       type: 'answer';
@@ -26,7 +34,7 @@ export type AskApiResponse =
       type: 'clarify';
       answer_id?: string;
       message: string;
-      options?: Array<{ label: string }>;
+      options?: AskApiClarifyOption[];
     }
   | {
       type: 'error';
@@ -137,18 +145,27 @@ export function buildAskRequestBody(
   question: string,
   currentPageId: string | null | undefined,
   maxChunks = DEFAULT_MAX_CHUNKS,
+  scopeId?: string | null,
 ) {
   const body: {
     question: string;
-    context?: { current_page_id: string };
+    context?: { current_page_id?: string; scope_id?: string };
     options: { max_chunks: number };
   } = {
     question: question.trim(),
     options: { max_chunks: maxChunks },
   };
 
+  if (currentPageId || scopeId) {
+    body.context = {};
+  }
+
   if (currentPageId) {
-    body.context = { current_page_id: currentPageId };
+    body.context!.current_page_id = currentPageId;
+  }
+
+  if (scopeId) {
+    body.context!.scope_id = scopeId;
   }
 
   return body;

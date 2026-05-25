@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
@@ -385,6 +386,7 @@ type DocsSidebarProps = {
   searchShortcutClassName?: string;
   searchInputClassName?: string;
   searchResultsClassName?: string;
+  searchPanel?: ReactNode;
   navWrapperClassName?: string;
   navListClassName?: string;
   footerClassName?: string;
@@ -400,6 +402,7 @@ type DocsSidebarProps = {
   languageTriggerClassName?: string;
   languageContentClassName?: string;
   languageItemClassName?: string;
+  footerAccessory?: ReactNode;
 };
 
 export function DocsSidebar({
@@ -425,6 +428,7 @@ export function DocsSidebar({
   searchShortcutClassName,
   searchInputClassName,
   searchResultsClassName,
+  searchPanel,
   navWrapperClassName,
   navListClassName,
   footerClassName,
@@ -440,10 +444,47 @@ export function DocsSidebar({
   languageTriggerClassName,
   languageContentClassName,
   languageItemClassName,
+  footerAccessory,
 }: DocsSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const copy = getDocsUiCopy(lang);
+
+  // Warn in development when a caller passes `searchPanel` alongside the
+  // SearchPanel-only className/copy props — those props are silently ignored
+  // by the slot, which leads to confusing "my override didn't apply" debugging.
+  // Production builds skip the warning entirely.
+  const hasWarnedRef = useRef(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production' || hasWarnedRef.current) {
+      return;
+    }
+    if (!searchPanel) {
+      return;
+    }
+    const ignoredProps: string[] = [];
+    if (searchInputClassName) ignoredProps.push('searchInputClassName');
+    if (searchResultsClassName) ignoredProps.push('searchResultsClassName');
+    if (searchTriggerLabel) ignoredProps.push('searchTriggerLabel');
+    if (searchTriggerTextClassName) ignoredProps.push('searchTriggerTextClassName');
+    if (searchShortcutClassName) ignoredProps.push('searchShortcutClassName');
+    if (searchPlaceholder) ignoredProps.push('searchPlaceholder');
+    if (ignoredProps.length === 0) {
+      return;
+    }
+    hasWarnedRef.current = true;
+    console.warn(
+      `[DocsSidebar] The following props are ignored when \`searchPanel\` is provided: ${ignoredProps.join(', ')}. Apply styling on the slot component (e.g. SearchAskPanel) directly, or omit \`searchPanel\` to use the default SearchPanel.`,
+    );
+  }, [
+    searchPanel,
+    searchInputClassName,
+    searchResultsClassName,
+    searchTriggerLabel,
+    searchTriggerTextClassName,
+    searchShortcutClassName,
+    searchPlaceholder,
+  ]);
   const normalizedPathname = normalizeRoutePath(pathname);
   const activePageId = (() => {
     for (const p of pages) {
@@ -458,7 +499,7 @@ export function DocsSidebar({
   const showBranding = hasLogo || hasTitle;
   const showLanguageLinks = showLanguageSwitcher && availableLanguages.length > 1;
   const activeLanguageMeta = getLanguageMeta(lang);
-  const showFooter = showLanguageLinks;
+  const showFooter = showLanguageLinks || Boolean(footerAccessory);
 
   return (
     <aside
@@ -514,23 +555,25 @@ export function DocsSidebar({
 
       {showSearch ? (
         <div className={cn('shrink-0 px-6 pt-4', insetClassName, searchWrapperClassName)}>
-          <SearchPanel
-            lang={lang}
-            findHref={searchFindHref}
-            indexHref={searchIndexHref}
-            triggerLabel={searchTriggerLabel}
-            placeholder={searchPlaceholder}
-            triggerTextClassName={searchTriggerTextClassName}
-            shortcutClassName={searchShortcutClassName}
-            inputClassName={cn(
-              'border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
-              searchInputClassName,
-            )}
-            resultsClassName={cn(
-              'rounded-xl border-[color:var(--docs-search-border,var(--fd-border))] bg-fd-background shadow-lg',
-              searchResultsClassName,
-            )}
-          />
+          {searchPanel ?? (
+            <SearchPanel
+              lang={lang}
+              findHref={searchFindHref}
+              indexHref={searchIndexHref}
+              triggerLabel={searchTriggerLabel}
+              placeholder={searchPlaceholder}
+              triggerTextClassName={searchTriggerTextClassName}
+              shortcutClassName={searchShortcutClassName}
+              inputClassName={cn(
+                'border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] placeholder:text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]',
+                searchInputClassName,
+              )}
+              resultsClassName={cn(
+                'rounded-xl border-[color:var(--docs-search-border,var(--fd-border))] bg-fd-background shadow-lg',
+                searchResultsClassName,
+              )}
+            />
+          )}
         </div>
       ) : null}
 
@@ -582,50 +625,54 @@ export function DocsSidebar({
             </div>
           ) : null}
 
-          <div>
-            <Select
-              value={lang}
-              onValueChange={(value) => {
-                const nextLang = value as DocsLang;
-                if (nextLang === lang) {
-                  return;
-                }
-                router.push(buildLanguageHref(pathname, lang, nextLang));
-              }}
-            >
-              <SelectTrigger
-                className={cn(
-                  'inline-flex h-10 w-full min-w-0 rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none',
-                  languageTriggerClassName,
-                )}
-              >
-                <span className="truncate pr-2">{activeLanguageMeta.label}</span>
-              </SelectTrigger>
-              <SelectContent
-                className={cn(
-                  'min-w-[12rem] rounded-[1.25rem] border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg',
-                  languageContentClassName,
-                )}
-              >
-                {availableLanguages.map((language) => {
-                  const languageMeta = getLanguageMeta(language);
+          {footerAccessory ? <div>{footerAccessory}</div> : null}
 
-                  return (
-                    <SelectItem
-                      key={language}
-                      value={language}
-                      className={cn(
-                        'rounded-xl py-3 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]',
-                        languageItemClassName,
-                      )}
-                    >
-                      <span>{languageMeta.label}</span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+          {showLanguageLinks ? (
+            <div>
+              <Select
+                value={lang}
+                onValueChange={(value) => {
+                  const nextLang = value as DocsLang;
+                  if (nextLang === lang) {
+                    return;
+                  }
+                  router.push(buildLanguageHref(pathname, lang, nextLang));
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'inline-flex h-10 w-full min-w-0 rounded-xl border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--docs-sidebar-brand-surface,var(--fd-background))] px-4 text-sm font-normal text-[color:var(--docs-sidebar-link,var(--fd-foreground))] shadow-none',
+                    languageTriggerClassName,
+                  )}
+                >
+                  <span className="truncate pr-2">{activeLanguageMeta.label}</span>
+                </SelectTrigger>
+                <SelectContent
+                  className={cn(
+                    'min-w-[12rem] rounded-[1.25rem] border-[color:var(--docs-divider,var(--fd-border))] bg-fd-popover p-2 shadow-lg',
+                    languageContentClassName,
+                  )}
+                >
+                  {availableLanguages.map((language) => {
+                    const languageMeta = getLanguageMeta(language);
+
+                    return (
+                      <SelectItem
+                        key={language}
+                        value={language}
+                        className={cn(
+                          'rounded-xl py-3 pl-8 pr-4 text-sm font-medium focus:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]',
+                          languageItemClassName,
+                        )}
+                      >
+                        <span>{languageMeta.label}</span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </aside>
