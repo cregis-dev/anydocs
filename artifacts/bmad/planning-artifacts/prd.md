@@ -33,12 +33,15 @@ classification:
   domain: '开发者工具 (Documentation)'
   complexity: 'medium'
   projectContext: 'brownfield'
-lastEdited: '2026-03-11'
+date: '2026-05-24'
+lastEdited: '2026-05-24'
 editHistory:
   - date: '2026-03-11'
     changes: 'Fixed critical validation findings for NFR measurability, traceability, and Phase 1 scope alignment.'
   - date: '2026-03-11'
     changes: 'Revised remaining NFRs to add measurable verification boundaries and acceptance criteria.'
+  - date: '2026-05-24'
+    changes: 'Phase 2 single-user vNext scope expansion (FR51–FR60 + NFR26–NFR33): three-scope Agent integration, write-ahead audit log with rollback, desktop runtime with local fs, runtime mode field (web/desktop), @anydocs/editor package contract. Phase 3 markers applied to team/service capabilities (FR61–FR64 + NFR34). Added Journey 4 (desktop + Agent). Executive Summary vNext narrative anchor.'
 ---
 
 # Product Requirements Document - Anydocs Site Builder
@@ -62,6 +65,9 @@ editHistory:
 
 **解决的问题：**
 传统文档工具（GitBook、Docusaurus 等）要求用户手动编排结构、逐页编写、复杂配置，而 Anydocs 通过 AI-First 设计，让结构性工作由 AI 承担，用户只负责内容思考和审核。
+
+**vNext 单人版方向（Phase 2）：**
+在 Phase 1 标准流程之上，Anydocs 升级为「**本地桌面 + 内置 AI 编辑流**」——把 Agent 作为一等编辑能力嵌入 Studio（行内 / 页面 / 工作区三档作用域），全部 Agent 写入产出可审计日志；桌面运行时通过本地 fs 直接读写项目；编辑器作为独立 package 契约对外可移植。多用户与远程服务化（团队版）归属 Phase 3。
 
 ---
 
@@ -134,6 +140,17 @@ editHistory:
 | **Lighthouse 分数** | ≥ 90 分 |
 | **预览启动时间** | < 10 秒 |
 | **关键流程可重复性** | 连续 20 次构建/预览循环无残留状态导致的失败 |
+
+### Technical Success (Phase 2 — Single-User vNext)
+
+| 指标 | Phase 2 目标 |
+|------|---------|
+| **桌面运行时启动时间** | ≤ 3 秒（cold start → 可编辑状态，95th，标准开发机） |
+| **Inline Agent 端到端反馈** | ≤ 3 秒（95th） |
+| **Page Agent 端到端反馈** | ≤ 8 秒（95th） |
+| **Workspace Agent 单步流式反馈** | ≤ 2 秒（95th） |
+| **Agent 写入操作 audit 覆盖率** | 100%（任意 Agent 写入 → audit log 必存且先于写入） |
+| **Agent scope 错配率（可用性指标）** | 前 5 次 Agent 使用中 scope 误用 < 10%（可用性测试） |
 
 ### MVP Scope
 
@@ -257,6 +274,35 @@ editHistory:
 - ✅ 多语言切换
 - ✅ llms.txt 输出
 - ✅ 代码高亮和复制
+
+---
+
+### Journey 4: 文档维护者 — 桌面 + 内置 Agent 协同编辑（Phase 2 vNext）
+
+**角色背景：**
+- **姓名**：Alex（沿用 Journey 1 角色），开发者
+- **情境**：完成 Phase 1 文档基线后，进入日常迭代；希望在本地桌面环境中借助内置 Agent 进行 AI 协同编辑
+- **痛点**：浏览器 Studio 受本地 API 与权限模式限制，且 AI 操作没有可追溯记录，怕 AI 改坏内容
+- **目标**：在桌面运行时下使用 inline / page / workspace 三档 Agent 完成多粒度编辑，并通过 audit log 控制信任
+
+**旅程故事：**
+
+| 阶段 | 情节 |
+|------|------|
+| **开场** | Alex 在桌面 Anydocs（runtime mode = `desktop`）打开已有项目，状态栏明确显示 `desktop` 标识 |
+| **Inline Agent** | 选中段落 → 触发 inline Agent → 改写两个句子；UI 显式标注「行内作用域」；audit log 自动记录变更前后摘要 |
+| **Scope 升级 → Page Agent** | 想重组当前页结构 → 切换 page Agent；系统弹出 scope 升级确认（"作用域从 inline 升级为 page"）→ Alex 确认后执行 |
+| **Scope 升级 → Workspace Agent** | 想跨页统一术语 → 呼出 workspace Agent；scope 升级再次确认 → Agent 流式反馈每一步多页面操作 → 全部写入进 audit log |
+| **审计与回滚** | 打开 audit log → 按 scope / 时间 / 资源检索今日 Agent 操作 → 选中一条不满意的改写并回滚至变更前状态 |
+| **结局** | Alex 完成一轮 AI 协同编辑，scope 显式可见 + audit 可追溯 + 回滚可达，信任度高 |
+
+**旅程揭示的能力需求：**
+- ✅ 桌面运行时与本地 fs 直读直写
+- ✅ Studio 内三档 Agent 入口（inline / page / workspace）
+- ✅ Agent 作用域显式可见与升级确认
+- ✅ 写前审计日志（write-ahead）+ 失败回滚
+- ✅ Audit log 检索与单条操作回滚
+- ✅ Runtime mode（`web` / `desktop`）在 UI 标注
 
 ---
 
@@ -442,20 +488,29 @@ The product explicitly does not require IDE integrations or editor extensions in
 
 ### Post-MVP Features
 
-**Phase 2 (Post-MVP):**
-- 在产品内直接引入 AI 能力
+**Phase 2 (Post-MVP — Single-User vNext):**
+- 在产品内直接引入 AI 能力，作为一等编辑能力（行内 / 页面 / 工作区三档作用域 Agent）
+- 全部 Agent 写入产出结构化 audit log（write-ahead 语义）
+- 块编辑器现代化迁移（实现路径：Plate；详见 architecture.md）
+- 桌面运行时与本地文件系统读写（实现路径：Tauri）
+- 引入 runtime `mode` 字段（`web` / `desktop`），区分两种运行时的能力边界
+- 将编辑器以独立 package（`@anydocs/editor`）契约对外暴露
 - 自然语言生成目录结构成为原生能力
 - 更强的 AI chat 与 AI-assisted authoring
 - 更完整的 Studio 编辑体验
 - 多语言能力补齐
 - `llms.txt` 与搜索能力增强
 
-**Phase 3 (Expansion):**
-- WebMCP 完整化
-- 旧文档导入与转换
-- 主题扩展或主题市场
-- 更丰富的自动化工作流
-- 更广泛的团队协作与生态能力
+**Phase 3 (Expansion — Team & Service):**
+- **Phase 3**: 引入 project `mode` 字段（`single` / `team`），区分单人 / 团队工作流
+- **Phase 3**: 多维护者协作与作者归属
+- **Phase 3**: 远程 MCP 服务化（HTTP transport + 鉴权 + read-only 工具子集）
+- **Phase 3**: 团队模式下 Agent 权限边界与 audit 留存策略治理
+- **Phase 3**: WebMCP 完整化（capability anchor: FR43、FR44）
+- **Phase 3**: 跨项目工作流治理（capability anchor: FR49、FR50）
+- **Phase 3**: 旧文档导入与转换增强
+- **Phase 3**: 主题扩展或主题市场
+- **Phase 3**: 更丰富的自动化工作流
 
 ### Risk Mitigation Strategy
 
@@ -548,8 +603,28 @@ The product explicitly does not require IDE integrations or editor extensions in
 - FR46: Documentation maintainers can maintain documentation in a local-first workflow where project content remains under their direct control.
 - FR47: Documentation maintainers can use the product without depending on a cloud-only authoring workflow.
 - FR48: The system can keep Studio workflows and CLI workflows aligned to the same project model and configuration source.
-- FR49: Documentation maintainers can apply the Anydocs workflow standard across multiple documentation projects without redefining the workflow each time.
-- FR50: Documentation maintainers can evolve from a minimal Phase 1 workflow to richer later-phase capabilities without replacing the core project structure.
+- FR49 *(Phase 3 capability anchor)*: Documentation maintainers can apply the Anydocs workflow standard across multiple documentation projects without redefining the workflow each time.
+- FR50 *(Phase 3 capability anchor)*: Documentation maintainers can evolve from a minimal Phase 1 workflow to richer later-phase capabilities without replacing the core project structure.
+
+### Phase 2 — Single-User vNext (Desktop + Built-in Agent)
+
+- FR51: Documentation maintainers can invoke inline, page, and workspace scope Agent interactions from inside the Studio editor against the active content.
+- FR52: Documentation maintainers on the desktop runtime (runtime mode = `desktop`) can read and write project files directly through native filesystem access without going through the web local APIs.
+- FR53: Documentation maintainers can trigger an inline Agent whose write scope is restricted to the currently edited content block; writes outside the block are rejected.
+- FR54: Documentation maintainers can trigger a page Agent whose write scope is restricted to a single pageId; writes outside the targeted page are rejected.
+- FR55: Documentation maintainers can trigger a workspace Agent whose write scope covers multiple pages and navigation within the project, with every targeted resource recorded.
+- FR56: The system persists a structured audit log entry before any Agent write takes effect (write-ahead); if audit persistence fails, the Agent write must roll back or be rejected so no audit-missing write can occur.
+- FR57: Documentation maintainers can query the audit log by scope, target resource, and time range, and can roll back any individual logged Agent operation to its pre-change state.
+- FR58: Documentation maintainers can observe the active runtime mode (`web` or `desktop`) via an explicit indicator in Studio, and the system applies the corresponding capability boundary consistently.
+- FR59: Agent write scope is explicitly visible in Studio at the time of invocation, and any scope escalation (inline → page, page → workspace) requires explicit user confirmation before execution.
+- FR60: The system exposes the editor as an independent package (`@anydocs/editor`) with a declared public API contract; consumers (Studio, desktop shell, future embeds) integrate only through that contract.
+
+### Phase 3 — Team & Service Expansion
+
+- FR61 *(Phase 3)*: The system supports a project-level `mode` field (`single` / `team`) that distinguishes single-user and team workflows.
+- FR62 *(Phase 3)*: Multiple maintainers can collaborate within a team-mode project, with authorship attribution preserved on content and Agent operations.
+- FR63 *(Phase 3)*: The system can expose MCP capabilities as a remote service with authentication and a read-only tool subset.
+- FR64 *(Phase 3)*: Team-mode maintainers can govern Agent permission boundaries and audit log retention policies.
 
 ## Non-Functional Requirements
 
@@ -595,3 +670,15 @@ The product explicitly does not require IDE integrations or editor extensions in
 - NFR23: Reference project fixtures shall produce equivalent content and configuration results when edited in Studio and executed through CLI workflows in 100% of cross-workflow regression tests.
 - NFR24: Later native AI capabilities shall consume the same project content model and configuration format introduced in Phase 1 without requiring full project reinitialization, as verified by migration compatibility tests.
 - NFR25: A single maintainer shall be able to execute the documented Phase 1 workflow from project initialization through build and preview using one repository and one local machine, as verified by an end-to-end maintainer workflow test.
+
+### Phase 2 — Single-User vNext NFRs
+
+- NFR26: The desktop runtime shall transition from cold start to an editable state in 3 seconds or less for the 95th percentile on a standard local development machine, as measured by desktop end-to-end startup timing tests.
+- NFR27: 100% of desktop filesystem write operations shall complete atomically (either fully persisted or invisibly failed) without partial writes, as verified by integration tests with injected write failures.
+- NFR28: Agent end-to-end response time shall meet the following 95th-percentile bounds under normal upstream conditions: inline Agent ≤ 3 seconds, page Agent ≤ 8 seconds, workspace Agent single-step streaming feedback ≤ 2 seconds. Under degraded upstream conditions, all bounds are allowed to increase by up to 50%, as verified by integration tests with simulated upstream latency.
+- NFR29: 100% of Agent write operations shall follow write-ahead audit semantics: an audit log entry must be persisted before the Agent write takes effect; if audit persistence fails, the Agent write shall be rolled back or rejected, as verified by audit-failure fault-injection tests.
+- NFR30: The audit log schema shall be defined as a versioned JSON schema anchored in architecture documentation; any schema change shall require a schema version bump; audit entries shall be retained for at least 30 days on the local project store, as verified by schema regression and retention tests.
+- NFR31: The `@anydocs/editor` package shall ship a public API contract file in the repository; CI shall fail when the declared contract diverges from the actual exported surface, as verified by an API contract diff tool.
+- NFR32: Switching between runtime modes (`web` ↔ `desktop`) shall not break previously saved doc-content-v1 content or navigation structures in 100% of cross-mode round-trip fixture tests.
+- NFR33: 100% of Agent scope escalations (inline → page, page → workspace) shall require explicit user confirmation; unconfirmed escalation writes shall be rejected, as verified by end-to-end UI confirmation tests.
+- NFR34 *(Phase 3)*: When MCP capabilities are exposed remotely, the service shall return 401/403 on missing or invalid authentication and 405 on write-tool calls against a read-only profile in 100% of remote-service end-to-end smoke tests.

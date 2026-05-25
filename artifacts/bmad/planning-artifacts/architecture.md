@@ -23,6 +23,15 @@ date: '2026-03-11'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-11'
+phase2VNextAddendumCompletedAt: '2026-05-24'
+sourcePrdRevisions:
+  - '2026-03-11 — Phase 1 baseline'
+  - '2026-05-24 — Phase 2 single-user vNext expansion (FR51–FR60 + NFR26–NFR33, FR61–FR64 + NFR34 Phase 3 anchors, Journey 4)'
+editHistory:
+  - date: '2026-03-11'
+    changes: 'Phase 1 architecture completed (8/8 steps).'
+  - date: '2026-05-24'
+    changes: 'Appended Phase 2 vNext Architecture Addendum: @anydocs/editor package contract, Plate migration path, Tauri runtime + native fs, runtime mode (web/desktop), built-in Agent (inline/page/workspace) + audit log JSON schema, scope escalation enforcement, Phase 3 anchors.'
 ---
 
 # Architecture Decision Document
@@ -667,3 +676,547 @@ The implementation rules are strong enough to keep multiple AI agents aligned. T
 
 **First Implementation Priority:**
 Define the canonical schemas and shared content/build services in `@anydocs/core`, then migrate existing `packages/web/lib/docs/*` behavior into that shared layer before expanding CLI or Studio capabilities further.
+
+---
+
+# Phase 2 — Single-User vNext Architecture Addendum
+
+**Appended:** 2026-05-24
+**Source PRD:** `artifacts/bmad/planning-artifacts/prd.md` (Phase 2 single-user vNext expansion, FR51–FR60 + NFR26–NFR33, Phase 3 anchors FR61–FR64 + NFR34, Journey 4)
+**Relationship to Phase 1 Architecture:** Additive. Phase 1 decisions (local-first file system, shared `@anydocs/core`, thin CLI, web Studio + reader, deterministic build) remain authoritative. This addendum extends the architecture along five vNext axes without retracting any Phase 1 decision.
+
+## Addendum Scope
+
+This addendum covers the architectural surface introduced by the Phase 2 single-user vNext PRD expansion:
+
+1. **`@anydocs/editor` package contract** — extract the block editor from the web app into a consumable, contract-bound package
+2. **Editor block runtime migration (Yoopta → Plate)** — modernize the underlying block runtime while preserving `doc-content-v1` as the canonical storage format
+3. **Runtime mode model (`web` / `desktop`)** — explicit declaration of which runtime is active, with capability-boundary differences enforced consistently
+4. **Desktop runtime with native filesystem access (Tauri)** — desktop shell that bypasses `/api/local/*` and reads/writes project files directly
+5. **Built-in Agent subsystem** — three-scope Agent contract (inline / page / workspace) with write-ahead audit log, scope escalation enforcement, and rollback API
+6. **Phase 3 anchors** — reserved extension points for team mode, remote MCP service, multi-author audit, and theme marketplace, without Phase 2 implementation
+
+## Updated Package Topology
+
+```text
+packages/
+├── core/                       # extended — Phase 2 additions
+│   └── src/
+│       ├── (Phase 1 modules unchanged)
+│       ├── agent/                          # NEW — Agent scope contracts + audit hooks
+│       │   ├── agent-service.ts
+│       │   ├── inline-agent.ts
+│       │   ├── page-agent.ts
+│       │   ├── workspace-agent.ts
+│       │   ├── scope-validator.ts
+│       │   └── provider-port.ts            # abstract LLM provider port (no vendor binding)
+│       ├── audit/                          # NEW — write-ahead audit log
+│       │   ├── audit-log-service.ts
+│       │   ├── audit-schema.ts             # versioned JSON schema (see §Audit Log)
+│       │   ├── audit-repository.ts         # fs persistence under <projectRoot>/.anydocs/audit/
+│       │   └── rollback-service.ts
+│       ├── runtime/                        # NEW — runtime mode model
+│       │   ├── runtime-mode.ts             # 'web' | 'desktop' type + resolver
+│       │   └── capability-matrix.ts
+│       └── schemas/
+│           └── audit-entry-schema.ts        # NEW
+├── editor/                     # NEW PACKAGE — @anydocs/editor
+│   ├── package.json
+│   ├── contract/
+│   │   ├── public-api.ts                   # declared contract (CI-checked by NFR31)
+│   │   └── contract.json                   # generated diff target
+│   ├── src/
+│   │   ├── index.ts                        # re-exports from public-api
+│   │   ├── runtime/
+│   │   │   └── plate-runtime.ts            # Plate-based block runtime
+│   │   ├── converters/
+│   │   │   ├── doc-content-to-plate.ts
+│   │   │   └── plate-to-doc-content.ts     # canonical = doc-content-v1
+│   │   ├── plugins/
+│   │   │   ├── plugin-contract.ts          # extensibility contract
+│   │   │   └── builtin/
+│   │   │       ├── heading.ts
+│   │   │       ├── paragraph.ts
+│   │   │       ├── list.ts
+│   │   │       ├── code.ts
+│   │   │       ├── image.ts
+│   │   │       ├── callout.ts
+│   │   │       ├── table.ts
+│   │   │       └── divider.ts
+│   │   └── agent-anchors/                  # Agent invocation entry points
+│   │       ├── inline-anchor.tsx           # selection-bound trigger
+│   │       ├── page-anchor.tsx
+│   │       └── workspace-anchor.tsx
+│   └── tests/
+├── web/                        # consumes @anydocs/editor; runtime mode = 'web'
+│   └── lib/
+│       └── editor-host/                    # NEW — Studio hosts @anydocs/editor
+├── desktop/                    # extended — runtime mode = 'desktop'
+│   └── src-tauri/                          # NEW — Tauri shell
+│       ├── tauri.conf.json
+│       └── src/
+│           ├── main.rs
+│           └── commands/
+│               ├── fs_commands.rs          # native fs bridge
+│               └── audit_commands.rs       # audit log bridge
+└── desktop-server/             # existing local HTTP bridge — extended for runtime mode signaling
+```
+
+**New package:** `@anydocs/editor` (independent, contract-bound).
+**Extended packages:** `@anydocs/core` (agent + audit + runtime modules), `@anydocs/desktop` (Tauri shell + native fs adapter), `@anydocs/web` (editor host adapter).
+**Unchanged packages:** `@anydocs/cli`, `@anydocs/mcp`, `@anydocs/desktop-server` (only runtime-mode signaling added).
+
+## `@anydocs/editor` Package Contract
+
+### Purpose
+
+Extract the block editor as a portable, contract-bound package that Studio (web), Desktop (Tauri), and future embeds consume through a single declared public API. This stabilizes editor evolution against consumer churn and enables the Plate migration without coupling consumers to internal runtime details.
+
+### Public API Surface
+
+The package exports a minimal, capability-oriented surface. Consumers receive opaque editor instances and interact through declared functions and events; internal Plate state and plugin internals are not exported.
+
+**Exported types and entry points:**
+
+- `createEditor(config: EditorConfig): EditorInstance` — factory returning an opaque editor instance
+- `EditorConfig` — declarative configuration (initial `doc-content-v1` payload, registered plugins, agent anchors enabled, theme tokens)
+- `EditorInstance.mount(target: HTMLElement): UnmountHandle` — host-side mount API
+- `EditorInstance.getContent(): DocContentV1` — produces canonical content snapshot
+- `EditorInstance.setContent(payload: DocContentV1): void`
+- `EditorInstance.on(event, handler)` — events: `change`, `selection-change`, `agent-anchor-triggered`
+- `EditorInstance.triggerAgent(scope: 'inline' | 'page' | 'workspace', payload): AgentInvocation`
+- `registerPlugin(plugin: EditorPlugin): void` — extensibility entry point
+- `EditorPlugin` — plugin contract (block type, marks, conversion hooks, agent-anchor capability)
+
+**Contract enforcement:**
+
+- `contract/public-api.ts` is the single source of truth; `contract.json` is generated from it
+- CI runs an API diff tool against `contract.json`; any divergence (added/removed/renamed exports, signature changes) **fails CI** (satisfies NFR31)
+- `@anydocs/editor` is forbidden from re-exporting internal Plate types directly; consumers see only contract-declared types
+
+### Migration Strategy: Yoopta → Plate
+
+**Canonical storage stays `doc-content-v1`.** Plate is the runtime engine, never the storage format.
+
+**Migration phases:**
+
+1. **Foundation:** Create `@anydocs/editor` package with the public API contract. Internally implemented over Plate. Ship `doc-content-v1 ↔ plate-value` converters under `src/converters/`.
+2. **Studio dual-mount (transitional):** `packages/web/lib/editor-host/` hosts the new `@anydocs/editor` behind a feature flag. Existing Yoopta-based Studio remains the default. Cross-mount round-trip fixture tests assert byte-equivalence after `getContent` → `setContent` cycles.
+3. **Studio cutover:** Flip the default to `@anydocs/editor`. Yoopta integration retired from `packages/web` once cross-mount fixtures pass for 100% of reference fixtures.
+4. **Desktop adoption:** Desktop renderer hosts the same `@anydocs/editor` package — runtime is identical across `web` and `desktop` modes; only host capabilities differ.
+
+**Rollback plan:** During Studio dual-mount phase, the feature flag toggles back to Yoopta with no content loss because `doc-content-v1` is canonical.
+
+### Plugin Contract for Extensibility
+
+`EditorPlugin` declares: block type identifier, schema fragment (must align with `doc-content-v1` allowed block types), conversion hooks (`docContentToPlate`, `plateToDocContent`), optional agent-anchor capability declaration. Plugins added at runtime via `registerPlugin` must not bypass `doc-content-v1` validation — invalid block emissions are rejected by the converter layer.
+
+## Runtime Mode Model
+
+### Definition
+
+`RuntimeMode = 'web' | 'desktop'` declared in `@anydocs/core/src/runtime/runtime-mode.ts`. Resolved at process startup, **immutable** for the lifetime of the runtime instance.
+
+### Resolution Rules
+
+- `web`: process runs inside Next.js dev server / browser context; local APIs (`/api/local/*`) are the write surface (Phase 1 behavior)
+- `desktop`: process runs inside Tauri shell; native fs commands are the write surface; `/api/local/*` is not contacted
+
+Resolution sources (in priority order):
+1. Explicit injection from host bootstrap (Tauri main process sets `desktop`; Next.js sets `web`)
+2. Capability probe (presence of Tauri global) — defensive fallback only
+3. Fail-fast if neither resolves — runtime must not start in ambiguous mode
+
+### Capability Matrix
+
+| Capability | `web` mode | `desktop` mode |
+|---|---|---|
+| Project fs read | via `/api/local/*` route handlers | direct native fs through Tauri commands |
+| Project fs write | via `/api/local/*` route handlers (dev only; production-disabled) | direct native fs through Tauri commands |
+| `/api/local/*` reachable | yes | no (network calls disabled in shell config) |
+| Studio editing | enabled | enabled |
+| Agent invocation | enabled | enabled |
+| Audit log persistence | `<projectRoot>/.anydocs/audit/` via core service over fs adapter | identical path, identical service; only fs adapter differs |
+| UI runtime mode indicator | shows "web" badge | shows "desktop" badge |
+
+`capability-matrix.ts` exports a typed map consumed by both Studio adapters and Agent service. Diverging from this map at any consumer site is an architectural violation.
+
+### UI Surfacing (satisfies FR58, NFR32)
+
+Studio status bar renders a `RuntimeModeIndicator` component fed from `@anydocs/core` resolver. The indicator is mandatory across all editor views — keyboard-accessible, color + text label (no color-only meaning per NFR17).
+
+## Desktop Runtime with Native Filesystem Access
+
+### Tauri Shell Architecture
+
+`packages/desktop/src-tauri/` hosts a thin Tauri shell that:
+1. Initializes runtime mode = `desktop` and signals it to the renderer
+2. Loads the same web export bundle (`packages/web` static export) that Phase 1 desktop already uses
+3. Exposes a small set of Rust-side commands for native fs operations and audit log persistence
+4. Configures Tauri to **disable** network calls to `/api/local/*` (browser-equivalent fetch is allowed only to the in-process renderer)
+
+### Native Filesystem Adapter
+
+`@anydocs/core/src/fs/` already defines `ContentRepository` and `ProjectPaths` abstractions. Phase 2 adds a `desktop-fs-adapter.ts` that implements these abstractions over Tauri's IPC `invoke` calls to the Rust side.
+
+**Atomicity contract (NFR27):**
+- Every write goes through a `write-temp-then-rename` pattern on the Rust side
+- Failed writes leave the original file intact (no partial-write visibility)
+- Adapter exposes a single async function per repository method; failure surfaces as a typed `FsWriteError` domain error
+
+**Path safety:**
+- Rust commands reject any path outside the project root (path canonicalization + prefix check)
+- No symbolic link traversal across the project boundary
+
+**No duplicate domain logic:**
+- `desktop-fs-adapter.ts` only adapts I/O calls; publication filtering, validation, and content modeling remain in shared core (preserves Phase 1 architectural rule)
+
+### Replacement of `/api/local/*` in Desktop Mode
+
+When runtime mode = `desktop`, the editor host (`packages/web/lib/editor-host/` and `packages/desktop/src/`) routes all read/write through `@anydocs/core` services backed by `desktop-fs-adapter.ts`. The local Express server bundled with `@anydocs/desktop-server` is **retained** but serves only static assets and the runtime-mode signaling endpoint; write routes are not registered in desktop mode.
+
+This satisfies FR52: the desktop call graph contains zero requests to `/api/local/*`, verifiable in desktop e2e fixtures.
+
+## Built-in Agent Subsystem
+
+### Three-Scope Contract
+
+| Scope | Write target | Authoritative entity | Enforcement point |
+|---|---|---|---|
+| `inline` | a single content block within a single page | block id | `inline-agent.ts` rejects writes outside the active block |
+| `page` | a single page (content + status) | pageId | `page-agent.ts` rejects writes to any pageId other than the invocation target |
+| `workspace` | multiple pages and navigation within a single project | projectId | `workspace-agent.ts` rejects writes to any project other than the invocation target |
+
+### Architecture Layout
+
+```text
+@anydocs/core/src/agent/
+├── agent-service.ts              # public entry: invokeAgent(scope, target, prompt) → AgentInvocation
+├── scope-validator.ts            # pure functions: assertScopeBoundary(scope, write)
+├── inline-agent.ts               # scope=inline orchestrator
+├── page-agent.ts                 # scope=page orchestrator
+├── workspace-agent.ts            # scope=workspace orchestrator
+├── provider-port.ts              # abstract LLM provider port — no vendor binding
+└── invocation-types.ts           # AgentInvocation, AgentWrite, AgentResult types
+```
+
+**Scope enforcement is server-side / core-side.** UI-side scope visibility (FR59) is necessary but **not sufficient**; `scope-validator.ts` re-asserts boundaries before any write reaches the audit log or fs layer. Out-of-scope writes are rejected with a typed `AgentScopeViolationError`.
+
+### Write-Ahead Audit Integration
+
+Every Agent write flows through this sequence (atomic from the caller's perspective):
+
+1. `agent-service.ts` receives `AgentWrite` from a scope orchestrator
+2. `scope-validator.ts.assertScopeBoundary()` runs — violation aborts immediately
+3. `audit-log-service.ts.persistPending(entry)` writes a pending audit entry to disk
+4. `content-repository.write(payload)` applies the actual content change
+5. `audit-log-service.ts.markCommitted(entry.id)` updates the pending entry to committed
+6. If step 4 fails → `audit-log-service.ts.markRejected(entry.id, error)` + content change rolled back (or never applied if not yet partially written)
+7. If step 3 fails (audit persistence failure) → Agent write **rejected outright**, no content change attempted
+
+This satisfies NFR29 (write-ahead + rollback semantics) and FR56 (no audit-missing writes).
+
+### LLM Provider Port
+
+`provider-port.ts` declares an abstract interface (`AgentProviderPort`) with `generate(prompt, context, scope) → ProviderResponse`. **No vendor name appears in core code.** Concrete adapters live outside `@anydocs/core` (in a Phase 2 implementation-detail package or in host-side configuration). This preserves the Phase 1 architectural rule that `core` owns capability, not vendor coupling.
+
+### Rollback API (FR57)
+
+`audit-log-service.ts.rollback(entryId)`:
+1. Loads the audit entry's pre-change content snapshot (stored at audit time)
+2. Re-applies the snapshot through `content-repository.write()`
+3. Persists a new audit entry with `operation: 'rollback'` referencing the original entry's id
+
+This makes rollback itself an auditable Agent operation, preserving traceability.
+
+## Audit Log Architecture
+
+### Storage
+
+**Location:** `<projectRoot>/.anydocs/audit/` (project-local, version-controllable if user chooses, never inside `dist/` or `node_modules/`)
+
+**File layout:** Append-only newline-delimited JSON (`.ndjson`) sharded by day: `YYYY-MM-DD.ndjson`. Daily shards simplify retention enforcement (NFR30: ≥ 30 days) and make file scans cheap for query API.
+
+**Schema reference:** `@anydocs/core/src/schemas/audit-entry-schema.ts` — Zod schema + JSON Schema export.
+
+### Audit Entry JSON Schema (v1)
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "anydocs://schemas/audit-entry/v1",
+  "title": "AuditEntry",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "timestamp",
+    "scope",
+    "operation",
+    "status",
+    "projectId",
+    "target",
+    "actor",
+    "runtimeMode"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "description": "ULID for ordered uniqueness" },
+    "timestamp": { "type": "string", "format": "date-time", "description": "ISO 8601" },
+    "scope": { "enum": ["inline", "page", "workspace"] },
+    "operation": {
+      "enum": ["create", "update", "delete", "rollback", "structural"]
+    },
+    "status": {
+      "enum": ["pending", "committed", "rejected"],
+      "description": "Write-ahead lifecycle"
+    },
+    "projectId": { "type": "string" },
+    "runtimeMode": { "enum": ["web", "desktop"] },
+    "actor": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["agent", "human", "system"] },
+        "agentProvider": {
+          "type": "string",
+          "description": "Provider port identifier; empty if kind != agent"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["resourceKind"],
+      "properties": {
+        "resourceKind": { "enum": ["block", "page", "navigation", "project-config"] },
+        "pageId": { "type": "string" },
+        "blockId": { "type": "string" },
+        "navigationId": { "type": "string" }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "description": "Compact change summary",
+      "properties": {
+        "before": { "description": "Pre-change snapshot (canonical doc-content-v1 fragment or config object)" },
+        "after": { "description": "Post-change snapshot" },
+        "summary": { "type": "string", "description": "Short human-readable description" }
+      }
+    },
+    "rejectionReason": {
+      "type": "string",
+      "description": "Populated only when status = 'rejected'"
+    },
+    "rollbackOf": {
+      "type": "string",
+      "description": "If operation = 'rollback', references the original entry id"
+    },
+    "promptDigest": {
+      "type": "string",
+      "description": "SHA-256 of the prompt that triggered the Agent invocation; PII-safe"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### Schema Versioning Rule
+
+Any backward-incompatible change to this schema requires `schemaVersion` bump and a migration plan in this addendum. Forward-compatible additions (new optional fields) do not require a version bump but should be recorded in schema-change history.
+
+### Query API
+
+`audit-log-service.ts.query(filter: AuditQuery): AuditEntry[]`:
+- Filter axes: `scope`, `target.resourceKind`, `target.pageId`, `target.projectId`, `timestamp` range, `status`, `actor.kind`
+- Returns entries in reverse chronological order, paginated
+- Implementation reads daily shards in the requested range, applies filters in memory (sufficient for Phase 2 scale)
+
+### Retention
+
+NFR30 mandates ≥ 30 days. Daily shards older than the retention window are deleted by a `prune` operation invoked on Studio startup or via CLI `anydocs audit prune`. Pruning is logged as a system actor `audit-entry` (operation = `structural`).
+
+## Scope Escalation Enforcement (FR59 / NFR33)
+
+### UI Layer
+
+Editor `agent-anchors/` declares the active scope to the editor host. When the user requests an Agent invocation, the host renders the active scope as a visible badge. Escalation from a narrower scope to a wider scope (`inline → page`, `page → workspace`, or `inline → workspace`) requires a modal confirmation step.
+
+### Core Layer (defense in depth)
+
+`agent-service.ts.invokeAgent()` accepts an `escalationConfirmation` token. The token is signed by the editor host upon user confirmation, with a short TTL. Invocations missing the token, or carrying an expired/invalid token, are rejected with `EscalationConfirmationRequiredError`.
+
+This guarantees that even a bypassed UI cannot execute scope escalation silently — the architectural contract holds end-to-end.
+
+## Phase 3 Architectural Anchors (Reserved, Not Implemented in Phase 2)
+
+The following extension points are **declared** in Phase 2 architecture so Phase 3 can integrate without retrofitting:
+
+### Project Mode Field (`single` / `team`)
+
+`@anydocs/core/src/schemas/project-schema.ts` reserves `mode?: 'single' | 'team'` as an **optional** field. Phase 2 implementations treat absent/`single` identically; `team` is rejected with `ProjectModeNotSupportedError` until Phase 3 lands. This guarantees Phase 2 projects forward-migrate without rewrite.
+
+### Remote MCP Service Adapter
+
+`@anydocs/mcp` currently exposes stdio transport only. Phase 3 anchor: an `adapters/` directory in `@anydocs/mcp` will host alternative transports (HTTP). Phase 2 reserves the directory layout and a `transport-port.ts` interface that the stdio transport implements but does not yet need.
+
+### Multi-Author Audit Entries
+
+The `actor` object in the audit schema already supports `kind: 'human'` and is structured to admit a future `actorId` field. Phase 3 will add `actorId` as an additive (forward-compatible) schema change — no `schemaVersion` bump needed.
+
+### Theme Marketplace
+
+Phase 1 already established the theme registry pattern (`packages/web/themes/<themeId>/`). Phase 3 anchor: registry can be extended to discover external theme packages via a manifest convention. No Phase 2 implementation required.
+
+### Read-Only MCP Tool Profile
+
+`@anydocs/mcp` Phase 2 reserves a `tools/profiles/` directory and a `ToolProfile` type with `mode: 'full' | 'read-only'`. Default remains `full`. Phase 3 adds a `read-only` profile filtering write tools — no breaking change to existing tool definitions.
+
+## Implementation Patterns Addendum
+
+Phase 1 implementation patterns remain authoritative. Phase 2 adds the following:
+
+### Pattern: Agent Scope Boundary Enforcement
+
+**Rule:** Every Agent write must pass `scope-validator.ts.assertScopeBoundary(scope, write)` before any persistence side effect. UI-side scope rendering is necessary but never sufficient.
+
+**Anti-pattern:** Calling `content-repository.write()` from an Agent code path without routing through `agent-service.invokeAgent()`.
+
+### Pattern: Write-Ahead Audit
+
+**Rule:** Order is fixed: `validate scope → persist pending audit → write content → mark committed`. Any deviation (e.g., writing content before audit) is an architectural violation.
+
+**Anti-pattern:** Catching audit persistence errors and continuing the content write. Audit failure must propagate.
+
+### Pattern: Runtime Mode Resolution
+
+**Rule:** `runtime-mode.ts.resolveRuntimeMode()` is called exactly once at process bootstrap. The result is immutable and read via a typed getter elsewhere. No code reads `process.env` or probes Tauri globals outside this module.
+
+**Anti-pattern:** Multiple runtime-mode probes scattered across packages.
+
+### Pattern: Editor Contract Discipline
+
+**Rule:** Consumers (`@anydocs/web`, `@anydocs/desktop`) import only from `@anydocs/editor` package entry, never reach into internal modules. CI enforces this via path-restriction lint rules.
+
+**Anti-pattern:** Importing `@anydocs/editor/src/runtime/plate-runtime.ts` directly.
+
+### Pattern: Capability Matrix as Single Source
+
+**Rule:** Any code path that branches on runtime mode reads from `capability-matrix.ts`. New capabilities that differ across modes are added to the matrix, not inlined in consumers.
+
+**Anti-pattern:** Inline `if (runtimeMode === 'desktop')` branches scattered across UI code.
+
+## Phase 2 Architectural Boundaries (Updates)
+
+Phase 1 boundaries remain. The following are appended:
+
+**Package Boundaries:**
+- `@anydocs/editor` may depend on `@anydocs/core` for `doc-content-v1` types and converters; it must not depend on `@anydocs/web` or `@anydocs/desktop`
+- `@anydocs/web` and `@anydocs/desktop` depend on `@anydocs/editor` only through its declared contract
+- Tauri Rust code (`packages/desktop/src-tauri/`) does not duplicate domain logic; it only adapts I/O
+
+**Agent Boundaries:**
+- Agent orchestrators (`inline-agent.ts`, `page-agent.ts`, `workspace-agent.ts`) compose scope validation + audit + content write; they do not own provider concerns
+- Provider concerns are isolated behind `provider-port.ts`; host applications wire concrete providers
+
+**Audit Boundaries:**
+- Audit log is owned by `@anydocs/core/audit/`; no other package writes to `<projectRoot>/.anydocs/audit/`
+- Audit schema changes require explicit version bump per the rule above
+
+**Runtime Mode Boundaries:**
+- Runtime mode resolution lives in `@anydocs/core/runtime/`; no consumer probes the environment independently
+- The capability matrix is the single source of cross-mode behavioral differences
+
+## Requirements-to-Structure Mapping (Phase 2)
+
+| PRD Reference | Architectural Home |
+|---|---|
+| FR51 (three-scope Agent anchors) | `@anydocs/editor/src/agent-anchors/`, `@anydocs/core/src/agent/agent-service.ts` |
+| FR52 (desktop native fs) | `packages/desktop/src-tauri/src/commands/fs_commands.rs`, `@anydocs/core/src/fs/desktop-fs-adapter.ts` |
+| FR53 (inline Agent scope) | `@anydocs/core/src/agent/inline-agent.ts`, `scope-validator.ts` |
+| FR54 (page Agent scope) | `@anydocs/core/src/agent/page-agent.ts`, `scope-validator.ts` |
+| FR55 (workspace Agent scope) | `@anydocs/core/src/agent/workspace-agent.ts`, `scope-validator.ts` |
+| FR56 (write-ahead audit + rollback) | `@anydocs/core/src/audit/audit-log-service.ts` |
+| FR57 (audit query + rollback API) | `@anydocs/core/src/audit/audit-log-service.ts.query/rollback`, `rollback-service.ts` |
+| FR58 (runtime mode indicator) | `@anydocs/core/src/runtime/`, Studio status bar `RuntimeModeIndicator` |
+| FR59 (scope escalation confirmation) | `@anydocs/editor/src/agent-anchors/`, `@anydocs/core/src/agent/agent-service.ts` escalation token check |
+| FR60 (`@anydocs/editor` package contract) | `packages/editor/contract/public-api.ts`, CI contract diff |
+| NFR26 (desktop ≤3s startup) | Tauri shell minimal-deps configuration, `packages/desktop/src-tauri/tauri.conf.json` |
+| NFR27 (atomic fs writes) | Tauri commands write-temp-then-rename pattern |
+| NFR28 (Agent latency budgets per scope) | `agent-service.ts` per-scope timeout configuration |
+| NFR29 (write-ahead + rollback enforcement) | `audit-log-service.ts` + fault-injection test harness |
+| NFR30 (audit schema + 30-day retention) | `audit-entry-schema.ts`, `audit-repository.ts.prune()` |
+| NFR31 (editor API contract diff in CI) | `packages/editor/contract/`, CI workflow |
+| NFR32 (cross-mode content compatibility) | Identical `@anydocs/core` services in both modes, fixture round-trip tests |
+| NFR33 (scope escalation confirmation enforcement) | `agent-service.ts` escalation token + UI confirmation flow |
+| FR61–FR64, NFR34 (Phase 3 anchors) | See `## Phase 3 Architectural Anchors` above |
+
+## Phase 2 Validation
+
+### Coherence Validation ✅
+
+**Decision Compatibility:** All Phase 2 decisions extend Phase 1 without contradiction. Local-first remains the model (Tauri = local; web mode unchanged). Shared core remains the source of truth (Agent + audit + runtime live in core, not in UI surfaces). Publication boundary remains intact (audit log is a project-local artifact, never published).
+
+**Pattern Consistency:** Phase 2 patterns mirror Phase 1 style — capability-language at architecture boundaries, schema-first validation, single-source rules per concern. No new architectural philosophy introduced.
+
+**Structure Alignment:** New package (`@anydocs/editor`) and new core modules (`agent/`, `audit/`, `runtime/`) follow Phase 1 organization conventions (capability folders, not technical-layer folders).
+
+### Requirements Coverage Validation ✅
+
+All 14 new FRs (FR51–FR64) and 9 new NFRs (NFR26–NFR34) have explicit architectural homes (see mapping table above). Phase 3 FRs/NFRs have declared anchor points that allow forward integration without retrofit.
+
+### Implementation Readiness Validation ✅
+
+**Decision Completeness:** Core extensions are specified (agent + audit + runtime modules), new package contract is declared (`@anydocs/editor`), desktop fs strategy is concrete (Tauri shell + native adapter + atomicity contract), audit schema is defined with versioning rules.
+
+**Structure Completeness:** Updated package topology, capability matrix, and requirements-to-structure mapping give epic/story workflows enough surface to break down.
+
+**Pattern Completeness:** Five new patterns (scope enforcement, write-ahead audit, runtime mode resolution, editor contract discipline, capability matrix as single source) address the most likely cross-agent drift points.
+
+### Gap Analysis Results
+
+**Critical Gaps:** None.
+
+**Important Gaps:**
+- LLM provider concrete adapter is out of scope for this architecture (intentional — provider concerns live outside `core`). Host application configuration must specify the provider at deploy time; this is a Phase 2 implementation choice, not an architectural decision.
+- UX details of scope escalation confirmation flow (modal copy, keyboard affordances) belong in a UX design pass; architecture only specifies the enforcement contract.
+
+**Nice-to-Have Gaps:**
+- A future addendum could specify the contract-diff tool selection (whether the CI check uses `api-extractor`, `arethetypeswrong`, or a bespoke diff).
+- Audit log compression for long-retention scenarios is not addressed in Phase 2 (30 days is small enough that flat NDJSON suffices).
+
+### Phase 2 Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION (Phase 2)
+
+**Confidence Level:** High
+
+**Key Strengths:**
+- Additive: zero Phase 1 retraction risk
+- Contract-bound editor extraction reduces consumer coupling and enables future embeds
+- Write-ahead audit semantics are encoded structurally, not as a convention
+- Runtime mode model resolves a real source of cross-environment drift identified in PRD validation
+- Phase 3 anchors are declared as forward-compatible extension points, avoiding future retrofits
+
+**Areas for Future Enhancement:**
+- Provider adapter strategy and observability of Agent invocations
+- Audit log compression and cross-project audit aggregation (Phase 3 territory)
+- Cross-runtime asset signing for desktop distribution
+
+### Phase 2 Implementation Handoff
+
+**AI Agent Guidelines (Phase 2 additions):**
+- Always route Agent writes through `@anydocs/core/agent/agent-service.ts`
+- Never bypass `scope-validator.ts.assertScopeBoundary()`
+- Always read runtime mode from `@anydocs/core/runtime/runtime-mode.ts`
+- Always import from `@anydocs/editor` package entry, never internal modules
+- New cross-mode behaviors go into `capability-matrix.ts`, not inline branches
+
+**First Phase 2 Implementation Priority:**
+1. Create `@anydocs/editor` package skeleton with public API contract file and CI diff check (NFR31)
+2. Implement `@anydocs/core/runtime/` and the capability matrix
+3. Implement `@anydocs/core/audit/` with versioned schema and write-ahead semantics
+4. Implement `@anydocs/core/agent/` scope orchestrators wired to audit
+5. Build Tauri shell + native fs adapter in `packages/desktop/`
+6. Studio dual-mount of `@anydocs/editor` behind feature flag; cross-mount fixture parity tests
+7. Studio cutover; Yoopta retirement
+8. Desktop adoption of `@anydocs/editor`
