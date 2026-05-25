@@ -169,8 +169,13 @@ type BuildManifest = {
       site: string;
       mcp: string;
       llms: string;
+      // Mirrors the new published artifacts surfaced by Story 5.6 so consumers
+      // discovering via build-manifest.json see the same artifact set as the
+      // mcp/index.json discovery path (avoids two inconsistent discovery views).
+      llmsFull: string;
       searchIndexes: string[];
       searchFindIndexes: string[];
+      chunks: string[];
     };
   }>;
   deployment: {
@@ -590,8 +595,9 @@ function toReaderSearchDocs(
   site: BuildWorkflowPublishedSiteResult,
   page: PageDoc,
   breadcrumbs: string[],
+  sections: SearchSection[],
 ): ReaderSearchIndexDoc[] {
-  return getSearchSections(page)
+  return sections
     .flatMap((section, sectionIndex) =>
       splitChunkText(section.text).map((chunkText, chunkIndex) => ({
         id: `${page.id}#${String(sectionIndex + 1).padStart(3, '0')}-${String(chunkIndex + 1).padStart(2, '0')}`,
@@ -607,33 +613,47 @@ function toReaderSearchDocs(
     .filter((entry) => entry.text);
 }
 
-function toChunkDocs(
+// Builds chunk docs from pre-computed sections so callers that need multiple
+// chunk variants (e.g. MCP chunks vs reader-search chunks) can share the
+// expensive `getSearchSections` work — see `writePublishedArtifacts`.
+//
+// `getSearchSections` already guarantees at least one section for any page
+// with a non-empty title via its plain-text fallback, so this function does
+// not need a degenerate empty-page fallback path. AC5 (every published page
+// produces at least one chunk) is enforced upstream by `getSearchSections`.
+function buildChunkDocsFromSections(
   projectId: string,
   site: BuildWorkflowPublishedSiteResult,
   page: PageDoc,
   breadcrumbs: string[],
+  sections: SearchSection[],
   options?: {
     maxChars?: number;
     overlapChars?: number;
   },
 ): MachineReadableChunkDoc[] {
-  const sections = getSearchSections(page);
-
   const chunks: MachineReadableChunkDoc[] = [];
   let order = 1;
   const maxChars = options?.maxChars ?? MACHINE_READABLE_CHUNK_MAX_CHARS;
   const overlapChars = options?.overlapChars ?? MACHINE_READABLE_CHUNK_OVERLAP_CHARS;
+  const pageHref = `/${site.lang}/${page.slug}`;
 
   for (const section of sections) {
     for (const chunkText of splitChunkText(section.text, maxChars, overlapChars)) {
-      const href = `/${site.lang}/${page.slug}`;
+      // Deep-link to the section anchor when the section maps to a heading,
+      // matching reader-search docs (see `toReaderSearchDocs`). `sourcePath`
+      // stays page-level so it keeps representing the underlying source file.
+      const href = section.headingId ? `${pageHref}#${section.headingId}` : pageHref;
       const chunkId = `${page.id}#${String(order).padStart(4, '0')}`;
       const enrichedText = buildEnrichedText({
         lang: site.lang,
         title: page.title,
         breadcrumbs,
         headingPath: section.headingPath,
-        href,
+        // The "Page:" label in enrichedText is intentionally page-level; the
+        // "Section:" line already conveys the heading path. Section-level
+        // deep-linking is exposed via the chunk's standalone `href` field.
+        href: pageHref,
         text: chunkText,
       });
 
@@ -643,7 +663,7 @@ function toChunkDocs(
         lang: site.lang,
         slug: page.slug,
         href,
-        sourcePath: href,
+        sourcePath: pageHref,
         title: page.title,
         pageTitle: page.title,
         description: page.description ?? '',
@@ -672,50 +692,7 @@ function toChunkDocs(
     }
   }
 
-  if (chunks.length > 0) {
-    return chunks;
-  }
-
-  return [
-    {
-      id: `${page.id}#0001`,
-      pageId: page.id,
-      lang: site.lang,
-      slug: page.slug,
-      href: `/${site.lang}/${page.slug}`,
-      sourcePath: `/${site.lang}/${page.slug}`,
-      title: page.title,
-      pageTitle: page.title,
-      description: page.description ?? '',
-      headingPath: [],
-      breadcrumbs,
-      navPath: breadcrumbs,
-      order: 1,
-      tags: page.tags ?? [],
-      updatedAt: page.updatedAt ?? null,
-      text: page.title.trim(),
-      enrichedText: buildEnrichedText({
-        lang: site.lang,
-        title: page.title,
-        breadcrumbs,
-        headingPath: [],
-        href: `/${site.lang}/${page.slug}`,
-        text: page.title.trim(),
-      }),
-      chunkHash: buildChunkHash({
-        projectId,
-        lang: site.lang,
-        pageId: page.id,
-        chunkId: `${page.id}#0001`,
-        href: `/${site.lang}/${page.slug}`,
-        title: page.title,
-        headingPath: [],
-        breadcrumbs,
-        text: page.title.trim(),
-      }),
-      tokenEstimate: Math.max(1, Math.ceil(page.title.trim().length / 4)),
-    },
-  ];
+  return chunks;
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
@@ -805,10 +782,21 @@ export async function writePublishedArtifacts(
     const breadcrumbsById = buildPageBreadcrumbs(site.content.navigation.items);
     const languagePaths = contract.paths.languageRoots[site.lang];
 
+    // Compute heading-aware sections once per page so MCP chunks and reader-
+    // search chunks share the same `renderPageContent` + markdown parse work.
+    // Previously each page was parsed twice — once per chunk-size variant.
+    const pageSections = new Map<string, SearchSection[]>();
+    for (const page of site.content.pages) {
+      pageSections.set(page.id, getSearchSections(page));
+    }
+    const sectionsFor = (page: PageDoc): SearchSection[] => pageSections.get(page.id) ?? [];
+
     const searchIndex = {
       lang: site.lang,
       generatedAt,
-      docs: site.content.pages.flatMap((page) => toReaderSearchDocs(site, page, breadcrumbsById.get(page.id) ?? [])),
+      docs: site.content.pages.flatMap((page) =>
+        toReaderSearchDocs(site, page, breadcrumbsById.get(page.id) ?? [], sectionsFor(page))
+      ),
     };
     const navigationArtifact = {
       lang: site.lang,
@@ -816,13 +804,26 @@ export async function writePublishedArtifacts(
       items: site.content.navigation.items,
     };
     const chunkDocs = site.content.pages.flatMap((page) =>
-      toChunkDocs(contract.config.projectId, site, page, breadcrumbsById.get(page.id) ?? [])
+      buildChunkDocsFromSections(
+        contract.config.projectId,
+        site,
+        page,
+        breadcrumbsById.get(page.id) ?? [],
+        sectionsFor(page),
+      )
     );
     const readerSearchChunkDocs = site.content.pages.flatMap((page) =>
-      toChunkDocs(contract.config.projectId, site, page, breadcrumbsById.get(page.id) ?? [], {
-        maxChars: READER_SEARCH_CHUNK_MAX_CHARS,
-        overlapChars: READER_SEARCH_CHUNK_OVERLAP_CHARS,
-      })
+      buildChunkDocsFromSections(
+        contract.config.projectId,
+        site,
+        page,
+        breadcrumbsById.get(page.id) ?? [],
+        sectionsFor(page),
+        {
+          maxChars: READER_SEARCH_CHUNK_MAX_CHARS,
+          overlapChars: READER_SEARCH_CHUNK_OVERLAP_CHARS,
+        },
+      )
     );
     const searchFindArtifact = buildReaderSearchFindArtifact({
       projectId: contract.config.projectId,
@@ -944,10 +945,14 @@ export async function writePublishedArtifacts(
           site: '.',
           mcp: path.relative(outputRoot, contract.paths.machineReadableRoot),
           llms: path.relative(outputRoot, contract.paths.llmsFile),
+          llmsFull: 'llms-full.txt',
           searchIndexes: contract.config.languages.map((lang) =>
             path.relative(outputRoot, contract.paths.languageRoots[lang].searchIndexFile)
           ),
           searchFindIndexes: contract.config.languages.map((lang) => `search-find.${lang}.json`),
+          chunks: contract.config.languages.map(
+            (lang) => `${path.relative(outputRoot, contract.paths.machineReadableRoot)}/chunks.${lang}.json`,
+          ),
         },
       },
     ],

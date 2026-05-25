@@ -393,6 +393,12 @@ Repeated heading should still get a stable anchor.
         breadcrumbs: string[];
       }>;
     };
+    const chunks = JSON.parse(
+      await readFile(path.join(contract.paths.machineReadableRoot, 'chunks.en.json'), 'utf8'),
+    ) as {
+      chunks: Array<{ pageId: string; slug: string; text: string }>;
+    };
+    const llmsFull = await readFile(path.join(contract.paths.artifactRoot, 'llms-full.txt'), 'utf8');
 
     const guideResults = searchIndex.docs.filter((entry) => entry.pageId === 'guide');
     const faqResult = searchIndex.docs.find((entry) => entry.pageId === 'faq');
@@ -410,6 +416,22 @@ Repeated heading should still get a stable anchor.
     assert.equal(faqResult?.href, '/en/faq');
     assert.equal(faqResult?.sectionTitle, '');
     assert.equal(searchIndex.docs.some((entry) => entry.pageId === 'draft-page'), false);
+
+    // AC6: draft pages must not leak into any external-agent artifact.
+    // These assertions cover llms-full.txt and mcp/chunks.<lang>.json — the
+    // pages-artifact and search-index paths are covered elsewhere in this file.
+    assert.equal(
+      chunks.chunks.some((entry) => entry.pageId === 'draft-page' || entry.slug === 'draft-page'),
+      false,
+      'draft page leaked into mcp/chunks.<lang>.json',
+    );
+    assert.equal(
+      chunks.chunks.some((entry) => /must stay out of published/.test(entry.text)),
+      false,
+      'draft body text leaked into mcp/chunks.<lang>.json',
+    );
+    assert.doesNotMatch(llmsFull, /draft-page/, 'draft page id leaked into llms-full.txt');
+    assert.doesNotMatch(llmsFull, /must stay out of published/, 'draft body text leaked into llms-full.txt');
     assert.equal(
       searchIndex.docs.every(
         (entry) =>
