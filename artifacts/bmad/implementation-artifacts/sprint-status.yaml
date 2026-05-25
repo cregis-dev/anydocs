@@ -32,12 +32,15 @@
 # - Story files do not exist for every completed item, so completion is inferred from implementation evidence.
 # - Story 4.4 is done after final review cleared the remaining watch-loop, logging, and default-gate issues.
 # - 2026-03-15: Story 2.3 received follow-up Studio refinements that keep it within the same scope: current-language page deletion with navigation cleanup, expanded project settings editing, richer navigation authoring, and recent-project history removal.
+# - 2026-05-24: Phase 2 vNext addendum — Epic 6–12 appended in backlog (39 new stories, FR51–FR60 + NFR26–NFR33). Phase 3 anchors NOT decomposed. Companion sprint plan: artifacts/bmad/implementation-artifacts/sprint-plan-phase2-vnext.md.
 
-generated: 2026-03-12 16:56:00 +0800
+generated: 2026-05-24 (Phase 2 vNext addendum)
+previous_generated: 2026-03-12 16:56:00 +0800
 project: anydocs
 project_key: NOKEY
 tracking_system: file-system
 story_location: /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts
+companion_doc: artifacts/bmad/implementation-artifacts/sprint-plan-phase2-vnext.md
 
 development_status:
   epic-1: done
@@ -78,3 +81,86 @@ development_status:
   5-5-preserve-forward-compatibility-for-workflow-reuse-and-future-ai-native-capabilities: done
   5-6-expand-ai-readable-artifacts-and-reposition-reader-search-as-find: review
   epic-5-retrospective: optional
+
+  # ─── Phase 2 vNext addendum (added 2026-05-24) ───
+  # Epic 6–12 cover Phase 2 single-user vNext: @anydocs/editor extraction, Plate migration,
+  # runtime mode (web/desktop), Tauri fs, audit log, built-in Agent (3 scopes), scope escalation.
+  # Phase 3 anchors (FR61–FR64 + NFR34) NOT decomposed; see prd.md + architecture.md.
+
+  epic-6: in-progress
+  6-1-scaffold-anydocs-editor-package-and-public-api-contract-file: ready-for-dev
+  6-2-implement-plate-based-block-runtime-inside-the-package: backlog
+  6-3-implement-doc-content-v1-plate-converters: backlog
+  6-4-define-editorplugin-contract-and-migrate-built-in-block-types: backlog
+  6-5-add-ci-contract-diff-check-for-anydocs-editor: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-build-editor-host-adapter-in-anydocs-web: backlog
+  7-2-studio-dual-mount-with-feature-flag-and-parity-fixtures: backlog
+  7-3-studio-cutover-and-retire-yoopta-integration: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-implement-runtime-mode-resolver-in-anydocs-core: backlog
+  8-2-define-capability-matrix-and-migrate-consumers: backlog
+  8-3-surface-runtimemodeindicator-in-studio: backlog
+  8-4-cross-mode-content-round-trip-fixture-tests: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-scaffold-tauri-shell-in-packages-desktop-src-tauri: backlog
+  9-2-implement-rust-side-native-fs-commands-with-path-safety: backlog
+  9-3-implement-desktop-fs-adapter-in-anydocs-core: backlog
+  9-4-atomic-write-fault-injection-tests: backlog
+  9-5-wire-desktop-renderer-to-anydocs-editor-and-runtime-mode: backlog
+  9-6-validate-desktop-call-graph-contains-zero-api-local-calls: backlog
+  9-7-desktop-cold-start-budget-enforcement: backlog
+  epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-1-define-versioned-audit-entry-json-schema-in-anydocs-core: backlog
+  10-2-implement-daily-ndjson-audit-repository: backlog
+  10-3-implement-write-ahead-lifecycle: backlog
+  10-4-implement-audit-query-api: backlog
+  10-5-implement-rollback-service: backlog
+  10-6-implement-retention-prune-and-cli-command: backlog
+  10-7-schema-versioning-rule-and-forward-compatibility-tests: backlog
+  epic-10-retrospective: optional
+
+  epic-11: backlog
+  11-1-define-abstract-agentproviderport-interface: backlog
+  11-2-implement-scope-validator-pure-functions: backlog
+  11-3-implement-inline-agent-orchestrator: backlog
+  11-4-implement-page-agent-orchestrator: backlog
+  11-5-implement-workspace-agent-orchestrator: backlog
+  11-6-wire-agent-service-through-scope-validation-and-write-ahead-audit: backlog
+  11-7-add-agent-anchors-in-anydocs-editor: backlog
+  11-8-per-scope-agent-latency-budgets-and-integration-tests: backlog
+  11-9-audit-failure-fault-injection-tests: backlog
+  epic-11-retrospective: optional
+
+  epic-12: backlog
+  12-1-implement-escalation-token-signing-in-editor-host: backlog
+  12-2-implement-agent-service-escalation-token-verification: backlog
+  12-3-studio-escalation-confirmation-modal-with-keyboard-accessibility: backlog
+  12-4-end-to-end-test-unconfirmed-escalation-rejected: backlog
+  epic-12-retrospective: optional
+
+  # ─── Epic 13 — Studio Desktop Shell Migration (added 2026-05-24) ───
+  # Closes the Studio UI migration gap surfaced after Claude Design handoff review.
+  # Hosts UI surfaces for FR51, FR52, FR55, FR57, FR58, FR59, FR60 already defined by Epic 6–12 services.
+
+  epic-13: in-progress
+  13-1-port-tokens-css-and-shell-primitives-into-anydocs-web: ready-for-dev
+  13-2-recompose-studio-shell-to-desktop-four-region-layout: backlog
+  13-3-replace-navigation-composer-with-vault-sidebar-file-tree: backlog
+  13-4-implement-library-surface-continue-recent-stats: backlog
+  13-5-implement-four-step-onboarding-flow: backlog
+  13-6-restructure-settings-into-six-sub-pages: backlog
+  13-7-implement-command-palette-with-workspace-agent-entry: backlog
+  13-8-implement-run-inspector-full-window-surface: backlog
+  13-9-implement-build-and-publish-ui-success-and-failure: backlog
+  13-10-implement-audit-log-query-view: backlog
+  13-11-validate-dark-mode-and-visual-regression-across-migrated-surfaces: backlog
+  epic-13-retrospective: optional
