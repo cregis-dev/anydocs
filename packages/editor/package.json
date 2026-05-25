@@ -1,0 +1,42 @@
+{
+  "name": "@anydocs/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
+  "description": "Anydocs editor — contract-bound block editor package (runtime implemented in Story 6.2).",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "contract"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm clean && pnpm --filter @anydocs/core build && tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @anydocs/core build && tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts"
+  },
+  "dependencies": {
+    "@anydocs/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "typescript": "^5.0.0"
+  }
+}

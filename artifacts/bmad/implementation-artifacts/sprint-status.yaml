@@ -88,7 +88,7 @@ development_status:
   # Phase 3 anchors (FR61–FR64 + NFR34) NOT decomposed; see prd.md + architecture.md.
 
   epic-6: in-progress
-  6-1-scaffold-anydocs-editor-package-and-public-api-contract-file: ready-for-dev
+  6-1-scaffold-anydocs-editor-package-and-public-api-contract-file: review
   6-2-implement-plate-based-block-runtime-inside-the-package: backlog
   6-3-implement-doc-content-v1-plate-converters: backlog
   6-4-define-editorplugin-contract-and-migrate-built-in-block-types: backlog
