@@ -1,0 +1,263 @@
+/* =============================================================================
+ * VERBATIM PORT — DO NOT EDIT VALUES.
+ *
+ * Source:   /Users/shawn/Downloads/anydocs-desktop-handoff/tokens.css
+ * Frozen:   2026-05-25 (Story 13.1)
+ *
+ * Per Claude Design handoff README §8, any addition to this token vocabulary
+ * — colors, spacing, radius, shadows, easing, type — requires team
+ * discussion. Do NOT add ad-hoc tokens here; raise an issue first.
+ *
+ * Downstream rule (Story 13.1 AC5): all consumers in
+ * packages/web/lib/desktop-shell/ MUST reference these tokens via CSS custom
+ * properties. No hand-tuned color, spacing, radius, shadow, or easing values
+ * may appear in primitive code.
+ * ============================================================================= */
+
+/* Anydocs Studio — design tokens
+ * Quiet, Notion-grade. Inter + JetBrains Mono. Warm neutrals.
+ * Brand: cool teal-blue. AI: cool indigo. Status colors share chroma.
+ */
+
+:root {
+  /* === Neutral (warm, h≈80) — 10-step =========================== */
+  --n-0:  oklch(0.995 0.003 80);   /* canvas */
+  --n-50: oklch(0.985 0.004 80);   /* surface raised */
+  --n-100:oklch(0.965 0.005 80);   /* hover */
+  --n-150:oklch(0.945 0.006 80);
+  --n-200:oklch(0.910 0.007 80);   /* hairline */
+  --n-300:oklch(0.835 0.008 80);
+  --n-400:oklch(0.700 0.009 80);   /* secondary text */
+  --n-500:oklch(0.560 0.010 80);
+  --n-600:oklch(0.430 0.010 80);   /* body */
+  --n-700:oklch(0.330 0.010 80);
+  --n-800:oklch(0.230 0.010 80);   /* heading */
+  --n-900:oklch(0.150 0.010 80);   /* near-black */
+
+  /* === Brand (cool teal-blue) =================================== */
+  --brand-50:  oklch(0.965 0.020 210);
+  --brand-100: oklch(0.930 0.040 210);
+  --brand-300: oklch(0.770 0.080 210);
+  --brand-500: oklch(0.580 0.100 210);
+  --brand-600: oklch(0.500 0.105 210);
+  --brand-700: oklch(0.420 0.090 210);
+
+  /* === AI accent (cool indigo) ================================== */
+  --ai-50:  oklch(0.965 0.025 275);
+  --ai-100: oklch(0.930 0.045 275);
+  --ai-200: oklch(0.880 0.075 275);
+  --ai-300: oklch(0.760 0.115 275);
+  --ai-500: oklch(0.560 0.160 275);
+  --ai-600: oklch(0.490 0.165 275);
+  --ai-700: oklch(0.400 0.140 275);
+  --ai-glow: oklch(0.560 0.160 275 / 0.16);
+
+  /* === Status (shared chroma ~0.13) ============================= */
+  --ok-50:    oklch(0.965 0.025 155);
+  --ok-500:   oklch(0.580 0.130 155);
+  --ok-700:   oklch(0.430 0.115 155);
+  --warn-50:  oklch(0.970 0.030 85);
+  --warn-500: oklch(0.720 0.130 85);
+  --warn-700: oklch(0.530 0.110 85);
+  --bad-50:   oklch(0.965 0.025 25);
+  --bad-500:  oklch(0.590 0.150 25);
+  --bad-700:  oklch(0.450 0.140 25);
+  --info-50:  oklch(0.965 0.025 240);
+  --info-500: oklch(0.590 0.130 240);
+
+  /* === Cursor colors (presence, fixed per user) ================= */
+  --p-amber:  oklch(0.700 0.150 65);
+  --p-pink:   oklch(0.660 0.165 0);
+  --p-green:  oklch(0.620 0.130 145);
+  --p-cyan:   oklch(0.660 0.110 195);
+  --p-violet: oklch(0.560 0.160 275);  /* = AI */
+
+  /* === Typography =============================================== */
+  --font-ui: "Inter", -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  --t-11: 11px;
+  --t-12: 12px;
+  --t-13: 13px;
+  --t-14: 14px;
+  --t-15: 15px;
+  --t-16: 16px;
+  --t-18: 18px;
+  --t-20: 20px;
+  --t-24: 24px;
+  --t-28: 28px;
+  --t-32: 32px;
+  --t-40: 40px;
+
+  /* === Radius / shadow ========================================== */
+  --r-4: 4px;
+  --r-6: 6px;
+  --r-8: 8px;
+  --r-12: 12px;
+  --r-16: 16px;
+
+  --sh-1: 0 1px 0 rgba(20,18,14,0.04), 0 1px 2px rgba(20,18,14,0.04);
+  --sh-2: 0 4px 12px rgba(20,18,14,0.06), 0 1px 2px rgba(20,18,14,0.04);
+  --sh-3: 0 14px 40px rgba(20,18,14,0.10), 0 2px 6px rgba(20,18,14,0.05);
+
+  /* === Easing =================================================== */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Dark mode tokens — apply via [data-theme=dark] on any container. */
+[data-theme="dark"] {
+  --n-0:  oklch(0.155 0.006 270);
+  --n-50: oklch(0.180 0.007 270);
+  --n-100:oklch(0.215 0.008 270);
+  --n-150:oklch(0.245 0.009 270);
+  --n-200:oklch(0.290 0.010 270);
+  --n-300:oklch(0.360 0.010 270);
+  --n-400:oklch(0.510 0.010 270);
+  --n-500:oklch(0.640 0.008 270);
+  --n-600:oklch(0.760 0.006 270);
+  --n-700:oklch(0.850 0.005 270);
+  --n-800:oklch(0.930 0.004 270);
+  --n-900:oklch(0.985 0.003 270);
+
+  --brand-500: oklch(0.700 0.110 210);
+  --brand-600: oklch(0.620 0.110 210);
+  --brand-50:  oklch(0.260 0.035 210);
+  --brand-100: oklch(0.300 0.045 210);
+
+  --ai-500: oklch(0.700 0.170 275);
+  --ai-600: oklch(0.620 0.170 275);
+  --ai-200: oklch(0.330 0.080 275);
+  --ai-100: oklch(0.270 0.060 275);
+  --ai-50:  oklch(0.235 0.045 275);
+  --ai-glow: oklch(0.700 0.170 275 / 0.20);
+
+  --ok-50: oklch(0.260 0.045 155);
+  --warn-50: oklch(0.275 0.050 85);
+  --bad-50:  oklch(0.265 0.050 25);
+  --info-50: oklch(0.265 0.045 240);
+}
+
+/* Shared primitive classes (scoped to .ax root in screens). */
+.ax {
+  font-family: var(--font-ui);
+  color: var(--n-800);
+  background: var(--n-0);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
+}
+.ax *,
+.ax *::before,
+.ax *::after { box-sizing: border-box; }
+
+/* Hairlines use semi-transparent black so they read on both light & dark
+ * surfaces without hand-tuning per theme. */
+.ax .hair { border-color: color-mix(in oklch, var(--n-800) 12%, transparent); }
+
+/* Subtle AI gradient used in a single hero pill (Ask Agent) and the
+ * inline-suggestion accent bar. Kept tonal — no purple "AI noise". */
+.ax .ai-bar { background: linear-gradient(180deg, var(--ai-500), var(--ai-600)); }
+
+/* Block-editor body — match Notion's leading. */
+.ax .doc { font-size: 15.5px; line-height: 1.65; color: var(--n-800); }
+.ax .doc h1 { font-size: 34px; line-height: 1.18; letter-spacing: -0.01em; font-weight: 700; margin: 0 0 8px; }
+.ax .doc h2 { font-size: 22px; line-height: 1.25; letter-spacing: -0.005em; font-weight: 650; margin: 28px 0 8px; }
+.ax .doc h3 { font-size: 17px; line-height: 1.35; font-weight: 600; margin: 20px 0 4px; }
+.ax .doc p { margin: 8px 0; }
+.ax .doc code { font-family: var(--font-mono); font-size: 13px; background: var(--n-100); padding: 1px 5px; border-radius: 4px; }
+.ax .doc .placeholder { color: var(--n-400); }
+
+/* Reset for buttons used inside .ax */
+.ax button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.ax input, .ax textarea { font: inherit; color: inherit; background: none; border: 0; outline: 0; }
+
+/* Common pill / chip primitive */
+.ax .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: var(--n-700);
+  background: var(--n-100);
+  border: 1px solid color-mix(in oklch, var(--n-800) 6%, transparent);
+  white-space: nowrap; flex: none;
+}
+.ax .chip.ai { color: var(--ai-700); background: var(--ai-50); border-color: color-mix(in oklch, var(--ai-500) 22%, transparent); }
+.ax .chip.ok { color: var(--ok-700); background: var(--ok-50); border-color: color-mix(in oklch, var(--ok-500) 22%, transparent); }
+.ax .chip.warn { color: var(--warn-700); background: var(--warn-50); border-color: color-mix(in oklch, var(--warn-500) 22%, transparent); }
+.ax .chip.bad { color: var(--bad-700); background: var(--bad-50); border-color: color-mix(in oklch, var(--bad-500) 24%, transparent); }
+[data-theme="dark"] .ax .chip { color: var(--n-700); background: var(--n-150); }
+[data-theme="dark"] .ax .chip.ai { color: var(--ai-500); background: var(--ai-50); }
+
+/* Status dot */
+.ax .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; flex: none; }
+.ax .dot.ok { background: var(--ok-500); }
+.ax .dot.warn { background: var(--warn-500); }
+.ax .dot.bad { background: var(--bad-500); }
+.ax .dot.ai { background: var(--ai-500); }
+.ax .dot.gray { background: var(--n-300); }
+
+/* Button — primary */
+.ax .btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px; border-radius: var(--r-6);
+  font-size: 13px; font-weight: 500; color: var(--n-800);
+  background: var(--n-50);
+  border: 1px solid color-mix(in oklch, var(--n-800) 10%, transparent);
+  box-shadow: var(--sh-1);
+  transition: background 120ms var(--ease), border-color 120ms var(--ease);
+  white-space: nowrap; flex: none;
+}
+.ax .btn:hover { background: var(--n-100); }
+.ax .btn.primary { background: var(--n-900); color: var(--n-0); border-color: var(--n-900); }
+.ax .btn.primary:hover { background: var(--n-800); }
+.ax .btn.ai { background: var(--ai-500); color: white; border-color: var(--ai-600); box-shadow: 0 1px 0 rgba(20,18,14,.06), 0 0 0 3px var(--ai-glow); }
+.ax .btn.ai:hover { background: var(--ai-600); }
+.ax .btn.ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--n-600); }
+.ax .btn.ghost:hover { background: var(--n-100); color: var(--n-800); }
+.ax .btn.sm { height: 26px; padding: 0 10px; font-size: 12px; }
+
+/* Avatar */
+.ax .av {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: white;
+  border: 2px solid var(--n-0);
+  flex: none;
+}
+
+/* Subtle pulse used on Agent working indicators (1.2s ease-out loop) */
+@keyframes ax-breathe {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1.0; }
+}
+.ax .pulse { animation: ax-breathe 1.6s var(--ease) infinite; }
+
+/* Placeholder image (striped) */
+.ax .ph-img {
+  background:
+    repeating-linear-gradient(45deg,
+      color-mix(in oklch, var(--n-800) 4%, transparent) 0 8px,
+      transparent 8px 16px),
+    var(--n-100);
+  border: 1px dashed color-mix(in oklch, var(--n-800) 14%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--n-500); font-family: var(--font-mono); font-size: 11px;
+}
+
+/* Diff styles — inline-suggestion (kept tonal, no harsh red/green) */
+.ax .diff-ins {
+  background: color-mix(in oklch, var(--ai-500) 9%, transparent);
+  box-shadow: inset 2px 0 0 var(--ai-500);
+  padding: 2px 4px; border-radius: 3px;
+}
+.ax .diff-del {
+  background: color-mix(in oklch, var(--bad-500) 6%, transparent);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--bad-500) 60%, transparent);
+  color: var(--n-500);
+  padding: 2px 4px; border-radius: 3px;
+}
+
+/* Scrollbars hidden inside artboards */
+.ax ::-webkit-scrollbar { width: 0; height: 0; }
