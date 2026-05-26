@@ -33,6 +33,9 @@ export function MermaidViewer({ code }: MermaidViewerProps) {
           theme: isDarkMode ? 'dark' : 'neutral',
           securityLevel: 'loose',
           fontFamily: 'inherit',
+          flowchart: {
+            htmlLabels: false,
+          },
         });
 
         // Use a unique ID for each graph to avoid collisions
@@ -78,7 +81,7 @@ export function MermaidViewer({ code }: MermaidViewerProps) {
   return (
     <div 
       ref={containerRef}
-      className="mermaid-wrapper flex justify-center py-6 w-full overflow-x-auto [&>svg]:mx-auto [&>svg]:max-w-full [&>svg]:h-auto transition-all"
+      className="mermaid-wrapper flex w-full justify-center overflow-x-auto py-6 transition-all [&>svg]:mx-auto [&>svg]:h-auto [&>svg]:max-w-full"
       dangerouslySetInnerHTML={{ __html: svgStr }} 
     />
   );

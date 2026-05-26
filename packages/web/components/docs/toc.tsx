@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { usePathname } from 'next/navigation';
 
 import type { TocItem } from '@/lib/docs/markdown';
@@ -39,6 +39,44 @@ export function DocsToc({
   const copy = getDocsUiCopy(inferDocsLangFromPathname(pathname));
   const [activeId, setActiveId] = useState<string | null>(toc[0]?.id ?? null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleTocLinkClick = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    const target = document.getElementById(id);
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const nextUrl = `${window.location.pathname}${window.location.search}#${id}`;
+    const currentHash = (() => {
+      try {
+        return decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        return window.location.hash.slice(1);
+      }
+    })();
+
+    if (currentHash === id) {
+      window.history.replaceState(null, '', nextUrl);
+    } else {
+      window.history.pushState(null, '', nextUrl);
+    }
+
+    setActiveId(id);
+  };
 
   useEffect(() => {
     if (!toc.length) return;
@@ -138,6 +176,7 @@ export function DocsToc({
             <a
               key={t.id}
               href={`#${t.id}`}
+              onClick={(event) => handleTocLinkClick(event, t.id)}
               data-depth={t.depth}
               aria-current={activeId === t.id ? 'location' : undefined}
               className={cn(

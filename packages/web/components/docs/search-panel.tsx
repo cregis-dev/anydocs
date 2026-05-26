@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import Link from "next/link";
@@ -22,6 +23,18 @@ import {
   searchReaderIndex,
 } from "@/lib/docs/search";
 import { cn } from "@/lib/utils";
+
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
+
+function useHydrated() {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydratedSnapshot,
+  );
+}
 
 function getHighlightTerms(query: string) {
   const normalized = query.trim().toLocaleLowerCase();
@@ -139,6 +152,7 @@ export function SearchPanel({
   shortcutClassName?: string;
   resultsClassName?: string;
 }) {
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState<LoadedReaderSearchIndex | null>(null);
@@ -152,10 +166,9 @@ export function SearchPanel({
     triggerLabel ?? copy.sidebar.searchTriggerLabel ?? resolvedPlaceholder;
 
   const shortcutLabel =
-    typeof navigator !== "undefined" &&
-    /mac|iphone|ipad|ipod/i.test(navigator.platform)
-      ? "⌘K"
-      : "Ctrl K";
+    hydrated && !/mac|iphone|ipad|ipod/i.test(navigator.platform)
+      ? "Ctrl K"
+      : "⌘K";
 
   const openWithSeed = (seed = "") => {
     setQ(seed);
@@ -303,41 +316,47 @@ export function SearchPanel({
     }
   }
 
+  const trigger = (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      aria-label={resolvedPlaceholder}
+      className={cn(
+        "flex h-10 w-full items-center gap-3 rounded-lg border border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-left text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] shadow-none transition-colors hover:border-[color:var(--docs-search-border,var(--fd-border))] hover:bg-[color:var(--docs-search-results-background,var(--fd-card))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(59,130,246,0.18)]",
+        inputClassName,
+      )}
+      onClick={hydrated ? () => openWithSeed() : undefined}
+      onKeyDown={hydrated ? handleTriggerKeyDown : undefined}
+    >
+      <Search className="h-4 w-4 shrink-0 text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]" />
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]",
+          triggerTextClassName,
+        )}
+      >
+        {resolvedTriggerLabel}
+      </span>
+      <span
+        className={cn(
+          "hidden shrink-0 rounded-md border border-[rgba(15,23,42,0.08)] bg-white/80 px-2 py-1 text-[11px] font-medium tracking-[0.02em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] sm:inline-flex",
+          shortcutClassName,
+        )}
+      >
+        {shortcutLabel}
+      </span>
+    </button>
+  );
+
+  if (!hydrated) {
+    return <div className={cn("w-full", className)}>{trigger}</div>;
+  }
+
   return (
     <div className={cn("w-full", className)}>
       <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-        <DialogPrimitive.Trigger asChild>
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            aria-label={resolvedPlaceholder}
-            className={cn(
-              "flex h-10 w-full items-center gap-3 rounded-lg border border-[color:var(--docs-search-border,var(--fd-border))] bg-[color:var(--docs-search-background,var(--fd-muted))] px-4 text-left text-sm text-[color:var(--docs-body-copy,var(--fd-foreground))] shadow-none transition-colors hover:border-[color:var(--docs-search-border,var(--fd-border))] hover:bg-[color:var(--docs-search-results-background,var(--fd-card))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(59,130,246,0.18)]",
-              inputClassName,
-            )}
-            onClick={() => openWithSeed()}
-            onKeyDown={handleTriggerKeyDown}
-          >
-            <Search className="h-4 w-4 shrink-0 text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]" />
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate text-[color:var(--docs-search-placeholder,var(--fd-muted-foreground))]",
-                triggerTextClassName,
-              )}
-            >
-              {resolvedTriggerLabel}
-            </span>
-            <span
-              className={cn(
-                "hidden shrink-0 rounded-md border border-[rgba(15,23,42,0.08)] bg-white/80 px-2 py-1 text-[11px] font-medium tracking-[0.02em] text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))] sm:inline-flex",
-                shortcutClassName,
-              )}
-            >
-              {shortcutLabel}
-            </span>
-          </button>
-        </DialogPrimitive.Trigger>
+        <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>
 
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[rgba(15,23,42,0.40)] backdrop-blur-[6px] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
