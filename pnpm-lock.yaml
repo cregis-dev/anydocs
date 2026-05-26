@@ -201,6 +201,22 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/editor:
+    dependencies:
+      '@anydocs/core':
+        specifier: workspace:*
+        version: link:../core
+      react:
+        specifier: ^19
+        version: 19.2.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.1
+        version: 22.19.15
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/mcp:
     dependencies:
       '@anydocs/cli':
