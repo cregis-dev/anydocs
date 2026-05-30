@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "list",
+      "style": "todo",
+      "items": [
+        {
+          "children": [{ "type": "text", "text": "Buy milk" }],
+          "checked": false
+        },
+        {
+          "children": [{ "type": "text", "text": "Walk the dog" }],
+          "checked": true
+        },
+        {
+          "children": [{ "type": "text", "text": "Write story 6.4" }],
+          "checked": false
+        }
+      ]
+    }
+  ]
+}

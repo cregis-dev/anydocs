@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "paragraph",
+      "children": [
+        { "type": "text", "text": "See " },
+        {
+          "type": "link",
+          "href": "https://platejs.org",
+          "title": "Plate documentation",
+          "children": [{ "type": "text", "text": "Plate" }]
+        },
+        { "type": "text", "text": " and the " },
+        {
+          "type": "link",
+          "href": "https://docs.slatejs.org",
+          "children": [{ "type": "text", "text": "Slate docs", "marks": ["italic"] }]
+        },
+        { "type": "text", "text": "." }
+      ]
+    }
+  ]
+}

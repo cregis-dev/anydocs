@@ -1,37 +1,39 @@
-import type { EditorPlugin } from '../../contract/public-api.ts';
-import { EditorNotImplementedError } from './not-implemented-error.ts';
+// =============================================================================
+// Plugin registry — Story 6.4 refactor.
+//
+// Story 6.1 shipped a minimal placeholder registry that:
+//   - validated only that the input was an object with a non-empty blockType
+//     + a schemaFragment field;
+//   - threw `EditorNotImplementedError` for validation failures (Story 6.1
+//     review found this semantically wrong);
+//   - did not detect duplicate blockType registrations.
+//
+// Story 6.4 replaces the placeholder:
+//   - validation flows through `validateEditorPlugin` from plugin-contract.ts
+//     (canonical blockType set, plateElementTypes shape, converter callability,
+//     agent-anchor enum);
+//   - duplicate blockType throws `EditorPluginValidationError` (closes Story
+//     6.1 follow-up L2);
+//   - all validation failures use `EditorPluginValidationError` (closes
+//     Story 6.1 follow-up M1).
+//
+// `validateAndRegisterPlugin` is the function the public `registerPlugin`
+// contract entry calls into. Builtin plugins use the lower-level
+// `registerPluginIntoRegistry(plugin, { allowReregister: true })` directly.
+// =============================================================================
 
-// Module-local registry. Sufficient for the contract surface delivered in
-// Story 6.1; replaced by a per-instance, validated registry once the Plate
-// runtime (Story 6.2) and converter layer (Story 6.3) land.
-const registeredPlugins: EditorPlugin[] = [];
+import type { EditorPlugin } from '../../contract/public-api.ts';
+import {
+  getPluginForBlockType,
+  registerPluginIntoRegistry,
+} from '../plugins/plugin-contract.ts';
 
 export function validateAndRegisterPlugin(plugin: EditorPlugin): void {
-  if (plugin === null || typeof plugin !== 'object') {
-    throw new EditorNotImplementedError(
-      'Invalid plugin: expected an object. Comprehensive plugin validation lands in Story 6.4.',
-    );
-  }
-
-  if (typeof plugin.blockType !== 'string' || plugin.blockType.length === 0) {
-    throw new EditorNotImplementedError(
-      "Invalid plugin: required field 'blockType' must be a non-empty string. Comprehensive plugin validation lands in Story 6.4.",
-    );
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(plugin, 'schemaFragment')) {
-    throw new EditorNotImplementedError(
-      "Invalid plugin: required field 'schemaFragment' is missing. Comprehensive plugin validation lands in Story 6.4.",
-    );
-  }
-
-  registeredPlugins.push(plugin);
+  // Host-facing entry: full validation + reject duplicate blockType.
+  // Builtin plugins use registerPluginIntoRegistry with allowReregister: true.
+  registerPluginIntoRegistry(plugin, { allowReregister: false });
 }
 
-export function getRegisteredPluginsForTests(): ReadonlyArray<EditorPlugin> {
-  return registeredPlugins;
-}
-
-export function resetRegisteredPluginsForTests(): void {
-  registeredPlugins.length = 0;
+export function getRegisteredPlugin(blockType: string): EditorPlugin | undefined {
+  return getPluginForBlockType(blockType);
 }

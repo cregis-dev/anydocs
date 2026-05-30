@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "table",
+      "rows": [
+        {
+          "cells": [
+            { "header": true, "children": [{ "type": "text", "text": "Story" }] },
+            { "header": true, "children": [{ "type": "text", "text": "Status" }] },
+            { "header": true, "children": [{ "type": "text", "text": "Tests" }] }
+          ]
+        },
+        {
+          "cells": [
+            { "children": [{ "type": "text", "text": "6.1" }] },
+            { "children": [{ "type": "text", "text": "done" }] },
+            { "children": [{ "type": "text", "text": "7" }] }
+          ]
+        },
+        {
+          "cells": [
+            { "children": [{ "type": "text", "text": "6.2" }] },
+            { "children": [{ "type": "text", "text": "review" }] },
+            { "children": [{ "type": "text", "text": "75" }] }
+          ]
+        }
+      ]
+    }
+  ]
+}

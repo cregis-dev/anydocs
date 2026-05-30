@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "codeBlock",
+      "language": "typescript",
+      "title": "extract-contract.ts (excerpt)",
+      "code": "export function extractContract(): ContractSnapshot {\n  return extractContractFromSource(readFileSync(CONTRACT_SOURCE_PATH, 'utf8'));\n}"
+    }
+  ]
+}

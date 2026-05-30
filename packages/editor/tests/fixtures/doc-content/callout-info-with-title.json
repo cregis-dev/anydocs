@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "callout",
+      "tone": "info",
+      "title": "Tip",
+      "children": [
+        { "type": "text", "text": "Run " },
+        { "type": "text", "text": "pnpm contract:check", "marks": ["code"] },
+        { "type": "text", "text": " before committing." }
+      ]
+    }
+  ]
+}

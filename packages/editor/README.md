@@ -2,7 +2,76 @@
 
 Contract-bound block editor package for Anydocs. Studio (web), Desktop (Tauri), and future embeds consume the editor exclusively through a small, machine-enforced public API surface.
 
-> **Phase 2 status:** Scaffold + contract in place (Story 6.1). CI contract-diff (Story 6.5) locks the public surface. The Plate-based runtime (Story 6.2) and Studio cutover (Stories 7.1–7.3) follow.
+> **Phase 2 status:** Scaffold + contract in place (Story 6.1). CI contract-diff (Story 6.5) locks the public surface. **Plate-based runtime (Story 6.2) ships paragraph + heading + marks.** Full converter coverage (Story 6.3), plugin contract migration (Story 6.4), and Studio cutover (Stories 7.1–7.3) follow.
+
+## Runtime engine
+
+The internal block runtime is [Plate](https://platejs.org) — a contract-bound Slate wrapper. Plate handles editing semantics; we own the contract and the `doc-content-v1` ↔ Plate converters.
+
+- **Canonical storage stays `doc-content-v1`.** Plate values never escape the package — `getContent()` always returns a canonical payload.
+- **Mount lifecycle** uses `react-dom/client.createRoot` + `flushSync` so mount/unmount commits land synchronously (no jsdom flakiness in tests).
+- **`setContent` triggers a key-bumped re-mount** of Plate's React tree. Plate v49 has no public "rebuild from current children" hook, and a key change is the supported pattern for force-syncing the editor's internal store to programmatically-replaced `editor.children`.
+- **Converters live under [`src/converters/`](src/converters/)**. All 11 `DocContentV1` block types and the `link` inline node round-trip through the converters. Plugin-driven editing UI for these types lands in Story 6.4.
+- **Scope refusals are loud.** Unrecognised block types (forged payloads, future schema additions, …) throw a structured `Error` identifying the offending block index and listing the allowed types. Silent drops are explicitly forbidden so contract drift is visible at convert time.
+- **`NodeIdPlugin` is disabled** (`nodeId: false` in `createPlateEditor`). Plate's default auto-id injection would make `getContent()` lossy round-trip — DocContentV1's optional `id` field would always be populated on output even when absent on input. The canonical id semantics belong to the host; the editor only preserves ids the caller supplied.
+
+### Block-type mapping (DocContent ↔ Plate)
+
+| DocContentV1 | Plate element type |
+|---|---|
+| `paragraph` | `p` |
+| `heading` level 1 / 2 / 3 | `h1` / `h2` / `h3` |
+| `list` (bulleted) | `ul` + `li` |
+| `list` (numbered) | `ol` + `li` |
+| `list` (todo) | `todo_list` + `todo_li` (carries `checked: boolean`) |
+| `codeBlock` | `code_block` (text child = source code) |
+| `codeGroup` | `code_group` (with `code_block` children) |
+| `blockquote` | `blockquote` |
+| `callout` | `callout` (carries `tone`, `title`) |
+| `table` / `TableRow` / `TableCell` (header / body) | `table` / `tr` / `th` / `td` |
+| `image` | `img` (void; carries `src`, `alt`, `title`, `width`, `height`, `caption`) |
+| `divider` | `hr` (void) |
+| `mermaid` | `mermaid` (void; carries `code`, `title`) |
+| `link` (inline) | `a` (inline element with text children) |
+
+The mapping table is locked in [`src/converters/element-types.ts`](src/converters/element-types.ts) — both directions of the converter import the same constants so adding/renaming an element type requires a single edit.
+
+## Plugin contract
+
+Custom block types integrate through the `EditorPlugin` contract introduced by Story 6.4. Each plugin declares:
+
+- `blockType` — a canonical DocContentV1 block type from `@anydocs/core`'s `DOC_CONTENT_BLOCK_TYPES`
+- `plateElementTypes` — every Plate runtime element-type string the plugin owns
+- `schemaFragment` — opaque structural description (used by the validator + future schema tooling)
+- `docContentToPlate` / `plateToDocContent` — bidirectional converter hooks
+- `agentAnchor` (optional) — inline / page / workspace agent anchor declaration (Epic 11)
+
+The 11 canonical DocContentV1 block types are auto-registered as builtin plugins under [`src/plugins/builtin/`](src/plugins/builtin/). Each registered plugin owns its `blockType` exclusively — duplicate registration through the public `registerPlugin(plugin)` API throws `EditorPluginValidationError`. This is by design: canonical blockTypes have one authoritative converter.
+
+Hosts who want to **observe** the validator's behavior can call `registerPlugin` with a custom-shape plugin to surface validation errors at registration time:
+
+```ts
+import { registerPlugin } from '@anydocs/editor';
+
+// All canonical blockTypes are already registered by builtins, so passing
+// any canonical blockType here throws "already registered" — this is
+// intentional and protects against accidental shadowing.
+try {
+  registerPlugin({
+    blockType: 'paragraph',          // already taken by the builtin paragraph plugin
+    plateElementTypes: ['__custom__'],
+    schemaFragment: { kind: 'paragraph' },
+    docContentToPlate: () => ({}),
+    plateToDocContent: () => ({}),
+  });
+} catch (error) {
+  // error.name === 'EditorPluginValidationError'
+}
+```
+
+For per-editor extension, pass plugins via `EditorConfig.plugins`. The runtime validates each plugin shape but the global registry is the source of truth for canonical-blockType ownership — host plugins targeting a canonical blockType already owned by a builtin silently defer to the builtin (Story 6.4 design; see Story 6.4 follow-up M2 for the open question on whether hosts should be allowed to replace builtins per-editor).
+
+The 9 essential block types (paragraph, heading, list, codeBlock, image, callout, table, divider, blockquote) ship with Plate render plugins from the corresponding `@udecode/plate-*` packages. The 2 extended types (codeGroup, mermaid) round-trip as data but render as generic Slate elements until Story 13.x adds custom render UI.
 
 ## Public API contract
 
@@ -16,7 +85,7 @@ The public surface is declared **only** in [`contract/public-api.ts`](contract/p
 | `EditorInstance` | type     | Opaque editor handle (`mount` / `getContent` / `setContent` / `on` / `triggerAgent`). |
 | `EditorPlugin`   | type     | Plugin contract for adding block types.                                  |
 
-Supporting types (`UnmountHandle`, `AgentInvocation`, scope/event unions, `EditorNotImplementedError`) are intentionally inlined as anonymous shapes or kept internal under `src/runtime/`. Internal runtime types are never re-exported through the package entry.
+Supporting types (`UnmountHandle`, `AgentInvocation`, scope/event unions, `EditorNotImplementedError`) are intentionally inlined as anonymous shapes or kept internal under `src/runtime/`. Internal Plate types are never re-exported through the package entry.
 
 ## Contract snapshot (`contract/contract.json`)
 
@@ -88,7 +157,16 @@ packages/editor/
 │   └── contract.json          ← generated; never hand-edit
 ├── src/
 │   ├── index.ts               ← thin re-export shim (auto-generated header)
-│   └── runtime/               ← placeholder runtime now; Plate-backed in Story 6.2
+│   ├── runtime/
+│   │   ├── plate-runtime.ts   ← Plate-backed EditorInstance factory (Story 6.2)
+│   │   ├── plugin-registry.ts ← in-memory placeholder; full validation in Story 6.4
+│   │   └── not-implemented-error.ts
+│   ├── converters/
+│   │   ├── doc-content-to-plate.ts  ← all 11 DocContentV1 block types + link
+│   │   ├── plate-to-doc-content.ts  ← inverse mapping
+│   │   ├── element-types.ts         ← shared Plate element-type constants
+│   │   └── mark-mapping.ts          ← shared mark ⇄ boolean-flag util
+│   └── plugins/builtin/       ← Story 6.4 lands here
 ├── scripts/                   ← build-side tooling (not shipped)
 │   ├── extract-contract.ts    ← TS compiler API extractor
 │   ├── contract-cli.ts        ← update / check entry points

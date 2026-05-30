@@ -22,7 +22,7 @@
 
 import type { DocContentV1 } from '@anydocs/core';
 
-import { createPlaceholderEditor } from '../src/runtime/placeholder-editor.ts';
+import { createPlateEditorInstance } from '../src/runtime/plate-runtime.ts';
 import { validateAndRegisterPlugin } from '../src/runtime/plugin-registry.ts';
 
 /**
@@ -80,33 +80,48 @@ export type EditorInstance = {
  * Plugin contract for extending the editor with custom block types.
  *
  * `blockType` is the canonical `doc-content-v1` block identifier this plugin
- * handles. `schemaFragment` is a structural description used by the converter
+ * handles. Must be one of the canonical types declared by `@anydocs/core`'s
+ * `DOC_CONTENT_BLOCK_TYPES`; the runtime validator (Story 6.4) rejects any
+ * value outside that set.
+ *
+ * `plateElementTypes` declares every runtime element-type string this plugin
+ * owns on the editor side. A single plugin may own multiple types — e.g. the
+ * heading plugin owns `['h1', 'h2', 'h3']`, the list plugin owns
+ * `['ul', 'ol', 'todo_list', 'li', 'todo_li']`, the table plugin owns
+ * `['table', 'tr', 'td', 'th']`. The inverse converter uses this list to
+ * look up which plugin handles a given runtime node. Required and
+ * non-empty (Story 6.4 AC4).
+ *
+ * `schemaFragment` is a structural description used by the converter
  * layer (Story 6.3) and the schema validator (Story 6.4); it is opaque from
  * the contract's perspective.
  *
  * `docContentToPlate` / `plateToDocContent` are the two conversion hooks that
- * keep the runtime engine isolated behind `doc-content-v1`. The runtime engine
- * is referenced abstractly here so the contract stays vendor-neutral; the
- * actual engine value type is defined and consumed inside src/runtime/.
+ * keep the runtime engine isolated behind `doc-content-v1`. Both are
+ * required (Story 6.4 review M1 fix: previously optional in the type but
+ * required at runtime — the validator threw on missing hooks). The runtime
+ * engine is referenced abstractly here so the contract stays vendor-neutral;
+ * the actual engine value type is defined and consumed inside src/runtime/.
  *
  * `agentAnchor` declares whether the block exposes an inline, page, or
  * workspace agent anchor (Epic 11 / FR51).
  */
 export type EditorPlugin = {
   blockType: string;
+  plateElementTypes: ReadonlyArray<string>;
   schemaFragment: unknown;
-  docContentToPlate?: (block: unknown) => unknown;
-  plateToDocContent?: (node: unknown) => unknown;
+  docContentToPlate: (block: unknown) => unknown;
+  plateToDocContent: (node: unknown) => unknown;
   agentAnchor?: 'inline' | 'page' | 'workspace';
 };
 
 /**
- * Factory that produces an {@link EditorInstance}. Story 6.1 ships a
- * placeholder runtime whose methods throw with a stable error name so
- * consumers can integrate against the contract before Story 6.2 lands.
+ * Factory that produces an {@link EditorInstance}. Story 6.2 swaps the
+ * Story 6.1 placeholder for a Plate-backed runtime; the public surface is
+ * unchanged so the Story 6.5 contract-snapshot test stays in sync.
  */
 export function createEditor(config: EditorConfig): EditorInstance {
-  return createPlaceholderEditor(config);
+  return createPlateEditorInstance(config);
 }
 
 /**

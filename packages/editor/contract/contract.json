@@ -16,7 +16,7 @@
     {
       "name": "EditorPlugin",
       "kind": "type",
-      "signature": "export type EditorPlugin = { blockType: string; schemaFragment: unknown; docContentToPlate?: (block: unknown) => unknown; plateToDocContent?: (node: unknown) => unknown; agentAnchor?: 'inline' | 'page' | 'workspace'; };"
+      "signature": "export type EditorPlugin = { blockType: string; plateElementTypes: ReadonlyArray<string>; schemaFragment: unknown; docContentToPlate: (block: unknown) => unknown; plateToDocContent: (node: unknown) => unknown; agentAnchor?: 'inline' | 'page' | 'workspace'; };"
     },
     {
       "name": "createEditor",
