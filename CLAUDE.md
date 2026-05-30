@@ -288,8 +288,9 @@ Supported node types: `section`, `folder`, `page`, `link`
 - **Core services**: `packages/core/src/services/` — build, preview, authoring, markdown authoring, templates, legacy import, workflow sync
 - **Core schemas**: `packages/core/src/schemas/` — `doc-content-v1` and related validators
 - **Editor contract** (Phase 2): `packages/editor/contract/public-api.ts` (source of truth) + `packages/editor/contract/contract.json` (committed snapshot; CI-enforced via `pnpm test`). The `EditorPlugin` shape (Story 6.4) is the registration surface for custom block types — 11 canonical types ship as builtin plugins under `packages/editor/src/plugins/builtin/`. Run `pnpm --filter @anydocs/editor contract:update` after intentional contract changes — see `packages/editor/README.md`.
+- **Studio editor** (Phase 2 post-cutover): `@anydocs/editor` (Plate-backed) is the default and only block editor. Story 7.3 retired the Yoopta integration — `@yoopta/*` packages were removed from `packages/web` and `packages/cli`. The adapter + parity matrix live under `packages/web/lib/editor-host/`. (Core retains `yooptaToDocContent` + `assertValidYooptaContentValue` for lazy on-disk migration of legacy pages — see Current Gaps.)
 - **Web data adapter**:
-  - `packages/web/lib/docs/fs.ts` — Studio-side read/write wrapper over core repositories (also runs Yoopta ↔ doc-content conversion)
+  - `packages/web/lib/docs/fs.ts` — Studio-side read/write wrapper over core repositories; emits canonical `DocContentV1` on write and lazily migrates legacy Yoopta-shape pages forward on read
   - `packages/web/lib/docs/data.ts` — published-only data layer for the reader
 - **Studio**: `packages/web/components/studio/` — Editor components (`local-studio-app.tsx`, `navigation-composer.tsx`, ...)
 - **Reading Site**: `packages/web/app/[lang]/docs/[[...slug]]/page.tsx`
@@ -364,5 +365,6 @@ npx @anydocs/mcp                                  # from inside the project dire
 - **Routing**: Reader and local APIs assume one active project per server process
 - **Validation**: Minimal block-set enforcement is schema-driven (doc-content-v1), but tooling to surface violations in Studio is still catching up
 - **MCP as a service**: Stdio only — no HTTP transport, no auth, no pagination, no read-only tool profile; not ready for public/remote exposure without an adapter layer
+- **Legacy Yoopta utilities in `@anydocs/core`**: After Story 7.3 cutover, `yooptaToDocContent`, `assertValidYooptaContentValue`, and `renderYooptaContent` remain in `@anydocs/core` to support lazy migration of legacy on-disk pages still saved in Yoopta shape (via `packages/web/lib/docs/fs.ts`). `docContentToYoopta` is no longer called by any consumer. A future story handles full deletion once all on-disk pages have migrated forward.
 
 For the current documentation map, see: `docs/README.md`

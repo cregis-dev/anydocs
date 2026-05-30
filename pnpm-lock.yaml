@@ -65,48 +65,6 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.14)
-      '@yoopta/blockquote':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/callout':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/code':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/divider':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/editor':
-        specifier: ^6.0.1
-        version: 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      '@yoopta/headings':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/image':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/link':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/lists':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/marks':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/paragraph':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/table':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/themes-shadcn':
-        specifier: ^6.0.1
-        version: 6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/code@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(@yoopta/embed@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/file@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/image@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/lists@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/steps@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table-of-contents@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/tabs@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/ui@6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/video@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      '@yoopta/ui':
-        specifier: ^6.0.1
-        version: 6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -319,48 +277,6 @@ importers:
       '@scalar/api-reference-react':
         specifier: 0.9.11
         version: 0.9.11(react@19.2.3)(tailwindcss@4.2.1)(typescript@5.9.3)
-      '@yoopta/blockquote':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/callout':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/code':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/divider':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/editor':
-        specifier: ^6.0.1
-        version: 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      '@yoopta/headings':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/image':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/link':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/lists':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/marks':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/paragraph':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/table':
-        specifier: ^6.0.1
-        version: 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/themes-shadcn':
-        specifier: ^6.0.1
-        version: 6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/code@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(@yoopta/embed@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/file@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/image@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/lists@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/steps@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table-of-contents@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/tabs@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/ui@6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/video@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      '@yoopta/ui':
-        specifier: ^6.0.1
-        version: 6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -654,28 +570,6 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
 
-  '@dnd-kit/accessibility@3.1.1':
-    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
-    peerDependencies:
-      react: '>=16.8.0'
-
-  '@dnd-kit/core@6.3.1':
-    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-
-  '@dnd-kit/sortable@8.0.0':
-    resolution: {integrity: sha512-U3jk5ebVXe1Lr7c2wU7SBZjcWdQP+j7peHJfCspnA81enlu88Mgd7CC8Q+pub9ubP7eKVETzJW+IBAhsqbSu/g==}
-    peerDependencies:
-      '@dnd-kit/core': ^6.1.0
-      react: '>=16.8.0'
-
-  '@dnd-kit/utilities@3.2.2':
-    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
-    peerDependencies:
-      react: '>=16.8.0'
-
   '@emnapi/core@1.8.1':
     resolution: {integrity: sha512-AvT9QFpxK0Zd8J0jopedNm+w/2fIzvtPKPjqyw9jwvBaReTTqPBk9Hixaz7KbjimP+QNz605/XnjFcDAL2pqBg==}
 
@@ -896,12 +790,6 @@ packages:
 
   '@floating-ui/react-dom@2.1.8':
     resolution: {integrity: sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-
-  '@floating-ui/react@0.26.28':
-    resolution: {integrity: sha512-yORQuuAtVpiRjpMhdc0wJj06b9JFjrYF4qp96j++v2NBpbi6SEGF7donUJ3TMieerQ6qVkAv1tgr7L4r5roTqw==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -1251,47 +1139,8 @@ packages:
   '@radix-ui/primitive@1.1.3':
     resolution: {integrity: sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg==}
 
-  '@radix-ui/react-accordion@1.2.12':
-    resolution: {integrity: sha512-T4nygeh9YE9dLRPhAHSeOZi7HBXo+0kYIPJXayZfvWOWA0+n3dESrZbjfDPUABkUNym6Hd+f2IR113To8D2GPA==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-arrow@1.1.7':
     resolution: {integrity: sha512-F+M1tLhO+mlQaOWspE8Wstg+z6PwxwRd8oQ8IXceWz92kfAmalTRf0EjrouQeo7QssEPfCn05B4Ihs1K9WQ/7w==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
-  '@radix-ui/react-checkbox@1.3.3':
-    resolution: {integrity: sha512-wBbpv+NQftHDdG86Qc0pIyXk5IR3tM8Vd0nWLKDcX8nNn4nXFOFwsKuqw2okA/1D/mpaAkmuyndrPJTYDNZtFw==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
-  '@radix-ui/react-collapsible@1.1.12':
-    resolution: {integrity: sha512-Uu+mSh4agx2ib1uIGPP4/CKNULyajb3p92LsVXmH2EHVMTfZWpll88XJ0j4W0z3f8NK1eYl1+Mf/szHPmcHzyA==}
     peerDependencies:
       '@types/react': '*'
       '@types/react-dom': '*'
@@ -1404,19 +1253,6 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@radix-ui/react-hover-card@1.1.15':
-    resolution: {integrity: sha512-qgTkjNT1CfKMoP0rcasmlH2r1DAiYicWsDsufxl940sT2wHNEWWv6FMWIQXWhVdmC1d/HYfbhQx60KYyAtKxjg==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-id@1.1.1':
     resolution: {integrity: sha512-kGkGegYIdQsOb4XjsfM97rXsiHaBwco+hFI66oO4s9LU+PLAC5oJ7khdOVFxkhsmlbpUqDAvXw11CluXP+jkHg==}
     peerDependencies:
@@ -1424,19 +1260,6 @@ packages:
       react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
     peerDependenciesMeta:
       '@types/react':
-        optional: true
-
-  '@radix-ui/react-label@2.1.8':
-    resolution: {integrity: sha512-FmXs37I6hSBVDlO4y764TNz1rLgKwjJMQ0EGte6F3Cb3f4bIuHB/iLa/8I9VKkmOy+gNHq8rql3j686ACVV21A==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
         optional: true
 
   '@radix-ui/react-menu@2.1.16':
@@ -1582,19 +1405,6 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@radix-ui/react-slider@1.3.6':
-    resolution: {integrity: sha512-JPYb1GuM1bxfjMRlNLE+BcmBC8onfCi60Blk7OBqi2MLTFdS+8401U4uFjnwkOr49BLmXxLC6JHkvAsx5OJvHw==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-slot@1.2.3':
     resolution: {integrity: sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A==}
     peerDependencies:
@@ -1613,34 +1423,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@radix-ui/react-switch@1.2.6':
-    resolution: {integrity: sha512-bByzr1+ep1zk4VubeEVViV592vu2lHE2BZY5OnzehZqOOgogN80+mNtCqPkhn2gklJqOpxWgPoYTSnhBCqpOXQ==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-tabs@1.1.13':
     resolution: {integrity: sha512-7xdcatg7/U+7+Udyoj2zodtI9H/IIopqo+YOIcZOq1nJwXWBZ9p8xiu5llXlekDbZkca79a/fozEYQXIA4sW6A==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
-  '@radix-ui/react-tooltip@1.2.8':
-    resolution: {integrity: sha512-tY7sVt1yL9ozIxvmbtN5qtmH2krXcBCfjEiCgKGLqunJHvgvZG2Pcl2oQ3kbcZARb1BGEHdkLzcYGO8ynVlieg==}
     peerDependencies:
       '@types/react': '*'
       '@types/react-dom': '*'
@@ -1996,27 +1780,6 @@ packages:
   '@scalar/workspace-store@0.40.3':
     resolution: {integrity: sha512-lEIxmFWXmpkj76vAjhOgrnX8gvQr33q4PTlTYqol8Y9N09PlJOaLBkSztskWRbN1lJKxOUaYCVLCHyZEUh1zjg==}
     engines: {node: '>=22'}
-
-  '@shikijs/core@3.23.0':
-    resolution: {integrity: sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==}
-
-  '@shikijs/engine-javascript@3.23.0':
-    resolution: {integrity: sha512-aHt9eiGFobmWR5uqJUViySI1bHMqrAgamWE1TYSUoftkAeCCAiGawPMwM+VCadylQtF4V3VNOZ5LmfItH5f3yA==}
-
-  '@shikijs/engine-oniguruma@3.23.0':
-    resolution: {integrity: sha512-1nWINwKXxKKLqPibT5f4pAFLej9oZzQTsby8942OTlsJzOBZ0MWKiwzMsd+jhzu8YPCHAswGnnN1YtQfirL35g==}
-
-  '@shikijs/langs@3.23.0':
-    resolution: {integrity: sha512-2Ep4W3Re5aB1/62RSYQInK9mM3HsLeB91cHqznAJMuylqjzNVAVCMnNWRHFtcNHXsoNRayP9z1qj4Sq3nMqYXg==}
-
-  '@shikijs/themes@3.23.0':
-    resolution: {integrity: sha512-5qySYa1ZgAT18HR/ypENL9cUSGOeI2x+4IvYJu4JgVJdizn6kG4ia5Q1jDEOi7gTbN4RbuYtmHh0W3eccOrjMA==}
-
-  '@shikijs/types@3.23.0':
-    resolution: {integrity: sha512-3JZ5HXOZfYjsYSk0yPwBrkupyYSLpAE26Qc0HLghhZNGTZg/SKxXIIgoxOpmmeQP0RRSDJTk1/vPfw9tbw+jSQ==}
-
-  '@shikijs/vscode-textmate@10.0.2':
-    resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -2758,162 +2521,6 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@yoopta/blockquote@6.0.5':
-    resolution: {integrity: sha512-zyVq5Ix4IXXvMlmsNwAdCy2YdMHTP8cGHpms17QxMXdSbT/Qh6z9h3l6YZGKgetw5j+y/sb4M2crLL/DY13J5w==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/callout@6.0.5':
-    resolution: {integrity: sha512-KJp84KdhcAm6vJH02t5xsXX3i+2m4YSr259JbCUwC8tLQLCrgZxSytp8eI6M9wbcnMQz74rhG3nWN6il2jugKw==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/code@6.0.5':
-    resolution: {integrity: sha512-VIHyGNdxBwNnkK7duxsgVKIIBY9WdS1LLH5BbrFKpjcfBXK6asgVcjB7Xe85ZUWSxRnoF2UYiFBTqiVov8oWQA==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/divider@6.0.5':
-    resolution: {integrity: sha512-dj0vuX0V9RcFM4Oh633GotuXQ6u8oBgMAllkg5QSY+Wflu01DjhhHTJEVN0+Psju8e52LAXUjlNGpKijIn8gwQ==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/editor@6.0.5':
-    resolution: {integrity: sha512-xOI8LNANA+/78HlYHaARkDFtICPuq7TYg/ccOEug2K5IhbtNv2iArwmWDUnEFxMyV25yCS29WEfQXuyali3sVQ==}
-    peerDependencies:
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-      slate: ^0.120.0
-      slate-dom: ^0.119.0
-      slate-react: ^0.120.0
-
-  '@yoopta/embed@6.0.5':
-    resolution: {integrity: sha512-41al2ItDVn2DpAjn4K6WE+Fpq5r8PbSyK7oIlBcztwFLznzzMW7/mgvhmO2ojlBAOVkOOauRb/H0pow1VBvALg==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/file@6.0.5':
-    resolution: {integrity: sha512-g/mrBH0aprQ08wigrX7ha4yraEJL6sqZHUrdyYDzOQ0vMx94hkDPfgLI5NWF+wLkObDWnMNVZG/xT9UcgiM1SQ==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/headings@6.0.5':
-    resolution: {integrity: sha512-KuSX/FDUv7K4utYenhBla2Ego7jfeEIKVUoLaOvXAxYqA8gRFbHtdqrcqib2Qkm1FncTtFkTW8vGjbRmnnhMVg==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/image@6.0.5':
-    resolution: {integrity: sha512-5TspSRW+QL2OZUhW3DkrLoH/cIj53CkB2H0DKGwUDwJk+t+2qJevez2TMI41411w8JR4qbfo2SIRPg3dtT8iZg==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/link@6.0.5':
-    resolution: {integrity: sha512-Z9PKJY1ygSjZsZClNcdtanEvPaHRyJLO81h4dWEyNJPP92oXQbZm1q9ixJF6h3sJgaOynH6KK2T+QfUqSPBAQA==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/lists@6.0.5':
-    resolution: {integrity: sha512-khxWHXyjlmhpX485LSt33r6UvO+Eng+XTE47KojJV2OCAvkABPzm+mTbgfRfm9yQparDhV+6Dnn5rcb09UNldQ==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/marks@6.0.5':
-    resolution: {integrity: sha512-K7xuaaSdUjVL69eFUJrmidRuTM4o6850dja95KC1EBnraBH67sOt7tnGOHjRQzRn04EzY7U8fmAKvrF3E6s75g==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/paragraph@6.0.5':
-    resolution: {integrity: sha512-yIGNHnPbNZEq1sUpVr0BfwNNW3Z8j66LVejjQ5wzzumZUL295ZmTtnVOg2GFLLCts54Fqo05dq5bSl3e2qmD+Q==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/steps@6.0.5':
-    resolution: {integrity: sha512-fZnB++go1RYOJ9y9no3xXNjTDvwWSz/WV8uG8hfdiWzRkIcpRYrmbXhuC9P0pSS9qGvNwe8Cqzirki57AuYMVg==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/table-of-contents@6.0.5':
-    resolution: {integrity: sha512-Y+ab22tzo9TN0L0EqOo1tccRGrgNVbVeeBnG+nn+qLVEhFWIVvm1MmYOdUJsPO+4hWWVJHD3fCSZpiP6H0oufQ==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/table@6.0.5':
-    resolution: {integrity: sha512-a26ODQPnaw296izKMzlWfMLMe/Pe1IVK5Ai+APTVwsfQbxxUx/7TajEJdzTgGb2zNVCbpRLnX+S8m7zNIelhQA==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/tabs@6.0.5':
-    resolution: {integrity: sha512-r3Ypcn1sOVBfZ3KsoumkkswmcZNRj41lcJAQLIn3YmMDCxZPrRmvjuIVWMtSOh+gkWioQO9oFyQ1UmjkQ0cxlg==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/themes-shadcn@6.0.5':
-    resolution: {integrity: sha512-MFGy0yEo9aMKHWezyYieWdlYS9i3IEit6ObT6W+wRXTSrUkSOVjnnUHBWAwUtQk6CQTvAdviX0DQeFfYb5bmZw==}
-    peerDependencies:
-      '@yoopta/code': ^6.0.5
-      '@yoopta/editor': ^6.0.5
-      '@yoopta/embed': ^6.0.5
-      '@yoopta/file': ^6.0.5
-      '@yoopta/image': ^6.0.5
-      '@yoopta/lists': ^6.0.5
-      '@yoopta/steps': ^6.0.5
-      '@yoopta/table': ^6.0.5
-      '@yoopta/table-of-contents': ^6.0.5
-      '@yoopta/tabs': ^6.0.5
-      '@yoopta/ui': ^6.0.5
-      '@yoopta/video': ^6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-      slate: ^0.120.0
-      slate-dom: ^0.119.0
-      slate-react: ^0.120.0
-
-  '@yoopta/ui@6.0.5':
-    resolution: {integrity: sha512-WebYLxZaVmoZbsQyTj+6SH4Sr5JKtqzptx9YSm2oax1bzYzuaGDaBMOK91wku0yXxBRH334ujjOAATPs/hWR/A==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
-  '@yoopta/video@6.0.5':
-    resolution: {integrity: sha512-n/iDaOq1cNKuuFIPfOmmkeSK2VORxxDkTKXKuL1r/lhZ51b72wpWAySVSSLc3LVfpYBx7UpVXzTr+2/3bVxsQQ==}
-    peerDependencies:
-      '@yoopta/editor': 6.0.5
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
-
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
@@ -3179,9 +2786,6 @@ packages:
   cookie@0.7.2:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
-
-  copy-to-clipboard@3.3.3:
-    resolution: {integrity: sha512-2KV8NhB5JqC3ky0r9PMCAZKbUHSwtEo4CwCs0KXgruG43gX5PMqDEBbVU4OUzw2MuAWUfsuFmWvEKG5QRfSnJA==}
 
   cors@2.8.6:
     resolution: {integrity: sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw==}
@@ -3692,9 +3296,6 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
-
-  eventemitter3@5.0.4:
-    resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
 
   eventsource-parser@3.0.6:
     resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
@@ -4431,9 +4032,6 @@ packages:
   lodash-es@4.17.23:
     resolution: {integrity: sha512-kVI48u3PZr38HdYz98UmfPnXl2DXrpdctLrFLCd3kOx1xUkOmpFPx7gCWWM5MPkL/fD8zb+Ph0QzjGFs4+hHWg==}
 
-  lodash.clonedeep@4.5.0:
-    resolution: {integrity: sha512-H5ZhCF25riFd9uB5UCkVKo61m3S/xZk1x4wA6yp/L3RFP6Z/eHH1ymQcGLo7J3GMPfm0V/7m1tryHuGVxpqEBQ==}
-
   lodash.mapvalues@4.6.0:
     resolution: {integrity: sha512-JPFqXFeZQ7BfS00H58kClY7SPVeHertPE0lNuCyZ26/XlN8TvakYD7b9bGyNmXbT/D3BbtPAAmq90gPWqLkxlQ==}
 
@@ -4459,16 +4057,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@0.294.0:
-    resolution: {integrity: sha512-V7o0/VECSGbLHn3/1O67FUgBwWB+hmzshrgDVRJQhMh8uj5D3HBuIvhuAmQTtlupILSplwIZg5FTc4tTKMA2SA==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
-
-  lucide-react@0.378.0:
-    resolution: {integrity: sha512-u6EPU8juLUk9ytRcyapkWI18epAv3RU+6+TC23ivjR0e+glWKBobFeSgRwOIJihzktILQuy6E0E80P2jVTDR5g==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
 
   lucide-react@0.542.0:
     resolution: {integrity: sha512-w3hD8/SQB7+lzU2r4VdFyzzOzKnUjTZIF/MQJGSSvni7Llewni4vuViRppfRAa2guOsY5k4jZyxw/i9DQHv+dw==}
@@ -4804,12 +4392,6 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  oniguruma-parser@0.12.2:
-    resolution: {integrity: sha512-6HVa5oIrgMC6aA6WF6XyyqbhRPJrKR02L20+2+zpDtO5QAzGHAUGw5TKQvwi5vctNnRHkJYmjAhRVQF2EKdTQw==}
-
-  oniguruma-to-es@4.3.6:
-    resolution: {integrity: sha512-csuQ9x3Yr0cEIs/Zgx/OEt9iBw9vqIunAPQkx19R/fiMq2oGVTgcMqO/V3Ybqefr1TBvosI6jU539ksaBULJyA==}
-
   optics-ts@2.4.1:
     resolution: {integrity: sha512-HaYzMHvC80r7U/LqAd4hQyopDezC60PO2qF5GuIwALut2cl5rK1VWHsqTp0oqoJJWjiv6uXKqsO+Q2OO0C3MmQ==}
 
@@ -4947,11 +4529,6 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.8.3:
-    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
-    engines: {node: '>=14'}
-    hasBin: true
-
   pretty-bytes@7.1.0:
     resolution: {integrity: sha512-nODzvTiYVRGRqAOvE84Vk5JDPyyxsVk0/fbA/bq7RqlnhksGpset09XTxbpvLTIjoaF7K8Z8DG8yHtKGTPSYRw==}
     engines: {node: '>=20'}
@@ -4997,28 +4574,10 @@ packages:
     resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
     engines: {node: '>= 0.10'}
 
-  re-resizable@6.11.2:
-    resolution: {integrity: sha512-2xI2P3OHs5qw7K0Ud1aLILK6MQxW50TcO+DetD9eIV58j84TqYeHoZcL9H4GXFXXIh7afhH8mv5iUCXII7OW7A==}
-    peerDependencies:
-      react: ^16.13.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.13.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  react-colorful@5.7.0:
-    resolution: {integrity: sha512-fuesYIemttah97XmsIHmz4OORDHiSFzyc9HMAIrCHJou2jaRQmL8cFJ76K4zQhhj8jzwOBlOi4BaGTjjOZCfTg==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-
   react-dom@19.2.3:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
     peerDependencies:
       react: ^19.2.3
-
-  react-draggable@4.6.0:
-    resolution: {integrity: sha512-g4vqY53xhmPrBnZvGP+1YQV0eYnB3o0VLzoi6q2IpwnQrxIZ34tYRKpVtsWIXPg4D/pvLn+oYCW5gOK2cWIrgA==}
-    peerDependencies:
-      react: '>= 16.3.0'
-      react-dom: '>= 16.3.0'
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -5048,12 +4607,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  react-rnd@10.5.3:
-    resolution: {integrity: sha512-s/sIT3pGZnQ+57egijkTp9mizjIWrJz68Pq6yd+F/wniFY3IriML18dUXnQe/HP9uMiJ+9MAp44hljG99fZu6Q==}
-    peerDependencies:
-      react: '>=16.3.0'
-      react-dom: '>=16.3.0'
 
   react-style-singleton@2.2.3:
     resolution: {integrity: sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==}
@@ -5085,15 +4638,6 @@ packages:
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
-
-  regex-recursion@6.0.2:
-    resolution: {integrity: sha512-0YCaSCq2VRIebiaUviZNs0cBz1kg5kVS2UKUfNIx8YVs1cN3AV7NTctO5FOKBA+UT2BPJIWZauYHPqJODG50cg==}
-
-  regex-utilities@2.3.0:
-    resolution: {integrity: sha512-8VhliFJAWRaUiVvREIiW2NXXTmHs4vMNnSzuJVhscgmGav3g9VDxLrQndI3dZZVVdp0ZO/5v0xmX516/7M9cng==}
-
-  regex@6.1.0:
-    resolution: {integrity: sha512-6VwtthbV4o/7+OaAF9I5L5V3llLEsoPyq9P1JVXkedTP33c7MfCG0/5NOPcSJn0TzXcG9YUrR0gQSWioew3LDg==}
 
   regexp.prototype.flags@1.5.4:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
@@ -5251,9 +4795,6 @@ packages:
   shell-quote@1.8.3:
     resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
     engines: {node: '>= 0.4'}
-
-  shiki@3.23.0:
-    resolution: {integrity: sha512-55Dj73uq9ZXL5zyeRPzHQsK7Nbyt6Y10k5s7OjuFZGMhpp4r/rsLBH0o/0fstIzX1Lep9VxefWljK/SKCzygIA==}
 
   side-channel-list@1.0.0:
     resolution: {integrity: sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==}
@@ -5424,9 +4965,6 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
-  tailwind-merge@2.6.1:
-    resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
-
   tailwind-merge@3.4.0:
     resolution: {integrity: sha512-uSaO4gnW+b3Y2aWoWfFpX62vn2sR3skfhbjsEnaBI81WD1wBLlHZe5sWf0AqjksNdYTbGBEd0UasQMT3SNV15g==}
 
@@ -5469,9 +5007,6 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
-  toggle-selection@1.0.6:
-    resolution: {integrity: sha512-BiZS+C1OS8g/q2RRbJmy59xpyghNBqrr6k5L/uKBGRsTfxmu3ffiRnd8mlGPUVayg8pvfi5urfnu8TU7DVOkLQ==}
-
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
@@ -5510,9 +5045,6 @@ packages:
 
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
-
-  tslib@2.6.2:
-    resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -5646,12 +5178,6 @@ packages:
       react-native:
         optional: true
 
-  use-debounce@10.1.1:
-    resolution: {integrity: sha512-kvds8BHR2k28cFsxW8k3nc/tRga2rs1RHYCqmmGqb90MEeE++oALwzh2COiuBLO1/QXiOuShXoSN2ZpWnMmvuQ==}
-    engines: {node: '>= 16.0.0'}
-    peerDependencies:
-      react: '*'
-
   use-deep-compare@1.3.0:
     resolution: {integrity: sha512-94iG+dEdEP/Sl3WWde+w9StIunlV8Dgj+vkt5wTwMoFQLaijiEZSXXy8KtcStpmEDtIptRJiNeD4ACTtVvnIKA==}
     peerDependencies:
@@ -5678,10 +5204,6 @@ packages:
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
-
-  validator@13.15.35:
-    resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
-    engines: {node: '>= 0.10'}
 
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
@@ -6207,31 +5729,6 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@dnd-kit/accessibility@3.1.1(react@19.2.3)':
-    dependencies:
-      react: 19.2.3
-      tslib: 2.8.1
-
-  '@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@dnd-kit/accessibility': 3.1.1(react@19.2.3)
-      '@dnd-kit/utilities': 3.2.2(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      tslib: 2.8.1
-
-  '@dnd-kit/sortable@8.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@dnd-kit/utilities': 3.2.2(react@19.2.3)
-      react: 19.2.3
-      tslib: 2.8.1
-
-  '@dnd-kit/utilities@3.2.2(react@19.2.3)':
-    dependencies:
-      react: 19.2.3
-      tslib: 2.8.1
-
   '@emnapi/core@1.8.1':
     dependencies:
       '@emnapi/wasi-threads': 1.1.0
@@ -6388,14 +5885,6 @@ snapshots:
       '@floating-ui/dom': 1.7.6
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-
-  '@floating-ui/react@0.26.28(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@floating-ui/utils': 0.2.11
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      tabbable: 6.4.0
 
   '@floating-ui/utils@0.2.10': {}
 
@@ -6705,58 +6194,9 @@ snapshots:
 
   '@radix-ui/primitive@1.1.3': {}
 
-  '@radix-ui/react-accordion@1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-collapsible': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-direction': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-id': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
   '@radix-ui/react-arrow@1.1.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
-  '@radix-ui/react-checkbox@1.3.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-presence': 1.1.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-previous': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-size': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
-  '@radix-ui/react-collapsible@1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-id': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-presence': 1.1.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.14)(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
     optionalDependencies:
@@ -6860,38 +6300,12 @@ snapshots:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
-  '@radix-ui/react-hover-card@1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-dismissable-layer': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-popper': 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-portal': 1.1.9(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-presence': 1.1.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
   '@radix-ui/react-id@1.1.1(@types/react@19.2.14)(react@19.2.3)':
     dependencies:
       '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.14)(react@19.2.3)
       react: 19.2.3
     optionalDependencies:
       '@types/react': 19.2.14
-
-  '@radix-ui/react-label@2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/react-primitive': 2.1.4(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
   '@radix-ui/react-menu@2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -7070,25 +6484,6 @@ snapshots:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
-  '@radix-ui/react-slider@1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/number': 1.1.1
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-direction': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-previous': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-size': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
   '@radix-ui/react-slot@1.2.3(@types/react@19.2.14)(react@19.2.3)':
     dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
@@ -7103,21 +6498,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
-  '@radix-ui/react-switch@1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-previous': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-size': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
   '@radix-ui/react-tabs@1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@radix-ui/primitive': 1.1.3
@@ -7128,26 +6508,6 @@ snapshots:
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-roving-focus': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-
-  '@radix-ui/react-tooltip@1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-dismissable-layer': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-id': 1.1.1(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-popper': 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-portal': 1.1.9(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-presence': 1.1.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-slot': 1.2.3(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.3)
-      '@radix-ui/react-visually-hidden': 1.2.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
     optionalDependencies:
@@ -7677,39 +7037,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
-
-  '@shikijs/core@3.23.0':
-    dependencies:
-      '@shikijs/types': 3.23.0
-      '@shikijs/vscode-textmate': 10.0.2
-      '@types/hast': 3.0.4
-      hast-util-to-html: 9.0.5
-
-  '@shikijs/engine-javascript@3.23.0':
-    dependencies:
-      '@shikijs/types': 3.23.0
-      '@shikijs/vscode-textmate': 10.0.2
-      oniguruma-to-es: 4.3.6
-
-  '@shikijs/engine-oniguruma@3.23.0':
-    dependencies:
-      '@shikijs/types': 3.23.0
-      '@shikijs/vscode-textmate': 10.0.2
-
-  '@shikijs/langs@3.23.0':
-    dependencies:
-      '@shikijs/types': 3.23.0
-
-  '@shikijs/themes@3.23.0':
-    dependencies:
-      '@shikijs/types': 3.23.0
-
-  '@shikijs/types@3.23.0':
-    dependencies:
-      '@shikijs/vscode-textmate': 10.0.2
-      '@types/hast': 3.0.4
-
-  '@shikijs/vscode-textmate@10.0.2': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -8460,188 +7787,6 @@ snapshots:
     dependencies:
       vue: 3.5.30(typescript@5.9.3)
 
-  '@yoopta/blockquote@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/callout@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/code@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      prettier: 3.8.3
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      shiki: 3.23.0
-
-  '@yoopta/divider@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)':
-    dependencies:
-      eventemitter3: 5.0.4
-      immer: 10.2.0
-      is-hotkey: 0.2.0
-      lodash.clonedeep: 4.5.0
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      slate: 0.123.0
-      slate-dom: 0.123.0(slate@0.123.0)
-      slate-react: 0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0)
-      validator: 13.15.35
-
-  '@yoopta/embed@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/file@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/headings@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/image@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/link@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/lists@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/marks@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/paragraph@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/steps@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/table-of-contents@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/table@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@yoopta/tabs@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  ? '@yoopta/themes-shadcn@6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/code@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(@yoopta/embed@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/file@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/image@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/lists@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/steps@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table-of-contents@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/table@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/tabs@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/ui@6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@yoopta/video@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)'
-  : dependencies:
-      '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-checkbox': 1.3.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-hover-card': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-label': 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-scroll-area': 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-select': 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-separator': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-slider': 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-switch': 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-tabs': 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-tooltip': 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/code': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      '@yoopta/embed': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/file': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/image': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/lists': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/steps': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/table': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/table-of-contents': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/tabs': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/ui': 6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/video': 6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      clsx: 2.1.1
-      copy-to-clipboard: 3.3.3
-      lucide-react: 0.378.0(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      react-rnd: 10.5.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      slate: 0.123.0
-      slate-dom: 0.123.0(slate@0.123.0)
-      slate-react: 0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0)
-      tailwind-merge: 2.6.1
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-
-  '@yoopta/ui@6.0.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
-      '@dnd-kit/utilities': 3.2.2(react@19.2.3)
-      '@floating-ui/react': 0.26.28(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-select': 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-slider': 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-switch': 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      lucide-react: 0.294.0(react@19.2.3)
-      react: 19.2.3
-      react-colorful: 5.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react-dom: 19.2.3(react@19.2.3)
-      tailwind-merge: 2.6.1
-      use-debounce: 10.1.1(react@19.2.3)
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-
-  '@yoopta/video@6.0.5(@yoopta/editor@6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@yoopta/editor': 6.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate-react@0.123.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(slate-dom@0.123.0(slate@0.123.0))(slate@0.123.0))(slate@0.123.0)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
@@ -8924,10 +8069,6 @@ snapshots:
   cookie-signature@1.2.2: {}
 
   cookie@0.7.2: {}
-
-  copy-to-clipboard@3.3.3:
-    dependencies:
-      toggle-selection: 1.0.6
 
   cors@2.8.6:
     dependencies:
@@ -9615,8 +8756,6 @@ snapshots:
   esutils@2.0.3: {}
 
   etag@1.8.1: {}
-
-  eventemitter3@5.0.4: {}
 
   eventsource-parser@3.0.6: {}
 
@@ -10407,8 +9546,6 @@ snapshots:
 
   lodash-es@4.17.23: {}
 
-  lodash.clonedeep@4.5.0: {}
-
   lodash.mapvalues@4.6.0: {}
 
   lodash.merge@4.6.2: {}
@@ -10432,14 +9569,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@0.294.0(react@19.2.3):
-    dependencies:
-      react: 19.2.3
-
-  lucide-react@0.378.0(react@19.2.3):
-    dependencies:
-      react: 19.2.3
 
   lucide-react@0.542.0(react@19.2.3):
     dependencies:
@@ -11012,14 +10141,6 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  oniguruma-parser@0.12.2: {}
-
-  oniguruma-to-es@4.3.6:
-    dependencies:
-      oniguruma-parser: 0.12.2
-      regex: 6.1.0
-      regex-recursion: 6.0.2
-
   optics-ts@2.4.1: {}
 
   optionator@0.9.4:
@@ -11151,8 +10272,6 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.8.3: {}
-
   pretty-bytes@7.1.0: {}
 
   pretty-ms@9.3.0:
@@ -11208,27 +10327,10 @@ snapshots:
       iconv-lite: 0.7.2
       unpipe: 1.0.0
 
-  re-resizable@6.11.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
-    dependencies:
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  react-colorful@5.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
-    dependencies:
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
   react-dom@19.2.3(react@19.2.3):
     dependencies:
       react: 19.2.3
       scheduler: 0.27.0
-
-  react-draggable@4.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
-    dependencies:
-      clsx: 2.1.1
-      prop-types: 15.8.1
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
 
   react-is@16.13.1: {}
 
@@ -11269,14 +10371,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
-  react-rnd@10.5.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
-    dependencies:
-      re-resizable: 6.11.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      react-draggable: 4.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      tslib: 2.6.2
-
   react-style-singleton@2.2.3(@types/react@19.2.14)(react@19.2.3):
     dependencies:
       get-nonce: 1.0.1
@@ -11306,16 +10400,6 @@ snapshots:
       get-intrinsic: 1.3.0
       get-proto: 1.0.1
       which-builtin-type: 1.2.1
-
-  regex-recursion@6.0.2:
-    dependencies:
-      regex-utilities: 2.3.0
-
-  regex-utilities@2.3.0: {}
-
-  regex@6.1.0:
-    dependencies:
-      regex-utilities: 2.3.0
 
   regexp.prototype.flags@1.5.4:
     dependencies:
@@ -11602,17 +10686,6 @@ snapshots:
 
   shell-quote@1.8.3: {}
 
-  shiki@3.23.0:
-    dependencies:
-      '@shikijs/core': 3.23.0
-      '@shikijs/engine-javascript': 3.23.0
-      '@shikijs/engine-oniguruma': 3.23.0
-      '@shikijs/langs': 3.23.0
-      '@shikijs/themes': 3.23.0
-      '@shikijs/types': 3.23.0
-      '@shikijs/vscode-textmate': 10.0.2
-      '@types/hast': 3.0.4
-
   side-channel-list@1.0.0:
     dependencies:
       es-errors: 1.3.0
@@ -11838,8 +10911,6 @@ snapshots:
 
   tagged-tag@1.0.0: {}
 
-  tailwind-merge@2.6.1: {}
-
   tailwind-merge@3.4.0: {}
 
   tailwind-merge@3.5.0: {}
@@ -11872,8 +10943,6 @@ snapshots:
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
-
-  toggle-selection@1.0.6: {}
 
   toidentifier@1.0.1: {}
 
@@ -11909,8 +10978,6 @@ snapshots:
       json5: 1.0.2
       minimist: 1.2.8
       strip-bom: 3.0.0
-
-  tslib@2.6.2: {}
 
   tslib@2.8.1: {}
 
@@ -12090,10 +11157,6 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.3(react@19.2.3)
 
-  use-debounce@10.1.1(react@19.2.3):
-    dependencies:
-      react: 19.2.3
-
   use-deep-compare@1.3.0(react@19.2.3):
     dependencies:
       dequal: 2.0.3
@@ -12114,8 +11177,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@11.1.0: {}
-
-  validator@13.15.35: {}
 
   vary@1.1.2: {}
 

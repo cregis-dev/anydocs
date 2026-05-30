@@ -1,3 +1,5 @@
+'use client';
+
 // =============================================================================
 // editor-host — React adapter wrapping `@anydocs/editor` (Story 7.1)
 // -----------------------------------------------------------------------------
@@ -19,7 +21,12 @@
 import * as React from 'react';
 
 import type { DocContentV1 } from '@anydocs/core';
-import { renderPageContent } from '@anydocs/core';
+// Use the leaf-module subpath `@anydocs/core/render-page-content` rather
+// than the barrel — the barrel re-exports server-only services (build /
+// preview / runtime-bridge) whose `node:*` imports webpack can't bundle
+// for client code. See `normalize-input.ts` for the parallel fix and
+// Story 7.2 review M1 for the broader subpath-export discipline.
+import { renderPageContent } from '@anydocs/core/render-page-content';
 import { createEditor, type EditorInstance } from '@anydocs/editor';
 
 import { normalizeEditorInput } from './normalize-input.ts';

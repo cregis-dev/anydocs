@@ -10,7 +10,12 @@
 // =============================================================================
 
 import type { DocContentV1 } from '@anydocs/core';
-import { yooptaToDocContent } from '@anydocs/core';
+// Import via the leaf-module subpath rather than the @anydocs/core barrel.
+// The barrel re-exports server-only services (build-service, web-runtime-
+// bridge) whose `node:*` imports webpack can't bundle for client code. The
+// dedicated `./doc-content-adapter` subpath gives us just the converter
+// helpers without the transitive node-only dependencies.
+import { yooptaToDocContent } from '@anydocs/core/doc-content-adapter';
 
 const EMPTY_DOC: DocContentV1 = { version: 1, blocks: [] };
 

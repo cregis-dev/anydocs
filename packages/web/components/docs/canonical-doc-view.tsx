@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import type { CalloutTone, DocBlock, DocContentV1, InlineNode, ListItem, TextMark, TextNode } from '@anydocs/core';
 
 import { DOC_READER_ROOT_CLASSNAME } from '@/components/docs/doc-reader-classnames';
-import { MermaidViewer } from '@/components/studio/plugins/mermaid/mermaid-viewer';
+import { MermaidViewer } from '@/components/docs/mermaid-viewer';
 import { createHeadingIdGenerator } from '@/lib/docs/markdown';
 import { cn } from '@/lib/utils';
 

@@ -1,6 +1,6 @@
 # Story 6.1: Scaffold `@anydocs/editor` Package and Public API Contract File
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -53,6 +53,13 @@ so that Studio, desktop, and future consumers integrate through a stable, diff-c
   - [x] `packages/editor/tests/contract.spec.ts`: assert that `import * as editor from '@anydocs/editor'` exposes exactly the declared symbols, no more, no less. Snapshot the export key set.
   - [x] Assert that `createEditor({...minimal config...})` returns a value with the expected method names and that calling any method throws `EditorNotImplementedError` (placeholder behavior for this story).
   - [x] Assert that `registerPlugin({...minimal plugin shape...})` accepts a plugin matching the type and rejects a plugin missing required fields.
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][Medium] Replace `EditorNotImplementedError` with a dedicated `EditorPluginValidationError` (or plain `TypeError`) in plugin validation paths — current code throws the not-implemented error for caller-input errors, which collides with the documented `error.name === 'EditorNotImplementedError'` signal that means "Story 6.2 placeholder runtime". Consumers cannot distinguish "runtime not landed" from "you passed garbage". Will be naturally addressed by Story 6.4 (full validation), but flagged for visibility. [packages/editor/src/runtime/plugin-registry.ts:11-26]
+- [ ] [AI-Review][Low] Decouple `contract/public-api.ts` from concrete runtime imports — the contract file currently imports `createPlaceholderEditor` and `validateAndRegisterPlugin` from `../src/runtime/`, mixing "single source of truth for public API" with "active wiring of a specific runtime"; consider moving the wiring into `src/index.ts` so the contract file declares only signatures. [packages/editor/contract/public-api.ts:25-26]
+- [ ] [AI-Review][Low] Reject duplicate `blockType` registration in `validateAndRegisterPlugin` — current module-singleton registry silently accepts repeat registrations; cheap to reject now to prevent silent dup-registration during early Story 7.x integrations; Story 6.4 will refactor regardless. [packages/editor/src/runtime/plugin-registry.ts:7-28]
+- [ ] [AI-Review][Low] Add `packages/editor/README.md` pointing at `contract/public-api.ts` as source of truth and noting actual `dist/src/*` build output paths — drift between story spec (`dist/index.{js,d.ts}`) and reality (`dist/src/index.{js,d.ts}`) is intentional per Dev Agent Record but undocumented for downstream consumers (Stories 6.5 / 7.1 / 9.5 / 13.2). [packages/editor/]
 
 ## Dev Notes
 
@@ -218,3 +225,29 @@ Claude Opus 4.7 (`claude-opus-4-7`)
 | Date       | Version | Change                                                                                                                                         | Author |
 |------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|--------|
 | 2026-05-25 | 0.1.0   | Initial scaffold of `@anydocs/editor` package with public API contract, placeholder runtime, and contract tests wired into the regression gate. | Claude Opus 4.7 (dev agent) |
+| 2026-05-26 | 0.1.1   | Senior Developer Review (AI) completed — 0 High, 1 Medium, 3 Low findings; all logged as Review Follow-ups (non-blocking polish, partially absorbed by Stories 6.4 / 7.1). All 7 ACs confirmed met. Status `review → done`. | Claude Opus 4.7 (reviewer) |
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.7 (adversarial pass)
+**Review Date:** 2026-05-26
+**Review Outcome:** Approve — transition to `done`
+**Severity Breakdown:** 0 High · 1 Medium · 3 Low (all non-blocking; logged as Review Follow-ups)
+
+### Summary
+
+The implementation satisfies all 7 acceptance criteria. The contract surface is locked at exactly the five symbols required by AC2 (`createEditor`, `EditorConfig`, `EditorInstance`, `EditorPlugin`, `registerPlugin`); supporting types (`UnmountHandle`, `AgentInvocation`, scope/event unions) are inlined as anonymous shapes — a deliberate trade-off that AC2 admits and Dev Agent Record documents. All 7 contract tests pass, root regression gate (`pnpm test`, `pnpm typecheck`, `pnpm build`) is clean. Internal Plate types are not re-exported through the package entry (AC5 satisfied); the word "Plate" appears only in internal runtime files, never in `contract/public-api.ts` (AC4/AC5 satisfied).
+
+### Findings (all logged as Review Follow-ups above)
+
+- **M1 (Medium, semantic):** `EditorNotImplementedError` is used for plugin validation failures in `plugin-registry.ts`, colliding with the documented stable signal (`error.name === 'EditorNotImplementedError'`) that downstream consumers will use to detect "runtime not yet landed". A dedicated `EditorPluginValidationError` or `TypeError` would keep the signal clean. Story 6.4 will rewrite this; logged for visibility.
+- **L1 (Low, contract hygiene):** `contract/public-api.ts` imports runtime impls — couples the "single source of truth" contract file to a specific runtime; signature-only with wiring in `src/index.ts` would be cleaner.
+- **L2 (Low, registry):** `validateAndRegisterPlugin` accepts duplicate `blockType` registrations silently. Cheap to reject now; Story 6.4 will refactor regardless.
+- **L3 (Low, docs):** No `packages/editor/README.md`. Story-spec vs reality drift on test filename (`contract.test.ts` vs `contract.spec.ts`) and `dist/` path (`dist/src/*` vs `dist/*`) is intentional per Dev Agent Record but undocumented for downstream consumers.
+
+### Action Items
+
+- [x] [Medium] Track `EditorNotImplementedError` semantic misuse for resolution in Story 6.4 → tracked as Review Follow-up
+- [x] [Low] Track contract/runtime decoupling option → tracked as Review Follow-up
+- [x] [Low] Track plugin duplicate-detection guard → tracked as Review Follow-up
+- [x] [Low] Track `packages/editor/README.md` addition → tracked as Review Follow-up

@@ -5,8 +5,8 @@
 // (info / warning / success / danger / note).
 // =============================================================================
 
-import type { CalloutBlock, CalloutTone } from '@anydocs/core';
-import { DOC_CONTENT_CALLOUT_TONES } from '@anydocs/core';
+import type { CalloutBlock, CalloutTone } from '@anydocs/core/content';
+import { DOC_CONTENT_CALLOUT_TONES } from '@anydocs/core/content';
 import { CalloutPlugin as PlateCalloutPlugin } from '@udecode/plate-callout/react';
 
 import type { EditorPlugin } from '../../../contract/public-api.ts';

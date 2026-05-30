@@ -1,6 +1,6 @@
 # Story 5.6: Expand AI-Readable Artifacts and Reposition Reader Search as Find
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -52,6 +52,10 @@ so that external agents can consume grounded published content and human readers
 - [x] [AI-Review][Medium] Eliminate double page-parsing in `writePublishedArtifacts` — `toChunkDocs` is called twice per page (once for MCP chunks, once for reader search chunks) causing `getPageText`→`renderPageContent`→`extractMarkdownSections` to run twice; extract shared sections before both calls [packages/core/src/publishing/build-artifacts.ts:818-832]
 - [x] [AI-Review][Low] Add section-anchored `href` to chunk docs — unlike reader search docs which include `#headingId` anchors, chunk `href` is always page-level only (`/${lang}/${slug}`); external agents cannot deep-link to a specific section from chunk metadata [packages/core/src/publishing/build-artifacts.ts:629]
 - [x] [AI-Review][Low] Add `llmsFull` and `chunks` artifact entries to `BuildManifest.artifacts` — new artifacts are discoverable via `mcp/index.json` but not via `build-manifest.json`; two discovery paths are inconsistent [packages/core/src/publishing/build-artifacts.ts:169-174]
+- [ ] [AI-Review][Medium] Hoist `buildPageBreadcrumbs` call out of the per-page loop in `buildLlmsFullTxt` — currently called once per page (O(N²) nav walks per language); `writePublishedArtifacts` already does this correctly at the parallel call site [packages/core/src/publishing/build-artifacts.ts:355]
+- [ ] [AI-Review][Low] Fix misleading indentation on `BuildManifest.source` — `site:` field is indented at outer-brace level so it visually reads as a sibling of `source` rather than a nested member; compiles fine but confuses readers [packages/core/src/publishing/build-artifacts.ts:137-149]
+- [ ] [AI-Review][Low] Deduplicate `serializeThemeMetadata` + `serializeSiteNavigationMetadata` calls in `writePublishedArtifacts` — called three times across the function producing the same per-build value [packages/core/src/publishing/build-artifacts.ts:887-941]
+- [ ] [AI-Review][Low] Add inline comment documenting path-convention split in `MachineReadableArtifactIndex.files` — `searchIndex`/`searchFind` use `../prefix`, `navigation`/`pages`/`chunks` don't; intentional (latter are mcp/ siblings) but currently undocumented [packages/core/src/publishing/build-artifacts.ts:894-900]
 
 ## Implementation Checklist
 
@@ -313,3 +317,34 @@ GPT-5 Codex
 - 2026-03-19: Extended workflow-standard and machine-readable discovery metadata to expose the new artifact family.
 - 2026-03-19: Repositioned reader search copy toward `Find` and updated docs to explain artifact responsibilities and verification flow.
 - 2026-05-25: Addressed code review findings — 7 items resolved (5 Medium + 2 Low) covering doc-path corrections, draft-exclusion test coverage, dead-code removal in chunk builder, single-pass page-section computation, section-anchored chunk `href`, and `BuildManifest.artifacts` parity with `mcp/index.json`. No public API changes; chunk artifact hashes for pages with headings change due to the new `href` shape (acceptable: chunks regenerate on every build).
+- 2026-05-26: Second-pass adversarial review completed. 4 new non-blocking findings logged as Review Follow-ups (1 Medium perf + 3 Low polish). All 7 ACs remain satisfied; full regression gate passes. Story transitioned `review → done`.
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.7 (adversarial pass)
+**Review Date:** 2026-05-26
+**Review Outcome:** Approve — transition to `done`
+**Severity Breakdown:** 0 High · 1 Medium · 3 Low (all non-blocking polish; logged as Review Follow-ups)
+
+### Summary
+
+The implementation satisfies all 7 acceptance criteria. The previous review cycle (2026-05-25) resolved the substantive findings — dead-code removal, single-pass page-section computation, section-anchored chunk `href`, and `BuildManifest.artifacts` parity. The second-pass review confirms:
+
+- `llms-full.txt`, `mcp/chunks.<lang>.json`, and `mcp/index.json.files.chunks` are emitted with correct shape and content.
+- Draft exclusion is now asserted for both `llms-full.txt` (page id + body sentinel) and `mcp/chunks.<lang>.json` (lines 421-434 of `build-preview-service.test.ts`).
+- Reader search copy (`docs-ui-copy.ts`) uses Find-only wording (`Find pages, sections, or keywords` / `查找页面、章节或关键词`) with no Ask/Answer/AI generation language.
+- Workflow-standard service registers both `llmsFull` and per-language `chunks` artifact ids.
+
+### Findings (all logged as Review Follow-ups above)
+
+- **M1 (Medium, perf):** `buildLlmsFullTxt` rebuilds `buildPageBreadcrumbs` map inside the per-page loop. `writePublishedArtifacts` already hoists this correctly at the parallel call site.
+- **L1 (Low, type hygiene):** `BuildManifest.source.site` is indented at the wrong level — compiles fine but reads as if `site` is a sibling of `source`.
+- **L2 (Low, DRY):** `serializeThemeMetadata` / `serializeSiteNavigationMetadata` called three times producing the same value in `writePublishedArtifacts`.
+- **L3 (Low, docs):** `MachineReadableArtifactIndex.files` mixes `../prefixed` and unprefixed paths; intentional (sister files in mcp/) but currently undocumented.
+
+### Action Items
+
+- [x] [Medium] Hoist `buildPageBreadcrumbs` out of `buildLlmsFullTxt` page loop → tracked as Review Follow-up
+- [x] [Low] Fix `BuildManifest.source` indentation → tracked as Review Follow-up
+- [x] [Low] Hoist serialize helpers in `writePublishedArtifacts` → tracked as Review Follow-up
+- [x] [Low] Document path convention in `MachineReadableArtifactIndex.files` → tracked as Review Follow-up
