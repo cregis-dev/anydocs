@@ -287,6 +287,7 @@ Supported node types: `section`, `folder`, `page`, `link`
 - **Core data layer**: `packages/core/src/fs/` — `docs-repository.ts`, `content-repository.ts`, `api-source-repository.ts`, `project-paths.ts`
 - **Core services**: `packages/core/src/services/` — build, preview, authoring, markdown authoring, templates, legacy import, workflow sync
 - **Core schemas**: `packages/core/src/schemas/` — `doc-content-v1` and related validators
+- **Editor contract** (Phase 2): `packages/editor/contract/public-api.ts` (source of truth) + `packages/editor/contract/contract.json` (committed snapshot; CI-enforced via `pnpm test`). Run `pnpm --filter @anydocs/editor contract:update` after intentional contract changes — see `packages/editor/README.md`.
 - **Web data adapter**:
   - `packages/web/lib/docs/fs.ts` — Studio-side read/write wrapper over core repositories (also runs Yoopta ↔ doc-content conversion)
   - `packages/web/lib/docs/data.ts` — published-only data layer for the reader
