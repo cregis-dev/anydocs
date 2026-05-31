@@ -26,8 +26,10 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "pnpm clean && pnpm --filter @anydocs/core build && tsc -p tsconfig.json",
-    "typecheck": "pnpm --filter @anydocs/core build && tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts"
+    "typecheck": "pnpm --filter @anydocs/core build && tsc --noEmit -p tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts",
+    "contract:update": "node --experimental-strip-types scripts/contract-cli.ts update",
+    "contract:check": "node --experimental-strip-types scripts/contract-cli.ts check"
   },
   "dependencies": {
     "@anydocs/core": "workspace:*"

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "package": "@anydocs/editor",
+  "generatedFrom": "contract/public-api.ts",
+  "symbols": [
+    {
+      "name": "EditorConfig",
+      "kind": "type",
+      "signature": "export type EditorConfig = { initialContent: DocContentV1; plugins?: ReadonlyArray<EditorPlugin>; agentAnchorsEnabled?: boolean; theme?: 'light' | 'dark' | 'auto'; };"
+    },
+    {
+      "name": "EditorInstance",
+      "kind": "type",
+      "signature": "export type EditorInstance = { mount(target: HTMLElement): () => void; getContent(): DocContentV1; setContent(payload: DocContentV1): void; on(event: 'change' | 'selection-change' | 'agent-anchor-triggered', handler: (payload: unknown) => void): () => void; triggerAgent(scope: 'inline' | 'page' | 'workspace', payload: unknown): { readonly id: string; readonly status: 'pending' | 'committed' | 'rejected'; }; };"
+    },
+    {
+      "name": "EditorPlugin",
+      "kind": "type",
+      "signature": "export type EditorPlugin = { blockType: string; schemaFragment: unknown; docContentToPlate?: (block: unknown) => unknown; plateToDocContent?: (node: unknown) => unknown; agentAnchor?: 'inline' | 'page' | 'workspace'; };"
+    },
+    {
+      "name": "createEditor",
+      "kind": "function",
+      "signature": "export function createEditor(config: EditorConfig): EditorInstance;"
+    },
+    {
+      "name": "registerPlugin",
+      "kind": "function",
+      "signature": "export function registerPlugin(plugin: EditorPlugin): void;"
+    }
+  ]
+}
