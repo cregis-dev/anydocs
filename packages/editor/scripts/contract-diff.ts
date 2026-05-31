@@ -129,11 +129,47 @@ function sortKeyFor(entry: ContractDiffEntry): string {
 function normalizeSignatureForRenameMatch(symbol: ContractSymbol): string {
   // Replace the symbol's declared name within its own signature with a stable
   // placeholder so two declarations that differ ONLY by name produce identical
-  // strings. Use \b word boundaries to avoid replacing substrings of other
-  // identifiers.
-  const escapedName = symbol.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`\\b${escapedName}\\b`, 'g');
-  return symbol.signature.replace(pattern, '__name__');
+  // strings. Walk the signature in-place rather than building a dynamic
+  // RegExp from the symbol name (which would trip semgrep's
+  // detect-non-literal-regexp blocking rule). The word-boundary check is a
+  // straightforward "neither neighbour is an identifier character" test.
+  const name = symbol.name;
+  const signature = symbol.signature;
+  if (name.length === 0) {
+    return signature;
+  }
+  let result = '';
+  let cursor = 0;
+  while (cursor < signature.length) {
+    const match = signature.indexOf(name, cursor);
+    if (match === -1) {
+      result += signature.slice(cursor);
+      break;
+    }
+    result += signature.slice(cursor, match);
+    const before = match > 0 ? signature.charCodeAt(match - 1) : -1;
+    const afterIndex = match + name.length;
+    const after = afterIndex < signature.length ? signature.charCodeAt(afterIndex) : -1;
+    if (!isIdentifierCharCode(before) && !isIdentifierCharCode(after)) {
+      result += '__name__';
+    } else {
+      result += name;
+    }
+    cursor = afterIndex;
+  }
+  return result;
+}
+
+function isIdentifierCharCode(code: number): boolean {
+  // Matches the characters JavaScript's \b regex word-boundary treats as
+  // word characters: ASCII letters, digits, and underscore. Sufficient for
+  // the contract surface (TypeScript identifiers are constrained to this set
+  // in practice for our declared symbols).
+  if (code < 0) return false;
+  if (code >= 48 && code <= 57) return true; // 0-9
+  if (code >= 65 && code <= 90) return true; // A-Z
+  if (code >= 97 && code <= 122) return true; // a-z
+  return code === 95; // _
 }
 
 export function formatDiff(result: ContractDiffResult): string {
