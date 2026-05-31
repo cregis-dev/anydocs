@@ -32,6 +32,9 @@
       ],
       "@anydocs/core": [
         "../core/src/index.ts"
+      ],
+      "@anydocs/editor": [
+        "../editor/src/index.ts"
       ]
     }
   },
