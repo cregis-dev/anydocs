@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "paragraph",
+      "children": [
+        { "type": "text", "text": "Plain prefix " },
+        { "type": "text", "text": "bold", "marks": ["bold"] },
+        { "type": "text", "text": ", " },
+        { "type": "text", "text": "italic", "marks": ["italic"] },
+        { "type": "text", "text": ", " },
+        { "type": "text", "text": "inline code", "marks": ["code"] },
+        { "type": "text", "text": ", and " },
+        { "type": "text", "text": "bold+italic", "marks": ["bold", "italic"] },
+        { "type": "text", "text": " suffix." }
+      ]
+    }
+  ]
+}

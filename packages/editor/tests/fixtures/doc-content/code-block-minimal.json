@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "codeBlock",
+      "code": "pnpm test"
+    }
+  ]
+}

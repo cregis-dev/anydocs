@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "blockquote",
+      "children": [
+        { "type": "text", "text": "Premature optimization is the " },
+        { "type": "text", "text": "root", "marks": ["italic"] },
+        { "type": "text", "text": " of all evil." }
+      ]
+    }
+  ]
+}

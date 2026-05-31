@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "callout",
+      "children": [{ "type": "text", "text": "A callout without an explicit tone." }]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "codeGroup",
+      "items": [
+        {
+          "language": "bash",
+          "title": "npm",
+          "code": "npm install @anydocs/editor"
+        },
+        {
+          "language": "bash",
+          "title": "pnpm",
+          "code": "pnpm add @anydocs/editor"
+        }
+      ]
+    }
+  ]
+}

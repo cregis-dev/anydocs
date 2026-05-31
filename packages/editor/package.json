@@ -32,13 +32,29 @@
     "contract:check": "node --experimental-strip-types scripts/contract-cli.ts check"
   },
   "dependencies": {
-    "@anydocs/core": "workspace:*"
+    "@anydocs/core": "workspace:*",
+    "@udecode/plate": "^49.0.0",
+    "@udecode/plate-block-quote": "^49.0.0",
+    "@udecode/plate-callout": "^49.0.0",
+    "@udecode/plate-code-block": "^49.0.0",
+    "@udecode/plate-heading": "^49.0.0",
+    "@udecode/plate-horizontal-rule": "^49.0.0",
+    "@udecode/plate-list": "^49.0.0",
+    "@udecode/plate-media": "^49.0.0",
+    "@udecode/plate-table": "^49.0.0"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "^19",
+    "react-dom": "^19"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.19.1",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^29.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "typescript": "^5.0.0"
   }
 }

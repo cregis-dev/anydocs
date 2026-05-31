@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "image",
+      "src": "/assets/architecture-diagram.png",
+      "alt": "Anydocs Phase 2 architecture",
+      "title": "Phase 2 architecture",
+      "width": 1200,
+      "height": 800,
+      "caption": [
+        { "type": "text", "text": "Figure 1: " },
+        { "type": "text", "text": "Editor package boundary", "marks": ["italic"] }
+      ]
+    }
+  ]
+}
