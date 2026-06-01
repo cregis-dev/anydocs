@@ -189,6 +189,12 @@ function toStudioPageDoc(page: CorePageDoc<unknown>): PageDoc {
       `Lazy migration of legacy Yoopta-shape page '${page.id ?? '<unknown>'}' produced invalid DocContentV1. ` +
       `This indicates a bug in @anydocs/core's yoopta-to-doc-content adapter; please file an issue with the offending page id. ` +
       `Validation failure at ${validated.path}: ${validated.error}`,
+      {
+        entity: 'page-content',
+        rule: 'doc-content-v1-migration',
+        remediation: 'Inspect the offending page JSON on disk and report the converter regression to @anydocs/core maintainers.',
+        metadata: { pageId: page.id ?? null, path: validated.path, error: validated.error },
+      },
     );
   }
   return { ...page, content: migrated } as PageDoc;
