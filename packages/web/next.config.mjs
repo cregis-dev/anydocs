@@ -7,6 +7,14 @@ const shouldStaticExport =
 
 const nextConfig = {
   reactStrictMode: true,
+  // Transpile the workspace editor package from source. Its `exports` resolve
+  // to `dist/`, which only exists after `pnpm --filter @anydocs/editor build`
+  // — but the CI build step (`pnpm test` → cli tests → spawn `next build`)
+  // runs before that build. Listing it here lets Next's webpack consume the
+  // source directly. @anydocs/core already has dist/ by this point because
+  // editor's typecheck builds core as a pre-step, so it does not need to be
+  // transpiled.
+  transpilePackages: ['@anydocs/editor'],
   env: {
     NEXT_PUBLIC_ANYDOCS_ASK_URL: process.env.NEXT_PUBLIC_ANYDOCS_ASK_URL ?? '',
   },
