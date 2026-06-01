@@ -139,6 +139,45 @@ test('AC11: only lib/editor-host/ imports from @anydocs/editor (boundary discipl
   );
 });
 
+// ---------------------------------------------------------------------------
+// AC13 (Story 7.3) — no source under packages/web imports @yoopta/*
+// ---------------------------------------------------------------------------
+
+test('AC13: no source under packages/web imports @yoopta/* (Yoopta retired in Story 7.3)', () => {
+  // Story 7.3 cutover deleted every `@yoopta/*` runtime dep from web's
+  // package.json and the surrounding source surface. This guard catches
+  // any accidental re-introduction (e.g. a copy-paste from `examples/`,
+  // which is excluded from tsconfig but still on disk).
+  //
+  // The pattern matches actual import/require statements only — comments
+  // and string literals describing the retirement (in this very file
+  // and elsewhere) must not self-trigger.
+  const yooptaImportPattern = /\b(?:from|import|require\()\s*['"]@yoopta\//;
+  const violations: Array<{ file: string; line: number; snippet: string }> = [];
+  for (const file of allWebSources) {
+    if (file === SELF_FILE) continue; // skip the audit test itself
+    const text = readFileSync(file, 'utf8');
+    const lines = text.split('\n');
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex]!;
+      if (yooptaImportPattern.test(line)) {
+        violations.push({
+          file: path.relative(WEB_ROOT, file),
+          line: lineIndex + 1,
+          snippet: line.trim().slice(0, 160),
+        });
+      }
+    }
+  }
+  assert.equal(
+    violations.length,
+    0,
+    `Story 7.3 retired @yoopta/* from packages/web. No source under app/, components/, lib/, scripts/, tests/ may import @yoopta/*. Violations:\n${violations
+      .map((v) => `  ${v.file}:${v.line} — ${v.snippet}`)
+      .join('\n')}`,
+  );
+});
+
 test('sanity: the scan discovered at least one web source file', () => {
   // Defensive: if listSourceFiles silently returned empty (e.g. a path was
   // renamed), the previous tests would pass vacuously. This assertion
