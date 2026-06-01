@@ -41,7 +41,7 @@
     "typecheck:desktop-server": "pnpm --filter @anydocs/desktop-server typecheck",
     "lint": "pnpm -r lint",
     "lint:web": "pnpm --filter @anydocs/web lint",
-    "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/editor test && pnpm --filter @anydocs/cli test && pnpm --filter @anydocs/mcp test",
+    "test": "pnpm --filter @anydocs/core test && pnpm --filter @anydocs/editor test && pnpm --filter @anydocs/cli test && pnpm --filter @anydocs/mcp test && pnpm --filter @anydocs/web test:unit",
     "test:core": "pnpm --filter @anydocs/core test",
     "test:cli": "pnpm --filter @anydocs/cli test",
     "test:cli:package": "pnpm --filter @anydocs/cli test:package",
