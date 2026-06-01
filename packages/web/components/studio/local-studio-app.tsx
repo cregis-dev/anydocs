@@ -30,8 +30,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LocalStudioSettings } from '@/components/studio/local-studio-settings';
 import { NavigationItemDialog, type NavigationItemDialogValues } from '@/components/studio/navigation-item-dialog';
-import { YooptaDocEditor } from '@/components/studio/yoopta-doc-editor';
+import dynamic from 'next/dynamic';
 import { NavigationComposer } from '@/components/studio/navigation-composer';
+
+// Code-split the Plate-backed `<EditorHost>` so its ~40-package transitive
+// dependency chain (from `@anydocs/editor`) lives in its own chunk and
+// never enters the docs-export bundle (Studio routes are pruned at export
+// time). `ssr: false` matches the rest of Studio which is dev-only client
+// rendering. Story 7.3 retired the legacy `<YooptaDocEditor>` arm — the
+// new Plate-backed editor is now the sole Studio editor surface.
+const EditorHost = dynamic(
+  () => import('@/lib/editor-host').then((mod) => mod.EditorHost),
+  { ssr: false },
+);
 import { formatLanguageLabel } from '@/components/studio/language-label';
 import {
   type StudioProject,
@@ -2059,29 +2070,27 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                   </div>
                 ) : null}
                 {active ? (
-                  <>
-                    <YooptaDocEditor
-                      key={active.id}
-                      id={active.id}
-                      value={active.content}
-                      onChange={(nextContent) => {
-                        setActive((p) => {
-                          const next = applyPagePatch(
-                            p,
-                            {
-                              content: nextContent,
-                              render: renderPageContent(nextContent),
-                              updatedAt: new Date().toISOString(),
-                            },
-                            true,
-                          );
-                          return next;
-                        });
-                        setDirty(true);
-                        setDirtyTick((tick) => tick + 1);
-                      }}
-                    />
-                  </>
+                  <EditorHost
+                    key={active.id}
+                    id={active.id}
+                    value={active.content}
+                    onChange={(nextContent) => {
+                      setActive((p) => {
+                        const next = applyPagePatch(
+                          p,
+                          {
+                            content: nextContent,
+                            render: renderPageContent(nextContent),
+                            updatedAt: new Date().toISOString(),
+                          },
+                          true,
+                        );
+                        return next;
+                      });
+                      setDirty(true);
+                      setDirtyTick((tick) => tick + 1);
+                    }}
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-fd-muted-foreground">
                     Select or create a page

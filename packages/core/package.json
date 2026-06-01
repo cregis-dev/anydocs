@@ -17,6 +17,14 @@
       "types": "./dist/utils/render-page-content.d.ts",
       "import": "./dist/utils/render-page-content.js"
     },
+    "./doc-content-adapter": {
+      "types": "./dist/utils/doc-content-adapter.d.ts",
+      "import": "./dist/utils/doc-content-adapter.js"
+    },
+    "./content": {
+      "types": "./dist/types/content.d.ts",
+      "import": "./dist/types/content.js"
+    },
     "./search": {
       "types": "./dist/search/index.d.ts",
       "import": "./dist/search/index.js"

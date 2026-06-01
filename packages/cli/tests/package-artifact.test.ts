@@ -198,7 +198,13 @@ test('packed cli tarball includes the packaged studio runtime', { timeout: 240_0
 // Yoopta is removed, the runtime is exclusively Plate-backed, and the boot
 // budget needs to be settled anyway.
 // =============================================================================
-test('packed cli tarball installs and starts Studio with packed core dependency', { timeout: 360_000, concurrency: false, skip: 'Story 7.1 follow-up M3 — Plate cold start exceeds CLI waitForReady timeout under sandboxed npm install; un-skip target is Story 7.3 (Studio cutover).' }, async () => {
+// Story 7.3 cutover lifted the Story 7.1 Review Follow-up M3 skip — Yoopta
+// is now removed and the runtime is exclusively Plate-backed. The cold-
+// start budget for Plate's dependency chain under a sandboxed `npm install`
+// is the load-bearing concern; the timeout below carries enough headroom
+// for that boot. If CI hits the wall here, bump to 480_000ms before
+// re-skipping.
+test('packed cli tarball installs and starts Studio with packed core dependency', { timeout: 420_000, concurrency: false }, async () => {
   const cliPackageJson = JSON.parse(await readFile(CLI_PACKAGE_JSON, 'utf8')) as { version: string };
   const corePackageJson = JSON.parse(await readFile(CORE_PACKAGE_JSON, 'utf8')) as { version: string };
   const editorPackageJson = JSON.parse(await readFile(EDITOR_PACKAGE_JSON, 'utf8')) as { version: string };

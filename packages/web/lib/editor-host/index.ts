@@ -1,3 +1,5 @@
+'use client';
+
 // =============================================================================
 // editor-host — public surface (Story 7.1)
 // -----------------------------------------------------------------------------
@@ -14,3 +16,6 @@
 export { EditorHost, useEditorHost } from './editor-host.ts';
 export type { EditorHostProps, EditorHostDerived } from './editor-host.ts';
 export { normalizeEditorInput } from './normalize-input.ts';
+// Story 7.3 retired the `NEXT_PUBLIC_STUDIO_EDITOR` feature flag along with
+// the dual-mount machinery; flag-resolver exports (`STUDIO_EDITOR_MODE`,
+// `resolveStudioEditorMode`, `StudioEditorMode`) no longer exist.

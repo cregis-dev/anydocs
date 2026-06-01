@@ -6,7 +6,6 @@ import path from 'node:path';
 import {
   createApiSourceRepository,
   createDocsRepository,
-  docContentToYoopta,
   deleteApiSource as deleteApiSourceFromRepository,
   deletePage as deletePageFromRepository,
   findPageBySlug as findPageBySlugInRepository,
@@ -24,15 +23,21 @@ import {
   savePage as savePageToRepository,
   validateDocContentV1,
   ValidationError,
+  // `yooptaToDocContent` + `assertValidYooptaContentValue` stay in the
+  // dep graph for the Story 7.3 lazy-migration path — pages still on
+  // disk in legacy Yoopta shape are converted forward on read. The
+  // forward converter (`docContentToYoopta`) is gone — every save now
+  // emits canonical DocContentV1 verbatim.
   yooptaToDocContent,
+  assertValidYooptaContentValue,
   type ApiSourceDoc,
   type PageDoc as CorePageDoc,
   type ProjectConfig,
   type ProjectSiteTopNavItem,
   updateProjectConfig,
 } from '@anydocs/core';
+import type { DocContentV1 } from '@anydocs/core/content';
 import type { DocsLang, NavigationDoc, PageDoc } from '@/lib/docs/types';
-import { assertValidYooptaContentValue } from '@/lib/docs/yoopta-content';
 
 export const runtime = 'nodejs';
 
@@ -152,23 +157,54 @@ function assertValidStoredPageContent(value: unknown): void {
     return;
   }
 
+  // Story 7.3: legacy on-disk pages still in Yoopta shape are migrated
+  // forward on read (see `toStudioPageDoc`). The Yoopta-shape branch
+  // here is the validator that gates that migration — if the content is
+  // neither DocContentV1 nor legacy Yoopta, the page is rejected so we
+  // never silently lose data.
   assertValidYooptaContentValue(value);
 }
 
 function toStudioPageDoc(page: CorePageDoc<unknown>): PageDoc {
+  // Story 7.3 cutover: editor + storage are both DocContentV1 now. The
+  // happy path is "disk is already DocContentV1; pass through". The
+  // legacy branch handles pages saved by the old Yoopta-backed Studio
+  // — convert them forward via `yooptaToDocContent` exactly once on
+  // read; the next save writes DocContentV1 so the migration is
+  // permanent for that page.
   const canonical = validateDocContentV1(page.content);
-
-  return {
-    ...page,
-    content: canonical.ok ? docContentToYoopta(page.content as Parameters<typeof docContentToYoopta>[0]) : page.content,
-  } as PageDoc;
+  if (canonical.ok) {
+    return { ...page, content: page.content as DocContentV1 } as PageDoc;
+  }
+  // Story 7.3 review M1: defensive re-validation on the migration branch.
+  // `assertValidStoredPageContent` already gates the load path so the
+  // input here is known-valid Yoopta; but if `yooptaToDocContent` ever
+  // produces malformed DocContentV1 (missing `version: 1`, unknown block
+  // type, etc.) we want a typed error rather than silently handing junk
+  // to the editor.
+  const migrated = yooptaToDocContent(page.content);
+  const validated = validateDocContentV1(migrated);
+  if (!validated.ok) {
+    throw new ValidationError(
+      `Lazy migration of legacy Yoopta-shape page '${page.id ?? '<unknown>'}' produced invalid DocContentV1. ` +
+      `This indicates a bug in @anydocs/core's yoopta-to-doc-content adapter; please file an issue with the offending page id. ` +
+      `Validation failure at ${validated.path}: ${validated.error}`,
+      {
+        entity: 'page-content',
+        rule: 'doc-content-v1-migration',
+        remediation: 'Inspect the offending page JSON on disk and report the converter regression to @anydocs/core maintainers.',
+        metadata: { pageId: page.id ?? null, path: validated.path, error: validated.error },
+      },
+    );
+  }
+  return { ...page, content: migrated } as PageDoc;
 }
 
 function toStoredPageDoc(page: PageDoc): CorePageDoc<unknown> {
-  return {
-    ...page,
-    content: yooptaToDocContent(page.content),
-  };
+  // After Story 7.3, the editor emits canonical DocContentV1 directly;
+  // no forward conversion on write is required. The repository
+  // serializes the page as-is.
+  return { ...page, content: page.content };
 }
 
 // 根据文件夹名称获取完整项目路径

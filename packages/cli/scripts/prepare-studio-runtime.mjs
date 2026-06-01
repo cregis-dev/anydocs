@@ -81,15 +81,10 @@ export default async function Page() {
 `,
     'utf8',
   );
-  await mkdir(path.join(rootDir, 'components', 'studio', 'plugins'), { recursive: true });
-  await cp(
-    path.join(webRoot, 'components', 'studio', 'plugins', 'mermaid'),
-    path.join(rootDir, 'components', 'studio', 'plugins', 'mermaid'),
-    {
-      recursive: true,
-      force: true,
-    },
-  );
+  // Story 7.3: the legacy `components/studio/plugins/mermaid/` directory
+  // retired together with the Yoopta integration; the reader-side mermaid
+  // renderer now lives at `components/docs/mermaid-viewer.tsx` and is
+  // picked up automatically by the shared `components/` copy above.
 }
 
 async function prepareRuntime(rootDir, copiedEntries, packageName, options = {}) {

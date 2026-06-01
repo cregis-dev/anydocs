@@ -4,7 +4,6 @@
 @source "../lib";
 @source "../themes";
 @source "../utils";
-@import "@yoopta/themes-shadcn/variables.css";
 @import "../themes/classic-docs/tokens.css";
 @import "../themes/atlas-docs/tokens.css";
 @import "../themes/blueprint-review/tokens.css";
@@ -113,49 +112,14 @@ body [data-radix-popper-content-wrapper] {
   z-index: 1000 !important;
 }
 
-.docs-yoopta-view,
-.docs-yoopta-view .yoopta-editor,
-.docs-yoopta-view .yoopta-slate,
-.docs-yoopta-view .yoopta-block,
-.docs-yoopta-view [data-slate-editor="true"],
-.docs-yoopta-view [data-slate-node="element"] {
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-}
-
-.docs-yoopta-view [data-slate-editor="true"] {
-  display: block;
-}
-
-.docs-yoopta-view [data-slate-node="text"],
-.docs-yoopta-view [data-slate-leaf],
-.docs-yoopta-view [data-slate-string],
-.docs-yoopta-view [data-slate-zero-width] {
-  display: inline;
-  white-space: inherit;
-}
-
 /*
- * Keep glyph paint area at inline boundaries while preserving layout width.
- * This helps avoid right-edge clipping on some CJK glyphs in Slate leaves.
+ * Story 7.3 cutover: the legacy `.docs-yoopta-view` selectors (and their
+ * Slate-DOM specificity overrides) retired together with the
+ * `<LegacyYooptaDocView>` reader-side component. The canonical reader
+ * styles below remain — they target `.docs-canonical-view`.
  */
-.docs-yoopta-view [data-slate-string="true"] {
-  padding-inline-end: 1px;
-  margin-inline-end: -1px;
-}
-
-/*
- * Yoopta numbered lists render text as:
- *   div.list-decimal > span[data-slate-node="element"] > ... > span[data-slate-string]
- * This wrapper can sit flush to the right edge and clip the final CJK glyph.
- */
-.docs-yoopta-view .list-decimal > span[data-slate-node="element"] {
-  padding-inline-end: 1px;
-}
 
 .docs-canonical-view a,
-.docs-yoopta-view a,
 .prose a {
   color: var(--docs-link, var(--fd-primary));
   font-weight: 600;
@@ -170,7 +134,6 @@ body [data-radix-popper-content-wrapper] {
 }
 
 .docs-canonical-view a:hover,
-.docs-yoopta-view a:hover,
 .prose a:hover {
   color: var(--docs-link-hover, var(--fd-primary));
   text-decoration-color: currentcolor;
@@ -178,7 +141,6 @@ body [data-radix-popper-content-wrapper] {
 }
 
 .docs-canonical-view a:focus-visible,
-.docs-yoopta-view a:focus-visible,
 .prose a:focus-visible {
   border-radius: 0.25rem;
   outline: 2px solid var(--docs-link-underline, var(--fd-ring));
@@ -202,20 +164,6 @@ body [data-radix-popper-content-wrapper] {
   overflow-wrap: anywhere;
   white-space: normal !important;
   line-height: inherit !important;
-}
-
-.docs-yoopta-view h1,
-.docs-yoopta-view h2,
-.docs-yoopta-view h3,
-.docs-yoopta-view h4,
-.docs-yoopta-view p,
-.docs-yoopta-view blockquote,
-.docs-yoopta-view ul,
-.docs-yoopta-view ol,
-.docs-yoopta-view pre,
-.docs-yoopta-view table {
-  width: 100%;
-  max-width: none;
 }
 
 :where([data-card]) {

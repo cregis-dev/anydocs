@@ -34,7 +34,11 @@
 //     would diff if it were).
 // =============================================================================
 
-import { DOC_CONTENT_BLOCK_TYPES, type DocContentBlockType } from '@anydocs/core';
+// Leaf-module subpath import avoids the @anydocs/core barrel — the barrel
+// re-exports server-only services (build / preview / runtime-bridge) whose
+// `node:*` imports webpack can't bundle for the Studio client bundle in
+// `packages/web`. See Story 7.2 review M1 for the cross-package discipline.
+import { DOC_CONTENT_BLOCK_TYPES, type DocContentBlockType } from '@anydocs/core/content';
 
 import type { EditorPlugin } from '../../contract/public-api.ts';
 import { EditorPluginValidationError } from '../runtime/editor-plugin-validation-error.ts';
