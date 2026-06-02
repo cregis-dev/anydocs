@@ -49,6 +49,7 @@ import type { DocContentV1 } from '@anydocs/core';
 
 import type { EditorConfig, EditorInstance, EditorPlugin } from '../../contract/public-api.ts';
 import { docContentToPlate, type PlateValue } from '../converters/doc-content-to-plate.ts';
+import { BUILTIN_ELEMENT_COMPONENTS } from './element-components.ts';
 import { plateToDocContent } from '../converters/plate-to-doc-content.ts';
 import { BUILTIN_PLUGINS, registerBuiltinPluginsOnce, type BuiltinPlugin } from '../plugins/builtin/index.ts';
 import {
@@ -83,6 +84,26 @@ function collectPlatePlugins(hostPlugins: ReadonlyArray<EditorPlugin> | undefine
 
 type EditorEvent = 'change' | 'selection-change' | 'agent-anchor-triggered';
 type EventHandler = (payload: unknown) => void;
+
+// Module-level container → React root tracker. React-DOM warns whenever the
+// same container is passed to `createRoot()` twice, and React 19 Strict Mode
+// replays every effect (setup → cleanup → setup) synchronously to surface
+// impurities. If we tear the root down inside the effect cleanup and the next
+// setup races in before the cleanup commits, React-DOM still considers the
+// container "owned" and logs the warning. We avoid the issue by reusing the
+// same React root across `mount()` calls on the same target: the second
+// mount() finds the existing root in this map and re-renders into it rather
+// than constructing a new one.
+//
+// The pending-unmount flag is the cancellation token for the deferred
+// teardown: when `unmount()` schedules the actual `root.unmount()` via a
+// microtask, a re-mount that happens between schedule and execution flips
+// the flag back to `false` and the microtask becomes a no-op.
+//
+// WeakMap keys = HTMLElement so the entries are GC'd if the host element
+// disappears without a clean shutdown.
+type ContainerState = { root: Root; pendingUnmount: boolean };
+const containerStates: WeakMap<HTMLElement, ContainerState> = new WeakMap();
 
 // Plate's editor type is sprawling and parameterized by the plugin pipeline.
 // We use a structural minimum here so the runtime stays decoupled from the
@@ -147,6 +168,14 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
     nodeId: false,
     plugins: collectPlatePlugins(config.plugins) as never,
     value: docContentToPlate(config.initialContent),
+    // Without an `override.components` map every Plate plugin from
+    // `@udecode/plate-*/react` falls back to an unstyled `<div
+    // data-slate-element>` — the package ships behavior (key bindings,
+    // serializers) but not UI components. `BUILTIN_ELEMENT_COMPONENTS`
+    // provides the 11 canonical DocContentV1 block types + the `a` inline
+    // with semantic HTML tags and Tailwind utility classes (Studio pipes
+    // Tailwind through the editor host).
+    override: { components: BUILTIN_ELEMENT_COMPONENTS as never },
   }) as unknown as PlateLikeEditor;
 
   // Event bus — Map<event, Set<handler>>. The Set semantics keep registration
@@ -220,21 +249,66 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
     );
   }
 
+  // Test environments (jsdom + node:test) set `IS_REACT_ACT_ENVIRONMENT =
+  // true` so React quiets its "not wrapped in act()" warning. We re-use that
+  // flag as our "synchronous commit allowed" signal: tests assert DOM
+  // contents immediately after `mount()`/`setContent()`, so the runtime must
+  // commit before returning.
+  //
+  // In production (Studio + Desktop), the same `flushSync` call may execute
+  // while the host React (Next.js Suspense from `next/dynamic`) is itself
+  // mid-render — React 19 then logs the noisy `flushSync was called from
+  // inside a lifecycle method` console error which Next.js dev surfaces as
+  // a Console Error overlay. Defer the commit to a microtask in that case;
+  // the inner React root still mounts within the same task as Studio's
+  // useEffect callback, so the editor appears with no perceptible delay,
+  // and React's render cycle has completed by the time `flushSync` fires.
+  function isSyncCommitAllowed(): boolean {
+    return (
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean })
+        .IS_REACT_ACT_ENVIRONMENT === true
+    );
+  }
+
+  function commitWithFlushSync(commit: () => void): void {
+    if (isSyncCommitAllowed()) {
+      flushSync(commit);
+      return;
+    }
+    // Defer to a microtask. Staleness is each call site's responsibility:
+    // `renderTree()` already no-ops when `mountedRoot === null`, and the
+    // unmount path captures the local React root via closure so this
+    // commit still tears down the right tree even after `mountedRoot` was
+    // cleared synchronously.
+    queueMicrotask(() => {
+      flushSync(commit);
+    });
+  }
+
   const instance: EditorInstance = {
     mount(target: HTMLElement) {
       if (mountedRoot !== null) {
         throw new Error('createPlateEditorInstance: instance is already mounted; call the previous unmount handle first.');
       }
-      const root = createRoot(target);
+      // Reuse an existing React root if this container already has one
+      // (Strict Mode replay scenario). Cancel any pending teardown so the
+      // microtask scheduled by a prior `unmount()` becomes a no-op. The
+      // editor closure-captures its own Plate `editor` value, so calling
+      // `renderTree()` will re-render the shared root with this instance's
+      // tree — exactly the behaviour Strict Mode is testing for.
+      const existing = containerStates.get(target);
+      let root: Root;
+      if (existing !== undefined) {
+        existing.pendingUnmount = false;
+        root = existing.root;
+      } else {
+        root = createRoot(target);
+        containerStates.set(target, { root, pendingUnmount: false });
+      }
       mountedRoot = root;
       mountedTarget = target;
       // `React.createElement` keeps this file pure-`.ts` (no TSX needed) and
       // sidesteps the editor package's tsconfig not having `jsx: "react"`.
-      //
-      // `flushSync` forces React 19 to commit the initial render synchronously
-      // before `mount()` returns. Without it, the host element would be empty
-      // for one tick because React 19 schedules even the first commit through
-      // its concurrent scheduler when running outside a browser environment.
       //
       // The try/catch rolls back state on a render failure (M4 review fix):
       // a thrown render leaves the React tree partially committed; clearing
@@ -242,7 +316,7 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
       // different host element or surface the underlying error without the
       // runtime claiming to be "already mounted".
       try {
-        flushSync(() => {
+        commitWithFlushSync(() => {
           renderTree();
         });
       } catch (renderError) {
@@ -251,6 +325,7 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
         } catch {
           // best-effort cleanup; ignore secondary failures.
         }
+        containerStates.delete(target);
         mountedRoot = null;
         mountedTarget = null;
         throw renderError;
@@ -262,22 +337,49 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
           // released. Be idempotent: silently no-op rather than throwing.
           return;
         }
-        // `flushSync` here mirrors `mount`: force React 19 to commit the
-        // unmount synchronously so the AC8 "no orphan DOM nodes after
-        // unmount" assertion holds without the test having to await.
-        flushSync(() => {
-          root.unmount();
-        });
-        // Force-clear any leftovers (React may leave empty wrappers in some
-        // edge cases). With `flushSync` above this loop usually finds nothing
-        // to remove — kept as belt-and-braces for the AC8 invariant.
-        if (mountedTarget !== null) {
-          while (mountedTarget.firstChild) {
-            mountedTarget.removeChild(mountedTarget.firstChild);
-          }
-        }
+        // Capture target via closure before clearing refs so a re-entrant
+        // mount() during React 19 Strict Mode's effect replay sees a
+        // fully-detached runtime state.
+        const targetToClear = mountedTarget;
         mountedRoot = null;
         mountedTarget = null;
+        const state = containerStates.get(targetToClear ?? target);
+        if (isSyncCommitAllowed()) {
+          // Tests: flushSync + manual cleanup loop so AC8's
+          // `host.childNodes.length === 0` assertion holds without `await`.
+          flushSync(() => {
+            root.unmount();
+          });
+          if (state !== undefined) {
+            containerStates.delete(targetToClear ?? target);
+          }
+          if (targetToClear !== null) {
+            while (targetToClear.firstChild) {
+              targetToClear.removeChild(targetToClear.firstChild);
+            }
+          }
+          return;
+        }
+        // Production: defer `root.unmount()` to a microtask AND guard it
+        // with a cancellation token. React 19 refuses synchronous unmount
+        // from inside a render, and Strict Mode replays the effect
+        // (cleanup → re-setup) before any microtask gets to run — so if
+        // the re-setup happens, it flips `pendingUnmount` back to false
+        // and this microtask becomes a no-op, leaving the shared root in
+        // place. If no re-mount happens, the microtask runs the real
+        // teardown once React's render cycle has completed.
+        if (state === undefined) {
+          // Defensive: state should always exist for a successfully
+          // mounted root, but if it was already disposed elsewhere just
+          // skip cleanly.
+          return;
+        }
+        state.pendingUnmount = true;
+        queueMicrotask(() => {
+          if (!state.pendingUnmount) return;
+          containerStates.delete(targetToClear ?? target);
+          root.unmount();
+        });
       };
     },
 
@@ -306,7 +408,7 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
       // DOM update visible before this method returns.
       if (mountedRoot !== null) {
         renderKey += 1;
-        flushSync(() => {
+        commitWithFlushSync(() => {
           renderTree();
         });
       }
