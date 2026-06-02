@@ -13,6 +13,10 @@ import {
   resolveAskStreamEndpoint,
   shouldUseAskJsonFallback,
 } from '../components/ask-ai-api.ts';
+import {
+  ASK_AI_MARKDOWN_TABLE_CELL_CLASSNAME,
+  ASK_AI_MARKDOWN_TABLE_WRAPPER_CLASSNAME,
+} from '../components/ask-ai-markdown-styles.ts';
 
 test('resolveAskEndpoint uses an explicit base URL when provided', () => {
   assert.equal(
@@ -124,6 +128,14 @@ test('buildAskFeedbackRequestBody sends thumbs rating, generated answer, and pag
       tags: ['thumbs_down'],
     },
   );
+});
+
+test('Ask AI markdown table styles keep generated tables compact and scrollable', () => {
+  assert.match(ASK_AI_MARKDOWN_TABLE_WRAPPER_CLASSNAME, /overflow-x-auto/);
+  assert.match(ASK_AI_MARKDOWN_TABLE_WRAPPER_CLASSNAME, /max-w-full/);
+  assert.match(ASK_AI_MARKDOWN_TABLE_CELL_CLASSNAME, /align-top/);
+  assert.match(ASK_AI_MARKDOWN_TABLE_CELL_CLASSNAME, /break-words/);
+  assert.match(ASK_AI_MARKDOWN_TABLE_CELL_CLASSNAME, /text-\[13px\]/);
 });
 
 test('formatAskResponseMessage renders answer citations without losing markdown', () => {
