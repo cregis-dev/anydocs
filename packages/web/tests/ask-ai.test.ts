@@ -98,6 +98,24 @@ test('buildAskRequestBody includes page context only when known', () => {
   });
 });
 
+test('buildAskRequestBody includes session_id for multi-turn ask requests', () => {
+  assert.deepEqual(
+    buildAskRequestBody(
+      '用中文回答上面的问题',
+      'payment-engine-setup',
+      undefined,
+      null,
+      's_reader_123',
+    ),
+    {
+      question: '用中文回答上面的问题',
+      session_id: 's_reader_123',
+      context: { current_page_id: 'payment-engine-setup' },
+      options: { max_chunks: 5 },
+    },
+  );
+});
+
 test('buildAskFeedbackRequestBody sends thumbs rating, generated answer, and page context', () => {
   assert.deepEqual(
     buildAskFeedbackRequestBody({
@@ -105,12 +123,14 @@ test('buildAskFeedbackRequestBody sends thumbs rating, generated answer, and pag
       currentPageId: 'payment-engine-setup',
       generated: 'Use /api/v2/checkout.',
       rating: 1,
+      sessionId: 's_reader_123',
     }),
     {
       answer_id: 'ans_123',
       current_page_id: 'payment-engine-setup',
       generated: 'Use /api/v2/checkout.',
       rating: 1,
+      session_id: 's_reader_123',
       tags: ['thumbs_up'],
     },
   );

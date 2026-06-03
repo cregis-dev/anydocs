@@ -29,17 +29,20 @@ export type AskApiResponse =
       answer_id?: string;
       answer_md: string;
       citations?: AskApiCitation[];
+      session_id?: string;
     }
   | {
       type: 'clarify';
       answer_id?: string;
       message: string;
       options?: AskApiClarifyOption[];
+      session_id?: string;
     }
   | {
       type: 'error';
       code?: string;
       message?: string;
+      session_id?: string;
     };
 
 export type AskFeedbackRating = 1 | -1;
@@ -146,15 +149,22 @@ export function buildAskRequestBody(
   currentPageId: string | null | undefined,
   maxChunks = DEFAULT_MAX_CHUNKS,
   scopeId?: string | null,
+  sessionId?: string | null,
 ) {
   const body: {
     question: string;
+    session_id?: string;
     context?: { current_page_id?: string; scope_id?: string };
     options: { max_chunks: number };
   } = {
     question: question.trim(),
     options: { max_chunks: maxChunks },
   };
+
+  const normalizedSessionId = sessionId?.trim();
+  if (normalizedSessionId) {
+    body.session_id = normalizedSessionId;
+  }
 
   if (currentPageId || scopeId) {
     body.context = {};
@@ -176,12 +186,14 @@ export function buildAskFeedbackRequestBody(input: {
   currentPageId?: string | null;
   generated: string;
   rating: AskFeedbackRating;
+  sessionId?: string | null;
 }) {
   const body: {
     answer_id: string;
     current_page_id?: string;
     generated: string;
     rating: AskFeedbackRating;
+    session_id?: string;
     tags: string[];
   } = {
     answer_id: input.answerId,
@@ -192,6 +204,11 @@ export function buildAskFeedbackRequestBody(input: {
 
   if (input.currentPageId) {
     body.current_page_id = input.currentPageId;
+  }
+
+  const sessionId = input.sessionId?.trim();
+  if (sessionId) {
+    body.session_id = sessionId;
   }
 
   return body;
