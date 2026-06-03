@@ -407,6 +407,7 @@ export function SearchAskPanel({
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const askSessionIdRef = useRef<string | null>(null);
 
   const triggerLabel = isZh ? "搜索 / 问 AI" : "Search / Ask AI";
   const searchPlaceholder = copy.sidebar.searchPlaceholder;
@@ -639,7 +640,13 @@ export function SearchAskPanel({
     setIsAskLoading(true);
 
     const requestBody = JSON.stringify(
-      buildAskRequestBody(question, options.scopeId ? null : currentPageId, undefined, options.scopeId),
+      buildAskRequestBody(
+        question,
+        options.scopeId ? null : currentPageId,
+        undefined,
+        options.scopeId,
+        askSessionIdRef.current,
+      ),
     );
     const controller = new AbortController();
     abortRef.current?.abort();
@@ -670,6 +677,9 @@ export function SearchAskPanel({
       }
 
       const next = assistantPayloadFromResponse(payload, lang);
+      if (payload.session_id) {
+        askSessionIdRef.current = payload.session_id;
+      }
       replaceAskMessage(
         assistantMessage.id,
         next.content,
@@ -876,6 +886,7 @@ export function SearchAskPanel({
                           abortRef.current = null;
                           setIsAskLoading(false);
                           setAskMessages([]);
+                          askSessionIdRef.current = null;
                         }}
                         className="rounded-full border border-[color:var(--docs-divider,var(--fd-border))] px-3 py-1.5 font-medium text-fd-foreground transition hover:bg-fd-accent"
                       >

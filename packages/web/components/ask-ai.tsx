@@ -30,6 +30,7 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   answerId?: string;
+  sessionId?: string;
   citations?: AskApiCitation[];
   feedbackRating?: AskFeedbackRating;
   feedbackStatus?: 'sending' | 'sent' | 'error';
@@ -70,18 +71,20 @@ function createIntroMessage(isZh: boolean): Message {
 function assistantPayloadFromResponse(
   response: AskApiResponse,
   lang: string,
-): Pick<Message, 'answerId' | 'content' | 'citations'> {
+): Pick<Message, 'answerId' | 'content' | 'citations' | 'sessionId'> {
   if (response.type === 'answer') {
     return {
       answerId: response.answer_id,
       content: response.answer_md,
       citations: response.citations ?? [],
+      sessionId: response.session_id,
     };
   }
 
   return {
     content: formatAskResponseMessage(response, lang),
     citations: [],
+    sessionId: response.session_id,
   };
 }
 
@@ -324,6 +327,7 @@ export function AskAI({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   const closeDialog = useCallback(() => {
     abortRef.current?.abort();
@@ -338,6 +342,7 @@ export function AskAI({
     setIsLoading(false);
     setInput('');
     setMessages([createIntroMessage(isZh)]);
+    sessionIdRef.current = null;
   }, [isZh]);
 
   useEffect(() => {
@@ -376,6 +381,7 @@ export function AskAI({
     content: string,
     citations: AskApiCitation[] = [],
     answerId?: string,
+    sessionId?: string,
   ) => {
     setMessages((prev) =>
       prev.map((message) =>
@@ -385,6 +391,7 @@ export function AskAI({
               answerId,
               citations,
               content,
+              sessionId,
               feedbackRating: undefined,
               feedbackStatus: undefined,
             }
@@ -424,6 +431,7 @@ export function AskAI({
               currentPageId,
               generated: target.content,
               rating,
+              sessionId: target.sessionId ?? sessionIdRef.current,
             }),
           ),
         });
@@ -463,7 +471,9 @@ export function AskAI({
     setInput('');
     setIsLoading(true);
 
-    const requestBody = JSON.stringify(buildAskRequestBody(question, currentPageId));
+    const requestBody = JSON.stringify(
+      buildAskRequestBody(question, currentPageId, undefined, null, sessionIdRef.current),
+    );
     const controller = new AbortController();
     abortRef.current?.abort();
     abortRef.current = controller;
@@ -491,7 +501,16 @@ export function AskAI({
       }
 
       const next = assistantPayloadFromResponse(payload, lang);
-      replaceMessage(assistantMessage.id, next.content, next.citations, next.answerId);
+      if (next.sessionId) {
+        sessionIdRef.current = next.sessionId;
+      }
+      replaceMessage(
+        assistantMessage.id,
+        next.content,
+        next.citations,
+        next.answerId,
+        next.sessionId,
+      );
     } catch (error) {
       if (controller.signal.aborted) return;
       const message =
