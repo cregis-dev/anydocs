@@ -204,6 +204,8 @@ export function ScalarApiReference({
             content: normalizeScalarContent(specContent),
             layout: 'modern',
             operationTitleSource: 'summary',
+            orderSchemaPropertiesBy: 'preserve',
+            orderRequiredPropertiesFirst: false,
             hideTestRequestButton: !showTryIt,
             hideClientButton: true,
             hiddenClients: true,
