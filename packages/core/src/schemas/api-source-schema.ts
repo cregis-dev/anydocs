@@ -1,5 +1,5 @@
 import { ValidationError } from '../errors/validation-error.ts';
-import type { ApiSourceDoc } from '../types/api-source.ts';
+import type { ApiSourceDoc, TryItAuth, TryItConfig } from '../types/api-source.ts';
 import { isApiSourceStatus, isApiSourceType } from '../types/api-source.ts';
 import { isDocsLang } from '../types/docs.ts';
 
@@ -141,6 +141,7 @@ function validateRuntime(input: unknown): ApiSourceDoc['runtime'] | undefined {
     );
   }
 
+  let tryIt: TryItConfig | undefined;
   if (input.tryIt != null) {
     if (!isRecord(input.tryIt) || typeof input.tryIt.enabled !== 'boolean') {
       throw createApiSourceValidationError(
@@ -149,14 +150,65 @@ function validateRuntime(input: unknown): ApiSourceDoc['runtime'] | undefined {
         { received: input.tryIt },
       );
     }
+    const raw = input.tryIt;
+    const stringArray = (value: unknown): string[] | undefined =>
+      Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
+    const methods = stringArray(raw.methods);
+    const allowedHosts = stringArray(raw.allowedHosts);
+    tryIt = {
+      enabled: raw.enabled === true,
+      ...(raw.auth != null ? { auth: parseTryItAuth(raw.auth) } : {}),
+      ...(typeof raw.credentialRef === 'string' ? { credentialRef: raw.credentialRef } : {}),
+      ...(typeof raw.baseUrlRef === 'string' ? { baseUrlRef: raw.baseUrlRef } : {}),
+      ...(methods && methods.length > 0 ? { methods } : {}),
+      ...(allowedHosts && allowedHosts.length > 0 ? { allowedHosts } : {}),
+    };
   }
 
   return {
     ...(typeof input.routeBase === 'string' ? { routeBase: input.routeBase.trim() } : {}),
-    ...(isRecord(input.tryIt) && typeof input.tryIt.enabled === 'boolean'
-      ? { tryIt: { enabled: input.tryIt.enabled } }
-      : {}),
+    ...(tryIt ? { tryIt } : {}),
   };
+}
+
+function parseTryItAuth(input: unknown): TryItAuth {
+  if (!isRecord(input) || typeof input.type !== 'string') {
+    throw createApiSourceValidationError(
+      'api-source-try-it-auth-object',
+      'Use an object with a string "type" for runtime.tryIt.auth.',
+      { received: input },
+    );
+  }
+  switch (input.type) {
+    case 'none':
+    case 'bearer':
+    case 'basic':
+      return { type: input.type };
+    case 'apiKey':
+      if ((input.in !== 'header' && input.in !== 'query') || typeof input.name !== 'string') {
+        throw createApiSourceValidationError(
+          'api-source-try-it-auth-api-key',
+          'apiKey auth requires "in" ("header"|"query") and a string "name".',
+          { received: input },
+        );
+      }
+      return { type: 'apiKey', in: input.in, name: input.name };
+    case 'signed':
+      if (typeof input.adapter !== 'string' || input.adapter.trim().length === 0) {
+        throw createApiSourceValidationError(
+          'api-source-try-it-auth-signed',
+          'signed auth requires a non-empty string "adapter".',
+          { received: input },
+        );
+      }
+      return { type: 'signed', adapter: input.adapter };
+    default:
+      throw createApiSourceValidationError(
+        'api-source-try-it-auth-type',
+        'runtime.tryIt.auth.type must be one of none|apiKey|bearer|basic|signed.',
+        { received: input.type },
+      );
+  }
 }
 
 export function validateApiSourceDoc(input: unknown): ApiSourceDoc {

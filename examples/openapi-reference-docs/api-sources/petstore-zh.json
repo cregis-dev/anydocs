@@ -14,7 +14,8 @@
   "runtime": {
     "routeBase": "/zh/reference/petstore-zh",
     "tryIt": {
-      "enabled": false
+      "enabled": true,
+      "auth": { "type": "none" }
     }
   }
 }

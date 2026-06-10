@@ -4,6 +4,7 @@
     "title": "Petstore API",
     "version": "1.0.0"
   },
+  "servers": [{ "url": "https://petstore.swagger.io/v2" }],
   "paths": {
     "/pets": {
       "get": {

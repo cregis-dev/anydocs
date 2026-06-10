@@ -21,11 +21,31 @@ export type ApiSourceDisplay = {
   groupId?: string;
 };
 
+/** Try-it 鉴权方式。内置 4 种由引擎处理；`signed` 走可插拔适配器（项目自定义签名）。 */
+export type TryItAuth =
+  | { type: 'none' }
+  | { type: 'apiKey'; in: 'header' | 'query'; name: string }
+  | { type: 'bearer' }
+  | { type: 'basic' }
+  | { type: 'signed'; adapter: string };
+
+export type TryItConfig = {
+  enabled: boolean;
+  /** 默认 { type: 'none' }。 */
+  auth?: TryItAuth;
+  /** 指向 proxy 服务端凭证（不含值，按约定映射到 env）。 */
+  credentialRef?: string;
+  /** 真实 baseUrl 的服务端来源（env key）；缺省时用 spec servers。 */
+  baseUrlRef?: string;
+  /** 方法白名单；缺省取 spec 中该 operation 声明的方法。 */
+  methods?: string[];
+  /** 额外允许的目标 host；与 spec servers 派生的 host 取并集。 */
+  allowedHosts?: string[];
+};
+
 export type ApiSourceRuntime = {
   routeBase?: string;
-  tryIt?: {
-    enabled: boolean;
-  };
+  tryIt?: TryItConfig;
 };
 
 export type ApiSourceDoc = {
