@@ -10,6 +10,7 @@ import { Menu } from 'lucide-react';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { SearchPanel } from '@/components/docs/search-panel';
 import { DocsSidebar } from '@/components/docs/sidebar';
+import { DocsReaderColumns } from '@/components/docs/docs-reader-columns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { DocsThemeReaderLayoutProps } from '@/lib/themes/types';
@@ -117,14 +118,14 @@ export function ClassicDocsReaderLayout({
       className={`${CLASSIC_DOCS_THEME_CLASS_NAME} min-h-dvh bg-fd-background text-fd-foreground`}
       style={themeStyle}
     >
-      <div className="lg:grid lg:min-h-dvh lg:grid-cols-[288px_minmax(0,1fr)]">
-        <div className="hidden lg:col-start-1 lg:!block">
-          <DocsSidebar
-            {...classicSidebarProps}
-            className="sticky top-0 h-dvh"
-          />
-        </div>
-
+      <DocsReaderColumns
+        gridClassName="lg:grid lg:min-h-dvh lg:grid-cols-[288px_minmax(0,1fr)]"
+        sidebarColumn={
+          <div className="hidden lg:col-start-1 lg:!block">
+            <DocsSidebar {...classicSidebarProps} className="sticky top-0 h-dvh" />
+          </div>
+        }
+      >
         <div className="min-w-0 bg-fd-background lg:col-start-2">
           <div className="sticky top-0 z-30 border-b border-fd-border bg-fd-background lg:hidden">
             <div className="flex items-center justify-between px-4 py-3">
@@ -173,7 +174,7 @@ export function ClassicDocsReaderLayout({
 
           <main className="min-w-0">{children}</main>
         </div>
-      </div>
+      </DocsReaderColumns>
     </div>
   );
 }

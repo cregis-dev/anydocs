@@ -10,6 +10,8 @@ import {
 } from '../search/index.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
 import type { NavItem, PageDoc } from '../types/docs.ts';
+import { loadPublishedOpenApiDocs } from './build-openapi-artifacts.ts';
+import { buildOpenApiReaderSearchChunks } from './openapi-search.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
 import { createHeadingIdGenerator } from '../utils/heading-ids.ts';
 import { renderPageContent } from '../utils/render-page-content.ts';
@@ -778,6 +780,13 @@ export async function writePublishedArtifacts(
   await mkdir(contract.paths.machineReadableRoot, { recursive: true });
   await cleanupLegacyLanguageArtifacts(outputRoot, contract.paths.machineReadableRoot, enabledLanguages);
 
+  // 把 published OpenAPI operation 并入 reader 搜索索引（深链到独立 operation 页）。
+  const openApiSearchChunksByLang = new Map<string, ReturnType<typeof buildOpenApiReaderSearchChunks>>();
+  for (const doc of await loadPublishedOpenApiDocs(contract)) {
+    const existing = openApiSearchChunksByLang.get(doc.lang) ?? [];
+    openApiSearchChunksByLang.set(doc.lang, [...existing, ...buildOpenApiReaderSearchChunks(doc)]);
+  }
+
   for (const site of siteArtifacts) {
     const breadcrumbsById = buildPageBreadcrumbs(site.content.navigation.items);
     const languagePaths = contract.paths.languageRoots[site.lang];
@@ -829,7 +838,7 @@ export async function writePublishedArtifacts(
       projectId: contract.config.projectId,
       lang: site.lang,
       generatedAt,
-      chunks: readerSearchChunkDocs,
+      chunks: [...readerSearchChunkDocs, ...(openApiSearchChunksByLang.get(site.lang) ?? [])],
     });
     const chunkArtifact = {
       lang: site.lang,

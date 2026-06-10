@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { ScalarApiReference } from "@/components/docs/scalar-api-reference";
+import { OperationView } from "@/components/docs/openapi/operation-view";
+import { ReferenceOverview } from "@/components/docs/openapi/reference-overview";
+import { ReferenceShell } from "@/components/docs/openapi/reference-shell";
 import {
   getApiSourceRouteSlug,
   getPublishedApiSourceByRouteSlug,
-  getPublishedApiSourceSpec,
   getPublishedApiSources,
 } from "@/lib/docs/api-sources";
+import { getPublishedOpenApiDoc } from "@/lib/docs/openapi";
 import {
   getCliDocsSourceFromEnv,
   getPublishedLanguages,
@@ -23,37 +25,13 @@ import {
 } from "@/lib/docs/seo";
 import type { DocsLang } from "@/lib/docs/types";
 
-function getApiSourceCategory(lang: DocsLang, sourceId: string) {
-  const normalized = sourceId.toLowerCase();
-  if (normalized.includes("payment-engine")) {
-    return lang === "zh" ? "支付引擎 API" : "Payment Engine API";
-  }
-  if (normalized.includes("waas")) {
-    return lang === "zh" ? "WaaS 钱包 API" : "WaaS API";
-  }
-  return lang === "zh" ? "API 文档" : "API Reference";
-}
+type ApiReferenceIndexItem = {
+  routeSlug: string;
+  title: string;
+  description: string;
+};
 
-function getApiSourceSummary(lang: DocsLang, sourceId: string) {
-  const normalized = sourceId.toLowerCase();
-  if (normalized.includes("payment-engine")) {
-    return lang === "zh"
-      ? "用于创建订单、查询订单、接收支付回调等支付引擎场景。"
-      : "Create orders, query order status, and receive payment callbacks.";
-  }
-  if (normalized.includes("waas")) {
-    return lang === "zh"
-      ? "用于创建子地址、查询交易信息、发起提币与接收WaaS回调。"
-      : "Create sub-addresses, query transaction information, submit payouts, and receive WaaS callbacks.";
-  }
-  return lang === "zh"
-    ? "查看接口说明、请求参数、返回字段与调用示例。"
-    : "View endpoints, request parameters, response fields, and examples.";
-}
-function renderApiReferenceIndex(
-  lang: DocsLang,
-  sources: Awaited<ReturnType<typeof getPublishedApiSources>>,
-) {
+function renderApiReferenceIndex(lang: DocsLang, items: ApiReferenceIndexItem[]) {
   return (
     <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-8 px-6 py-8 sm:px-8 lg:px-10">
       <header className="space-y-3">
@@ -71,22 +49,19 @@ function renderApiReferenceIndex(
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {sources.map((apiSource) => (
+        {items.map((item) => (
           <Link
-            key={apiSource.id}
-            href={`/${lang}/reference/${getApiSourceRouteSlug(apiSource)}`}
+            key={item.routeSlug}
+            href={`/${lang}/reference/${item.routeSlug}`}
             className="rounded-2xl border border-fd-border bg-white p-5 shadow-sm transition hover:border-fd-foreground/20 hover:shadow-md"
           >
             <div className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-[0.1em] text-fd-muted-foreground">
-                {getApiSourceCategory(lang, apiSource.id)}
-              </div>
-              <h2 className="text-xl font-semibold text-fd-foreground">
-                {apiSource.display.title}
-              </h2>
-              <p className="text-sm leading-6 text-fd-muted-foreground">
-                {getApiSourceSummary(lang, apiSource.id)}
-              </p>
+              <h2 className="text-xl font-semibold text-fd-foreground">{item.title}</h2>
+              {item.description ? (
+                <p className="line-clamp-3 text-sm leading-6 text-fd-muted-foreground">
+                  {item.description}
+                </p>
+              ) : null}
             </div>
           </Link>
         ))}
@@ -126,52 +101,83 @@ export default async function ApiReferencePage({
     if (apiSources.length === 0) {
       notFound();
     }
-    return renderApiReferenceIndex(lang, apiSources);
+    // 卡片标题/描述来自各 spec 的 info（数据驱动），不在代码里按 sourceId 硬编码。
+    const items = await Promise.all(
+      apiSources.map(async (apiSource): Promise<ApiReferenceIndexItem> => {
+        const routeSlug = getApiSourceRouteSlug(apiSource);
+        const doc = await getPublishedOpenApiDoc(
+          lang,
+          routeSlug,
+          source.projectId,
+          source.customPath,
+        );
+        return {
+          routeSlug,
+          title: doc?.info.title ?? apiSource.display.title,
+          description: doc?.info.description ?? "",
+        };
+      }),
+    );
+    return renderApiReferenceIndex(lang, items);
   }
 
-  if (segments.length !== 1) {
+  if (segments.length > 2) {
     notFound();
   }
 
   const routeSlug = segments[0]!;
+  const doc = await getPublishedOpenApiDoc(
+    lang,
+    routeSlug,
+    source.projectId,
+    source.customPath,
+  );
+  if (!doc) {
+    notFound();
+  }
+
+  const overviewLabel = lang === "zh" ? "概览" : "Overview";
+
+  if (segments.length === 1) {
+    return (
+      <ReferenceShell
+        lang={lang}
+        nav={doc.nav}
+        overviewHref={doc.href}
+        overviewLabel={overviewLabel}
+      >
+        <ReferenceOverview doc={doc} lang={lang} />
+      </ReferenceShell>
+    );
+  }
+
+  const operation = doc.operations.find((item) => item.id === segments[1]);
+  if (!operation) {
+    notFound();
+  }
+
   const apiSource = await getPublishedApiSourceByRouteSlug(
     lang,
     routeSlug,
     source.projectId,
     source.customPath,
   );
-  if (!apiSource) {
-    notFound();
-  }
-
-  const spec = await getPublishedApiSourceSpec(
-    lang,
-    apiSource.id,
-    source.projectId,
-    source.customPath,
-  );
-  if (!spec) {
-    notFound();
-  }
 
   return (
-    <div className="min-w-0 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-      <ScalarApiReference
-        specContent={spec}
-        showTryIt={apiSource.runtime?.tryIt?.enabled ?? false}
-        title={apiSource.display.title}
-        description={
-          apiSource.source.kind === "url"
-            ? lang === "zh"
-              ? `${apiSource.display.title} 的交互式 API 参考。`
-              : `Interactive API reference for ${apiSource.display.title}.`
-            : lang === "zh"
-              ? `查看 ${apiSource.display.title} 的接口说明、参数与示例。`
-              : `View endpoints, parameters, and examples for ${apiSource.display.title}.`
-        }
-        sourceId={apiSource.id}
+    <ReferenceShell
+      lang={lang}
+      nav={doc.nav}
+      overviewHref={doc.href}
+      overviewLabel={overviewLabel}
+    >
+      <OperationView
+        operation={operation}
+        schemas={doc.schemas}
+        lang={lang}
+        tryIt={apiSource?.runtime?.tryIt}
+        sourceId={apiSource?.id}
       />
-    </div>
+    </ReferenceShell>
   );
 }
 
@@ -201,6 +207,15 @@ export async function generateStaticParams() {
     for (const apiSource of apiSources) {
       const routeSlug = getApiSourceRouteSlug(apiSource);
       params.push({ lang, slug: [routeSlug] });
+      const doc = await getPublishedOpenApiDoc(
+        lang,
+        routeSlug,
+        source.projectId,
+        source.customPath,
+      );
+      for (const operation of doc?.operations ?? []) {
+        params.push({ lang, slug: [routeSlug, operation.id] });
+      }
     }
   }
 
@@ -279,6 +294,32 @@ export async function generateMetadata({
             },
           }
         : {}),
+      other: {
+        "content-language": resolveDocsLocale(lang),
+      },
+    };
+  }
+
+  if (segments.length === 2) {
+    const doc = await getPublishedOpenApiDoc(
+      lang,
+      segments[0]!,
+      source.projectId,
+      source.customPath,
+    );
+    const operation = doc?.operations.find((item) => item.id === segments[1]);
+    if (!doc || !operation) {
+      return {};
+    }
+    const canonical = buildPublishedAbsoluteUrl(
+      siteUrl,
+      `${lang}/reference/${segments[0]}/${operation.id}`,
+    );
+    return {
+      title: operation.summary,
+      description: `${operation.method} ${operation.path}`,
+      robots: buildPreviewRobotsMetadata(),
+      ...(canonical ? { alternates: { canonical } } : {}),
       other: {
         "content-language": resolveDocsLocale(lang),
       },

@@ -19,6 +19,9 @@ const previewWorkspaceRoot = path.join(repoRoot, 'packages', '.web-preview-runti
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve('next/dist/bin/next');
 const RUNTIME_ENV_ALLOWLIST = new Set([
+  // Optional origin of the standalone Try-it proxy; when set, next.config rewrites
+  // `/try-it/invoke` to `${origin}/invoke` so the reader can exercise Try-it in preview.
+  'ANYDOCS_TRYIT_PROXY_ORIGIN',
   'CI',
   'COLORTERM',
   'FORCE_COLOR',

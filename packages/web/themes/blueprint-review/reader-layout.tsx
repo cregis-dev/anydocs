@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 
 import { DocsSidebar } from '@/components/docs/sidebar';
+import { DocsReaderColumns } from '@/components/docs/docs-reader-columns';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -75,13 +76,14 @@ export function BlueprintReviewReaderLayout({
 
   return (
     <div className={cn(BLUEPRINT_REVIEW_THEME_CLASS_NAME, 'min-h-dvh text-fd-foreground')} style={themeStyle}>
-      <div className="xl:grid xl:min-h-dvh xl:grid-cols-[272px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)]">
-        <div className="hidden border-r xl:col-start-1 xl:!block" data-blueprint-divider>
-          <div className="sticky top-0 h-dvh overflow-hidden">
-            {desktopSidebar}
+      <DocsReaderColumns
+        gridClassName="xl:grid xl:min-h-dvh xl:grid-cols-[272px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)]"
+        sidebarColumn={
+          <div className="hidden border-r xl:col-start-1 xl:!block" data-blueprint-divider>
+            <div className="sticky top-0 h-dvh overflow-hidden">{desktopSidebar}</div>
           </div>
-        </div>
-
+        }
+      >
         <div className="min-w-0 xl:col-start-2 xl:px-8 2xl:px-12">
           <div
             className="sticky top-0 z-30 border-b bg-[color:color-mix(in_srgb,var(--fd-background)_72%,white)] backdrop-blur-xl xl:hidden"
@@ -147,7 +149,7 @@ export function BlueprintReviewReaderLayout({
 
           <main className="min-w-0">{children}</main>
         </div>
-      </div>
+      </DocsReaderColumns>
     </div>
   );
 }

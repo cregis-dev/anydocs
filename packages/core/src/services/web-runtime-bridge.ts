@@ -42,6 +42,9 @@ function resolveWebPackageRoot() {
 }
 
 const BRIDGE_ENV_ALLOWLIST = new Set([
+  // Optional origin of the standalone Try-it proxy; forwarded to the docs runtime so next.config
+  // can rewrite `/try-it/invoke` to it during preview (see packages/web/next.config.mjs).
+  'ANYDOCS_TRYIT_PROXY_ORIGIN',
   'CI',
   'COLORTERM',
   'FORCE_COLOR',

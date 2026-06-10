@@ -130,23 +130,30 @@ export async function getPublishedSiteNavigation(
   const configuredNavigation = contract.config.site.navigation;
   const targetLang = lang ?? contract.config.defaultLanguage;
   const apiSources = await getPublishedApiSources(targetLang, source.projectId, source.customPath);
+  const referenceHref = `/${targetLang}/reference`;
+
+  // 显式配置：约定 external 项 href 以 "/reference" 开头（不含语言前缀），按当前语言补全为
+  // /<lang>/reference[...]。这样一份 config 在所有语言下都指向正确的本语言 reference 路由。
+  const topNav: ProjectSiteTopNavItem[] = (configuredNavigation?.topNav ?? []).map((item) => {
+    if (item.type === 'external' && (item.href === '/reference' || item.href.startsWith('/reference/'))) {
+      return { ...item, href: `/${targetLang}${item.href}` };
+    }
+    return item;
+  });
+
   if (apiSources.length === 0) {
-    return configuredNavigation;
+    return topNav.length > 0 ? { topNav } : configuredNavigation;
   }
 
-  const topNav = [...(configuredNavigation?.topNav ?? [])];
-  const hasReferenceEntry = topNav.some((item) => item.type === 'external' && item.href === `/${targetLang}/reference`);
+  // 兜底：项目有 published api-source 但未显式配置任何 reference 入口时，自动补一个聚合 tab。
+  const hasReferenceEntry = topNav.some((item) => item.type === 'external' && item.href.startsWith(referenceHref));
   if (!hasReferenceEntry) {
-    const referenceItem: ProjectSiteTopNavItem = {
+    topNav.push({
       id: 'api-reference',
       type: 'external',
-      href: `/${targetLang}/reference`,
-      label: {
-        en: 'API Reference',
-        zh: 'API 参考',
-      },
-    };
-    topNav.push(referenceItem);
+      href: referenceHref,
+      label: { en: 'API Reference', zh: 'API 参考' },
+    });
   }
 
   return topNav.length > 0 ? { topNav } : configuredNavigation;
