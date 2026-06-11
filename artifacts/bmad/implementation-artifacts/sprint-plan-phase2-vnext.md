@@ -1,9 +1,9 @@
 ---
-generated: '2026-05-24 (Epic 13 addendum)'
-previous_generated: '2026-05-24 (initial)'
+generated: '2026-06-12 (service-first resequence — Epic 13 deferred to dedicated S6)'
+previous_generated: '2026-05-24 (Epic 13 addendum)'
 project: anydocs
 phase: 'Phase 2 — Single-User vNext'
-scope: 'Epic 6–13 (50 stories total), FR51–FR60 + NFR26–NFR33 (Epic 6–12 service layer + Epic 13 UI shell)'
+scope: 'Epic 6–13 (50 stories total), FR51–FR60 + NFR26–NFR33 (Epic 6–12 service layer first; Epic 13 UI shell pulled out into a dedicated final sprint S6)'
 phase3_anchors: 'FR61–FR64 + NFR34 — NOT in this plan; reserved per architecture addendum'
 source_artifacts:
   - artifacts/bmad/planning-artifacts/prd.md
@@ -16,28 +16,33 @@ companion_to: artifacts/bmad/implementation-artifacts/sprint-status.yaml
 
 # Phase 2 vNext — Sprint Plan
 
-**Date:** 2026-05-24
-**Scope:** Phase 2 single-user vNext (7 epics, 39 stories, 18 vNext requirements)
+**Date:** 2026-05-24 (resequenced 2026-06-12)
+**Scope:** Phase 2 single-user vNext (8 epics, 50 stories, 18 vNext requirements)
 **Status tracker:** `artifacts/bmad/implementation-artifacts/sprint-status.yaml`
 **Readiness gate:** `READY WITH ADVISORIES` (0 critical issues; 2 major UX advisories tracked here as a parallel track)
+
+> **2026-06-12 resequence — service layer first, shell last.** Epic 13 (Studio Desktop Shell) is the UI consumer of Epic 6–12 services; nothing in Epic 8–12 depends back on it. Stories 13.2–13.11 are therefore pulled out of S1–S5 and consolidated into a new dedicated sprint **S6 — Studio Desktop Shell Migration**, run after the service layer is complete. Story **13.1** (tokens + primitives) already shipped in S1 and stays there. During S3–S5, Agent/audit features are exercised through **minimal, throwaway UI glue** on the existing three-column shell; S6 replaces that glue with the four-region desktop shell.
 
 ---
 
 ## Cohort Overview
 
-Five development sprints + one UX parallel track. Sprint cohorts honor the backward dependency chain established in `epics.md` and the architecture addendum. No forward cross-epic dependencies; cohorts can ship incrementally.
+Six development sprints + one UX parallel track. **Service layer (Epic 6–12) ships first; the Studio Desktop Shell (Epic 13.2–13.11) is consolidated into a dedicated final sprint S6.** Cohorts honor the backward dependency chain established in `epics.md` and the architecture addendum. No forward cross-epic dependencies; cohorts can ship incrementally. Epic 13 is a pure UI consumer of Epic 6–12 services — deferring it does not block any service-layer work.
 
-| Sprint | Theme | Service-layer Stories | Studio Shell (Epic 13) Stories | Story Count | Critical Path | Required Predecessors |
-|---|---|---|---|---:|---|---|
-| **S1** | Foundation primitives | 6.1, 6.5, 8.1, 8.2, 10.1 | **13.1** (tokens + shell primitives) | 6 | Yes — unblocks everything | UX track kick-off |
-| **S2** | Editor runtime + desktop scaffold | 6.2, 6.3, 6.4, 9.1, 9.2, 9.3 | **13.2** (shell recompose), **13.3** (VaultSidebar) | 8 | Yes | S1 done (13.1 primitives ready; 7.1 host adapter ready) |
-| **S3** | Audit subsystem + Studio cutover | 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 7.1, 7.2, 7.3 | **13.4** (Library), **13.5** (Onboarding), **13.6** (Settings) | 12 | Yes | S2 done (shell + sidebar landed) |
-| **S4** | Built-in Agent (core) | 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7 | **13.7** (Palette), **13.8** (Run Inspector), **13.9** (Build UI) | 10 | Yes | S3 done; **UX track for 11.7 must be done**; 13.7 needs 11.5; 13.8 needs 10.3 |
-| **S5** | Safety, polish, desktop validation | 11.8, 11.9, 12.1, 12.2, 12.3, 12.4, 8.3, 8.4, 9.4, 9.5, 9.6, 9.7 | **13.10** (Audit Log Query), **13.11** (Dark mode + visual regression) | 14 | No | S4 done; **UX track for 12.3 must be done**; 13.10 needs 10.4 + 10.5 |
-| **UX-T** | UX parallel track | UX-1, UX-2 | — | 2 | No (parallel) | S1 kick-off (no blocking dependency) |
+| Sprint | Theme | Stories | Story Count | Critical Path | Required Predecessors |
+|---|---|---|---:|---|---|
+| **S1** | Foundation primitives | 6.1, 6.5, 8.1, 8.2, 10.1, **13.1** (tokens + shell primitives — already shipped) | 6 | Yes — unblocks everything | UX track kick-off |
+| **S2** | Editor runtime + desktop scaffold | 6.2, 6.3, 6.4, 9.1, 9.2, 9.3 | 6 | Yes | S1 done (7.1 host adapter ready) |
+| **S3** | Audit subsystem + Studio cutover | 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 7.1, 7.2, 7.3 | 9 | Yes | S2 done |
+| **S4** | Built-in Agent (core) | 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7 | 7 | Yes | S3 done; **UX track for 11.7 must be done** |
+| **S5** | Safety, polish, desktop validation | 11.8, 11.9, 12.1, 12.2, 12.3, 12.4, 8.3, 8.4, 9.4, 9.5, 9.6, 9.7 | 12 | No | S4 done; **UX track for 12.3 must be done** |
+| **S6** | **Studio Desktop Shell Migration** | 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10, 13.11 | 10 | No (final skin pass) | S5 done — all consumed services (Epic 8–12) complete |
+| **UX-T** | UX parallel track | UX-1, UX-2 | 2 | No (parallel) | S1 kick-off (no blocking dependency) |
 
 **Total stories:** 50 (Epic 6–12: 39 + Epic 13: 11)
-**Total sprints:** 5 + 1 UX parallel track
+**Total sprints:** 6 + 1 UX parallel track
+
+**Why service-first:** the dependency direction is one-way — Epic 13 surfaces FR51/52/55/57/58/59/60 that Epic 6–12 already implement. Building the shell last means every S6 story has its backing service ready, avoids re-wiring UI against a shell that is itself being rebuilt, and confines the visual redesign to one coherent sprint. The trade: the product *looks* unchanged until S6 even though the service layer grows underneath it (see "Minimal UI glue" in the S4/S5 exit criteria and the S6 risks).
 
 ---
 
@@ -87,16 +92,15 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
 | 9.1 | Tauri shell scaffolding in `packages/desktop/src-tauri/` | Runnable shell that loads existing web export. |
 | 9.2 | Rust-side native fs commands + path safety | `fs_commands.rs` with write-temp-then-rename. **Possibly large — split if scope creeps.** |
 | 9.3 | `desktop-fs-adapter.ts` implementing `ContentRepository` | Bridges core repositories to Tauri IPC. |
-| **13.2** | **Recompose Studio shell to four-region layout** | **Replaces three-column `local-studio-app.tsx` with VaultSidebar / LocalTopbar+main / LocalAgentPanel / LocalStatusBar. Depends on 13.1 + 7.1 (host adapter).** |
-| **13.3** | **Replace navigation-composer with VaultSidebar file tree** | **Primary left rail becomes file tree showing real `.md` paths; navigation-composer demoted to advanced mode.** |
+
+> Studio shell stories 13.2 (four-region recompose) + 13.3 (VaultSidebar) were originally slotted here; resequenced to **S6**. S2 leaves the existing three-column Studio in place.
 
 **Exit criteria:**
 - `@anydocs/editor` mounts a Plate editor and produces canonical `doc-content-v1` output
 - All Phase 1 block types are plugin-registered in the new editor
 - Tauri shell launches and signals `runtime mode = desktop`
 - Desktop fs adapter passes basic round-trip integration tests (not yet atomic-fault tested)
-- Studio main app boots in the new four-region shell; Phase 1 acceptance tests pass against the new layout
-- VaultSidebar reflects real vault on disk; selecting any file opens it in the editor
+- _(Shell recompose + VaultSidebar exit criteria moved to S6.)_
 
 **Risks:**
 - 9.2 scope creep — mitigation: pre-sprint refinement to consider per-command split
@@ -121,17 +125,15 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
 | 7.1 | `editor-host` adapter in `@anydocs/web` | Consumer-side adapter; no internal imports. |
 | 7.2 | Studio dual-mount with feature flag + parity fixtures | `STUDIO_EDITOR=anydocs-editor` flag; 100% fixture parity. |
 | 7.3 | Studio cutover + retire Yoopta | Flip default; remove Yoopta deps from `packages/web`. |
-| **13.4** | **Library surface (Continue + Recent + Stats)** | **Post-project-open landing surface; reuses welcome-screen for first-launch. Maps to `ds-library` + `ds-library-empty`.** |
-| **13.5** | **Four-step Onboarding (Welcome → Vault → Model → Done)** | **Replaces single-screen welcome with stepper; Model step consumes Story 11.1 provider port.** |
-| **13.6** | **Settings 6-page restructure** | **Splits `local-studio-settings.tsx` into General / Models / Vault / Shortcuts / About / Models-Pulling routable subpages.** |
+
+> Studio shell stories 13.4 (Library) + 13.5 (Onboarding) + 13.6 (Settings) were originally slotted here; resequenced to **S6**.
 
 **Exit criteria:**
 - Audit log records human writes during normal Studio editing
 - Query and rollback APIs work end-to-end
 - Studio default editor is `@anydocs/editor`; Yoopta code removed
-- All Phase 1 Studio regression tests still pass
-- Library surface lands users after project open; Onboarding stepper drives first-launch
-- Settings page architecture mirrors Claude Design `ScreenSettings*` set
+- All Phase 1 Studio regression tests still pass (against the existing three-column shell)
+- _(Library / Onboarding / Settings exit criteria moved to S6.)_
 
 **Risks:**
 - 7.2 parity fixtures expose unexpected block-level divergences — mitigation: feature flag allows controlled rollback to Yoopta until parity is 100%
@@ -154,17 +156,14 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
 | 11.5 | Workspace Agent orchestrator (FR55) | Multi-page + navigation; every target audit-logged. |
 | 11.6 | Wire `agent-service.ts` through scope + audit (FR56) | 7-step write-ahead sequence integration. |
 | 11.7 | Agent anchors in `@anydocs/editor` (FR51) | **Three invocation surfaces — possibly large; UX dependency.** |
-| **13.7** | **Command Palette + workspace Agent entry** | **Maps to `ds-palette`; depends on 11.5 workspace agent + 12.3 escalation modal (modal can land in S5).** |
-| **13.8** | **Run Inspector full-window surface** | **Maps to `ds-inspector` + `ds-inspector-done`; depends on 10.3 audit lifecycle events.** |
-| **13.9** | **Build & Publish UI (success + failure)** | **Maps to `ds-build` + `ds-build-failed`; reuses existing core build service.** |
+
+> Studio shell stories 13.7 (Command Palette) + 13.8 (Run Inspector) + 13.9 (Build UI) were originally slotted here; resequenced to **S6**. In S4 the Agent is reached through minimal throwaway UI glue (see exit criteria).
 
 **Exit criteria:**
 - Each Agent scope rejects out-of-scope writes (FR53/54/55 boundary tests pass)
 - Every Agent write produces an audit entry; audit-failure injection rolls back content writes
-- Inline/page/workspace anchors are reachable from Studio (functional, not necessarily polished — UX track required for finalization)
-- Command palette exposes inline / page / workspace Agent entries with documented keyboard shortcuts
-- Run Inspector renders streaming and completed states; integrates with audit lifecycle
-- Build & Publish UI is the primary entry; CLI continues to work unchanged
+- Inline/page/workspace anchors are reachable from Studio via **minimal throwaway UI glue** on the existing three-column shell (functional, not polished — S6 replaces the glue with the desktop shell; UX track required for final anchor design)
+- CLI build/preview continues to work unchanged (the polished Build & Publish UI is S6)
 
 **Risks:**
 - 11.7 large — mitigation: pre-sprint refinement; consider splitting per scope if UX diverges
@@ -193,20 +192,54 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
 | 9.5 | Wire desktop renderer to `@anydocs/editor` + runtime mode | Final desktop integration. |
 | 9.6 | Validate desktop call graph contains zero `/api/local/*` calls (FR52) | Network trace assertion. |
 | 9.7 | Desktop cold-start budget enforcement (NFR26) | 95th-percentile ≤3s budget test. |
-| **13.10** | **Audit Log Query view (UX spec §6.2)** | **Depends on 10.4 query API + 10.5 rollback; reuses Run Inspector layout for detail panel.** |
-| **13.11** | **Dark mode + visual regression across migrated surfaces** | **Validates all Epic 13 surfaces in light/dark + WCAG NFR17 + reduced motion.** |
+
+> Studio shell stories 13.10 (Audit Log Query view) + 13.11 (Dark mode + visual regression) were originally slotted here; resequenced to **S6**.
 
 **Exit criteria:**
 - All Phase 2 NFRs (NFR26–NFR33) have passing tests
 - Scope escalation is dual-layer enforced (UI + Core); UI bypass test rejects unconfirmed escalations
 - Desktop runtime is fully integrated and meets startup budget
-- Phase 2 acceptance gate: `pnpm test:acceptance` extended to cover Phase 2 e2e flows
-- Audit Log Query view is reachable from palette + Agent Panel; rollback flows end-to-end
-- Visual regression baseline exists for all migrated Studio surfaces in light + dark mode
+- Phase 2 acceptance gate (service layer): `pnpm test:acceptance` extended to cover Phase 2 e2e flows
+- **At end of S5 the full Phase 2 service layer is done and audit/Agent/escalation flows are verifiable through tests + minimal UI glue. The new desktop shell has not landed yet — that is S6.**
 
 **Risks:**
 - 12.3 lacks UX deliverable at sprint start — mitigation: UX-2 (escalation modal) must be done in UX track before S5; if not, S5 stories slip
 - Desktop platform-specific failures emerge late — mitigation: 9.4 and 9.7 run on supported platforms in CI; nightly desktop matrix
+
+---
+
+### Sprint 6 — Studio Desktop Shell Migration
+
+**Goal:** Replace the existing three-column Studio (and the throwaway UI glue added in S3–S5) with the Claude Design four-region desktop shell, now that every service it consumes (Epic 8–12) is complete. This is the single sprint where the product *looks* like the new Studio. Story 13.1 (tokens + primitives) already shipped in S1.
+
+**Stories:**
+
+| Story | Key | Notes |
+|---|---|---|
+| 13.2 | Recompose Studio shell to four-region layout | Replaces three-column `local-studio-app.tsx` with VaultSidebar / LocalTopbar+main / LocalAgentPanel / LocalStatusBar. Consumes 13.1 primitives + 7.1 host adapter. First S6 story — everything else mounts inside it. |
+| 13.3 | Replace navigation-composer with VaultSidebar file tree | Primary left rail becomes a file tree of real `.md` paths; navigation-composer demoted to advanced mode. |
+| 13.4 | Library surface (Continue + Recent + Stats) | Post-project-open landing; reuses welcome-screen for first launch. Maps to `ds-library` + `ds-library-empty`. |
+| 13.5 | Four-step Onboarding (Welcome → Vault → Model → Done) | Replaces single-screen welcome with a stepper; Model step consumes the Story 11.1 provider port. |
+| 13.6 | Settings 6-page restructure | Splits `local-studio-settings.tsx` into General / Models / Vault / Shortcuts / About / Models-Pulling routable subpages. |
+| 13.7 | Command Palette + workspace Agent entry | Maps to `ds-palette`; surfaces the 11.5 workspace agent + 12.3 escalation modal (both done in S4/S5). Replaces the S4 throwaway Agent glue. |
+| 13.8 | Run Inspector full-window surface | Maps to `ds-inspector` + `ds-inspector-done`; renders the 10.3 audit lifecycle events. Replaces the S4 throwaway run glue. |
+| 13.9 | Build & Publish UI (success + failure) | Maps to `ds-build` + `ds-build-failed`; reuses the existing core build service. |
+| 13.10 | Audit Log Query view (UX spec §6.2) | Consumes 10.4 query API + 10.5 rollback; reuses the Run Inspector layout for the detail panel. Replaces the S5 throwaway audit glue. |
+| 13.11 | Dark mode + visual regression across migrated surfaces | Validates all Epic 13 surfaces in light/dark + WCAG NFR17 + reduced motion. Final story — locks the visual baseline. |
+
+**Recommended order:** 13.2 → 13.3 (shell + sidebar land the frame) → 13.4 / 13.5 / 13.6 (entry surfaces) → 13.7 / 13.8 / 13.9 (Agent + run + build surfaces, retiring the throwaway glue) → 13.10 (audit view) → 13.11 (dark mode + visual regression, last).
+
+**Exit criteria:**
+- Studio boots in the four-region desktop shell; all Phase 1 + Phase 2 acceptance tests pass against the new layout
+- VaultSidebar reflects the real vault on disk; selecting any file opens it in the editor
+- Library / Onboarding / Settings surfaces match the Claude Design `ds-*` references
+- Command palette, Run Inspector, Build UI, and Audit Log Query view replace every throwaway UI glue point added in S3–S5 (grep confirms no temporary entry points remain)
+- Visual regression baseline exists for all migrated surfaces in light + dark mode
+- **Phase 2 acceptance gate (full): `pnpm test:acceptance` green against the new shell — this is the true "new Studio" completion line**
+
+**Risks:**
+- Re-wiring UI built on the old shell during S3–S5 costs more than the minimal glue saved — mitigation: keep S3–S5 glue deliberately thin (single buttons / plain lists), treat it as disposable, do not invest in its styling
+- S6 becomes a mega-sprint (10 stories) — mitigation: 13.2/13.3 are the only hard-ordered pair; 13.4–13.10 can parallelize once the shell frame lands; split S6 into S6a/S6b if velocity demands
 
 ---
 
@@ -259,7 +292,7 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Sprint 1 — Foundation                                            │
-│   6.1 ── 6.5     8.1 ── 8.2     10.1                            │
+│   6.1 ── 6.5     8.1 ── 8.2     10.1     13.1 (shipped)         │
 └──────┬──────────────┬──────────────┬────────────────────────────┘
        │              │              │
        ↓              ↓              ↓
@@ -285,7 +318,20 @@ Five development sprints + one UX parallel track. Sprint cohorts honor the backw
        │ 12.1→12.2→12.3 (needs UX-2)→12.4  │
        │ 8.3, 8.4 (mode polish)             │
        │ 9.4, 9.5, 9.6, 9.7 (desktop val)   │
+       └────────┬───────────────────────────┘
+                ↓  (all consumed services done)
+       ┌────────────────────────────────────┐
+       │ Sprint 6 — Studio Desktop Shell    │
+       │ 13.2→13.3 (shell + sidebar frame)  │
+       │   ↓                                │
+       │ 13.4│13.5│13.6 (entry surfaces)    │
+       │ 13.7│13.8│13.9 (agent/run/build)   │
+       │   ↓                                │
+       │ 13.10 (audit view) → 13.11 (dark)  │
        └────────────────────────────────────┘
+
+Epic 13 is a one-way UI consumer of Epic 6–12 — no service-layer story
+depends back on it, which is what makes the S6 deferral safe.
 
 UX Parallel Track (kicked off in S1):
    UX-1 (Agent anchors) ──────────► must complete before S4 begins
@@ -294,10 +340,11 @@ UX Parallel Track (kicked off in S1):
 
 ### Critical Path
 
-S1 → S2/S3 (in parallel after S1) → S4 → S5
+S1 → S2/S3 (in parallel after S1) → S4 → S5 → S6
 
-**Earliest acceptance-test runnable:** End of S5 (Phase 2 acceptance gate).
-**Earliest user-visible value:** End of S3 (Studio cutover; existing users get the new editor + audit log for human writes).
+**Earliest functional value:** End of S3 (Studio cutover; existing users get the new editor + audit log for human writes, on the existing three-column shell).
+**Service layer complete:** End of S5 (all Epic 6–12 services done; Phase 2 NFR gate green).
+**"New Studio" visually complete:** End of S6 (four-region desktop shell replaces the old layout + all throwaway glue; full acceptance gate green).
 
 ---
 
@@ -327,6 +374,7 @@ S1 → S2/S3 (in parallel after S1) → S4 → S5
 | S3 | Audit lifecycle integration tests, audit query unit tests, Studio dual-mount parity fixtures, post-cutover Phase 1 regression |
 | S4 | Scope validator unit tests, Agent orchestrator integration tests, audit-wire integration |
 | S5 | Per-scope latency benchmarks, audit fault-injection, escalation e2e (including UI bypass), desktop atomicity fault-injection, desktop startup budget benchmarks, cross-mode round-trip benchmarks |
+| S6 | Studio shell component/integration tests, Library/Onboarding/Settings flow tests, command-palette + Run Inspector + Build UI e2e, audit-query-view e2e, dark-mode visual-regression baseline, full `pnpm test:acceptance` against the new shell |
 
 **Acceptance gate extension:** `pnpm test:acceptance` should grow during S2–S5 to cover:
 - Phase 2 e2e fixtures (desktop edit → save → audit → rollback)
@@ -339,7 +387,7 @@ S1 → S2/S3 (in parallel after S1) → S4 → S5
 
 1. **Sprint 1 is the highest-leverage sprint.** Five small foundation stories unblock 34 downstream stories. Do not skip or compress.
 2. **UX parallel track must start at S1 kickoff**, not later. Two-sprint UX timeline is generous if started early; tight if started at S3.
-3. **Two epics (6 and 7) are infrastructure-flavored.** When reporting to non-engineering stakeholders, frame these as enablers for Epic 11 (built-in Agent — the headline capability). Stakeholders should not expect visible features from S1 or part of S2.
+3. **Most of Phase 2 is infrastructure-flavored, and the service-first resequence makes that explicit.** Epics 6–12 (S1–S5) build the editor, desktop, audit, and Agent services with little visible UI change — the existing three-column Studio stays in place, exercised through minimal throwaway glue. The visible "new Studio" (four-region desktop shell) is **entirely in S6**. When reporting to non-engineering stakeholders: expect no visual redesign until S6; the headline user-facing capability (built-in Agent) is *functional* at end of S4 but only *looks* finished after S6.
 4. **Story 10.1 (audit schema) is the single most important early decision.** Architecture addendum has the schema fully specified — implementation is mostly transcription. Ensure consensus on schema fields before S4.
 5. **Provider adapter strategy** is intentionally out of `@anydocs/core`. Decide host-side provider configuration before S4. The Story 11.1 abstract port keeps core agnostic; host wires concrete provider at deploy time.
 6. **Phase 3 anchors must remain untouched.** Any FR61–FR64 / NFR34 work is out of scope for this plan. When Phase 3 begins, generate a new addendum.
@@ -359,7 +407,7 @@ Live status is in `artifacts/bmad/implementation-artifacts/sprint-status.yaml`. 
 
 **Phase 2 vNext implementation plan generated.**
 
-- **Sprints:** 5 + 1 UX parallel track
+- **Sprints:** 6 + 1 UX parallel track (service layer S1–S5; Studio shell S6)
 - **Total stories scheduled:** **50** (Epic 6–12 service layer: 39 + Epic 13 Studio shell migration: 11)
 - **FR/NFR coverage:** FR51–FR60 + NFR26–NFR33 (service via Epic 6–12; UI via Epic 13)
 - **Phase 3 boundary:** Respected (no Phase 3 work in plan)
@@ -378,6 +426,8 @@ The original sprint plan (Epic 6–12) covered service-layer Phase 2 work but hi
 - Implement Command Palette, Run Inspector, Build UI, Audit Log Query view
 - Validate dark mode + visual regression
 
-Epic 13 work is **woven into the existing 5 sprints** (parallel to service-layer work) — no sprint timeline extension required.
+~~Epic 13 work is **woven into the existing 5 sprints** (parallel to service-layer work) — no sprint timeline extension required.~~
 
-**Next operational step:** Run `bmad-bmm-create-story` against the first foundation stories — **Story 6.1** (editor package scaffold) + **Story 13.1** (tokens/primitives port) — to produce dev-ready story files in `artifacts/bmad/implementation-artifacts/`. These two stories are S1 critical-path and can be developed in parallel.
+**Superseded 2026-06-12 (service-first resequence):** Epic 13.2–13.11 are no longer woven into S1–S5. They are consolidated into a dedicated final sprint **S6 — Studio Desktop Shell Migration**, run after the Epic 6–12 service layer completes. Only 13.1 (tokens + primitives) remains in S1 (already shipped). Rationale: Epic 13 is a one-way UI consumer of Epic 6–12 services; building it last means every shell story has its backing service ready and the visual redesign stays a single coherent pass. See the resequence banner at the top of this plan and the new Sprint 6 section.
+
+**Next operational step (as of 2026-06-12):** Epic 6, Epic 7, and Story 13.1 are already done. The remaining S1 foundation stories are **8.1** (runtime mode resolver), **8.2** (capability matrix), and **10.1** (audit schema) — all still `backlog`. Run `bmad-bmm-create-story` against those three to resume the critical path; Epic 13.2–13.11 are deferred to S6 and need no story files until S5 nears completion.
