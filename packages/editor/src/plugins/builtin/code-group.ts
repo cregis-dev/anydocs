@@ -1,17 +1,29 @@
 // =============================================================================
 // Builtin plugin: codeGroup (Story 6.4)
 // -----------------------------------------------------------------------------
-// Extended (non-essential) block type — Plate ecosystem has no plugin for
-// multi-language code groups, so `platePlugin` is `undefined`. The data
-// shape round-trips correctly; Story 13.x / 6.4-follow-up can add render UI.
+// Extended (non-essential) block type — the Plate ecosystem has no plugin
+// for multi-language code groups, so we declare a minimal element plugin
+// ourselves. Without ANY plugin for the element type, Plate skips the
+// `override.components` map and renders an unstyled default `<div>` — the
+// `CodeGroupElement` container component was wired in but never applied.
+// Children are nested codeBlock ELEMENTS (not a void), so no `isVoid` here;
+// tabbed group UX is Story 13.x scope.
 // =============================================================================
 
 import type { CodeGroupBlock, CodeGroupItem } from '@anydocs/core';
+import { createPlatePlugin } from '@udecode/plate/react';
 
 import type { EditorPlugin } from '../../../contract/public-api.ts';
 import { PLATE_CODE_BLOCK, PLATE_CODE_GROUP } from '../../converters/element-types.ts';
 import { isPlateElement, isPlateText, type PlateElementNode, type PlateTextNode } from '../../converters/inline-shared.ts';
 import { codeBlockToPlate } from './code-block.ts';
+
+const CodeGroupPlatePlugin = createPlatePlugin({
+  key: PLATE_CODE_GROUP,
+  node: {
+    isElement: true,
+  },
+});
 
 function codeGroupBlockToPlate(block: CodeGroupBlock): PlateElementNode {
   const result: PlateElementNode = {
@@ -59,5 +71,5 @@ export const codeGroupPlugin: EditorPlugin & { platePlugin: unknown } = {
   schemaFragment: { kind: 'codeGroup', wrapsCodeBlocks: true },
   docContentToPlate: (block: unknown) => codeGroupBlockToPlate(block as CodeGroupBlock),
   plateToDocContent: (node: unknown) => codeGroupFromPlate(node as PlateElementNode),
-  platePlugin: undefined,
+  platePlugin: CodeGroupPlatePlugin,
 };

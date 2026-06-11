@@ -127,18 +127,15 @@ const EXTENDED_BLOCK_TYPES = new Set([
   'codeGroup', 'mermaid',
 ]);
 
-// `list` is treated as a renderer-only builtin: Plate v49's
-// `@udecode/plate-list/react` enforces a flat indent-list normalization
-// that mangles the nested `<ul><li>...</li></ul>` shape DocContentV1 stores,
-// so the runtime intentionally skips its Plate plugin and lets
-// element-components.ts render the structure as-is. Full interactive list
-// editing lands with the Story 13.x UI follow-up.
-const RENDERER_ONLY_ESSENTIAL_BLOCK_TYPES = new Set(['list']);
-
-test('essential block types (except renderer-only) each have a Plate render plugin attached', () => {
+test('essential block types each have a Plate render plugin attached', () => {
+  // Every essential type — including `list` — must declare a platePlugin:
+  // without ANY plugin for an element type, Plate skips `override.components`
+  // and renders an unstyled default `<div>`. `list` deliberately uses
+  // MINIMAL self-declared plugins (node semantics only) instead of
+  // `@udecode/plate-list/react`, whose indent-list normaliser mangles the
+  // nested `<ul><li>` shape DocContentV1 stores — see list.ts.
   for (const plugin of BUILTIN_PLUGINS) {
     if (!ESSENTIAL_BLOCK_TYPES.has(plugin.blockType)) continue;
-    if (RENDERER_ONLY_ESSENTIAL_BLOCK_TYPES.has(plugin.blockType)) continue;
     const builtin = plugin as BuiltinPlugin;
     assert.ok(
       builtin.platePlugin !== undefined && builtin.platePlugin !== null,
@@ -147,27 +144,31 @@ test('essential block types (except renderer-only) each have a Plate render plug
   }
 });
 
-test('renderer-only essential block types intentionally omit platePlugin', () => {
-  for (const plugin of BUILTIN_PLUGINS) {
-    if (!RENDERER_ONLY_ESSENTIAL_BLOCK_TYPES.has(plugin.blockType)) continue;
-    const builtin = plugin as BuiltinPlugin;
-    assert.equal(
-      builtin.platePlugin,
-      undefined,
-      `renderer-only plugin '${plugin.blockType}' must NOT declare platePlugin ` +
-      `(see list.ts: Plate v49's indent-list normaliser breaks our nested structure)`,
-    );
-  }
+test('list plugin covers all five nested-list element types with plate plugins', () => {
+  const listPlugin = BUILTIN_PLUGINS.find((p) => p.blockType === 'list') as BuiltinPlugin | undefined;
+  assert.ok(listPlugin, 'list builtin plugin must exist');
+  const declared = [listPlugin.platePlugin, ...(listPlugin.extraPlatePlugins ?? [])].filter(Boolean);
+  assert.equal(
+    declared.length,
+    listPlugin.plateElementTypes.length,
+    'every nested-list element type (ul/ol/todo_list/li/todo_li) needs its own minimal plate plugin so its render component applies',
+  );
 });
 
-test('extended block types (codeGroup, mermaid) have no Plate render plugin', () => {
+test('extended block types (codeGroup, mermaid) declare minimal Plate plugins', () => {
+  // Story 6.4 originally shipped these with `platePlugin: undefined`, but
+  // without ANY plugin for an element type Plate never consults the
+  // `override.components` map — the wired render components (#93) were
+  // silently skipped and the blocks fell back to unstyled default `<div>`s.
+  // Each extended type now declares a minimal `createPlatePlugin` (node
+  // semantics only) so its component actually renders; rich editing UX for
+  // them is still Story 13.x scope.
   for (const plugin of BUILTIN_PLUGINS) {
     if (!EXTENDED_BLOCK_TYPES.has(plugin.blockType)) continue;
     const builtin = plugin as BuiltinPlugin;
-    assert.equal(
-      builtin.platePlugin,
-      undefined,
-      `extended plugin '${plugin.blockType}' should not declare platePlugin (Story 6.4 scope; Story 13.x adds render UI)`,
+    assert.ok(
+      builtin.platePlugin !== undefined && builtin.platePlugin !== null,
+      `extended plugin '${plugin.blockType}' must declare a minimal platePlugin so its render component applies`,
     );
   }
 });

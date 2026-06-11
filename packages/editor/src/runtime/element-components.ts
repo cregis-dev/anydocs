@@ -186,10 +186,23 @@ const CalloutElement: ElementComponent = function Callout(props) {
 
 // -- Tables -------------------------------------------------------------------
 
-const TableElement: ElementComponent = classed(
-  'table',
-  'mb-2 w-full border-collapse text-sm [&_td]:border [&_th]:border [&_td]:border-zinc-300 [&_th]:border-zinc-300 [&_td]:p-2 [&_th]:p-2 dark:[&_td]:border-zinc-700 dark:[&_th]:border-zinc-700',
-);
+// `<tr>` rows must sit inside a `<tbody>` — the browser auto-inserts one when
+// parsing raw `<table><tr>` HTML, so rendering rows as direct table children
+// makes React's tree diverge from the parsed DOM (hydration-error console
+// noise in dev, and a real hydration hazard wherever the editor output is
+// server-rendered). Wrap the slate children explicitly.
+const TableElement: ElementComponent = function Table(props) {
+  return React.createElement(
+    PlateElementUnsafe,
+    {
+      ...props,
+      as: 'table',
+      className:
+        'mb-2 w-full border-collapse text-sm [&_td]:border [&_th]:border [&_td]:border-zinc-300 [&_th]:border-zinc-300 [&_td]:p-2 [&_th]:p-2 dark:[&_td]:border-zinc-700 dark:[&_th]:border-zinc-700',
+    },
+    React.createElement('tbody', null, props.children),
+  );
+};
 const TableRowElement: ElementComponent = classed('tr', '');
 const TableHeaderCellElement: ElementComponent = classed(
   'th',
@@ -199,6 +212,28 @@ const TableCellElement: ElementComponent = classed('td', '');
 
 // -- Media / Voids ------------------------------------------------------------
 
+// DocContentV1's `image.caption` is an INLINE-NODE ARRAY, which the image
+// converter maps to Plate text nodes (`{ text, ...marks }`). Rendering that
+// array directly as a React child crashes the whole editor tree ("Objects
+// are not valid as a React child (found: object with keys {text})") on any
+// page with a captioned image. Flatten to plain text for the read-only
+// figcaption; rich caption editing is future-story scope.
+function inlineNodesToPlainText(nodes: unknown): string {
+  if (typeof nodes === 'string') return nodes;
+  if (!Array.isArray(nodes)) return '';
+  let out = '';
+  for (const node of nodes) {
+    if (node === null || typeof node !== 'object') continue;
+    const candidate = node as { text?: unknown; children?: unknown };
+    if (typeof candidate.text === 'string') {
+      out += candidate.text;
+    } else if (Array.isArray(candidate.children)) {
+      out += inlineNodesToPlainText(candidate.children);
+    }
+  }
+  return out;
+}
+
 const ImageElement: ElementComponent = function Image(props) {
   const element = props.element as {
     src?: string;
@@ -206,8 +241,9 @@ const ImageElement: ElementComponent = function Image(props) {
     title?: string;
     width?: number;
     height?: number;
-    caption?: string;
+    caption?: unknown;
   };
+  const captionText = inlineNodesToPlainText(element.caption);
   return React.createElement(
     PlateElementUnsafe,
     {
@@ -224,14 +260,14 @@ const ImageElement: ElementComponent = function Image(props) {
       className: 'max-w-full rounded-md border border-zinc-200 dark:border-zinc-700',
       contentEditable: false,
     }),
-    element.caption
+    captionText
       ? React.createElement(
           'figcaption',
           {
             contentEditable: false,
             className: 'text-center text-xs text-zinc-500 dark:text-zinc-400',
           },
-          element.caption,
+          captionText,
         )
       : null,
     // Plate requires us to render `children` somewhere even for void elements;
@@ -304,10 +340,17 @@ const LinkElement: ElementComponent = function Link(props) {
     {
       ...props,
       as: 'a',
-      href: element.href ?? '#',
-      title: element.title,
-      target: '_blank',
-      rel: 'noreferrer',
+      // PlateElement only forwards `props.attributes` (+ className/style) to
+      // the DOM tag — top-level extras like `href` are dropped by its
+      // `useNodeAttributes` merge. Anchor-specific attributes therefore go
+      // through `attributes`.
+      attributes: {
+        ...props.attributes,
+        href: element.href ?? '#',
+        title: element.title,
+        target: '_blank',
+        rel: 'noreferrer',
+      },
       className:
         'text-blue-600 underline-offset-2 hover:underline dark:text-blue-400',
     },

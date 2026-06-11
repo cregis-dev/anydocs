@@ -47,15 +47,13 @@ export type EditorHostProps = {
   /** Initial / current editor value. May be `DocContentV1`, legacy Yoopta, or nullish. */
   value: unknown;
   /**
-   * Fires after host-triggered content changes via `setContent`. Receives the
-   * canonical DocContentV1 payload plus derived `{ markdown, plainText }`
-   * computed by `renderPageContent` from `@anydocs/core` — keeps the prop
-   * shape identical to the legacy `<YooptaDocEditor>` so Story 7.2 can swap
-   * components without changing Studio's onChange handler.
-   *
-   * Story 6.2 AC6 limitation: user-input change events are NOT delivered
-   * (Story 6.4 follow-up tracks the plugin-handler refactor). Only
-   * host-triggered `setContent` fires this callback.
+   * Fires on BOTH user-input edits (typing, deletes, block ops — delivered
+   * through the editor's `change` event via Plate's `onValueChange`) and
+   * host-triggered content changes via `setContent`. Receives the canonical
+   * DocContentV1 payload plus derived `{ markdown, plainText }` computed by
+   * `renderPageContent` from `@anydocs/core` — keeps the prop shape identical
+   * to the legacy `<YooptaDocEditor>` so Studio's onChange handler is
+   * unchanged.
    */
   onChange: (content: DocContentV1, derived: EditorHostDerived) => void;
   /** Optional className for the host `<div>`. */

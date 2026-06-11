@@ -12,10 +12,11 @@
 //   * Mount/unmount lifecycle (React 19 + Plate v49 via slate-react).
 //   * `getContent` / `setContent` round-trips paragraph + heading + supported
 //     marks. Other DocContentV1 block types are out of scope (Story 6.3).
-//   * `on('change', handler)` fires on every host-triggered `setContent` call.
-//     Story 6.2 AC6 explicitly scopes change-event delivery to host-triggered
-//     mutations; user-input change events are deferred to Story 6.4's plugin
-//     handler wiring.
+//   * `on('change', handler)` fires on every host-triggered `setContent` call
+//     AND on user-input edits (typing, deletes, block ops) via the <Plate>
+//     component's controlled `onValueChange` callback. Dispatches are deduped
+//     by serialized content so a single setContent never double-fires (see
+//     M3 note below + `lastNotifiedJson`).
 //   * `selection-change` / `agent-anchor-triggered` accept subscriptions but
 //     never fire — Story 6.4 / Story 11.7 wire them.
 //   * `triggerAgent` still throws `EditorNotImplementedError`. Story 11.x.
@@ -57,9 +58,16 @@ import {
   validateEditorPlugin,
 } from '../plugins/plugin-contract.ts';
 import { EditorNotImplementedError } from './not-implemented-error.ts';
+import { InlineLinkPlugin } from './inline-link-plugin.ts';
+import { SlashMenuController } from './slash-menu.ts';
+import { BlockHandleController } from './block-handle.ts';
 
 function collectPlatePlugins(hostPlugins: ReadonlyArray<EditorPlugin> | undefined): unknown[] {
-  const out: unknown[] = [];
+  // Baseline runtime plugins that don't map to a DocContentV1 BLOCK type.
+  // The inline link plugin keeps `a` nodes inline — without it, Slate treats
+  // links as unknown block elements and the editor crashes on any page
+  // containing one (see inline-link-plugin.ts).
+  const out: unknown[] = [InlineLinkPlugin];
   for (const plugin of BUILTIN_PLUGINS) {
     const builtin = plugin as BuiltinPlugin;
     if (builtin.platePlugin !== undefined) {
@@ -111,6 +119,7 @@ const containerStates: WeakMap<HTMLElement, ContainerState> = new WeakMap();
 // extension points.
 type PlateLikeEditor = {
   children: PlateValue;
+  selection?: { anchor: { path: number[]; offset: number } } | null;
   tf: {
     // `setValue` is Plate's documented transform for replacing the editor
     // contents wholesale. Using it (rather than mutating `editor.children`
@@ -118,8 +127,52 @@ type PlateLikeEditor = {
     // so the DOM re-renders.
     setValue: (value: PlateValue) => void;
     reset?: () => void;
+    insertBreak: () => void;
+    setNodes: (props: Record<string, unknown>, opts: { at: number[] }) => void;
   };
 };
+
+// Heading types reset to a paragraph when the user presses Enter at the end
+// of the line (Notion convention). Without this, every Enter inside an h1-h3
+// spawns ANOTHER heading and the author has to convert it back by hand.
+const EXIT_BREAK_RESET_TYPES = new Set<string>(['h1', 'h2', 'h3']);
+
+// Wraps `editor.tf.insertBreak` (the standard Slate `withX` extension
+// pattern): after the break, if the NEW block is an empty heading, reset it
+// to a paragraph. Empty-check matters — breaking in the MIDDLE of a heading
+// moves the tail text into the new block, and that genuinely should stay a
+// heading.
+function withHeadingExitBreak(editor: PlateLikeEditor): void {
+  const insertBreakBase = editor.tf.insertBreak.bind(editor.tf);
+  editor.tf.insertBreak = () => {
+    insertBreakBase();
+    const selection = editor.selection;
+    if (!selection) return;
+    const blockIndex = selection.anchor.path[0];
+    if (blockIndex === undefined) return;
+    const block = editor.children[blockIndex] as
+      | { type?: string; children?: Array<{ text?: string }> }
+      | undefined;
+    if (!block || typeof block.type !== 'string' || !EXIT_BREAK_RESET_TYPES.has(block.type)) return;
+    const text = Array.isArray(block.children)
+      ? block.children.map((child) => (typeof child.text === 'string' ? child.text : '')).join('')
+      : '';
+    if (text !== '') return;
+    editor.tf.setNodes({ type: 'p' }, { at: [blockIndex] });
+  };
+}
+
+// Test-only escape hatch: maps a public `EditorInstance` back to the raw
+// Plate/Slate editor so tests can drive user-input ops (`editor.apply(...)`)
+// through Slate's real op pipeline. NOT part of the public contract
+// (contract/public-api.ts is the only contract surface; this module-level
+// export is internal and must not be re-exported from src/index.ts).
+const rawEditorByInstance = new WeakMap<EditorInstance, unknown>();
+
+/** @internal Returns the raw Plate editor backing `instance`. Tests only. */
+export function getRawPlateEditorForTesting(instance: EditorInstance): unknown {
+  return rawEditorByInstance.get(instance);
+}
 
 /**
  * Real `EditorInstance` factory backing `createEditor`. Story 6.2 replaces
@@ -178,6 +231,8 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
     override: { components: BUILTIN_ELEMENT_COMPONENTS as never },
   }) as unknown as PlateLikeEditor;
 
+  withHeadingExitBreak(editor);
+
   // Event bus — Map<event, Set<handler>>. The Set semantics keep registration
   // identity-based and idempotent on duplicate disposer calls (removing an
   // already-removed handler is a no-op).
@@ -187,26 +242,68 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
     'agent-anchor-triggered': new Set(),
   };
 
-  // Dispatch `change` to all subscribed handlers. Called explicitly from
-  // `setContent` (Story 6.2 AC6 scope: host-triggered changes only).
+  // Serialized form of the payload most recently delivered to `change`
+  // subscribers. Used to dedupe the two dispatch paths:
   //
-  // We deliberately do NOT hook into Plate's `editor.onChange` here. Doing so
-  // creates two competing dispatch paths whenever `tf.setValue` routes
-  // through `editor.onChange` AND we also fire explicitly from setContent —
-  // the resulting dispatch count is implementation-dependent (Plate v49
-  // happens to skip the editor.onChange path in unmounted mode but mounted
-  // behavior is undefined). Story 6.4 will wire user-input change events
-  // properly via plugin-level handlers; for Story 6.2 the explicit-only
-  // dispatch keeps AC6 deterministic.
+  //   1. Host path — `setContent` calls `notifyChange()` synchronously and
+  //      unconditionally (preserves Story 6.2 AC6 / review M3 semantics:
+  //      exactly one dispatch per setContent).
+  //   2. User-input path — the <Plate> component's controlled `onValueChange`
+  //      callback fires whenever `editor.children` changes through Slate's
+  //      op pipeline (typing, deletes, block ops). Slate defers its
+  //      `editor.onChange` to a microtask, so after a `setContent` the Plate
+  //      callback observes content that `notifyChange()` already recorded
+  //      here — `handlePlateValueChange` compares against this value and
+  //      skips the duplicate.
+  //
+  // Seeded from the initial content so a mount-time normalization pass never
+  // surfaces a spurious change event to the host.
+  let lastNotifiedJson: string = JSON.stringify(plateToDocContent(editor.children));
+
+  // Dispatch `change` to all subscribed handlers. Called from `setContent`
+  // (host path, unconditional) and from `handlePlateValueChange` (user-input
+  // path, deduped by the caller).
+  //
+  // We deliberately do NOT hook into Plate's `editor.onChange` directly
+  // (Story 6.2 review M3): mutating `editor.onChange` creates two competing
+  // dispatch paths with implementation-dependent counts. The <Plate>
+  // component's documented `onValueChange` prop + content dedupe gives
+  // deterministic exactly-once delivery instead.
   function notifyChange(): void {
+    const payload = plateToDocContent(editor.children);
+    lastNotifiedJson = JSON.stringify(payload);
     if (listeners.change.size === 0) {
       return;
     }
-    const payload = plateToDocContent(editor.children);
     for (const handler of listeners.change) {
       // Errors in one handler must not block siblings. Match the "events
       // are best-effort, host owns its own handlers" convention shared
       // with browser EventTarget semantics.
+      try {
+        handler(payload);
+      } catch (cause) {
+        // eslint-disable-next-line no-console
+        console.error('[@anydocs/editor] change handler threw:', cause);
+      }
+    }
+  }
+
+  // User-input dispatch path. Invoked by the <Plate> component whenever
+  // `editor.children` changes (controlled `onValueChange` callback). Skips
+  // anything `notifyChange()` already delivered — in particular the deferred
+  // Plate callback that follows a host `setContent` — by comparing serialized
+  // content against `lastNotifiedJson`.
+  function handlePlateValueChange(): void {
+    if (listeners.change.size === 0) {
+      return;
+    }
+    const payload = plateToDocContent(editor.children);
+    const json = JSON.stringify(payload);
+    if (json === lastNotifiedJson) {
+      return;
+    }
+    lastNotifiedJson = json;
+    for (const handler of listeners.change) {
       try {
         handler(payload);
       } catch (cause) {
@@ -242,7 +339,24 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
         Plate,
         {
           editor: editor as unknown as Parameters<typeof Plate>[0]['editor'],
-          children: React.createElement(PlateContent),
+          // Controlled callback: fires when `editor.children` changes through
+          // Slate's op pipeline (user typing, deletes, block ops). This is
+          // the user-input half of the change-event contract; the host half
+          // is `setContent` → `notifyChange()`. See `lastNotifiedJson`.
+          onValueChange: handlePlateValueChange,
+          children: React.createElement(React.Fragment, null, [
+            React.createElement(PlateContent, {
+              key: 'content',
+              // Suppress the browser's default contenteditable focus ring —
+              // without this the whole editing surface gets a conspicuous
+              // blue outline whenever the editor has focus. Inline style
+              // (not a Tailwind class) so the fix doesn't depend on the
+              // host piping Tailwind into the editor.
+              style: { outline: 'none' },
+            }),
+            React.createElement(SlashMenuController, { key: 'slash-menu' }),
+            React.createElement(BlockHandleController, { key: 'block-handle' }),
+          ]),
           key: renderKey,
         },
       ),
@@ -436,6 +550,8 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
       );
     },
   };
+
+  rawEditorByInstance.set(instance, editor);
 
   return instance;
 }
