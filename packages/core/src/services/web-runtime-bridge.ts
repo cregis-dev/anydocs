@@ -9,9 +9,33 @@ import { ValidationError } from '../errors/validation-error.ts';
 import type { ProjectPathContract } from '../types/project.ts';
 
 const CORE_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-let webRuntimeQueue: Promise<void> = Promise.resolve();
+
+// The web runtime lock is SCOPED PER MODE. Export and preview stage fully
+// isolated runtime workspaces (gen-public-assets.mjs):
+//   * export  → packages/.tmp/web-export-runtime/  + distDir .next-cli-export
+//   * preview → packages/.web-preview-runtime/     + distDir .next-cli-preview
+// All mutations (app/api renames, tsconfig rewrites, .next output) happen
+// inside the staged copy; the source web package is only read. The two modes
+// therefore share no mutable filesystem state and must NOT contend on one
+// lock. Each scope still needs mutual exclusion against ITSELF because the
+// staging directory per mode is a fixed path — two concurrent exports (or
+// two concurrent previews) would clobber each other's workspace.
+//
+// History: a single shared lock predates workspace isolation. Because
+// `startDocsPreviewServer` holds its lock for the preview server's entire
+// lifetime, the shared lock made every `build` issued while a preview was
+// running poll for 5 minutes and then fail with a lock timeout.
+export type WebRuntimeLockScope = 'export' | 'preview';
+
+const webRuntimeQueues: Record<WebRuntimeLockScope, Promise<void>> = {
+  export: Promise.resolve(),
+  preview: Promise.resolve(),
+};
 const WEB_RUNTIME_ROOT_ENV = 'ANYDOCS_WEB_RUNTIME_ROOT';
-const WEB_RUNTIME_LOCK_DIR = '.anydocs-web-runtime.lock';
+const WEB_RUNTIME_LOCK_DIR_BY_SCOPE: Record<WebRuntimeLockScope, string> = {
+  export: '.anydocs-web-runtime.lock-export',
+  preview: '.anydocs-web-runtime.lock-preview',
+};
 const WEB_RUNTIME_LOCK_TIMEOUT_MS = 5 * 60_000;
 const WEB_RUNTIME_LOCK_POLL_MS = 250;
 
@@ -223,8 +247,8 @@ function waitForChildExit(child: ChildProcess): Promise<{ exitCode: number | nul
   });
 }
 
-async function acquireFilesystemWebRuntimeLock(): Promise<() => Promise<void>> {
-  const lockDir = path.join(resolveWebPackageRoot(), WEB_RUNTIME_LOCK_DIR);
+async function acquireFilesystemWebRuntimeLock(scope: WebRuntimeLockScope): Promise<() => Promise<void>> {
+  const lockDir = path.join(resolveWebPackageRoot(), WEB_RUNTIME_LOCK_DIR_BY_SCOPE[scope]);
   const ownerPath = path.join(lockDir, 'owner.json');
   const deadline = Date.now() + WEB_RUNTIME_LOCK_TIMEOUT_MS;
 
@@ -235,6 +259,7 @@ async function acquireFilesystemWebRuntimeLock(): Promise<() => Promise<void>> {
         ownerPath,
         JSON.stringify({
           pid: process.pid,
+          scope,
           acquiredAt: new Date().toISOString(),
         }),
         'utf8',
@@ -256,7 +281,12 @@ async function acquireFilesystemWebRuntimeLock(): Promise<() => Promise<void>> {
 
       await cleanupStaleFilesystemLock(lockDir);
       if (Date.now() >= deadline) {
-        throw new Error(`Timed out waiting for the shared web runtime lock at "${lockDir}".`);
+        throw new Error(
+          `Timed out waiting for the web runtime '${scope}' lock at "${lockDir}". ` +
+          (scope === 'preview'
+            ? 'Another docs preview server appears to be running; stop it and retry.'
+            : 'Another docs build appears to be in progress; wait for it to finish and retry.'),
+        );
       }
 
       await delay(WEB_RUNTIME_LOCK_POLL_MS);
@@ -264,14 +294,30 @@ async function acquireFilesystemWebRuntimeLock(): Promise<() => Promise<void>> {
   }
 }
 
-async function acquireWebRuntimeLock(): Promise<() => Promise<void>> {
-  const previous = webRuntimeQueue;
+/**
+ * Serialize same-scope web runtime work across this process (queue) and
+ * across processes (filesystem lock dir). Different scopes never contend —
+ * see the scope rationale on {@link WebRuntimeLockScope}.
+ *
+ * Exported for tests (lock-scoping regression coverage); production callers
+ * are `exportDocsSite` ('export') and `startDocsPreviewServer` ('preview').
+ */
+export async function acquireWebRuntimeLock(scope: WebRuntimeLockScope): Promise<() => Promise<void>> {
+  const previous = webRuntimeQueues[scope];
   let releaseProcessQueue!: () => void;
-  webRuntimeQueue = new Promise<void>((resolve) => {
+  webRuntimeQueues[scope] = new Promise<void>((resolve) => {
     releaseProcessQueue = resolve;
   });
   await previous;
-  const releaseFilesystemLock = await acquireFilesystemWebRuntimeLock();
+  let releaseFilesystemLock: () => Promise<void>;
+  try {
+    releaseFilesystemLock = await acquireFilesystemWebRuntimeLock(scope);
+  } catch (error) {
+    // A filesystem-lock timeout must not wedge this process's queue for the
+    // scope — release the queue slot so later attempts can retry.
+    releaseProcessQueue();
+    throw error;
+  }
 
   let released = false;
   return async () => {
@@ -289,7 +335,7 @@ async function acquireWebRuntimeLock(): Promise<() => Promise<void>> {
 }
 
 export async function exportDocsSite(options: ExportDocsSiteOptions): Promise<void> {
-  const releaseLock = await acquireWebRuntimeLock();
+  const releaseLock = await acquireWebRuntimeLock('export');
 
   try {
     const child = await createBridgeChild('export', [], options);
@@ -371,7 +417,11 @@ async function waitForPreviewServerReady(
 export async function startDocsPreviewServer(
   options: StartDocsPreviewServerOptions,
 ): Promise<DocsPreviewServerProcess> {
-  const releaseLock = await acquireWebRuntimeLock();
+  // The 'preview' lock is held for the SERVER'S ENTIRE LIFETIME (released in
+  // waitForChildExit().finally below) — it serializes concurrent previews,
+  // which share the fixed `.web-preview-runtime` staging dir. Builds take the
+  // independent 'export' scope and are NOT blocked by a running preview.
+  const releaseLock = await acquireWebRuntimeLock('preview');
 
   try {
     const host = options.host ?? '127.0.0.1';
