@@ -96,8 +96,18 @@ function tableRowFromPlate(node: PlateElementNode): TableRow {
 }
 
 function tableCellFromPlate(node: PlateElementNode): TableCell {
+  // `@udecode/plate-table`'s normalizer wraps cell content in paragraph
+  // blocks (Plate's cell model is block-based) whenever a Slate operation
+  // touches the cell — e.g. typing in a cell, or `tf.insertNodes` of a
+  // fresh table from the slash menu. DocContentV1 cells hold INLINE children
+  // only, so unwrap any paragraph wrappers before converting; cells coming
+  // straight from `docContentToPlate` (inline children, never normalized)
+  // pass through unchanged.
+  const unwrapped = node.children.flatMap((child) =>
+    isPlateElement(child) && child.type === 'p' ? child.children : [child],
+  );
   const cell: TableCell = {
-    children: plateChildrenToInline(node.children),
+    children: plateChildrenToInline(unwrapped),
   };
   if (typeof node.id === 'string') cell.id = node.id;
   if (node.type === PLATE_TABLE_HEADER_CELL) cell.header = true;

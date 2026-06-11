@@ -8,6 +8,7 @@
 // =============================================================================
 
 import type { ListBlock, ListItem } from '@anydocs/core';
+import { createPlatePlugin } from '@udecode/plate/react';
 
 import type { EditorPlugin } from '../../../contract/public-api.ts';
 import {
@@ -145,7 +146,30 @@ function plateToDocContent(node: PlateElementNode): ListBlock {
   );
 }
 
-export const listPlugin: EditorPlugin & { platePlugin: unknown } = {
+// Do NOT register `@udecode/plate-list/react`'s `ListPlugin` here. In
+// Plate v49 that plugin enforces an indent-list model (flat paragraphs
+// with `indent` + `listStyleType` attributes) and its normalizer rips
+// `<li>` children out of `<ul>`/`<ol>` containers, leaving the items
+// rendered as separate paragraphs outside the list (visible in Studio
+// before the runtime started skipping this plugin).
+//
+// Instead we declare MINIMAL plugins (node semantics only, no normalizer)
+// for the five nested-list element types. Without any plugin for a type,
+// Plate never consults `override.components`, so the `<ul>`/`<ol>`/`<li>`
+// components in element-components.ts were silently skipped and lists fell
+// back to unstyled default `<div>`s. Full interactive list editing (Enter
+// to add item, Tab to indent) lands with the Story 13.x UI follow-up that
+// decides whether to adopt the indent-list model end-to-end or supply a
+// nested-list alternative.
+const NestedListPlatePlugins = [
+  PLATE_LIST_BULLETED,
+  PLATE_LIST_NUMBERED,
+  PLATE_LIST_TODO,
+  PLATE_LIST_ITEM,
+  PLATE_LIST_ITEM_TODO,
+].map((key) => createPlatePlugin({ key, node: { isElement: true } }));
+
+export const listPlugin: EditorPlugin & { platePlugin: unknown; extraPlatePlugins: unknown[] } = {
   blockType: 'list',
   plateElementTypes: [
     PLATE_LIST_BULLETED,
@@ -157,19 +181,6 @@ export const listPlugin: EditorPlugin & { platePlugin: unknown } = {
   schemaFragment: { kind: 'list', styles: ['bulleted', 'numbered', 'todo'] },
   docContentToPlate: (block: unknown) => listBlockToPlate(block as ListBlock),
   plateToDocContent: (node: unknown) => plateToDocContent(node as PlateElementNode),
-  // Do NOT register `@udecode/plate-list/react`'s `ListPlugin` here. In
-  // Plate v49 that plugin enforces an indent-list model (flat paragraphs
-  // with `indent` + `listStyleType` attributes) and its normalizer rips
-  // `<li>` children out of `<ul>`/`<ol>` containers, leaving the items
-  // rendered as separate paragraphs outside the list (visible in
-  // Studio before the runtime started skipping this plugin).
-  //
-  // DocContentV1 keeps its nested `items: ListItem[]` shape, so we let
-  // Plate-core render `<ul>`/`<ol>`/`<li>` via our element components in
-  // `element-components.ts` without any list-specific normalization.
-  // Full interactive list editing (Enter to add item, Tab to indent)
-  // lands with the Story 13.x UI follow-up that decides whether to
-  // adopt the indent-list model end-to-end or supply a nested-list
-  // alternative.
-  platePlugin: undefined,
+  platePlugin: NestedListPlatePlugins[0],
+  extraPlatePlugins: NestedListPlatePlugins.slice(1),
 };

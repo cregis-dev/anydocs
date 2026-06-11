@@ -19,6 +19,10 @@ out/
 build/
 dist/
 *.tsbuildinfo
+# The global `build/` pattern above also swallowed the Studio build API route —
+# without this negation, `app/api/local/build/route.ts` can never be committed
+# (the route silently vanished from the repo this way once already).
+!packages/web/app/api/local/build/
 
 # BMAD artifacts
 _bmad-output/
@@ -64,7 +68,8 @@ next-env.d.ts
 .playwright/
 .playwright-cli/
 .tmp/
-.anydocs-web-runtime.lock/
+.anydocs-web-runtime.lock*/
+packages/.web-studio-e2e-runtime/
 packages/desktop/src-tauri/target/
 
 # Misc
