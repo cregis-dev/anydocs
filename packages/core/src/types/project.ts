@@ -133,6 +133,8 @@ export type ProjectPathContract = {
   workflowFile: string;
   importsRoot: string;
   apiSourcesRoot: string;
+  /** Project-local audit log root: `<projectRoot>/.anydocs/audit` (daily NDJSON shards). */
+  auditRoot: string;
   pagesRoot: string;
   navigationRoot: string;
   artifactRoot: string;
