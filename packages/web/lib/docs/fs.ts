@@ -23,6 +23,11 @@ import {
   savePage as savePageToRepository,
   validateDocContentV1,
   ValidationError,
+  query as queryAuditLogInService,
+  rollback as rollbackAuditInService,
+  type AuditEntry,
+  type AuditQuery,
+  type AuditQueryResult,
   // `yooptaToDocContent` + `assertValidYooptaContentValue` stay in the
   // dep graph for the Story 7.3 lazy-migration path — pages still on
   // disk in legacy Yoopta shape are converted forward on read. The
@@ -496,3 +501,57 @@ export async function findPublishedPageBySlugRaw(
 }
 
 export { normalizeSlug };
+
+// ─── Story 13.10: Audit Log Query view server bridge ───
+// Wraps the core audit query (Story 10.4) + rollback (Story 10.5) against the
+// active project's auditRoot, so the Studio Audit Log view can reach them over
+// the dev-only /api/local/audit route.
+
+export async function queryAuditLog(
+  filter: AuditQuery,
+  projectId: string = '',
+  customPath?: string,
+): Promise<AuditQueryResult> {
+  const contract = await loadStudioProjectContract(projectId, customPath);
+  return queryAuditLogInService(contract.paths.auditRoot, filter);
+}
+
+function isPageDocSnapshot(value: unknown): value is PageDoc {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { id?: unknown }).id === 'string' &&
+    typeof (value as { lang?: unknown }).lang === 'string' &&
+    typeof (value as { content?: unknown }).content === 'object'
+  );
+}
+
+export async function rollbackAuditEntry(
+  entryId: string,
+  projectId: string = '',
+  customPath?: string,
+): Promise<AuditEntry> {
+  const contract = await loadStudioProjectContract(projectId, customPath);
+  const result = await rollbackAuditInService(contract.paths.auditRoot, entryId, {
+    rollbackEntryId: `rollback-${crypto.randomUUID()}`,
+    actor: { kind: 'human' },
+    // Re-apply the pre-change snapshot. The exact snapshot shape is finalized by
+    // the Epic 11 agent-service; for a page target carrying a page-doc snapshot we
+    // write it back via the content repository. Other targets are refused until
+    // their snapshot contract lands (Epic 11) — the audit lifecycle still records
+    // the rejection.
+    applyRollback: async (snapshot, original) => {
+      if (original.target.resourceKind === 'page' && isPageDocSnapshot(snapshot)) {
+        await savePage(snapshot.lang as DocsLang, snapshot, projectId, customPath);
+        return;
+      }
+      throw new ValidationError('Rollback content re-apply is not supported for this entry yet.', {
+        entity: 'audit-rollback',
+        rule: 'rollback-snapshot-shape-supported',
+        remediation: 'Page-doc snapshots are supported; other target snapshots arrive with the Epic 11 agent-service.',
+        metadata: { entryId, resourceKind: original.target.resourceKind },
+      });
+    },
+  });
+  return result.entry;
+}

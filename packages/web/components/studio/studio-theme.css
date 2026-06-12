@@ -1,0 +1,70 @@
+/*
+ * Studio theme bridge (Story 13.x visual pass) — adopt the Claude Design
+ * desktop-language look WITHOUT rewriting every component.
+ *
+ * The Studio uses fumadocs Tailwind utilities (bg-fd-*, text-fd-*, border-fd-*)
+ * that resolve through the `--fd-*` CSS variables. Within the `.studio-ax` scope
+ * we remap those variables to the Claude Design warm-neutral `--n-*` palette
+ * (defined at :root by tokens.css) and set the Inter UI font. Because the
+ * `--n-*` tokens flip under `[data-theme="dark"]`, the bridge follows light/dark
+ * automatically (the dark toggle sets `data-theme`).
+ *
+ * NOTE: we deliberately do NOT add the `.ax` class — its element-level resets
+ * (`.ax button { background:none }`) outrank Tailwind utilities and would strip
+ * component styling. This bridge only remaps variables.
+ */
+
+@import '../../lib/desktop-shell/tokens.css';
+
+.studio-ax {
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  --fd-background: var(--n-0);
+  --fd-foreground: var(--n-800);
+  --fd-card: var(--n-50);
+  --fd-card-foreground: var(--n-800);
+  --fd-popover: var(--n-50);
+  --fd-popover-foreground: var(--n-800);
+  --fd-muted: var(--n-100);
+  --fd-muted-foreground: var(--n-400);
+  /* Warm hairline border (Notion-grade quiet) instead of a solid line. */
+  --fd-border: color-mix(in oklch, var(--n-800) 11%, transparent);
+  --fd-primary: var(--n-900);
+  --fd-primary-foreground: var(--n-0);
+  --fd-secondary: var(--n-100);
+  --fd-secondary-foreground: var(--n-800);
+  --fd-accent: var(--n-100);
+  --fd-accent-foreground: var(--n-800);
+  --fd-ring: var(--brand-500);
+}
+
+/* Monospace for code/keycaps inside the Studio adopts the design mono stack. */
+.studio-ax code,
+.studio-ax kbd,
+.studio-ax .font-mono {
+  font-family: var(--font-mono);
+}
+
+/*
+ * Quiet elevation: replace the heavy cool drop-shadows the Phase 1 chrome used
+ * (slate rgba) with the Claude Design warm, subtle shadow vocabulary (--sh-1).
+ * Overlays/popovers get the deeper --sh-3. Scoped to .studio-ax only.
+ */
+.studio-ax header,
+.studio-ax footer,
+.studio-ax .sticky {
+  box-shadow: var(--sh-1) !important;
+}
+
+.studio-ax [data-testid="studio-settings-screen"],
+.studio-ax [data-testid="studio-audit-log-view"],
+.studio-ax [data-testid="studio-build-view"] {
+  box-shadow: var(--sh-2);
+}
+
+.studio-ax [data-testid="studio-command-palette"] > div {
+  box-shadow: var(--sh-3);
+}
+
