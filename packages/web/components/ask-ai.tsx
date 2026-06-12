@@ -20,6 +20,7 @@ import {
   type AskApiCitation,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
+import { useAskStreamBuffer } from '@/components/use-ask-stream-buffer';
 
 const AskAIMarkdown = dynamic(() =>
   import('@/components/ask-ai-markdown').then((module) => module.AskAIMarkdown),
@@ -329,21 +330,33 @@ export function AskAI({
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
+  const appendToMessage = useCallback((id: string, text: string) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
+      ),
+    );
+  }, []);
+
+  const { appendBufferedText, clearBufferedText } = useAskStreamBuffer(appendToMessage);
+
   const closeDialog = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearBufferedText();
     setIsLoading(false);
     setOpen(false);
-  }, []);
+  }, [clearBufferedText]);
 
   const clearConversation = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearBufferedText();
     setIsLoading(false);
     setInput('');
     setMessages([createIntroMessage(isZh)]);
     sessionIdRef.current = null;
-  }, [isZh]);
+  }, [clearBufferedText, isZh]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -365,16 +378,9 @@ export function AskAI({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      clearBufferedText();
     };
-  }, []);
-
-  const appendToMessage = (id: string, text: string) => {
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
-      ),
-    );
-  };
+  }, [clearBufferedText]);
 
   const replaceMessage = (
     id: string,
@@ -491,7 +497,7 @@ export function AskAI({
       });
       const payload = await readAskStreamResponse(response, {
         onDelta: (text) => {
-          appendToMessage(assistantMessage.id, text);
+          appendBufferedText(assistantMessage.id, text);
         },
       });
       if (isEmptyAskStreamResponse(payload) && !controller.signal.aborted) {
@@ -504,6 +510,7 @@ export function AskAI({
       if (next.sessionId) {
         sessionIdRef.current = next.sessionId;
       }
+      clearBufferedText(assistantMessage.id);
       replaceMessage(
         assistantMessage.id,
         next.content,
@@ -513,6 +520,7 @@ export function AskAI({
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      clearBufferedText(assistantMessage.id);
       const message =
         error instanceof Error
           ? error.message
@@ -529,6 +537,8 @@ export function AskAI({
       }
       if (!controller.signal.aborted) {
         setIsLoading(false);
+      } else {
+        clearBufferedText(assistantMessage.id);
       }
     }
   };
