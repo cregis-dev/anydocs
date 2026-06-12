@@ -50,6 +50,28 @@ export async function appendAuditEntry(auditRoot: string, entry: AuditEntry): Pr
 }
 
 /**
+ * Atomically replace a day's shard with `entries` (write-temp-then-rename).
+ * Used by the write-ahead lifecycle service (Story 10.3) to update an entry's
+ * status in place. An empty `entries` array removes the shard.
+ */
+export async function overwriteAuditShard(
+  auditRoot: string,
+  date: Date,
+  entries: AuditEntry[],
+): Promise<void> {
+  const shardPath = auditShardPath(auditRoot, date);
+  if (entries.length === 0) {
+    await fs.rm(shardPath, { force: true });
+    return;
+  }
+  await fs.mkdir(auditRoot, { recursive: true });
+  const tempPath = `${shardPath}.${process.pid}.${Date.now()}.tmp`;
+  const body = `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`;
+  await fs.writeFile(tempPath, body, 'utf8');
+  await fs.rename(tempPath, shardPath);
+}
+
+/**
  * Read a single day's shard into entries. A missing shard yields `[]` (not an
  * error). Foundational read for Story 10.4's query API.
  */
