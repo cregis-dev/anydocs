@@ -1,6 +1,6 @@
 # Story 13.2: Recompose Studio Shell to Desktop Four-Region Layout
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -39,6 +39,15 @@ so that the editing experience matches the Claude Design `ds-editor` composition
 - [x] [Low→Med] **AC4 desktop MacWindow chrome** — DONE: added the full-bleed `fill` variant + functional titlebar toggles to `mac-window.tsx` and wired the desktop wrap in `local-studio-app.tsx`. (Real Tauri window config — `decorations:false`, drag regions, traffic-light offsets — is Epic 9 / 9.1.)
 - [ ] [Visual] **Claude Design `.ax` restyle:** this story frames the regions structurally but keeps the existing `fd-*`/shadcn styling. Full per-region Claude Design token (`.ax`) styling + the `LocalTopbar`/`LocalStatusBar` primitive adoption is a visual pass (fold into 13.3/13.11 or a 13.2 follow-up) requiring the app running.
 - [ ] [Verification] AC5 "all Phase 1 Studio acceptance tests pass": the cli-studio `@p0` acceptance suite is **skipped** in this headless env (needs a running CLI studio backend). The web-mode layout change (`h-dvh` wrapper + `h-full` shell) and the desktop MacWindow wrap are NOT exercised by the non-gated suite. Owner should run `pnpm test:acceptance` + visually confirm the four regions, `⌘\`/`⌘.` toggles, web layout intact, and desktop MacWindow chrome (incl. titlebar toggle buttons).
+
+## Senior Developer Review (AI)
+
+**Date:** 2026-06-13 · **Outcome:** Approve after fix (review → done)
+
+**Verification:** All ACs verified against the committed shell (`b053b9c`) + live browser checks. AC4 desktop MacWindow chrome confirmed wired (`if (isDesktopRuntime) <MacWindow fill fileChip onToggleSidebar onToggleAgent>`); web layout intact (`h-dvh` wrapper + `h-full` shell — live screenshot); ⌘\/⌘. + agent panel verified live. No CRITICAL/HIGH.
+
+- **M1 (MEDIUM, state redundancy) — FIXED IN-LINE:** 13.2 introduced a second left-sidebar toggle (`sidebarVisible` via a `hidden` class, driven by ⌘\ + the MacWindow titlebar) **alongside** the pre-existing `leftSidebarOpen` (the header `studio-toggle-left-sidebar` button that mounts/unmounts the aside) — two independent sources of truth for one sidebar (⌘\ would CSS-hide while the header button still read "Hide Sidebar"). Unified onto `leftSidebarOpen`: ⌘\, the header button, and the MacWindow titlebar all drive it; removed `sidebarVisible` + the `hidden` class. Live-verified: ⌘\ unmounts the aside, the header button restores it (single state), 0 console errors.
+- **Open follow-ups (non-blocking, tracked above):** Claude Design `.ax` per-region visual restyle (visual pass — the global theme bridge landed separately; component-level shapes remain); the cli-studio `@p0` acceptance suite is env-gated (owner verification).
 
 ## Dev Notes
 

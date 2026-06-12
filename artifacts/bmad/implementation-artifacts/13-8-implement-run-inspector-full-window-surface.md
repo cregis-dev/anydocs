@@ -1,6 +1,6 @@
 # Story 13.8: Implement Run Inspector Full-Window Surface
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

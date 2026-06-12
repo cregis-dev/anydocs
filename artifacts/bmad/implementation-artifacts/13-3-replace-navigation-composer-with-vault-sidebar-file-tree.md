@@ -1,6 +1,6 @@
 # Story 13.3: Replace Navigation Composer with VaultSidebar File-Tree
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

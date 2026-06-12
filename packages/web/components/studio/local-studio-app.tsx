@@ -187,8 +187,9 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const lockedProject = useMemo(() => createLockedStudioProject(bootContext), [bootContext]);
   const isProjectLocked = bootContext.mode === 'cli';
   const isDesktopRuntime = bootContext.mode === 'desktop';
-  // Story 13.2 four-region shell: VaultSidebar (left) + LocalAgentPanel (right) visibility.
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  // Story 13.2 four-region shell: LocalAgentPanel (right) visibility. The left
+  // VaultSidebar toggles via the pre-existing `leftSidebarOpen` (single source of
+  // truth — the header button, ⌘\, and the MacWindow titlebar all drive it).
   const [agentPanelVisible, setAgentPanelVisible] = useState(false);
   // Story 13.3: left-rail view — 'navigation' (structural NavigationComposer, default,
   // keeps Phase 1 acceptance flows intact) vs 'files' (VaultSidebar file-tree).
@@ -391,7 +392,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       if (!event.metaKey && !event.ctrlKey) return;
       if (event.key === '\\') {
         event.preventDefault();
-        setSidebarVisible((visible) => !visible);
+        setLeftSidebarOpen((open) => !open);
       } else if (event.key === '.') {
         event.preventDefault();
         setAgentPanelVisible((visible) => !visible);
@@ -1796,7 +1797,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       <main className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left Column: File Tree */}
         {leftSidebarOpen && (
-          <aside className={cn('flex min-h-0 w-64 shrink-0 flex-col border-r border-fd-border bg-fd-card', !sidebarVisible && 'hidden')} data-testid="studio-pages-sidebar">
+          <aside className="flex min-h-0 w-64 shrink-0 flex-col border-r border-fd-border bg-fd-card" data-testid="studio-pages-sidebar">
             <div className="h-10 flex items-center justify-between border-b border-fd-border px-4 shrink-0">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="text-xs font-semibold tracking-wider text-fd-muted-foreground">PAGES</span>
@@ -2450,7 +2451,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         fill
         fileChip
         title={projectState?.name || selectedProject?.name || 'Anydocs Studio'}
-        onToggleSidebar={() => setSidebarVisible((visible) => !visible)}
+        onToggleSidebar={() => setLeftSidebarOpen((open) => !open)}
         onToggleAgent={() => setAgentPanelVisible((visible) => !visible)}
       >
         {shellInner}

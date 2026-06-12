@@ -1,6 +1,6 @@
 # Story 13.9: Implement Build & Publish UI (Success + Failure)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

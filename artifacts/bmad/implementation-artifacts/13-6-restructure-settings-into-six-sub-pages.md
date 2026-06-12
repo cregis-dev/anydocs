@@ -1,6 +1,6 @@
 # Story 13.6: Restructure Settings into Six Sub-Pages
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
