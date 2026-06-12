@@ -51,6 +51,11 @@ export type ProjectReadCommandArgs = {
   targetDir?: string;
 };
 
+export type AuditPruneCommandArgs = {
+  targetDir?: string;
+  retentionDays?: number;
+};
+
 export type PageListCommandArgs = {
   targetDir?: string;
   lang?: string;
@@ -434,6 +439,44 @@ export function parseProjectReadCommandArgs(args: string[]): ProjectReadCommandA
   }
 
   return { targetDir };
+}
+
+export function parseAuditPruneCommandArgs(args: string[]): AuditPruneCommandArgs {
+  let targetDir: string | undefined;
+  let retentionDays: number | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '--target') {
+      targetDir = readRequiredOptionValue(args, i, arg);
+      i++;
+      continue;
+    }
+
+    if (arg === '--retention-days') {
+      const value = readRequiredOptionValue(args, i, arg);
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isInteger(parsed) || parsed < 0 || String(parsed) !== value) {
+        throw new Error(`Option "${arg}" requires a non-negative integer.`);
+      }
+      retentionDays = parsed;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('-')) {
+      throw new Error(`Unknown option "${arg}".`);
+    }
+
+    if (targetDir !== undefined) {
+      throw new Error('Too many positional arguments provided.');
+    }
+
+    targetDir = arg;
+  }
+
+  return { targetDir, retentionDays };
 }
 
 export function parsePageListCommandArgs(args: string[]): PageListCommandArgs {

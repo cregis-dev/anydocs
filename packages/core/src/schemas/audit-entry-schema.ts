@@ -30,8 +30,13 @@ import {
 
 const ENTITY = 'audit-entry';
 
-/** Top-level keys permitted on an audit entry (closed shape — additionalProperties: false). */
-const ALLOWED_KEYS = new Set<string>([
+/**
+ * Top-level keys permitted on a v1 audit entry (closed shape —
+ * `additionalProperties: false`). Single source of truth: the private
+ * {@link ALLOWED_KEYS} Set and the JSON Schema's `properties` are both derived
+ * from / validated against this list (Story 10.7 enforces parity in tests).
+ */
+export const AUDIT_ENTRY_ALLOWED_KEYS = Object.freeze([
   'schemaVersion',
   'id',
   'timestamp',
@@ -46,7 +51,9 @@ const ALLOWED_KEYS = new Set<string>([
   'rejectionReason',
   'rollbackOf',
   'promptDigest',
-]);
+] as const);
+
+const ALLOWED_KEYS = new Set<string>(AUDIT_ENTRY_ALLOWED_KEYS);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -277,3 +284,38 @@ export const AUDIT_ENTRY_JSON_SCHEMA_V1 = Object.freeze({
   },
   additionalProperties: false,
 } as const);
+
+export type AuditSchemaChangeRecord = {
+  /** Schema version this change applies to. Bumped only for backward-incompatible changes. */
+  version: number;
+  /** ISO date (YYYY-MM-DD) the change landed. */
+  date: string;
+  /** Human-readable description of the change. */
+  summary: string;
+};
+
+/**
+ * Append-only schema change history (Story 10.7) — the operational record of the
+ * rule in architecture.md §"Schema Versioning Rule":
+ *
+ * - **Additive** change (a new OPTIONAL field): keep the same `version`, append a
+ *   record here. Existing entries stay valid (the required-only entry test guards
+ *   this), so no migration is needed.
+ * - **Backward-incompatible** change (new required field, removed/renamed field,
+ *   narrowed enum, changed type): bump `version` (`AUDIT_SCHEMA_VERSION`), append a
+ *   record, and document a migration in the architecture addendum. The v1 validator
+ *   already hard-rejects a mismatched `schemaVersion`, so old/new entries never mix
+ *   silently.
+ *
+ * The guard tests pin the v1 contract (required set + version + allowed keys); any
+ * schema edit must update both this history and that pinned expectation deliberately.
+ */
+export const AUDIT_SCHEMA_CHANGE_HISTORY: ReadonlyArray<Readonly<AuditSchemaChangeRecord>> =
+  Object.freeze([
+    Object.freeze({
+      version: 1,
+      date: '2026-06-12',
+      summary:
+        'Genesis v1 audit entry schema (Story 10.1): closed shape, schemaVersion const 1, 10 required fields (schemaVersion/id/timestamp/scope/operation/status/projectId/target/actor/runtimeMode) + optional diff/rejectionReason/rollbackOf/promptDigest.',
+    }),
+  ]);

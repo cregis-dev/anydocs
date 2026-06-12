@@ -108,3 +108,16 @@ test('runWriteAhead rejects (and re-throws) when the content write fails', async
   const committed = (await readAuditShard(auditRoot, shardKey)).filter((e) => e.status === 'committed');
   assert.equal(committed.length, 0);
 });
+
+test('runWriteAhead does not let a markRejected failure mask the original error', async () => {
+  // Persist pending, then remove the shard so the catch-path markRejected can't
+  // find the entry and throws — the ORIGINAL content-write error must still surface.
+  await assert.rejects(
+    () =>
+      runWriteAhead(auditRoot, entry({ id: 'wa-double' }), async () => {
+        await fs.rm(auditRoot, { recursive: true, force: true }); // break the audit log mid-flight
+        throw new Error('original boom');
+      }),
+    /original boom/, // not a "no audit entry found" masking error
+  );
+});

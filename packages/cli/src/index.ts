@@ -10,6 +10,7 @@ import { error, info } from './output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from './output/structured.ts';
 import { runBuildCommand } from './commands/build-command.ts';
 import {
+  parseAuditPruneCommandArgs,
   parseGlobalCommandArgs,
   parseCreateProjectCommandArgs,
   parseConvertImportCommandArgs,
@@ -23,6 +24,7 @@ import {
   parseStudioCommandArgs,
   parseWorkflowCommandArgs,
 } from './commands/command-args.ts';
+import { runAuditPruneCommand } from './commands/audit-command.ts';
 import { runConvertImportCommand } from './commands/convert-import-command.ts';
 import { runImportCommand } from './commands/import-command.ts';
 import { runInitCommand } from './commands/init-command.ts';
@@ -47,7 +49,7 @@ const parsedCommandArgs = parseGlobalCommandArgs(args.slice(1));
 
 function resolveHelpTarget(commandName: string, commandArgs: string[]): string {
   const subcommand = commandArgs.find((arg) => !arg.startsWith('-'));
-  if ((commandName === 'project' || commandName === 'page' || commandName === 'nav' || commandName === 'workflow') && subcommand) {
+  if ((commandName === 'project' || commandName === 'page' || commandName === 'nav' || commandName === 'workflow' || commandName === 'audit') && subcommand) {
     return `${commandName} ${subcommand}`;
   }
 
@@ -140,6 +142,9 @@ async function main() {
     }
     case 'nav': {
       return runResourceCommand('nav', commandArgs, json);
+    }
+    case 'audit': {
+      return runAuditCommand(commandArgs, json);
     }
     case 'import': {
       return runCommand(
@@ -252,8 +257,24 @@ async function runResourceCommand(
   }
 }
 
+async function runAuditCommand(commandArgs: string[], json: boolean): Promise<number> {
+  const subcommand = commandArgs[0];
+  const subcommandArgs = commandArgs.slice(1);
+
+  switch (subcommand) {
+    case 'prune':
+      return runCommand(
+        () => runAuditPruneCommand({ ...parseAuditPruneCommandArgs(subcommandArgs), json }),
+        'audit prune',
+        json,
+      );
+    default:
+      return failUnknownSubcommand('audit', subcommand, json);
+  }
+}
+
 function failUnknownSubcommand(
-  commandName: 'project' | 'workflow' | 'page' | 'nav',
+  commandName: 'project' | 'workflow' | 'page' | 'nav' | 'audit',
   subcommand: string | undefined,
   json: boolean,
 ): number {

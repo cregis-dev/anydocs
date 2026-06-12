@@ -88,3 +88,34 @@ export function isAuditActorKind(value: unknown): value is AuditActorKind {
 export function isAuditResourceKind(value: unknown): value is AuditResourceKind {
   return typeof value === 'string' && (AUDIT_RESOURCE_KINDS as readonly string[]).includes(value);
 }
+
+/**
+ * Filter + pagination input for the audit query API (Story 10.4). Every axis is
+ * optional; an absent axis does not filter on that field. Filters combine with
+ * AND semantics. `from`/`to` are inclusive ISO 8601 bounds (either may be
+ * omitted for an open-ended range). Results are reverse-chronological.
+ */
+export type AuditQuery = {
+  scope?: AuditScope;
+  status?: AuditStatus;
+  operation?: AuditOperation;
+  actorKind?: AuditActorKind;
+  resourceKind?: AuditResourceKind;
+  pageId?: string;
+  projectId?: string;
+  /** Inclusive lower bound (ISO 8601). */
+  from?: string;
+  /** Inclusive upper bound (ISO 8601). */
+  to?: string;
+  /** Max entries to return. Defaults to 50; must be a positive integer. */
+  limit?: number;
+  /** Entries to skip from the start of the (filtered, sorted) set. Defaults to 0; must be >= 0. */
+  offset?: number;
+};
+
+/** Paginated result of an audit query. `total` is the pre-pagination match count. */
+export type AuditQueryResult = {
+  entries: AuditEntry[];
+  total: number;
+  hasMore: boolean;
+};

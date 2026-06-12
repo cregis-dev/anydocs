@@ -1,4 +1,5 @@
 export * from './audit-log-service.ts';
+export * from './rollback-service.ts';
 export * from './authoring-service.ts';
 export * from './build-service.ts';
 export * from './init-service.ts';

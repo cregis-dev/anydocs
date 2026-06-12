@@ -1,6 +1,6 @@
 # Story 10.3: Implement Write-Ahead Lifecycle (`pending → committed | rejected`)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -108,5 +108,19 @@ Claude Opus 4.8 (`claude-opus-4-8`)
 
 - `packages/core/src/fs/audit-repository.ts` — added `overwriteAuditShard` (atomic shard replace)
 - `packages/core/src/services/index.ts` — export the audit-log service
-- `artifacts/bmad/implementation-artifacts/10-3-...md` — status ready-for-dev → review; tasks ticked; Dev Agent Record populated
-- `artifacts/bmad/implementation-artifacts/sprint-status.yaml` — `10-3-...` backlog → review
+- `artifacts/bmad/implementation-artifacts/10-3-...md` — status ready-for-dev → review → done; tasks ticked; Dev Agent Record + Senior Developer Review populated
+- `artifacts/bmad/implementation-artifacts/sprint-status.yaml` — `10-3-...` backlog → review → done
+
+## Senior Developer Review (AI)
+
+**Date:** 2026-06-12 · **Outcome:** Approve after fix (review → done)
+
+**Verification:** File List matches the committed change (commit `c53b0ae`). All 10 ACs verified IMPLEMENTED against code + the `audit-log-service.test.ts` cases: pending forced + appended-before-write returning id (AC1), markCommitted/markRejected durable + re-read confirms (AC2/AC3), atomic temp-rename shard rewrite + re-validate (AC4/AC8), unknown-id typed throw (AC5), `runWriteAhead` orchestrator + ordering guarantee (AC6/AC7), barrel export (AC9).
+
+**Findings:**
+
+- **M1 (MEDIUM, correctness) — FIXED IN-LINE:** in `runWriteAhead`'s catch path, `await markRejected(...)` ran *before* `throw error`. If `markRejected` itself threw (e.g. the pending shard was corrupted/removed mid-flight — a double-fault), its rejection propagated and the original content-write error — the real root cause — was **masked**. Fixed by wrapping `markRejected` in best-effort `try/catch` so the original `error` is always the one re-thrown. Added a regression test (`runWriteAhead does not let a markRejected failure mask the original error`) that breaks the audit log mid-write and asserts the original error surfaces. Editor/core tests 245 → **246**.
+- **L1 (LOW):** `overwriteAuditShard` is a public repository primitive with no entry validation and an empty-`entries` → shard-removal branch that the service never triggers (it always rewrites the same-length list) and that is untested. The lifecycle path is safe (the updated entry is re-validated by `updateEntryStatus` before the rewrite); flagged only for the primitive's direct-use contract. Logged.
+- **L2 (LOW):** `updateEntryStatus` reads each shard fully and rewrites on every transition (read-modify-rewrite of the daily shard). Documented and safe under the Phase 2 single-writer model; noted so 10.4/10.7 don't assume strict append-only. No change.
+
+**Post-fix gate:** core **246** (+1 regression test) + editor 162 + cli 36 (+2 skip) + mcp 44 + web 77 = **565 pass / 0 fail / 2 skipped**; root `pnpm typecheck` exit 0.

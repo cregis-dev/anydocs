@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { ValidationError } from '../errors/validation-error.ts';
+import type { RuntimeMode } from '../runtime/runtime-mode.ts';
 import { assertValidAuditEntry } from '../schemas/audit-entry-schema.ts';
-import type { AuditEntry } from '../types/audit.ts';
+import { AUDIT_SCHEMA_VERSION, type AuditEntry } from '../types/audit.ts';
 
 /**
  * Daily-sharded, append-only NDJSON audit repository.
@@ -109,4 +111,92 @@ export async function listAuditShardDates(auditRoot: string): Promise<string[]> 
     .map((file) => SHARD_FILE_RE.exec(file)?.[1])
     .filter((date): date is string => date !== undefined)
     .sort();
+}
+
+/** Default audit retention window (NFR30: ≥ 30 days). */
+export const AUDIT_RETENTION_DAYS = 30;
+
+export type PruneAuditOptions = {
+  /** Project id for the system summary entry (required entry field). */
+  projectId: string;
+  /** Runtime mode for the system summary entry (required entry field). */
+  runtimeMode: RuntimeMode;
+  /** Retention window in days; shards strictly older than this are pruned. Defaults to 30. */
+  retentionDays?: number;
+  /** Reference "now"; defaults to the current time. Overridable for deterministic tests. */
+  now?: Date;
+  /** Id for the system summary entry; defaults to `system-prune-<now ISO>`. */
+  entryId?: string;
+};
+
+export type PruneAuditResult = {
+  /** Shard dates (`YYYY-MM-DD`) that were deleted, ascending. */
+  prunedDates: string[];
+  /** The retention window applied. */
+  retentionDays: number;
+  /** The cutoff date (`YYYY-MM-DD`): shards strictly before this were pruned. */
+  cutoff: string;
+  /** Id of the appended system summary entry; present only when ≥1 shard was pruned. */
+  auditEntryId?: string;
+};
+
+/**
+ * Delete daily shards older than the retention window (NFR30, default ≥ 30 days)
+ * and, when anything was pruned, append a single system `structural` audit entry
+ * summarizing the prune. A shard exactly `retentionDays` old (on the cutoff date)
+ * is KEPT. Under-retention projects are a no-op: nothing deleted, nothing appended.
+ *
+ * The summary entry lands in `now`'s shard (always within retention), so it is
+ * never self-pruned in the same run. The audit log has no dedicated resourceKind,
+ * so the project-level prune records `target.resourceKind: 'project-config'`.
+ */
+export async function pruneAuditShards(
+  auditRoot: string,
+  options: PruneAuditOptions,
+): Promise<PruneAuditResult> {
+  const retentionDays = options.retentionDays ?? AUDIT_RETENTION_DAYS;
+  if (!Number.isInteger(retentionDays) || retentionDays < 0) {
+    throw new ValidationError('Audit retention window must be a non-negative integer number of days.', {
+      entity: 'audit-prune',
+      rule: 'audit-retention-days-must-be-non-negative-integer',
+      remediation: 'Pass retentionDays as a whole number ≥ 0 (defaults to 30).',
+      metadata: { retentionDays },
+    });
+  }
+
+  const now = options.now ?? new Date();
+  const cutoff = new Date(now);
+  cutoff.setUTCDate(cutoff.getUTCDate() - retentionDays);
+  const cutoffKey = auditShardFileName(cutoff).slice(0, 'YYYY-MM-DD'.length);
+
+  const dates = await listAuditShardDates(auditRoot);
+  const prunedDates = dates.filter((date) => date < cutoffKey);
+  const base: PruneAuditResult = { prunedDates, retentionDays, cutoff: cutoffKey };
+  if (prunedDates.length === 0) {
+    return base;
+  }
+
+  for (const date of prunedDates) {
+    // Empty entries → overwriteAuditShard removes the shard file (Story 10.3 primitive).
+    await overwriteAuditShard(auditRoot, new Date(`${date}T00:00:00.000Z`), []);
+  }
+
+  const entry: AuditEntry = {
+    schemaVersion: AUDIT_SCHEMA_VERSION,
+    id: options.entryId ?? `system-prune-${now.toISOString()}`,
+    timestamp: now.toISOString(),
+    scope: 'workspace',
+    operation: 'structural',
+    status: 'committed',
+    projectId: options.projectId,
+    target: { resourceKind: 'project-config' },
+    actor: { kind: 'system' },
+    runtimeMode: options.runtimeMode,
+    diff: {
+      summary: `Pruned ${prunedDates.length} audit shard(s) older than ${retentionDays} days (cutoff ${cutoffKey}): ${prunedDates.join(', ')}`,
+    },
+  };
+  await appendAuditEntry(auditRoot, entry); // validates before persistence
+
+  return { ...base, auditEntryId: entry.id };
 }
