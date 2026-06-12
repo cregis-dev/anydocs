@@ -1,6 +1,6 @@
 # Story 8.1: Implement Runtime Mode Resolver in `@anydocs/core`
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -198,3 +198,9 @@ Claude Opus 4.8 (`claude-opus-4-8`)
 ## Review Follow-ups (AI)
 
 - [ ] [Dev][Low] `@anydocs/core` `package.json` `test` script globs `tests/**/*.test.ts` **unquoted**, so the shell expands it and `**` degrades to a single level. This makes any `tests/` subdirectory shadow the flat tests (it bit this story — see Debug Log). Quote the glob (`'tests/**/*.test.ts'`) so Node's globstar handles recursion, OR keep all core test files flat by convention. Same pattern likely exists in `@anydocs/cli` / `@anydocs/mcp` test scripts — worth a sweep. Non-blocking; current code is correct because the test is flat. [packages/core/package.json]
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.8 · **Date:** 2026-06-12 · **Outcome:** Approve → `done`
+
+All 9 ACs satisfied. Resolver implements the architecture priority order (injection → env → Tauri probe → fail-fast) with an immutable module-singleton cache and a typed getter; typed `RuntimeModeResolutionError` extends the shared `DomainError` with four machine-branchable codes. Reviewed for: silent-default avoidance (none — every unresolved/invalid path throws with the offending value surfaced), single-resolution discipline (conflict on divergent re-resolve, cached return on consistent), and scope hygiene (no matrix/UI/desktop bleed). 11 `node:test` cases green; root gate green. The self-introduced test-glob regression was caught and fixed during dev (flat test file) and logged as a Low follow-up for the unquoted-glob sweep. No blocking findings.

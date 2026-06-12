@@ -1,6 +1,6 @@
 # Story 10.1: Define Versioned Audit Entry JSON Schema in `@anydocs/core`
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -192,3 +192,9 @@ Claude Opus 4.8 (`claude-opus-4-8`)
 - `packages/core/src/schemas/index.ts` — added `export * from './audit-entry-schema.ts';`
 - `artifacts/bmad/implementation-artifacts/10-1-...md` — status ready-for-dev → review; tasks ticked; Dev Agent Record populated
 - `artifacts/bmad/implementation-artifacts/sprint-status.yaml` — `10-1-...` ready-for-dev → review
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.8 · **Date:** 2026-06-12 · **Outcome:** Approve → `done`
+
+All 10 ACs satisfied. The v1 shape matches the architecture spec field-for-field (verified the `required` array, enum domains, nested `actor`/`target`/`diff`, and `additionalProperties: false` against the source). The **Zod variance was resolved as recommended** — hand-rolled validator matching `docs-schema.ts`, zero new dependencies — and the epic's intent (a validating schema + a JSON Schema export) is met via `assertValidAuditEntry` + the frozen `AUDIT_ENTRY_JSON_SCHEMA_V1`. Reviewed for: closed-shape enforcement (unknown keys rejected), version pinning (`schemaVersion !== 1` hard-rejected with a 10.7 pointer), field-named errors (every failure carries `details.metadata.field`), and scope (schema-only — no repository/lifecycle/ULID/fs bleed). 23 `node:test` cases incl. table-driven required-field + enum-domain coverage; root gate green. One consistency note for Story 10.7: the validator and the JSON Schema constant are two encodings of one shape kept in sync by co-location — 10.7's forward-compat tests should assert they agree. No blocking findings.

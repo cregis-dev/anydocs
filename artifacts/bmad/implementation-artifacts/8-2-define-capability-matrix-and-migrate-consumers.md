@@ -1,6 +1,6 @@
 # Story 8.2: Define Capability Matrix and Migrate Consumers
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -183,3 +183,9 @@ Claude Opus 4.8 (`claude-opus-4-8`)
 - `packages/core/src/runtime/index.ts` — added `export * from './capability-matrix.ts';`
 - `artifacts/bmad/implementation-artifacts/8-2-...md` — status ready-for-dev → review; tasks ticked; Dev Agent Record populated
 - `artifacts/bmad/implementation-artifacts/sprint-status.yaml` — `8-2-...` ready-for-dev → review
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.8 · **Date:** 2026-06-12 · **Outcome:** Approve → `done`
+
+All 8 ACs satisfied. `RuntimeCapabilities` + frozen `CAPABILITY_MATRIX` encode the architecture table; `getCapabilities()` defaults to the resolved mode and returns the shared frozen row (immutable, asserted). The machine-enforced guard was the risk area and was reviewed closely: it is **calibrated to start green** (it matches only `runtimeMode`/`getRuntimeMode()`-anchored equality, so it does NOT false-positive on the pre-existing `bootContext.mode === 'desktop'` Phase 1 checks, and it deliberately does NOT forbid `__TAURI` probes which are Epic 9's concern) and is **verified effective** via a temp-injection negative control. AC3 "migrate a consumer" is honestly recorded as not-applicable-yet (no genuine cross-mode branch exists pre-Epic 9) rather than forcing a synthetic migration. 9 `node:test` cases green; root gate green. Follow-up worth noting for downstream: the guard catches direct comparisons but not aliased reads (`const m = getRuntimeMode(); if (m === ...)`) — architecture rule + review cover the residue. No blocking findings.
