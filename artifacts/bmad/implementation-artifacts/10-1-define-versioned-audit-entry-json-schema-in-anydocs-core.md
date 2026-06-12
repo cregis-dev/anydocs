@@ -20,7 +20,7 @@ so that every audit producer and consumer agrees on one shape before any audit-w
 6. Unknown / extra top-level properties are rejected (`additionalProperties: false` parity), and `schemaVersion` values other than `1` are rejected with a clear message pointing at the schema-versioning rule (Story 10.7 owns evolution).
 7. The `runtimeMode` field reuses the `RuntimeMode` type from Story 8.1's `@anydocs/core/src/runtime/runtime-mode.ts`; the `scope` field type is shared/aligned with the Agent scope union (`inline | page | workspace`) so Epic 11 reuses the same type.
 8. The module is exported through the existing `packages/core/src/schemas/index.ts` and `packages/core/src/types/index.ts` barrels (already wired into root `src/index.ts`); no new package subpath export is required.
-9. Unit tests under `packages/core/tests/schemas/` cover: a fully-valid entry (all required + a sampling of optional fields) passes; each required field missing → rejected naming that field; each enum field with an out-of-domain value → rejected; an unknown top-level field → rejected; `schemaVersion: 2` → rejected; and structural checks on `AUDIT_ENTRY_JSON_SCHEMA_V1` (correct `$id`, `required` array, `additionalProperties: false`). Tests run under the Node built-in runner and are part of `pnpm test`.
+9. Unit tests under `packages/core/tests/` cover: a fully-valid entry (all required + a sampling of optional fields) passes; each required field missing → rejected naming that field; each enum field with an out-of-domain value → rejected; an unknown top-level field → rejected; `schemaVersion: 2` → rejected; and structural checks on `AUDIT_ENTRY_JSON_SCHEMA_V1` (correct `$id`, `required` array, `additionalProperties: false`). Tests run under the Node built-in runner and are part of `pnpm test`.
 10. `pnpm --filter @anydocs/core typecheck` + `test` and root `pnpm typecheck` + `pnpm test` pass; no audit-writing/repository/service code is added in this story.
 
 ## Tasks / Subtasks
@@ -53,7 +53,7 @@ so that every audit producer and consumer agrees on one shape before any audit-w
   - [ ] Add `export * from './audit-entry-schema.ts';` to `packages/core/src/schemas/index.ts`.
   - [ ] Confirm no export-name collisions with existing schema/type symbols.
 - [ ] Add unit tests (AC: 9)
-  - [ ] `packages/core/tests/schemas/audit-entry-schema.test.ts` (node:test + node:assert/strict):
+  - [ ] `packages/core/tests/audit-entry-schema.test.ts` (node:test + node:assert/strict):
     - [ ] A canonical valid fixture (all required fields, plus `diff`, `promptDigest`) passes.
     - [ ] A table-driven set removing each required field in turn → each throws `ValidationError` whose `details` names the missing field.
     - [ ] Out-of-domain enum values for `scope`, `operation`, `status`, `runtimeMode`, `actor.kind`, `target.resourceKind` → each rejected.
@@ -110,7 +110,7 @@ so that every audit producer and consumer agrees on one shape before any audit-w
 ```
 packages/core/src/types/audit.ts                    ← AuditEntry + sub-types + guards
 packages/core/src/schemas/audit-entry-schema.ts     ← assertValidAuditEntry + AUDIT_ENTRY_JSON_SCHEMA_V1
-packages/core/tests/schemas/audit-entry-schema.test.ts
+packages/core/tests/audit-entry-schema.test.ts
 ```
 
 **To modify (this story):**
@@ -137,7 +137,7 @@ packages/core/tests/schemas/audit-entry-schema.test.ts
 
 ### Testing Requirements
 
-- `node:test` + `node:assert/strict`, file under `packages/core/tests/schemas/`, picked up by the core test glob and root `pnpm test`.
+- `node:test` + `node:assert/strict`, file under `packages/core/tests/`, picked up by the core test glob and root `pnpm test`. **Keep the test file FLAT directly under `tests/` (not a `tests/schemas/` subdir):** the core test glob is unquoted, so a subdirectory shadows the flat tests (discovered in Story 8.1 — see its Review Follow-up). Follow the existing all-flat convention.
 - Prefer a table-driven approach for the required-field and enum-domain cases to keep coverage exhaustive and readable.
 - Build the canonical valid fixture once and clone-and-mutate it per negative case (so each negative differs from a known-good baseline by exactly one violation).
 - Assert that negative cases throw `ValidationError` (check `error instanceof ValidationError` / `error.name`) and that `details.metadata` (or `details.rule`) identifies the offending field.

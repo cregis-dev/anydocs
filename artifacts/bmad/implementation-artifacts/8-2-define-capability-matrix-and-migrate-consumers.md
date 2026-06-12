@@ -18,7 +18,7 @@ so that cross-mode branches stay in one place rather than scattered across UI an
 4. A machine-enforced guard rejects inline `if (runtimeMode === '...')` / `=== 'web'` / `=== 'desktop'` comparisons and stray Tauri-global / `process.env` mode probes **outside** `packages/core/src/runtime/` — implemented either as an ESLint `no-restricted-syntax` rule or as a repo guard test consistent with the existing boundary-audit tests, and wired into `pnpm lint` or `pnpm test`.
 5. Adding a new cross-mode capability requires editing only `RuntimeCapabilities` + `CAPABILITY_MATRIX`; consumers that read the field through the typed accessor pick it up with no consumer-side code change (demonstrated by a test that adds a synthetic capability field and asserts the accessor surfaces it for both modes).
 6. The module is exported through the existing `packages/core/src/runtime/index.ts` barrel (already wired to root `src/index.ts` by Story 8.1); no new package subpath export is required.
-7. Unit tests under `packages/core/tests/runtime/` cover: matrix completeness (every `RuntimeMode` key present; every `RuntimeCapabilities` field populated for both modes), `getCapabilities()` defaulting to the resolved mode, `getCapabilities('desktop')` / `getCapabilities('web')` returning the correct frozen rows, and immutability (attempting to mutate a returned capabilities object does not change the matrix).
+7. Unit tests under `packages/core/tests/` cover: matrix completeness (every `RuntimeMode` key present; every `RuntimeCapabilities` field populated for both modes), `getCapabilities()` defaulting to the resolved mode, `getCapabilities('desktop')` / `getCapabilities('web')` returning the correct frozen rows, and immutability (attempting to mutate a returned capabilities object does not change the matrix).
 8. `pnpm --filter @anydocs/core typecheck` + `test`, root `pnpm typecheck` + `pnpm test`, and `pnpm lint` (if the guard is an ESLint rule) pass; the guard demonstrably fails when a deliberate inline `runtimeMode === 'desktop'` branch is introduced in a consumer (verified locally, then removed).
 
 ## Tasks / Subtasks
@@ -48,7 +48,7 @@ so that cross-mode branches stay in one place rather than scattered across UI an
   - [ ] Wire the guard into `pnpm test` (guard-test approach) or `pnpm lint` (ESLint approach).
   - [ ] Allow-list `packages/core/src/runtime/` (the only place mode literals and env/global probes legitimately appear).
 - [ ] Add unit tests (AC: 5, 7)
-  - [ ] `packages/core/tests/runtime/capability-matrix.test.ts` (node:test + node:assert/strict): matrix has both mode keys; every `RuntimeCapabilities` field is defined for both modes; `getCapabilities('web')` and `getCapabilities('desktop')` return the expected rows; `getCapabilities()` (no arg) uses the resolved mode (resolve to a known mode first, reset after via Story 8.1's test hook); mutating a returned row throws or no-ops and the matrix is unchanged (frozen).
+  - [ ] `packages/core/tests/capability-matrix.test.ts` (node:test + node:assert/strict): matrix has both mode keys; every `RuntimeCapabilities` field is defined for both modes; `getCapabilities('web')` and `getCapabilities('desktop')` return the expected rows; `getCapabilities()` (no arg) uses the resolved mode (resolve to a known mode first, reset after via Story 8.1's test hook); mutating a returned row throws or no-ops and the matrix is unchanged (frozen).
   - [ ] Forward-extensibility test (AC5): assert that a consumer reading a field through `getCapabilities()` continues to compile/behave when fields are added — practically, a test that documents the contract by reading an arbitrary field generically and asserting presence for both modes.
 - [ ] Validate (AC: 8)
   - [ ] `pnpm --filter @anydocs/core typecheck` + `test` pass.
@@ -99,7 +99,7 @@ so that cross-mode branches stay in one place rather than scattered across UI an
 packages/core/src/runtime/
 └── capability-matrix.ts        ← RuntimeCapabilities + CAPABILITY_MATRIX + getCapabilities
 
-packages/core/tests/runtime/
+packages/core/tests/
 └── capability-matrix.test.ts   ← matrix completeness + accessor + immutability + extensibility
 
 (guard) one of:
@@ -129,7 +129,7 @@ packages/core/tests/runtime/
 
 ### Testing Requirements
 
-- `node:test` + `node:assert/strict`, files under `packages/core/tests/runtime/`, picked up by `node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts` and root `pnpm test`.
+- `node:test` + `node:assert/strict`, files under `packages/core/tests/`, picked up by `node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts` and root `pnpm test`. **Keep the test file FLAT directly under `tests/` (not a `tests/runtime/` subdir):** the core test glob is unquoted, so a subdirectory shadows the flat tests (discovered in Story 8.1 — see its Review Follow-up). Follow the existing all-flat convention.
 - Tests touching the default `getCapabilities()` (no-arg) path must resolve a known mode via 8.1's `resolveRuntimeMode({ injectedMode: ... })` and reset with `__resetRuntimeModeForTests()` in `afterEach`.
 - The guard must be demonstrably effective: include (in the Dev Agent Record, not as a permanent test) evidence that a deliberate inline branch trips it.
 - Assert immutability by attempting a mutation on a returned row (in strict mode, mutating a frozen object throws — assert it throws or that the matrix value is unchanged).
