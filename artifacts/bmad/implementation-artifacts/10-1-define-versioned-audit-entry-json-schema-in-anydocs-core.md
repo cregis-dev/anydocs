@@ -1,6 +1,6 @@
 # Story 10.1: Define Versioned Audit Entry JSON Schema in `@anydocs/core`
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,46 +25,46 @@ so that every audit producer and consumer agrees on one shape before any audit-w
 
 ## Tasks / Subtasks
 
-- [ ] Define the `AuditEntry` types (AC: 1, 3, 4, 7)
-  - [ ] Create `packages/core/src/types/audit.ts` declaring:
-    - [ ] `AuditScope = 'inline' | 'page' | 'workspace'` (shared with Epic 11 agent scopes — exported for reuse).
-    - [ ] `AuditOperation = 'create' | 'update' | 'delete' | 'rollback' | 'structural'`.
-    - [ ] `AuditStatus = 'pending' | 'committed' | 'rejected'`.
-    - [ ] `AuditActorKind = 'agent' | 'human' | 'system'`; `AuditActor = { kind: AuditActorKind; agentProvider?: string }`.
-    - [ ] `AuditResourceKind = 'block' | 'page' | 'navigation' | 'project-config'`; `AuditTarget = { resourceKind: AuditResourceKind; pageId?: string; blockId?: string; navigationId?: string }`.
-    - [ ] `AuditDiff = { before?: unknown; after?: unknown; summary?: string }`.
-    - [ ] `AuditEntry = { schemaVersion: 1; id: string; timestamp: string; scope: AuditScope; operation: AuditOperation; status: AuditStatus; projectId: string; target: AuditTarget; actor: AuditActor; runtimeMode: RuntimeMode; diff?: AuditDiff; rejectionReason?: string; rollbackOf?: string; promptDigest?: string }` — import `RuntimeMode` from `../runtime/runtime-mode.ts`.
-  - [ ] Add lightweight type guards (`isAuditScope`, `isAuditOperation`, etc.) following the `isPageStatus`/`isDocsLang` pattern in `src/types/docs.ts`.
-- [ ] Implement the validator (AC: 2, 3, 4, 5, 6)
-  - [ ] Create `packages/core/src/schemas/audit-entry-schema.ts` mirroring the hand-rolled style of `src/schemas/docs-schema.ts` (use `isRecord`, `assertNonEmptyString`-style helpers, and `ValidationError` from `../errors/validation-error.ts`). **Do not introduce Zod** — see the variance note in Dev Notes.
-  - [ ] `assertValidAuditEntry(value: unknown): asserts value is AuditEntry`:
-    - [ ] Reject non-objects.
-    - [ ] Reject unknown top-level keys (enforce the closed shape — `additionalProperties: false` parity).
-    - [ ] Assert `schemaVersion === 1` (else a versioning-specific message referencing Story 10.7).
-    - [ ] Assert each required field present + correct primitive/enum type, naming the field in the `ValidationError` `details.metadata` on failure.
-    - [ ] Validate nested `actor` and `target` objects (required sub-fields + enum domains).
-    - [ ] Validate optional fields only when present.
-  - [ ] Optionally also export `validateAuditEntry(value): AuditEntry` returning the narrowed value (thin wrapper over the assert).
-- [ ] Export the JSON Schema constant (AC: 2, 6)
-  - [ ] In the same module, export `export const AUDIT_ENTRY_JSON_SCHEMA_V1 = Object.freeze({ ... }) ` reproducing the draft-07 schema from architecture.md verbatim ( `$schema`, `$id`, `title`, `type`, `required`, `properties`, `additionalProperties: false` ). This is the canonical machine-readable shape for external consumers and docs; the hand-rolled validator is the runtime enforcement.
-  - [ ] Add a brief comment that the validator and the JSON Schema constant MUST stay in sync, and that Story 10.7 governs versioned evolution.
-- [ ] Wire the barrels (AC: 8)
-  - [ ] Add `export * from './audit.ts';` to `packages/core/src/types/index.ts`.
-  - [ ] Add `export * from './audit-entry-schema.ts';` to `packages/core/src/schemas/index.ts`.
-  - [ ] Confirm no export-name collisions with existing schema/type symbols.
-- [ ] Add unit tests (AC: 9)
-  - [ ] `packages/core/tests/audit-entry-schema.test.ts` (node:test + node:assert/strict):
-    - [ ] A canonical valid fixture (all required fields, plus `diff`, `promptDigest`) passes.
-    - [ ] A table-driven set removing each required field in turn → each throws `ValidationError` whose `details` names the missing field.
-    - [ ] Out-of-domain enum values for `scope`, `operation`, `status`, `runtimeMode`, `actor.kind`, `target.resourceKind` → each rejected.
-    - [ ] Unknown top-level field (e.g. `foo: 1`) → rejected.
-    - [ ] `schemaVersion: 2` → rejected with the versioning message.
-    - [ ] `AUDIT_ENTRY_JSON_SCHEMA_V1` has `$id === 'anydocs://schemas/audit-entry/v1'`, the exact `required` array from architecture, and `additionalProperties === false`.
-  - [ ] Assert on `error.name`/`details` shape rather than full message strings.
-- [ ] Validate (AC: 10)
-  - [ ] `pnpm --filter @anydocs/core typecheck` + `test` pass.
-  - [ ] Root `pnpm typecheck`, `pnpm test`, `pnpm build` stay green.
-  - [ ] Confirm only `packages/core/src/types/audit.ts`, `packages/core/src/schemas/audit-entry-schema.ts`, the two barrels, the new test, and `sprint-status.yaml` were touched.
+- [x] Define the `AuditEntry` types (AC: 1, 3, 4, 7)
+  - [x] Create `packages/core/src/types/audit.ts` declaring:
+    - [x] `AuditScope = 'inline' | 'page' | 'workspace'` (shared with Epic 11 agent scopes — exported for reuse).
+    - [x] `AuditOperation = 'create' | 'update' | 'delete' | 'rollback' | 'structural'`.
+    - [x] `AuditStatus = 'pending' | 'committed' | 'rejected'`.
+    - [x] `AuditActorKind = 'agent' | 'human' | 'system'`; `AuditActor = { kind: AuditActorKind; agentProvider?: string }`.
+    - [x] `AuditResourceKind = 'block' | 'page' | 'navigation' | 'project-config'`; `AuditTarget = { resourceKind: AuditResourceKind; pageId?: string; blockId?: string; navigationId?: string }`.
+    - [x] `AuditDiff = { before?: unknown; after?: unknown; summary?: string }`.
+    - [x] `AuditEntry = { schemaVersion: 1; id: string; timestamp: string; scope: AuditScope; operation: AuditOperation; status: AuditStatus; projectId: string; target: AuditTarget; actor: AuditActor; runtimeMode: RuntimeMode; diff?: AuditDiff; rejectionReason?: string; rollbackOf?: string; promptDigest?: string }` — import `RuntimeMode` from `../runtime/runtime-mode.ts`.
+  - [x] Add lightweight type guards (`isAuditScope`, `isAuditOperation`, etc.) following the `isPageStatus`/`isDocsLang` pattern in `src/types/docs.ts`.
+- [x] Implement the validator (AC: 2, 3, 4, 5, 6)
+  - [x] Create `packages/core/src/schemas/audit-entry-schema.ts` mirroring the hand-rolled style of `src/schemas/docs-schema.ts` (use `isRecord`, `assertNonEmptyString`-style helpers, and `ValidationError` from `../errors/validation-error.ts`). **Do not introduce Zod** — see the variance note in Dev Notes.
+  - [x] `assertValidAuditEntry(value: unknown): asserts value is AuditEntry`:
+    - [x] Reject non-objects.
+    - [x] Reject unknown top-level keys (enforce the closed shape — `additionalProperties: false` parity).
+    - [x] Assert `schemaVersion === 1` (else a versioning-specific message referencing Story 10.7).
+    - [x] Assert each required field present + correct primitive/enum type, naming the field in the `ValidationError` `details.metadata` on failure.
+    - [x] Validate nested `actor` and `target` objects (required sub-fields + enum domains).
+    - [x] Validate optional fields only when present.
+  - [x] Optionally also export `validateAuditEntry(value): AuditEntry` returning the narrowed value (thin wrapper over the assert).
+- [x] Export the JSON Schema constant (AC: 2, 6)
+  - [x] In the same module, export `export const AUDIT_ENTRY_JSON_SCHEMA_V1 = Object.freeze({ ... }) ` reproducing the draft-07 schema from architecture.md verbatim ( `$schema`, `$id`, `title`, `type`, `required`, `properties`, `additionalProperties: false` ). This is the canonical machine-readable shape for external consumers and docs; the hand-rolled validator is the runtime enforcement.
+  - [x] Add a brief comment that the validator and the JSON Schema constant MUST stay in sync, and that Story 10.7 governs versioned evolution.
+- [x] Wire the barrels (AC: 8)
+  - [x] Add `export * from './audit.ts';` to `packages/core/src/types/index.ts`.
+  - [x] Add `export * from './audit-entry-schema.ts';` to `packages/core/src/schemas/index.ts`.
+  - [x] Confirm no export-name collisions with existing schema/type symbols.
+- [x] Add unit tests (AC: 9)
+  - [x] `packages/core/tests/audit-entry-schema.test.ts` (node:test + node:assert/strict):
+    - [x] A canonical valid fixture (all required fields, plus `diff`, `promptDigest`) passes.
+    - [x] A table-driven set removing each required field in turn → each throws `ValidationError` whose `details` names the missing field.
+    - [x] Out-of-domain enum values for `scope`, `operation`, `status`, `runtimeMode`, `actor.kind`, `target.resourceKind` → each rejected.
+    - [x] Unknown top-level field (e.g. `foo: 1`) → rejected.
+    - [x] `schemaVersion: 2` → rejected with the versioning message.
+    - [x] `AUDIT_ENTRY_JSON_SCHEMA_V1` has `$id === 'anydocs://schemas/audit-entry/v1'`, the exact `required` array from architecture, and `additionalProperties === false`.
+  - [x] Assert on `error.name`/`details` shape rather than full message strings.
+- [x] Validate (AC: 10)
+  - [x] `pnpm --filter @anydocs/core typecheck` + `test` pass.
+  - [x] Root `pnpm typecheck`, `pnpm test`, `pnpm build` stay green.
+  - [x] Confirm only `packages/core/src/types/audit.ts`, `packages/core/src/schemas/audit-entry-schema.ts`, the two barrels, the new test, and `sprint-status.yaml` were touched.
 
 ## Dev Notes
 
@@ -158,10 +158,37 @@ packages/core/tests/audit-entry-schema.test.ts
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.8 (`claude-opus-4-8`)
 
 ### Debug Log References
 
+- None. Test file placed FLAT at `packages/core/tests/audit-entry-schema.test.ts` per the Story 8.1 test-glob finding (subdirectories under `tests/` shadow the flat suite while the core test glob is unquoted).
+
 ### Completion Notes List
 
+- Implemented the **hand-rolled** validator path (the recommended Zod variance resolution): `@anydocs/core` stays zero-Zod. Types in `src/types/audit.ts`; validator + JSON Schema in `src/schemas/audit-entry-schema.ts`, mirroring the `docs-schema.ts` / `types/docs.ts` split and the `isRecord` + `ValidationError` style.
+- `assertValidAuditEntry(value): asserts value is AuditEntry` + `validateAuditEntry(value): AuditEntry` enforce: closed shape (unknown top-level keys rejected — `additionalProperties: false` parity), `schemaVersion === 1` (other versions hard-rejected with a message pointing at Story 10.7), required-field presence/type, enum domains for `scope`/`operation`/`status`/`runtimeMode`/`actor.kind`/`target.resourceKind`, ISO-8601 `timestamp` (lenient `Date.parse` check), and optional-field typing. Every failure throws `ValidationError` with `details.metadata.field` naming the offender.
+- `runtimeMode` reuses Story 8.1's `RuntimeMode` type + `isRuntimeMode` guard; `AuditScope` (`inline|page|workspace`) is exported for Epic 11 agent-scope reuse.
+- `AUDIT_ENTRY_JSON_SCHEMA_V1` is a frozen (`Object.freeze` + `as const`) draft-07 reproduction of the architecture spec (`$id: anydocs://schemas/audit-entry/v1`, full `required`/`properties`, `additionalProperties: false`). Validator and JSON Schema are co-located and cross-commented to stay in sync (Story 10.7 governs evolution).
+- `id` validated as a non-empty string only — ULID generation is Story 10.2's concern; no ULID dependency added. No fs, no clock, no persistence (schema-only story). No new dependencies.
+
+### Validation Evidence
+
+- `pnpm --filter @anydocs/core typecheck` → exit 0
+- `pnpm --filter @anydocs/core test` → **218 pass / 0 fail / 0 skipped** (10.1 adds 23 audit cases: 1 full-valid + 1 minimal + 10 required-missing + 6 enum-domain + unknown-field + schemaVersion≠1 + non-ISO-timestamp + non-object + JSON-Schema-shape)
+- Root `pnpm typecheck` → exit 0; root `pnpm test` regression gate green (core 218 + editor 162 + cli 36+2 skip + mcp 44 + web 77)
+
 ### File List
+
+**New files**
+
+- `packages/core/src/types/audit.ts`
+- `packages/core/src/schemas/audit-entry-schema.ts`
+- `packages/core/tests/audit-entry-schema.test.ts`
+
+**Modified files**
+
+- `packages/core/src/types/index.ts` — added `export * from './audit.ts';`
+- `packages/core/src/schemas/index.ts` — added `export * from './audit-entry-schema.ts';`
+- `artifacts/bmad/implementation-artifacts/10-1-...md` — status ready-for-dev → review; tasks ticked; Dev Agent Record populated
+- `artifacts/bmad/implementation-artifacts/sprint-status.yaml` — `10-1-...` ready-for-dev → review
