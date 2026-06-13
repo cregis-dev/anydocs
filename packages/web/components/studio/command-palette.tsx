@@ -43,7 +43,8 @@ const SECTION_LABEL: Record<Section, string> = {
 const SECTION_ORDER: Section[] = ['ask-writer', 'navigation', 'actions'];
 
 export type CommandPaletteProps = {
-  open: boolean;
+  // Mounted only while open (the host conditionally renders it), so each open is a
+  // fresh mount with clean state — no open-driven reset effect needed.
   onClose: () => void;
   pages: PageDoc[];
   onSelectPage: (pageId: string) => void;
@@ -60,7 +61,7 @@ function toggleDarkMode() {
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
 }
 
-export function CommandPalette({ open, onClose, pages, onSelectPage, onBuild, onAuditLog }: CommandPaletteProps) {
+export function CommandPalette({ onClose, pages, onSelectPage, onBuild, onAuditLog }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -98,20 +99,12 @@ export function CommandPalette({ open, onClose, pages, onSelectPage, onBuild, on
   // Selectable (non-disabled) items, in filtered order, for keyboard navigation.
   const selectable = useMemo(() => filtered.filter((item) => !item.disabled), [filtered]);
 
+  // Focus the input on mount (the palette is only mounted while open). DOM
+  // side-effect only — no setState in the effect body.
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      setActiveIndex(0);
-      // focus the input on next paint
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [open]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
-  if (!open) return null;
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const activeId = selectable[activeIndex]?.id;
 
@@ -146,7 +139,10 @@ export function CommandPalette({ open, onClose, pages, onSelectPage, onBuild, on
         <input
           ref={inputRef}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActiveIndex(0);
+          }}
           placeholder="Type a command or search files…"
           className="w-full border-b border-fd-border bg-transparent px-4 py-3 text-sm outline-none"
           data-testid="command-palette-input"

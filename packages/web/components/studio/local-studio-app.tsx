@@ -2401,8 +2401,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         />
       ) : null}
 
+      {paletteOpen ? (
       <CommandPalette
-        open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         pages={filteredPages}
         onSelectPage={(id) => {
@@ -2412,6 +2412,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         onBuild={() => setBuildViewOpen(true)}
         onAuditLog={() => setAuditViewOpen(true)}
       />
+      ) : null}
 
       {auditViewOpen ? (
         <AuditLogView
