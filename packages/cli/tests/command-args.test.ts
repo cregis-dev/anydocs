@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  parseAuditPruneCommandArgs,
   parseCreateProjectCommandArgs,
   parseGlobalCommandArgs,
   parseConvertImportCommandArgs,
@@ -178,6 +179,28 @@ test('parseProjectReadCommandArgs accepts positional or named target directories
   assert.deepEqual(parseProjectReadCommandArgs([]), { targetDir: undefined });
   assert.deepEqual(parseProjectReadCommandArgs(['fixtures/docs']), { targetDir: 'fixtures/docs' });
   assert.deepEqual(parseProjectReadCommandArgs(['--target', 'fixtures/docs']), { targetDir: 'fixtures/docs' });
+});
+
+test('parseAuditPruneCommandArgs accepts target directory and --retention-days', () => {
+  assert.deepEqual(parseAuditPruneCommandArgs([]), { targetDir: undefined, retentionDays: undefined });
+  assert.deepEqual(parseAuditPruneCommandArgs(['fixtures/docs']), {
+    targetDir: 'fixtures/docs',
+    retentionDays: undefined,
+  });
+  assert.deepEqual(parseAuditPruneCommandArgs(['--target', 'fixtures/docs', '--retention-days', '14']), {
+    targetDir: 'fixtures/docs',
+    retentionDays: 14,
+  });
+  assert.deepEqual(parseAuditPruneCommandArgs(['fixtures/docs', '--retention-days', '0']), {
+    targetDir: 'fixtures/docs',
+    retentionDays: 0,
+  });
+});
+
+test('parseAuditPruneCommandArgs rejects a non-integer or negative --retention-days', () => {
+  assert.throws(() => parseAuditPruneCommandArgs(['--retention-days', '-1']));
+  assert.throws(() => parseAuditPruneCommandArgs(['--retention-days', '2.5']));
+  assert.throws(() => parseAuditPruneCommandArgs(['--retention-days', 'abc']));
 });
 
 test('parsePageListCommandArgs accepts language filters and target directory', () => {

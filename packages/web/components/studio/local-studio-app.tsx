@@ -32,6 +32,15 @@ import { LocalStudioSettings } from '@/components/studio/local-studio-settings';
 import { NavigationItemDialog, type NavigationItemDialogValues } from '@/components/studio/navigation-item-dialog';
 import dynamic from 'next/dynamic';
 import { NavigationComposer } from '@/components/studio/navigation-composer';
+import { VaultSidebar } from '@/components/studio/vault-sidebar';
+import { LibrarySurface } from '@/components/studio/library-surface';
+import { OnboardingStepper } from '@/components/studio/onboarding-stepper';
+import { SettingsScreen } from '@/components/studio/settings-screen';
+import { CommandPalette } from '@/components/studio/command-palette';
+import { AuditLogView } from '@/components/studio/audit-log-view';
+import { BuildPublishView } from '@/components/studio/build-publish-view';
+import { createLocalApiUrl } from '@/components/studio/local-api-url';
+import './studio-theme.css';
 
 // Code-split the Plate-backed `<EditorHost>` so its ~40-package transitive
 // dependency chain (from `@anydocs/editor`) lives in its own chunk and
@@ -88,6 +97,7 @@ import {
   resolveTopNavLabel,
 } from '@/lib/themes/atlas-nav';
 import { cn } from '@/lib/utils';
+import { MacWindow } from '@/lib/desktop-shell';
 import {
   type LoadState,
   type ProjectState,
@@ -176,6 +186,33 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const studioHost = host;
   const lockedProject = useMemo(() => createLockedStudioProject(bootContext), [bootContext]);
   const isProjectLocked = bootContext.mode === 'cli';
+  const isDesktopRuntime = bootContext.mode === 'desktop';
+  // Story 13.2 four-region shell: LocalAgentPanel (right) visibility. The left
+  // VaultSidebar toggles via the pre-existing `leftSidebarOpen` (single source of
+  // truth — the header button, ⌘\, and the MacWindow titlebar all drive it).
+  const [agentPanelVisible, setAgentPanelVisible] = useState(false);
+  // Story 13.3: left-rail view — 'navigation' (structural NavigationComposer, default,
+  // keeps Phase 1 acceptance flows intact) vs 'files' (VaultSidebar file-tree).
+  const [leftRailView, setLeftRailView] = useState<'navigation' | 'files'>('navigation');
+  // Story 13.6: the six-sub-page Settings screen (additive overlay; the existing
+  // right-aside project/page settings panel is left untouched for Phase 1 flows).
+  const [settingsScreenOpen, setSettingsScreenOpen] = useState(false);
+  // Story 13.7: ⌘P / ⌘O command palette overlay.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Story 13.10: Audit Log Query view overlay.
+  const [auditViewOpen, setAuditViewOpen] = useState(false);
+  // Story 13.9: full-window Build & Publish view overlay.
+  const [buildViewOpen, setBuildViewOpen] = useState(false);
+  // Story 13.5: first-launch onboarding completion (persisted). Lazy-init from localStorage
+  // so it never shows for returning users; never shows in cli/locked boot (projectId is set).
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return window.localStorage.getItem('anydocs.onboarding.completed') === '1';
+    } catch {
+      return true;
+    }
+  });
   const [projectId, setProjectId] = useState<string>(lockedProject?.id ?? '');
   const [lang, setLang] = useState<DocsLang | null>(null);
   const [load, setLoad] = useState<LoadState>({ nav: null, pages: [], loading: true, error: null });
@@ -346,6 +383,27 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     if (!save) return false;
     const saved = await save(activeRef.current);
     return saved !== null;
+  }, []);
+
+  // Story 13.2: shell keyboard shortcuts — ⌘\ toggles the VaultSidebar, ⌘. toggles
+  // the LocalAgentPanel. Requires meta/ctrl so typing "\" or "." in the editor is safe.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!event.metaKey && !event.ctrlKey) return;
+      if (event.key === '\\') {
+        event.preventDefault();
+        setLeftSidebarOpen((open) => !open);
+      } else if (event.key === '.') {
+        event.preventDefault();
+        setAgentPanelVisible((visible) => !visible);
+      } else if (event.key === 'p' || event.key === 'o') {
+        // ⌘P / ⌘O — command palette (Story 13.7). ⌘O is the "Switch file" entry.
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   const handleCreateProject = useCallback(async (projectPathInput: string) => {
@@ -1490,6 +1548,32 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     });
   }, [bootContext.mode, handleDesktopMenuAction]);
 
+  // Story 13.5: first-launch onboarding precedes the welcome-screen ONLY for a genuine
+  // fresh start — non-locked runtime, no project, no recent projects, not yet completed.
+  // In cli/locked boot `projectId` is set, so neither this nor the welcome-screen renders.
+  if (!projectId && !onboardingComplete && !isProjectLocked && bootContext.canManageRecentProjects && recentProjects.length === 0) {
+    return (
+      <OnboardingStepper
+        onComplete={() => {
+          try {
+            window.localStorage.setItem('anydocs.onboarding.completed', '1');
+          } catch {
+            // non-fatal — proceed to the welcome screen regardless
+          }
+          setOnboardingComplete(true);
+        }}
+        onSkip={() => {
+          try {
+            window.localStorage.setItem('anydocs.onboarding.completed', '1');
+          } catch {
+            // non-fatal
+          }
+          setOnboardingComplete(true);
+        }}
+      />
+    );
+  }
+
   if (!projectId) {
     return (
       <WelcomeScreen
@@ -1507,8 +1591,8 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
     );
   }
 
-  return (
-    <div className="h-dvh overflow-hidden bg-fd-background text-fd-foreground flex flex-col">
+  const shellInner = (
+    <div className="studio-ax relative flex h-full flex-col overflow-hidden bg-fd-background text-fd-foreground">
       {/* Top Navigation Bar */}
       <header className="flex h-12 items-center justify-between gap-4 border-b border-fd-border px-4 shrink-0">
         <div className="flex min-w-0 items-center gap-4">
@@ -1576,6 +1660,17 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         )}
 
         <div className="flex items-center gap-2.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setSettingsScreenOpen(true)}
+            title="Settings"
+            data-testid="studio-open-settings"
+          >
+            <Settings className="size-4 text-slate-500" />
+          </Button>
           <div className="flex items-center overflow-hidden rounded-lg border border-fd-border bg-fd-card shadow-sm">
             <Button
               type="button"
@@ -1704,7 +1799,33 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         {leftSidebarOpen && (
           <aside className="flex min-h-0 w-64 shrink-0 flex-col border-r border-fd-border bg-fd-card" data-testid="studio-pages-sidebar">
             <div className="h-10 flex items-center justify-between border-b border-fd-border px-4 shrink-0">
-              <span className="text-xs font-semibold tracking-wider text-fd-muted-foreground">PAGES</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="text-xs font-semibold tracking-wider text-fd-muted-foreground">PAGES</span>
+                <div className="flex items-center gap-0.5 rounded-md bg-fd-muted/50 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setLeftRailView('navigation')}
+                    className={cn(
+                      'rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide',
+                      leftRailView === 'navigation' ? 'bg-fd-background text-fd-foreground shadow-sm' : 'text-fd-muted-foreground hover:text-fd-foreground',
+                    )}
+                    data-testid="studio-rail-view-navigation"
+                  >
+                    Nav
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLeftRailView('files')}
+                    className={cn(
+                      'rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide',
+                      leftRailView === 'files' ? 'bg-fd-background text-fd-foreground shadow-sm' : 'text-fd-muted-foreground hover:text-fd-foreground',
+                    )}
+                    data-testid="studio-rail-view-files"
+                  >
+                    Files
+                  </button>
+                </div>
+              </div>
               <div className="relative">
                 <Button
                   type="button"
@@ -1745,7 +1866,17 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
-              {load.loading ? (
+              {leftRailView === 'files' ? (
+                <VaultSidebar
+                  pages={filteredPages}
+                  activePageId={activeId}
+                  lang={lang ?? projectState?.defaultLanguage ?? undefined}
+                  onSelectPage={(id) => {
+                    void changeActivePage(id);
+                    setRightSidebarMode(null);
+                  }}
+                />
+              ) : load.loading ? (
                 <div className="flex items-center gap-2 px-2 py-3 text-sm text-fd-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
                   Loading...
@@ -2092,9 +2223,15 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                     }}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-fd-muted-foreground">
-                    Select or create a page
-                  </div>
+                  <LibrarySurface
+                    pages={filteredPages}
+                    projectName={projectState?.name}
+                    onSelectPage={(id) => {
+                      void changeActivePage(id);
+                      setRightSidebarMode(null);
+                    }}
+                    onCreatePage={() => onCreate('page')}
+                  />
                 )}
               </div>
             </div>
@@ -2166,6 +2303,20 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
             />
           </aside>
         ) : null}
+        {agentPanelVisible ? (
+          <aside
+            className="flex min-h-0 w-80 shrink-0 flex-col border-l border-fd-border bg-fd-card"
+            data-testid="studio-agent-panel"
+            aria-label="Agent panel"
+          >
+            <div className="flex h-12 shrink-0 items-center border-b border-fd-border px-4 text-sm font-semibold">
+              Agent
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 text-sm text-fd-muted-foreground">
+              The built-in Agent panel becomes available with the Agent subsystem (Epic 11). Toggle this panel with ⌘.
+            </div>
+          </aside>
+        ) : null}
       </main>
 
       <NavigationItemDialog
@@ -2224,6 +2375,90 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
           <div className="flex items-center gap-1">JSON + DocContentV1</div>
         </div>
       </footer>
+
+      {settingsScreenOpen ? (
+        <SettingsScreen
+          general={
+            <LocalStudioSettings
+              mode="project"
+              page={null}
+              project={projectState}
+              navGroupOptions={topLevelNavGroups}
+              onDeletePage={() => {}}
+              onSetReviewApproval={() => {}}
+              onChange={() => {}}
+              onProjectChange={(patch) => {
+                setProjectState((current) => (current ? applyProjectPatch(current, patch) : current));
+                setProjectDirty(true);
+                setProjectDirtyTick((tick) => tick + 1);
+              }}
+            />
+          }
+          runtimeMode={bootContext.mode}
+          projectName={projectState?.name}
+          projectPath={projectState?.projectRoot ?? selectedProject?.path}
+          onClose={() => setSettingsScreenOpen(false)}
+        />
+      ) : null}
+
+      {paletteOpen ? (
+      <CommandPalette
+        onClose={() => setPaletteOpen(false)}
+        pages={filteredPages}
+        onSelectPage={(id) => {
+          void changeActivePage(id);
+          setRightSidebarMode(null);
+        }}
+        onBuild={() => setBuildViewOpen(true)}
+        onAuditLog={() => setAuditViewOpen(true)}
+      />
+      ) : null}
+
+      {auditViewOpen ? (
+        <AuditLogView
+          onClose={() => setAuditViewOpen(false)}
+          buildUrl={(params) =>
+            createLocalApiUrl('audit', {
+              projectId,
+              customPath: selectedProject?.path,
+              ...params,
+            })
+          }
+        />
+      ) : null}
+
+      {buildViewOpen ? (
+        <BuildPublishView
+          onClose={() => setBuildViewOpen(false)}
+          onRunBuild={() => void runBuild()}
+          building={workflowBusy === 'build'}
+          busyLabel={workflowBusyLabel}
+          elapsedLabel={workflowElapsedLabel}
+          success={workflowSuccess?.type === 'build' ? { artifactRoot: workflowSuccess.artifactRoot ?? '', message: workflowSuccess.message } : null}
+          error={workflowError}
+          errorTitle={workflowErrorDiagnostic?.title}
+          errorRemediation={workflowErrorDiagnostic?.remediation}
+          themeId={projectState?.themeId}
+        />
+      ) : null}
     </div>
   );
+
+  // Story 13.2 AC4: in desktop runtime mode the shell renders inside MacWindow
+  // chrome (full-bleed runtime variant); in web mode it renders bare.
+  if (isDesktopRuntime) {
+    return (
+      <MacWindow
+        fill
+        fileChip
+        title={projectState?.name || selectedProject?.name || 'Anydocs Studio'}
+        onToggleSidebar={() => setLeftSidebarOpen((open) => !open)}
+        onToggleAgent={() => setAgentPanelVisible((visible) => !visible)}
+      >
+        {shellInner}
+      </MacWindow>
+    );
+  }
+
+  return <div className="h-dvh">{shellInner}</div>;
 }
