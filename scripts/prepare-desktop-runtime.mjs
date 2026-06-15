@@ -303,13 +303,16 @@ export function ScalarApiReference({
 }
 
 async function writeDesktopMermaidFallback() {
+  // The real viewer (which imports the heavy `mermaid` npm package) lives at
+  // docs-runtime/components/docs/mermaid-viewer.tsx — same place the scalar
+  // fallback targets. Overwrite it with a light stub so the desktop bundle
+  // doesn't pull in mermaid. (It previously pointed at the long-removed
+  // studio/plugins/mermaid path, which made this write ENOENT.)
   const mermaidViewerPath = path.join(
     cliRuntimeRoot,
     'docs-runtime',
     'components',
-    'studio',
-    'plugins',
-    'mermaid',
+    'docs',
     'mermaid-viewer.tsx',
   );
   await writeFile(

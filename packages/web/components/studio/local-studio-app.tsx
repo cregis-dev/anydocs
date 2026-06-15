@@ -130,6 +130,31 @@ type LocalStudioAppProps = {
   host: StudioHost;
 };
 
+/**
+ * Turn whatever `reload()` throws into a human-readable message. Errors that
+ * cross a native/IPC or HTTP boundary can arrive as plain objects/strings (not
+ * JS `Error`s), so a bare `instanceof Error` check would discard the real cause
+ * and fall back to a useless generic string. Preserve the detail where possible.
+ */
+function describeLoadError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    const record = error as { message?: unknown; kind?: unknown };
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message;
+    }
+    if (typeof record.kind === 'string' && record.kind.trim()) {
+      return record.kind;
+    }
+  }
+  return 'Failed to load project';
+}
+
 function createCopySlug(baseSlug: string, pages: PageDoc[]) {
   const normalizedBase = `${baseSlug.replace(/\/+$/g, '') || 'page'}-copy`;
   const used = new Set(pages.map((page) => page.slug));
@@ -580,7 +605,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         setActiveId(fallbackPageId ?? pages.pages[0]?.id ?? null);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to load project';
+      const msg = describeLoadError(e);
       setProjectState(null);
       setRightSidebarMode(null);
       setLoad({ nav: null, pages: [], loading: false, error: msg });
@@ -1592,7 +1617,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   }
 
   const shellInner = (
-    <div className="studio-ax relative flex h-full flex-col overflow-hidden bg-fd-background text-fd-foreground">
+    <div className="studio-ax relative flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-fd-background text-fd-foreground">
       {/* Top Navigation Bar */}
       <header className="flex h-12 items-center justify-between gap-4 border-b border-fd-border px-4 shrink-0">
         <div className="flex min-w-0 items-center gap-4">
@@ -1882,7 +1907,75 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
                   Loading...
                 </div>
               ) : load.error ? (
-                <div className="px-2 py-3 text-sm text-fd-muted-foreground">{load.error}</div>
+                <div
+                  className="m-1 rounded-lg p-3"
+                  style={{
+                    background: 'var(--bad-50)',
+                    border: '1px solid color-mix(in oklch, var(--bad-500) 24%, transparent)',
+                  }}
+                  data-testid="studio-load-error"
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--bad-700)',
+                    }}
+                  >
+                    <WifiOff className="size-3.5" />
+                    Couldn’t open this project
+                  </div>
+                  <p
+                    className="break-words"
+                    style={{ marginTop: 6, fontSize: 11.5, lineHeight: 1.5, color: 'var(--n-600)' }}
+                  >
+                    {load.error}
+                  </p>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => void reload()}
+                      data-testid="studio-load-error-retry"
+                      style={{
+                        height: 26,
+                        padding: '0 12px',
+                        borderRadius: 'var(--r-6)',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        background: 'var(--n-900)',
+                        color: 'var(--n-0)',
+                        border: '1px solid var(--n-900)',
+                        boxShadow: 'var(--sh-1)',
+                      }}
+                    >
+                      Retry
+                    </button>
+                    {isProjectLocked ? null : (
+                      <button
+                        type="button"
+                        onClick={() => void handleCloseProject()}
+                        style={{
+                          height: 26,
+                          padding: '0 12px',
+                          borderRadius: 'var(--r-6)',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          background: 'var(--n-50)',
+                          color: 'var(--n-800)',
+                          border: '1px solid color-mix(in oklch, var(--n-800) 10%, transparent)',
+                          boxShadow: 'var(--sh-1)',
+                        }}
+                      >
+                        Close project
+                      </button>
+                    )}
+                  </div>
+                </div>
               ) : visibleNavDraft ? (
                 <div className="space-y-2">
                   {validation.errors.length || validation.warnings.length ? (
