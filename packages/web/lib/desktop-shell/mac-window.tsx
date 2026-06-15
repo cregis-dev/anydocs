@@ -93,15 +93,22 @@ export function MacWindow({
         position: 'relative',
       }}
     >
-      {/* Title bar */}
+      {/* Title bar.
+          `fill` = real Tauri runtime: the native macOS titlebar is hidden-inset
+          (overlay) so the OS draws the REAL traffic lights over this bar's left
+          inset — we must NOT draw fake ones (that was the "double titlebar"),
+          and the bar becomes the window drag region. Non-fill = design artboard:
+          keep the simulated traffic lights. */}
       <div
+        {...(fill ? { 'data-tauri-drag-region': true } : {})}
         style={{
           height: 30,
           flex: 'none',
           display: 'grid',
           gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
-          padding: '0 10px',
+          // Reserve the left inset for the OS overlay traffic lights in fill mode.
+          padding: fill ? '0 10px 0 78px' : '0 10px',
           background: dark
             ? 'linear-gradient(180deg, oklch(0.22 0.008 270), oklch(0.20 0.008 270))'
             : 'linear-gradient(180deg, oklch(0.985 0.004 80), oklch(0.965 0.005 80))',
@@ -109,14 +116,20 @@ export function MacWindow({
           userSelect: 'none',
         }}
       >
-        {/* Traffic lights */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <TrafficLight color="oklch(0.66 0.18 25)" />
-          <TrafficLight color="oklch(0.78 0.16 75)" />
-          <TrafficLight color="oklch(0.70 0.16 145)" />
-        </div>
+        {/* Traffic lights — simulated only in the design artboard; in the real
+            runtime the OS draws them in the reserved left inset. */}
+        {fill ? (
+          <div {...{ 'data-tauri-drag-region': true }} />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <TrafficLight color="oklch(0.66 0.18 25)" />
+            <TrafficLight color="oklch(0.78 0.16 75)" />
+            <TrafficLight color="oklch(0.70 0.16 145)" />
+          </div>
+        )}
         {/* Center title */}
         <div
+          {...(fill ? { 'data-tauri-drag-region': true } : {})}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

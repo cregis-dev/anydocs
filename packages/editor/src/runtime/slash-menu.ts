@@ -209,8 +209,9 @@ export function filterSlashItems(query: string): SlashMenuItem[] {
 // -----------------------------------------------------------------------------
 
 // Structural minimum of the Plate editor surface the menu touches.
+type SlashNode = { type?: string; text?: string; children?: SlashNode[] };
 type SlashEditor = {
-  children: Array<{ type?: string; children?: Array<{ text?: string }> }>;
+  children: SlashNode[];
   selection?: unknown;
   api: {
     start: (at: number[]) => unknown;
@@ -224,18 +225,64 @@ type SlashEditor = {
   };
 };
 
+/** Resolve the node at a (possibly nested) Slate path by walking `children`. */
+function nodeAtPath(editor: SlashEditor, path: number[]): SlashNode | null {
+  let node: SlashNode | undefined = { children: editor.children };
+  for (const index of path) {
+    node = node?.children?.[index];
+    if (!node) return null;
+  }
+  return node ?? null;
+}
+
 /**
- * Replaces the block at `blockIndex` (the trigger paragraph holding the
- * `/query` text) with the item's node and places the caret at its start.
- * Exported for tests — drives the same `editor.tf` pipeline as the UI.
+ * Replaces the block at `at` (the trigger block holding the `/query` text) with
+ * the item's node and places the caret at its start. `at` accepts a top-level
+ * index (legacy/tests) or a full nested Slate path (so the menu works inside
+ * callouts/quotes that wrap block children). Exported for tests — drives the
+ * same `editor.tf` pipeline as the UI.
  */
-export function applySlashItem(editorLike: unknown, blockIndex: number, item: SlashMenuItem): void {
+export function applySlashItem(editorLike: unknown, at: number | number[], item: SlashMenuItem): void {
   const editor = editorLike as SlashEditor;
-  editor.tf.removeNodes({ at: [blockIndex] });
-  editor.tf.insertNodes(item.createNode(), { at: [blockIndex] });
+  const path = Array.isArray(at) ? at : [at];
+
+  // List-item trigger: a heading/code/etc. can't live as a list child, so lift
+  // the new block to a top-level sibling right after the list (and drop the
+  // empty item, removing the list entirely if it was the item's only one).
+  const parentPath = path.slice(0, -1);
+  const parent = parentPath.length > 0 ? nodeAtPath(editor, parentPath) : null;
+  if (parent && typeof parent.type === 'string' && LIST_CONTAINER_TYPES.has(parent.type)) {
+    const siblingCount = parent.children?.length ?? 0;
+    editor.tf.removeNodes({ at: path });
+    let insertPath: number[];
+    if (siblingCount <= 1) {
+      // The list is now empty — remove it and take its slot.
+      editor.tf.removeNodes({ at: parentPath });
+      insertPath = parentPath;
+    } else {
+      // Insert as the list's next sibling.
+      insertPath = [...parentPath.slice(0, -1), parentPath[parentPath.length - 1] + 1];
+    }
+    editor.tf.insertNodes(item.createNode(), { at: insertPath });
+    try {
+      editor.tf.select(editor.api.start(insertPath));
+    } catch {
+      // best-effort selection
+    }
+    try {
+      const editable = editor.api.toDOMNode(editor as unknown as object);
+      if (editable) editor.tf.focus();
+    } catch {
+      // unmounted
+    }
+    return;
+  }
+
+  editor.tf.removeNodes({ at: path });
+  editor.tf.insertNodes(item.createNode(), { at: path });
   try {
     // Pure model-state op — safe even when the editor isn't mounted.
-    editor.tf.select(editor.api.start([blockIndex]));
+    editor.tf.select(editor.api.start(path));
   } catch {
     // Selection placement is best-effort — exotic void-only nodes may
     // reject it; the block replacement itself stands.
@@ -260,8 +307,10 @@ type SlateRangePoint = { path: number[]; offset: number };
 type SlateRange = { anchor: SlateRangePoint; focus: SlateRangePoint };
 
 // Block types whose children are plain inline content — `/` in an EMPTY one
-// of these opens the menu. Structural blocks (lists, tables, code) own their
-// children's semantics, so the trigger stays off there.
+// of these opens the menu. Tables and code blocks own their children's
+// semantics, so the trigger stays off there. List ITEMS are included so `/` at
+// the end of a list works (Notion-style); `applySlashItem` lifts the chosen
+// block out of the list (see LIST_CONTAINER_TYPES handling).
 const SLASH_TRIGGER_TYPES = new Set<string>([
   PLATE_PARAGRAPH,
   PLATE_HEADING[1],
@@ -269,6 +318,17 @@ const SLASH_TRIGGER_TYPES = new Set<string>([
   PLATE_HEADING[3],
   PLATE_BLOCKQUOTE,
   PLATE_CALLOUT,
+  PLATE_LIST_ITEM,
+  PLATE_LIST_ITEM_TODO,
+]);
+
+// List wrappers — when the trigger block is an item inside one of these, the
+// chosen block must be lifted OUT to a top-level sibling (a heading/code block
+// can't legally live as a list child).
+const LIST_CONTAINER_TYPES = new Set<string>([
+  PLATE_LIST_BULLETED,
+  PLATE_LIST_NUMBERED,
+  PLATE_LIST_TODO,
 ]);
 
 function isCollapsed(range: SlateRange): boolean {
@@ -279,8 +339,8 @@ function isCollapsed(range: SlateRange): boolean {
   );
 }
 
-function blockText(editor: SlashEditor, blockIndex: number): string | null {
-  const block = editor.children[blockIndex];
+function blockText(editor: SlashEditor, blockPath: number[]): string | null {
+  const block = nodeAtPath(editor, blockPath);
   if (!block || !Array.isArray(block.children)) return null;
   let out = '';
   for (const child of block.children) {
@@ -295,12 +355,16 @@ function blockText(editor: SlashEditor, blockIndex: number): string | null {
 // -----------------------------------------------------------------------------
 
 type MenuState = {
-  blockIndex: number;
+  /** Full Slate path of the trigger block (supports nested callouts/quotes). */
+  blockPath: number[];
   query: string;
   highlighted: number;
   // Viewport coordinates of the caret when the menu opened (position: fixed).
+  // `top` anchors the menu BELOW the caret; `caretTop` is the caret's top edge,
+  // used to flip the menu ABOVE when there isn't room below.
   left: number;
   top: number;
+  caretTop: number;
 };
 
 const MENU_STYLE: React.CSSProperties = {
@@ -333,25 +397,28 @@ const ITEM_STYLE: React.CSSProperties = {
   color: 'inherit',
 };
 
-function caretViewportPosition(editor: SlashEditor, blockIndex: number): { left: number; top: number } {
+function caretViewportPosition(
+  editor: SlashEditor,
+  blockPath: number[],
+): { left: number; top: number; caretTop: number } {
   const selection = typeof window !== 'undefined' ? window.getSelection() : null;
   if (selection && selection.rangeCount > 0) {
     const rect = selection.getRangeAt(0).getBoundingClientRect();
     if (rect && (rect.left !== 0 || rect.bottom !== 0)) {
-      return { left: rect.left, top: rect.bottom + 4 };
+      return { left: rect.left, top: rect.bottom + 4, caretTop: rect.top };
     }
   }
   // Empty text nodes can report a zero rect — fall back to the block element.
   try {
-    const blockEl = editor.api.toDOMNode(editor.children[blockIndex]);
+    const blockEl = editor.api.toDOMNode(nodeAtPath(editor, blockPath));
     if (blockEl) {
       const rect = blockEl.getBoundingClientRect();
-      return { left: rect.left, top: rect.bottom + 4 };
+      return { left: rect.left, top: rect.bottom + 4, caretTop: rect.top };
     }
   } catch {
     // fall through to a safe default
   }
-  return { left: 16, top: 16 };
+  return { left: 16, top: 16, caretTop: 16 };
 }
 
 /**
@@ -381,7 +448,7 @@ export function SlashMenuController(): React.ReactElement | null {
       setTimeout(() => {
         const state = menuRef.current;
         if (state === null) return;
-        const text = blockText(editor, state.blockIndex);
+        const text = blockText(editor, state.blockPath);
         if (text === null || !text.startsWith('/')) {
           setMenu(null);
           return;
@@ -402,19 +469,24 @@ export function SlashMenuController(): React.ReactElement | null {
         if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
         const selection = editor.selection as SlateRange | null | undefined;
         if (!selection || !isCollapsed(selection)) return;
-        const blockIndex = selection.anchor.path[0];
-        if (blockIndex === undefined) return;
-        const block = editor.children[blockIndex];
+        // Resolve the actual text-container block the caret sits in by dropping
+        // the trailing leaf index from the anchor path. Using the FULL path
+        // (not just `path[0]`) lets `/` trigger inside nested blocks too —
+        // e.g. an empty paragraph wrapped in a callout/quote — which is what
+        // the top-level-only lookup missed.
+        const blockPath = selection.anchor.path.slice(0, -1);
+        if (blockPath.length === 0) return;
+        const block = nodeAtPath(editor, blockPath);
         // Trigger from ANY empty text-container block, not just paragraphs —
         // pressing Enter at the end of a heading leaves the new block as a
         // heading (no exit-break yet at that instant), and Notion-style UX
         // expects `/` to work there too.
         if (!block || typeof block.type !== 'string' || !SLASH_TRIGGER_TYPES.has(block.type)) return;
-        if (blockText(editor, blockIndex) !== '') return;
+        if (blockText(editor, blockPath) !== '') return;
         // Let the `/` character insert normally, then open the menu.
         setTimeout(() => {
-          const pos = caretViewportPosition(editor, blockIndex);
-          setMenu({ blockIndex, query: '', highlighted: 0, ...pos });
+          const pos = caretViewportPosition(editor, blockPath);
+          setMenu({ blockPath, query: '', highlighted: 0, ...pos });
         }, 0);
         return;
       }
@@ -436,7 +508,7 @@ export function SlashMenuController(): React.ReactElement | null {
         const items = filterSlashItems(state.query);
         const item = items[state.highlighted] ?? items[0];
         setMenu(null);
-        if (item) applySlashItem(editor, state.blockIndex, item);
+        if (item) applySlashItem(editor, state.blockPath, item);
         return;
       }
       if (event.key === 'Escape') {
@@ -467,6 +539,30 @@ export function SlashMenuController(): React.ReactElement | null {
     // remounts build a fresh tree), so mount-once wiring is correct.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Flip the menu above the caret (and clamp horizontally) when it would
+  // overflow the viewport — otherwise a `/` near the window bottom opens a menu
+  // that's clipped by the edge / status bar. Runs in a layout effect so the
+  // adjustment lands before paint (no visible jump), and re-runs on every menu
+  // change since filtering shrinks/grows the list height.
+  React.useLayoutEffect(() => {
+    const el = listRef.current;
+    if (menu === null || el === null || typeof window === 'undefined') return;
+    const margin = 8;
+    const h = el.offsetHeight;
+    const w = el.offsetWidth;
+    let top = menu.top;
+    if (top + h > window.innerHeight - margin) {
+      const above = menu.caretTop - h - 4;
+      top = above >= margin ? above : Math.max(margin, window.innerHeight - h - margin);
+    }
+    let left = menu.left;
+    if (left + w > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - w - margin);
+    }
+    el.style.top = `${top}px`;
+    el.style.left = `${left}px`;
+  }, [menu]);
 
   // Keep the highlighted row visible while arrowing through a long list.
   React.useEffect(() => {
@@ -522,7 +618,7 @@ export function SlashMenuController(): React.ReactElement | null {
             event.preventDefault();
             event.stopPropagation();
             setMenu(null);
-            applySlashItem(editor, menu.blockIndex, item);
+            applySlashItem(editor, menu.blockPath, item);
           },
           onMouseEnter: () => setMenu({ ...menu, highlighted: index }),
         },

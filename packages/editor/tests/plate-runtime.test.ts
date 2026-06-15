@@ -1044,6 +1044,55 @@ test('slash menu: "/" triggers from an empty heading block too (post-Enter-on-he
   host.remove();
 });
 
+test('slash menu: "/" triggers inside an empty list item and lifts the chosen block out of the list', async () => {
+  const host = createHost();
+  document.body.appendChild(host);
+  const instance = editorModule.createEditor({
+    initialContent: {
+      version: 1,
+      blocks: [
+        {
+          type: 'list',
+          style: 'bulleted',
+          items: [
+            { children: [{ type: 'text', text: 'First' }] },
+            { children: [{ type: 'text', text: '' }] },
+          ],
+        },
+      ],
+    },
+  });
+  const dispose = instance.mount(host);
+  const raw = getRawPlateEditorForTesting(instance) as {
+    tf: { select: (at: unknown) => void };
+    api: { start: (at: number[]) => unknown };
+  };
+  // Caret in the empty SECOND list item (nested path [0, 1]).
+  raw.tf.select(raw.api.start([0, 1]));
+
+  const editable = host.querySelector('[contenteditable="true"]')!;
+  dispatchKey(editable, '/');
+  await tick();
+  assert.ok(
+    document.body.querySelector('[data-anydocs-slash-menu]'),
+    'menu opens inside an empty list item',
+  );
+
+  // Enter applies the first item (Heading 1).
+  dispatchKey(editable, 'Enter');
+  await tick();
+  assert.equal(document.body.querySelector('[data-anydocs-slash-menu]'), null, 'menu closed after apply');
+
+  const blocks = instance.getContent().blocks as Array<{ type: string; items?: unknown[] }>;
+  assert.equal(blocks.length, 2, 'list + lifted heading are top-level siblings');
+  assert.equal(blocks[0]?.type, 'list', 'list survives');
+  assert.equal(blocks[0]?.items?.length, 1, 'the empty trigger item was removed');
+  assert.equal(blocks[1]?.type, 'heading', 'chosen block lifted OUT of the list as a top-level sibling');
+
+  dispose();
+  host.remove();
+});
+
 test('Enter at the end of a heading resets the new block to a paragraph (exit break)', () => {
   const instance = editorModule.createEditor({
     initialContent: { version: 1, blocks: [{ type: 'heading', level: 2, children: [{ type: 'text', text: 'Title' }] }] },
