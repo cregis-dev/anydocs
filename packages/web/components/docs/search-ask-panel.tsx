@@ -37,6 +37,7 @@ import {
   citationNumber,
   citationPath,
   createAskMessage,
+  getAskDisclaimerText,
   getDocumentationName,
   type AskMessage,
 } from "@/components/ask-ai-shared";
@@ -282,6 +283,9 @@ function AskIntro({
         {isZh
           ? `可以向 AI 提问，它会基于 ${documentationName} 已发布文档内容回答。`
           : `Ask AI questions grounded in the published ${documentationName} documentation.`}
+      </p>
+      <p className="mt-3 text-[12px] leading-5 text-fd-muted-foreground">
+        {getAskDisclaimerText(isZh)}
       </p>
     </div>
   );
@@ -886,7 +890,7 @@ export function SearchAskPanel({
                     onClarifySelect={handleClarifySelect}
                   />
                   <div className="flex items-center justify-between gap-3 px-1 text-xs text-fd-muted-foreground">
-                    <span>{isZh ? "AI 回答可能不准确。" : "AI responses may be inaccurate."}</span>
+                    <span className="max-w-[42rem] leading-5">{getAskDisclaimerText(isZh)}</span>
                     {askMessages.length > 0 ? (
                       <button
                         type="button"

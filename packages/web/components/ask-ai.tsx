@@ -20,6 +20,7 @@ import {
   type AskApiCitation,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
+import { getAskDisclaimerText } from '@/components/ask-ai-shared';
 import { useAskStreamBuffer } from '@/components/use-ask-stream-buffer';
 
 const AskAIMarkdown = dynamic(() =>
@@ -61,11 +62,13 @@ function createMessage(
 }
 
 function createIntroMessage(isZh: boolean): Message {
+  const intro = isZh
+    ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
+    : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.';
+
   return createMessage(
     'assistant',
-    isZh
-      ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
-      : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.',
+    `${intro}\n\n${getAskDisclaimerText(isZh)}`,
   );
 }
 
@@ -622,7 +625,7 @@ export function AskAI({
                   </button>
                 </form>
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-fd-muted-foreground">
-                  <span>{isZh ? 'AI 回答可能不准确。' : 'AI responses may be inaccurate.'}</span>
+                  <span className="max-w-[34rem] leading-5">{getAskDisclaimerText(isZh)}</span>
                   {messages.length > 1 ? (
                     <button
                       type="button"
