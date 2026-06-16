@@ -68,3 +68,19 @@
   box-shadow: var(--sh-3);
 }
 
+/*
+ * Centered reading column for the block editor (Claude Design `LocalDocBody`,
+ * ~720px measure). On wide desktop windows the full-bleed editable spans the
+ * whole pane, which hurts readability; cap and center the text column instead.
+ *
+ * IMPORTANT: narrow only the EDITABLE — its full-width parent stays the block
+ * grip's hover container, so the left-margin grip (positioned at blockLeft − 28
+ * and portaled to <body>) remains reachable. Below the cap the editable just
+ * fills the available width (margin auto collapses), so narrow windows are
+ * unaffected.
+ */
+.studio-ax [data-anydocs-editor-host] [data-slate-editor] {
+  max-width: 760px;
+  margin-inline: auto;
+}
+
