@@ -19,6 +19,9 @@ export function schemaTypeLabel(schema: ResolvedSchema | undefined): string {
     return `array<${schemaTypeLabel(schema.items)}>`;
   }
   if (schema.type) {
+    if (schema.contentMediaType === 'application/json') {
+      return schema.format ? `${schema.type}<${schema.format}, json>` : `${schema.type}<json>`;
+    }
     return schema.format ? `${schema.type}<${schema.format}>` : schema.type;
   }
   if (schema.properties) {

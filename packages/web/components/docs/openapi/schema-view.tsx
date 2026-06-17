@@ -12,6 +12,9 @@ function isExpandable(schema: ResolvedSchema | undefined): boolean {
   if (schema.ref || schema.composition || schema.properties) {
     return true;
   }
+  if (schema.contentSchema) {
+    return true;
+  }
   if (schema.type === 'array') {
     return isExpandable(schema.items);
   }
@@ -54,6 +57,41 @@ function Constraints({ schema }: { schema: ResolvedSchema }) {
   return <div className="mt-1 font-mono text-[11px] text-fd-muted-foreground">{bits.join(' · ')}</div>;
 }
 
+function StructuredContentSchema({
+  schema,
+  schemas,
+  visited,
+}: {
+  schema: ResolvedSchema;
+  schemas: SchemaDict;
+  visited: string[];
+}) {
+  if (!schema.contentSchema) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 rounded-md border border-[color:var(--fd-border)] bg-[color:var(--fd-muted,rgba(0,0,0,0.03))] p-2.5">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[12px] font-medium text-fd-muted-foreground">
+        <span>JSON 内部字段</span>
+        {schema.contentMediaType ? <code className="font-mono text-[11px]">{schema.contentMediaType}</code> : null}
+      </div>
+      <SchemaView schema={schema.contentSchema} schemas={schemas} visited={visited} />
+    </div>
+  );
+}
+
+function orderedPropertyEntries(
+  properties: Record<string, ResolvedSchema>,
+  required: Set<string>,
+): Array<[string, ResolvedSchema]> {
+  const entries = Object.entries(properties);
+  return [
+    ...entries.filter(([name]) => required.has(name)),
+    ...entries.filter(([name]) => !required.has(name)),
+  ];
+}
+
 function PropertyRow({
   name,
   schema,
@@ -85,8 +123,18 @@ function PropertyRow({
         <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{schema.description}</p>
       ) : null}
       <Constraints schema={schema} />
+      <StructuredContentSchema schema={schema} schemas={schemas} visited={visited} />
     </>
   );
+
+  if (schema.contentSchema) {
+    return (
+      <li className="border-b border-[color:var(--fd-border)] py-2.5 last:border-b-0">
+        {header}
+        {body}
+      </li>
+    );
+  }
 
   if (!expandable) {
     return (
@@ -177,7 +225,7 @@ export function SchemaView({
           <p className="mb-1.5 text-[12px] text-fd-muted-foreground">继承自：{inheritedRefs.join('、')}</p>
         ) : null}
         <ul className="m-0 list-none p-0">
-          {Object.entries(properties).map(([propName, propSchema]) => (
+          {orderedPropertyEntries(properties, required).map(([propName, propSchema]) => (
             <PropertyRow
               key={propName}
               name={propName}

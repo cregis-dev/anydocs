@@ -358,6 +358,7 @@ function resolveSchemaNode(node: unknown, depth = 0): ResolvedSchema | undefined
   if (typeof node.deprecated === 'boolean') resolved.deprecated = node.deprecated;
   if (typeof node.readOnly === 'boolean') resolved.readOnly = node.readOnly;
   if (typeof node.writeOnly === 'boolean') resolved.writeOnly = node.writeOnly;
+  if (typeof node.contentMediaType === 'string') resolved.contentMediaType = node.contentMediaType;
   if (Array.isArray(node.enum)) resolved.enum = node.enum;
   if ('default' in node) resolved.default = node.default;
   if ('example' in node) resolved.example = node.example;
@@ -378,6 +379,10 @@ function resolveSchemaNode(node: unknown, depth = 0): ResolvedSchema | undefined
 
   if (node.items !== undefined) {
     resolved.items = resolveSchemaNode(node.items, depth + 1);
+  }
+
+  if (node.contentSchema !== undefined) {
+    resolved.contentSchema = resolveSchemaNode(node.contentSchema, depth + 1);
   }
 
   for (const kind of ['allOf', 'oneOf', 'anyOf'] as const) {
