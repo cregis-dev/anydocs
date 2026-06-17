@@ -49,6 +49,7 @@ test('createWorkflowStandardDefinition describes the canonical phase 1 content m
     ]);
     assert.deepEqual(definition.contentModel.pageOptionalFields, [
       'description',
+      'seo',
       'template',
       'metadata',
       'tags',
@@ -216,6 +217,7 @@ test('syncWorkflowStandard returns a diff for stale workflow definitions and app
     const synced = await readWorkflowStandardDefinition(workflowFile);
     assert.deepEqual(synced.contentModel.pageOptionalFields, [
       'description',
+      'seo',
       'template',
       'metadata',
       'tags',

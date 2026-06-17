@@ -29,6 +29,7 @@ import {
   buildPublishedAbsoluteUrl,
   resolveDocsLocale,
 } from "@/lib/docs/seo";
+import { readPageSeoMetadata } from "@/lib/docs/page-seo";
 import type { DocsLang } from "@/lib/docs/types";
 import { buildBreadcrumbsByPageId, findNextPrevPageIds } from "@/lib/docs/nav";
 import {
@@ -842,9 +843,19 @@ export async function generateMetadata({
   );
   const canonical = buildPublishedAbsoluteUrl(siteUrl, `${lang}/${page.slug}`);
 
+  const directPageSeo = readPageSeoMetadata(page.seo);
+  const pageSeo =
+    Object.keys(directPageSeo).length > 0
+      ? directPageSeo
+      : readPageSeoMetadata(page.metadata);
+  const title = pageSeo.title ?? page.title;
+  const description = pageSeo.description ?? page.description;
+  const locale = resolveDocsLocale(lang);
+
   return {
-    title: page.title,
-    description: page.description,
+    title,
+    description,
+    ...(pageSeo.keywords ? { keywords: pageSeo.keywords } : {}),
     robots: buildPreviewRobotsMetadata(),
     ...(canonical || Object.keys(languageAlternates).length > 0
       ? {
@@ -856,8 +867,20 @@ export async function generateMetadata({
           },
         }
       : {}),
+    openGraph: {
+      title,
+      ...(description ? { description } : {}),
+      ...(canonical ? { url: canonical } : {}),
+      locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      ...(description ? { description } : {}),
+    },
     other: {
-      "content-language": resolveDocsLocale(lang),
+      "content-language": locale,
     },
   };
 }

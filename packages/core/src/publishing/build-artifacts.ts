@@ -9,7 +9,7 @@ import {
   READER_SEARCH_CHUNK_OVERLAP_CHARS,
 } from '../search/index.ts';
 import type { ProjectContract, ProjectSiteNavigation, ProjectSiteTopNavItem } from '../types/project.ts';
-import type { NavItem, PageDoc } from '../types/docs.ts';
+import type { NavItem, PageDoc, PageSeo } from '../types/docs.ts';
 import { loadPublishedOpenApiDocs } from './build-openapi-artifacts.ts';
 import { buildOpenApiReaderSearchChunks } from './openapi-search.ts';
 import type { BuildWorkflowPublishedSiteResult } from '../services/build-service.ts';
@@ -34,6 +34,7 @@ type MachineReadablePageDoc = {
   sourcePath: string;
   title: string;
   description: string;
+  seo?: PageSeo;
   template?: string;
   metadata?: Record<string, unknown>;
   tags: string[];
@@ -867,6 +868,7 @@ export async function writePublishedArtifacts(
           sourcePath: href,
           title: page.title,
           description: page.description ?? '',
+          ...(page.seo ? { seo: page.seo } : {}),
           ...(page.template ? { template: page.template } : {}),
           ...(publicMetadata ? { metadata: publicMetadata } : {}),
           tags: page.tags ?? [],

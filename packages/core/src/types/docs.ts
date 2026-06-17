@@ -31,12 +31,19 @@ export type PageReview = {
   warnings?: PageReviewWarning[];
 };
 
+export type PageSeo = {
+  title?: string;
+  description?: string;
+  keywords?: string[];
+};
+
 export type PageDoc<TContent = unknown> = {
   id: string;
   lang: DocsLang;
   slug: string;
   title: string;
   description?: string;
+  seo?: PageSeo;
   template?: string;
   metadata?: Record<string, unknown>;
   tags?: string[];
