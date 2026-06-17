@@ -74,6 +74,29 @@ test('validatePageDoc rejects non-object metadata values', () => {
   );
 });
 
+test('validatePageDoc preserves standalone seo metadata without a template', () => {
+  const page = validatePageDoc({
+    id: 'welcome',
+    lang: 'en',
+    slug: 'welcome',
+    title: 'Welcome',
+    status: 'published',
+    content: {},
+    seo: {
+      title: 'Cregis Developer Center | API Docs & Quickstart Guide',
+      description: 'Start building with Cregis APIs & SDKs.',
+      keywords: ['Cregis developer center', 'API documentation', 'SDK'],
+    },
+  });
+
+  assert.deepEqual(page.seo, {
+    title: 'Cregis Developer Center | API Docs & Quickstart Guide',
+    description: 'Start building with Cregis APIs & SDKs.',
+    keywords: ['Cregis developer center', 'API documentation', 'SDK'],
+  });
+  assert.equal(page.template, undefined);
+});
+
 test('validateNavigationDoc accepts nested section and page items', () => {
   const navigation = validateNavigationDoc({
     version: 1,

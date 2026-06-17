@@ -472,7 +472,7 @@ export function createWorkflowStandardDefinition(
     contentModel: {
       projectConfigFields: ['version', 'projectId', 'name', 'defaultLanguage', 'languages', 'site', 'authoring', 'build'],
       pageRequiredFields: ['id', 'lang', 'slug', 'title', 'status', 'content'],
-      pageOptionalFields: ['description', 'template', 'metadata', 'tags', 'updatedAt', 'render'],
+      pageOptionalFields: ['description', 'seo', 'template', 'metadata', 'tags', 'updatedAt', 'render'],
       navigationRequiredFields: ['version', 'items'],
     },
     orchestration: {
