@@ -40,6 +40,7 @@ import {
   RuntimeModeIndicator,
   bootModeToRuntimeMode,
 } from '@/components/studio/runtime-mode-indicator';
+import { reportColdStartReached } from '@/lib/runtime/cold-start';
 import { CommandPalette } from '@/components/studio/command-palette';
 import { AuditLogView } from '@/components/studio/audit-log-view';
 import { BuildPublishView } from '@/components/studio/build-publish-view';
@@ -250,6 +251,12 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [active, setActive] = useState<PageDoc | null>(null);
   const [activeLoading, setActiveLoading] = useState(false);
+
+  // Story 9.7 (NFR26): the first time an editor is mounted for a page, signal
+  // process-start → editable to the desktop shell. One-shot; no-op on web.
+  useEffect(() => {
+    if (active?.id) reportColdStartReached();
+  }, [active?.id]);
   const [dirty, setDirty] = useState(false);
   const [dirtyTick, setDirtyTick] = useState(0);
   const [saving, setSaving] = useState(false);
