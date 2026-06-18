@@ -46,7 +46,7 @@ const DESKTOP_ROOT = '/proj';
 // matching the contract exercised by desktop-fs-adapter.test.ts.
 // ---------------------------------------------------------------------------
 
-function createDesktopDisk(seed?: Disk): { invoke: TauriInvoke; files: Disk } {
+function createDesktopDisk(seed?: Disk, seedDirs?: string[]): { invoke: TauriInvoke; files: Disk } {
   const files: Disk = new Map(seed ? [...seed] : []);
   const explicitDirs = new Set<string>();
 
@@ -70,8 +70,24 @@ function createDesktopDisk(seed?: Disk): { invoke: TauriInvoke; files: Disk } {
     return false;
   }
 
-  // Seed implies the parent dirs of every seeded file exist.
+  // Seed implies the parent dirs of every seeded file exist (an on-disk tree).
   for (const key of files.keys()) recordDirs(dirnamePosix(key));
+  // Pre-existing project directories (as a CLI/node `init` would have created
+  // them). Modeled as already-on-disk, so the single-level native mkdir can
+  // write into them — desktop authoring writes into an existing project, it does
+  // not bootstrap the directory tree through the native port.
+  for (const dir of seedDirs ?? []) recordDirs(dir);
+
+  // Faithful to the Rust `resolve_for_write` contract (fs_commands.rs): write
+  // and mkdir canonicalize the PARENT and fail `notFound` when it does not
+  // exist. The native `fs_mkdir` therefore creates a single level — it cannot
+  // create `pages/en` when `pages` is absent. Modeling this prevents the
+  // emulator from accepting paths the real desktop fs would reject.
+  function requireParentExists(rel: string, notFound: (what: string) => unknown): void {
+    const parent = dirnamePosix(rel);
+    if (parent === '.' || parent === '' || parent === '/') return; // parent is the project root
+    if (!dirExists(parent)) throw notFound('directory');
+  }
 
   const invoke: TauriInvoke = async (command, args) => {
     const p = (args?.path as string | undefined) ?? '';
@@ -83,12 +99,13 @@ function createDesktopDisk(seed?: Disk): { invoke: TauriInvoke; files: Disk } {
         return files.get(p)!;
       }
       case 'fs_write': {
+        requireParentExists(p, notFound);
         files.set(p, args!.contents as string);
-        recordDirs(dirnamePosix(p));
         return undefined;
       }
       case 'fs_mkdir': {
-        recordDirs(p);
+        requireParentExists(p, notFound);
+        explicitDirs.add(p); // single level — parent already verified to exist
         return undefined;
       }
       case 'fs_delete': {
@@ -242,15 +259,23 @@ function fixtureNavigation(lang: DocsLang): NavigationDoc {
   };
 }
 
-/** Author the full fixture project into a repository (any backing port). */
-async function authorFixture(repository: ReturnType<typeof createDocsRepository>): Promise<void> {
-  await initializeDocsRepository(repository, LANGS);
+/** Project directories a CLI/node `init` creates before any content is authored. */
+const PROJECT_SKELETON_DIRS = ['navigation', 'pages', 'pages/en', 'pages/zh'];
+
+/** Write the fixture pages + navigation through a repository's port. */
+async function authorContent(repository: ReturnType<typeof createDocsRepository>): Promise<void> {
   for (const doc of fixturePages()) {
     await savePage(repository, doc.lang, doc);
   }
   for (const lang of LANGS) {
     await saveNavigation(repository, lang, fixtureNavigation(lang));
   }
+}
+
+/** Author the full fixture project into a node-backed repository (init + content). */
+async function authorFixtureNode(repository: ReturnType<typeof createDocsRepository>): Promise<void> {
+  await initializeDocsRepository(repository, LANGS);
+  await authorContent(repository);
 }
 
 /** Open every page + navigation file and re-save it unchanged (idempotent round trip). */
@@ -277,7 +302,7 @@ test('web-authored project re-saved in desktop mode is byte-equivalent (NFR32)',
   try {
     // Author in web mode (real node fs).
     const webRepo = createDocsRepository(webRoot, createNodeFsPort());
-    await authorFixture(webRepo);
+    await authorFixtureNode(webRepo);
     const webBytes = await snapshotNodeDisk(webRoot);
 
     // Open the same on-disk bytes in desktop mode and re-save without changes.
@@ -298,12 +323,14 @@ test('desktop-authored project re-saved in web mode is byte-equivalent (NFR32)',
   const webRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-xmode-desktop-'));
   try {
     // Author in desktop mode (native fs adapter over the in-memory Rust emulator).
-    const desktop = createDesktopDisk();
+    // The project skeleton pre-exists (as after a CLI/node init); the native
+    // single-level mkdir cannot bootstrap the tree itself.
+    const desktop = createDesktopDisk(undefined, PROJECT_SKELETON_DIRS);
     const desktopRepo = createDocsRepository(
       DESKTOP_ROOT,
       createDesktopFsPort({ projectRoot: DESKTOP_ROOT, invoke: desktop.invoke }),
     );
-    await authorFixture(desktopRepo);
+    await authorContent(desktopRepo);
     const desktopBytes = new Map(desktop.files);
 
     // Open the same bytes in web mode and re-save without changes.
@@ -317,20 +344,36 @@ test('desktop-authored project re-saved in web mode is byte-equivalent (NFR32)',
   }
 });
 
+test('native fs is single-level: authoring with no pre-existing pages dir is rejected', async () => {
+  // Locks in emulator fidelity to the Rust resolve_for_write contract: the
+  // native port cannot bootstrap pages/<lang> when `pages` is absent (the parent
+  // must already exist). A lenient emulator would silently accept this and give
+  // false confidence; real desktop projects pre-create the skeleton via init.
+  const desktop = createDesktopDisk(); // empty disk, no skeleton dirs
+  const desktopRepo = createDocsRepository(
+    DESKTOP_ROOT,
+    createDesktopFsPort({ projectRoot: DESKTOP_ROOT, invoke: desktop.invoke }),
+  );
+  await assert.rejects(
+    () => savePage(desktopRepo, 'en', page('en', 'welcome', 'welcome', 'Welcome')),
+    /no such directory/i,
+  );
+});
+
 test('web and desktop modes author identical bytes from the same fixture', async () => {
   // Independent authoring (not a round trip): both ports must serialize the same
   // source fixture to identical on-disk bytes, proving neither port mutates content.
   const webRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-xmode-parity-'));
   try {
     const webRepo = createDocsRepository(webRoot, createNodeFsPort());
-    await authorFixture(webRepo);
+    await authorFixtureNode(webRepo);
 
-    const desktop = createDesktopDisk();
+    const desktop = createDesktopDisk(undefined, PROJECT_SKELETON_DIRS);
     const desktopRepo = createDocsRepository(
       DESKTOP_ROOT,
       createDesktopFsPort({ projectRoot: DESKTOP_ROOT, invoke: desktop.invoke }),
     );
-    await authorFixture(desktopRepo);
+    await authorContent(desktopRepo);
 
     assertDisksEqual(desktop.files, await snapshotNodeDisk(webRoot), 'web/desktop authoring parity');
   } finally {

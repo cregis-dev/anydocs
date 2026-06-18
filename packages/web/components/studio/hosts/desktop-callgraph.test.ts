@@ -34,18 +34,27 @@ const DESKTOP_ROOTS = [
 
 const RESOLVE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
 const IMPORT_RE = /(?:import|export)[^'"]*?from\s*['"]([^'"]+)['"]|import\s*['"]([^'"]+)['"]/g;
-// Match an `/api/local` path embedded in a string/template literal (ignores comments).
-const API_LOCAL_RE = /(['"`])\/api\/local\b/;
+// Match an `/api/local` path in a string/template literal, including a
+// template-interpolation prefix (`${base}/api/local`) — the `}` form. Ignores
+// prose comments (no adjacent quote/`}`). Concatenation that splits the literal
+// itself (`'/api' + '/local'`) is not realistically detectable by any scan.
+const API_LOCAL_RE = /(['"`}])\/api\/local\b/;
 
-/** Resolve a relative or `@/` import spec to an on-disk web-source file, else null. */
-function resolveWebSource(fromFile: string, spec: string): string | null {
+/** A resolved web-source file, an intentionally-skipped external package, or an unresolved local import. */
+type Resolution =
+  | { kind: 'file'; file: string }
+  | { kind: 'external' }
+  | { kind: 'unresolved'; spec: string };
+
+/** Resolve a relative or `@/` import spec to an on-disk web-source file. */
+function resolveWebSource(fromFile: string, spec: string): Resolution {
   let base: string;
   if (spec.startsWith('@/')) {
     base = path.join(WEB_ROOT, spec.slice(2));
   } else if (spec.startsWith('.')) {
     base = path.resolve(path.dirname(fromFile), spec);
   } else {
-    return null; // bare/external package (node_modules, @anydocs/*) — not web source
+    return { kind: 'external' }; // bare package (node_modules, @anydocs/*) — not web source
   }
 
   const candidates = [
@@ -55,17 +64,24 @@ function resolveWebSource(fromFile: string, spec: string): string | null {
   ];
   for (const candidate of candidates) {
     try {
-      if (statSync(candidate).isFile()) return candidate;
+      if (statSync(candidate).isFile()) return { kind: 'file', file: candidate };
     } catch {
       // not this candidate
     }
   }
-  return null;
+  // A relative/`@/` import that resolves to nothing is NOT silently skipped — it
+  // would be a hole in the walk (a reachable module the guard never scans).
+  return { kind: 'unresolved', spec };
 }
 
-function collectDesktopGraph(): { files: Set<string>; missingRoots: string[] } {
+function collectDesktopGraph(): {
+  files: Set<string>;
+  missingRoots: string[];
+  unresolved: Array<{ from: string; spec: string }>;
+} {
   const files = new Set<string>();
   const missingRoots: string[] = [];
+  const unresolved: Array<{ from: string; spec: string }> = [];
   const queue: string[] = [];
 
   for (const root of DESKTOP_ROOTS) {
@@ -91,20 +107,33 @@ function collectDesktopGraph(): { files: Set<string>; missingRoots: string[] } {
     for (const match of source.matchAll(IMPORT_RE)) {
       const spec = match[1] ?? match[2];
       if (!spec) continue;
-      const resolved = resolveWebSource(file, spec);
-      if (resolved && !files.has(resolved)) queue.push(resolved);
+      const resolution = resolveWebSource(file, spec);
+      if (resolution.kind === 'file') {
+        if (!files.has(resolution.file)) queue.push(resolution.file);
+      } else if (resolution.kind === 'unresolved') {
+        unresolved.push({ from: path.relative(WEB_ROOT, file), spec });
+      }
     }
   }
 
-  return { files, missingRoots };
+  return { files, missingRoots, unresolved };
 }
 
 test('Story 9.6 / FR52: desktop call graph contains zero /api/local calls', () => {
-  const { files, missingRoots } = collectDesktopGraph();
+  const { files, missingRoots, unresolved } = collectDesktopGraph();
 
   assert.deepEqual(missingRoots, [], `desktop call-graph roots not found: ${missingRoots.join(', ')}`);
   // Sanity: the walk must actually traverse the host subgraph, not pass vacuously.
   assert.ok(files.size >= DESKTOP_ROOTS.length, 'desktop graph walk reached no files');
+  // No relative/@ import may fail to resolve — an unresolved local import is a
+  // hole in the walk (a reachable module the /api/local scan never visits).
+  assert.deepEqual(
+    unresolved,
+    [],
+    `unresolved local imports leave the call graph incomplete:\n${unresolved
+      .map((u) => `  ${u.from} -> ${u.spec}`)
+      .join('\n')}`,
+  );
 
   const violations: Array<{ file: string; line: number; snippet: string }> = [];
   for (const file of files) {
@@ -133,6 +162,8 @@ test('guard is effective: it flags an /api/local literal when present (negative 
   // Proves the regex + walker would catch a regression rather than passing vacuously.
   assert.ok(API_LOCAL_RE.test("await fetch('/api/local/page')"));
   assert.ok(API_LOCAL_RE.test('fetch(`/api/local/navigation`)'));
+  // Template-interpolated base: `${serverBaseUrl}/api/local/page`.
+  assert.ok(API_LOCAL_RE.test('fetch(`${serverBaseUrl}/api/local/page`)'));
   // Must NOT match a non-string mention (e.g. a prose comment) to avoid false positives.
   assert.equal(API_LOCAL_RE.test('// the web runtime uses /api/local/* routes'), false);
 });

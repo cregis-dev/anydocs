@@ -22,26 +22,32 @@ for (const key of ['window', 'document'] as const) {
 
 const { reportColdStartReached, __resetColdStartReporterForTests } = await import('./cold-start.ts');
 
-function setInvoke(fn: ((cmd: string) => Promise<unknown>) | undefined): void {
+function setInvoke(fn: ((cmd: string) => unknown) | undefined): void {
   (globalThis.window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = fn
     ? { invoke: fn }
     : undefined;
 }
 
-test('reportColdStartReached is a no-op without a Tauri bridge (web runtime)', () => {
+test('a web-runtime no-op does not burn the once-guard for a later desktop call', () => {
   __resetColdStartReporterForTests();
   setInvoke(undefined);
-  // Must not throw and must not require any bridge.
-  reportColdStartReached();
-  assert.ok(true);
+  reportColdStartReached(); // web: no bridge → nothing dispatched
+
+  const calls: string[] = [];
+  setInvoke((cmd) => {
+    calls.push(cmd);
+    return Promise.resolve(1500);
+  });
+  reportColdStartReached(); // desktop now available → must still fire
+  assert.deepEqual(calls, ['report_cold_start']);
 });
 
 test('reportColdStartReached invokes report_cold_start exactly once on desktop', async () => {
   __resetColdStartReporterForTests();
   const calls: string[] = [];
-  setInvoke(async (cmd: string) => {
+  setInvoke((cmd) => {
     calls.push(cmd);
-    return 1500;
+    return Promise.resolve(1500);
   });
 
   reportColdStartReached();
@@ -53,11 +59,25 @@ test('reportColdStartReached invokes report_cold_start exactly once on desktop',
   assert.deepEqual(calls, ['report_cold_start']);
 });
 
+test('a synchronous throw from invoke is swallowed and does not burn the guard', () => {
+  __resetColdStartReporterForTests();
+  setInvoke(() => {
+    throw new Error('bridge malformed'); // sync throw, not a rejected promise
+  });
+  reportColdStartReached(); // must not throw out of the reporter
+
+  const calls: string[] = [];
+  setInvoke((cmd) => {
+    calls.push(cmd);
+    return Promise.resolve(1500);
+  });
+  reportColdStartReached(); // the earlier sync failure must not have disabled retry
+  assert.deepEqual(calls, ['report_cold_start']);
+});
+
 test('a rejected report is swallowed (best-effort metric)', async () => {
   __resetColdStartReporterForTests();
-  setInvoke(async () => {
-    throw new Error('command unavailable');
-  });
+  setInvoke(() => Promise.reject(new Error('command unavailable')));
   reportColdStartReached();
   await Promise.resolve();
   assert.ok(true, 'must not throw when the command rejects');

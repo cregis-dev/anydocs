@@ -25,10 +25,18 @@ export function reportColdStartReached(): void {
   if (reported) return;
   const invoke = getDesktopInvoke();
   if (!invoke) return;
-  reported = true;
-  void invoke('report_cold_start').catch(() => {
-    // Best-effort metric: never let a missing/failed command surface to the UI.
-  });
+  try {
+    // Mark reported only once the call has been dispatched. A synchronous throw
+    // (a malformed bridge) is swallowed and leaves the guard unset so a later
+    // mount can retry, instead of permanently disabling reporting.
+    const dispatched = invoke('report_cold_start');
+    reported = true;
+    void Promise.resolve(dispatched).catch(() => {
+      // Best-effort metric: never let a rejected command surface to the UI.
+    });
+  } catch {
+    // Synchronous failure — leave `reported` false; the next mount may retry.
+  }
 }
 
 /** Test-only: reset the once-guard so the reporter can be re-exercised. */

@@ -35,14 +35,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
-  const out = {};
+  const out = { errors: [] };
+  const readPositiveInt = (flag, raw) => {
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n) || n <= 0) {
+      out.errors.push(`${flag} requires a positive integer (got ${raw === undefined ? '<missing>' : `"${raw}"`})`);
+      return undefined;
+    }
+    return n;
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--runs') out.runs = Number.parseInt(argv[++i], 10);
+    if (arg === '--runs') out.runs = readPositiveInt('--runs', argv[++i]);
+    else if (arg === '--timeout') out.timeoutMs = readPositiveInt('--timeout', argv[++i]);
     else if (arg === '--bin') out.bin = argv[++i];
     else if (arg === '--project') out.project = argv[++i];
     else if (arg === '--scope') out.scope = argv[++i];
-    else if (arg === '--timeout') out.timeoutMs = Number.parseInt(argv[++i], 10);
+    else out.errors.push(`unknown argument: ${arg}`);
   }
   return out;
 }
@@ -65,7 +74,10 @@ function resolveBinary(explicit) {
 /** Spawn one cold launch; resolve with the editable elapsed-ms from the marker. */
 function runOnce(binary, env, timeoutMs) {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, [], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    // Parse the marker from stdout only, line by line — stderr is inherited (so
+    // the app's diagnostics surface) and never mixed into the parse buffer, so
+    // interleaved logs or a chunk split mid-line cannot corrupt or hide the marker.
+    const child = spawn(binary, [], { env, stdio: ['ignore', 'pipe', 'inherit'] });
     let settled = false;
     let buffer = '';
 
@@ -86,13 +98,19 @@ function runOnce(binary, env, timeoutMs) {
       timeoutMs,
     );
 
-    const onChunk = (chunk) => {
+    child.stdout.on('data', (chunk) => {
       buffer += chunk.toString();
-      const ms = parseColdStartMarker(buffer);
-      if (ms !== null) finish(resolve, ms);
-    };
-    child.stdout.on('data', onChunk);
-    child.stderr.on('data', onChunk);
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        const ms = parseColdStartMarker(line);
+        if (ms !== null) {
+          finish(resolve, ms);
+          return;
+        }
+      }
+    });
     child.on('error', (err) => finish(reject, err));
     child.on('exit', () => {
       if (!settled) finish(reject, new Error('app exited before reporting cold start'));
@@ -102,8 +120,12 @@ function runOnce(binary, env, timeoutMs) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const runs = Number.isFinite(args.runs) && args.runs > 0 ? args.runs : COLD_START_MIN_RUNS;
-  const timeoutMs = Number.isFinite(args.timeoutMs) ? args.timeoutMs : 30_000;
+  if (args.errors.length > 0) {
+    console.error(`Cold-start harness: invalid arguments:\n  ${args.errors.join('\n  ')}`);
+    process.exit(2);
+  }
+  const runs = args.runs ?? COLD_START_MIN_RUNS;
+  const timeoutMs = args.timeoutMs ?? 30_000;
   const scope = args.scope ?? process.env.ANYDOCS_BENCH_SCOPE ?? 'local desktop build';
   const project = args.project ?? process.env.ANYDOCS_BENCH_PROJECT;
 
