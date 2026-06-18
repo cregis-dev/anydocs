@@ -42,11 +42,11 @@ function TypePill({ schema }: { schema: ResolvedSchema | undefined }) {
 
 function Constraints({ schema }: { schema: ResolvedSchema }) {
   const bits: string[] = [];
-  if (schema.enum && schema.enum.length > 0) {
-    bits.push(`enum: ${schema.enum.map((value) => JSON.stringify(value)).join(', ')}`);
-  }
   if (schema.default !== undefined) {
     bits.push(`default: ${JSON.stringify(schema.default)}`);
+  }
+  if (schema.enum && schema.enum.length > 0) {
+    bits.push(`enum: ${schema.enum.map((value) => JSON.stringify(value)).join(', ')}`);
   }
   if (schema.format) {
     bits.push(`format: ${schema.format}`);
@@ -86,10 +86,81 @@ function orderedPropertyEntries(
   required: Set<string>,
 ): Array<[string, ResolvedSchema]> {
   const entries = Object.entries(properties);
+  if (properties.code && properties.msg && properties.data) {
+    const envelopeOrder = ['code', 'msg', 'data'];
+    const envelopeEntries = envelopeOrder.map((name) => [name, properties[name]!] as [string, ResolvedSchema]);
+    const rest = entries.filter(([name]) => !envelopeOrder.includes(name));
+    return [
+      ...envelopeEntries,
+      ...rest.filter(([name]) => required.has(name)),
+      ...rest.filter(([name]) => !required.has(name)),
+    ];
+  }
   return [
     ...entries.filter(([name]) => required.has(name)),
     ...entries.filter(([name]) => !required.has(name)),
   ];
+}
+
+function collectObjectView(
+  schema: ResolvedSchema,
+  schemas: SchemaDict,
+  visited: string[],
+): { properties: Record<string, ResolvedSchema>; required: Set<string>; inheritedRefs: string[] } | undefined {
+  const properties = new Map<string, ResolvedSchema>();
+  const required = new Set(schema.required ?? []);
+  const inheritedRefs: string[] = [];
+
+  const mergeProperties = (source: ResolvedSchema) => {
+    for (const [name, value] of Object.entries(source.properties ?? {})) {
+      properties.set(name, value);
+    }
+    for (const name of source.required ?? []) {
+      required.add(name);
+    }
+  };
+
+  const mergeSchema = (source: ResolvedSchema, sourceVisited: string[]) => {
+    const { target, cyclic, name } = deref(source, schemas, sourceVisited);
+    if (name && !inheritedRefs.includes(name)) {
+      inheritedRefs.push(name);
+    }
+    if (cyclic) {
+      return;
+    }
+    const nextVisited = name ? [...sourceVisited, name] : sourceVisited;
+    const nested = collectObjectView(target, schemas, nextVisited);
+    if (!nested) {
+      mergeProperties(target);
+      return;
+    }
+    for (const [propName, propSchema] of Object.entries(nested.properties)) {
+      properties.set(propName, propSchema);
+    }
+    for (const propName of nested.required) {
+      required.add(propName);
+    }
+    for (const ref of nested.inheritedRefs) {
+      if (!inheritedRefs.includes(ref)) {
+        inheritedRefs.push(ref);
+      }
+    }
+  };
+
+  if (schema.composition?.kind === 'allOf') {
+    for (const member of schema.composition.members) {
+      mergeSchema(member, visited);
+    }
+    mergeProperties(schema);
+  } else {
+    mergeProperties(schema);
+  }
+
+  if (properties.size === 0) {
+    return undefined;
+  }
+
+  return { properties: Object.fromEntries(properties), required, inheritedRefs };
 }
 
 function PropertyRow({
@@ -119,10 +190,10 @@ function PropertyRow({
 
   const body = (
     <>
+      <Constraints schema={schema} />
       {schema.description ? (
         <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{schema.description}</p>
       ) : null}
-      <Constraints schema={schema} />
       <StructuredContentSchema schema={schema} schemas={schemas} visited={visited} />
     </>
   );
@@ -214,11 +285,10 @@ export function SchemaView({
     );
   }
 
-  // object（含 allOf 已合并的 properties）
-  const properties = target.properties;
-  if (properties && Object.keys(properties).length > 0) {
-    const required = new Set(target.required ?? []);
-    const inheritedRefs = (target.composition?.members ?? []).filter((member) => member.ref).map((member) => member.ref!);
+  // object：渲染前合并 allOf 命名引用与内联成员，避免公共 envelope 字段被隐藏。
+  const objectView = collectObjectView(target, schemas, nextVisited);
+  if (objectView) {
+    const { properties, required, inheritedRefs } = objectView;
     return (
       <div>
         {inheritedRefs.length > 0 ? (
@@ -244,10 +314,10 @@ export function SchemaView({
   return (
     <div className={cn('text-[13px]')}>
       <TypePill schema={target} />
+      <Constraints schema={target} />
       {target.description ? (
         <p className="mt-1 leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{target.description}</p>
       ) : null}
-      <Constraints schema={target} />
     </div>
   );
 }
