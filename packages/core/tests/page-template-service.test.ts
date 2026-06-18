@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { ValidationError } from '../src/errors/validation-error.ts';
-import { createDocsRepository, loadPage } from '../src/fs/docs-repository.ts';
+import { loadPage } from '../src/fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../src/fs/node-fs-port.ts';
 import { createDefaultProjectConfig } from '../src/config/project-config.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { createPage } from '../src/services/authoring-service.ts';
@@ -79,7 +80,7 @@ test('createPageFromTemplate writes a canonical page with generated content and 
     assert.equal(result.page.id, 'publish-guide');
     assert.match(result.page.render?.markdown ?? '', /## Allowed tools/);
 
-    const persisted = await loadPage(createDocsRepository(projectRoot), 'en', 'publish-guide');
+    const persisted = await loadPage(createNodeDocsRepository(projectRoot), 'en', 'publish-guide');
     assert.equal(persisted?.title, 'Publish Guide');
     assert.match(persisted?.render?.plainText ?? '', /Published pages only appear/);
     assert.equal(validateDocContentV1(persisted?.content).ok, true);
@@ -305,7 +306,7 @@ test('updatePageFromTemplate rewrites an existing page with generated content an
     assert.match(result.page.render?.markdown ?? '', /## Steps/);
     assert.match(result.page.render?.plainText ?? '', /Set page status/);
 
-    const persisted = await loadPage(createDocsRepository(projectRoot), 'en', 'publish-guide');
+    const persisted = await loadPage(createNodeDocsRepository(projectRoot), 'en', 'publish-guide');
     assert.match(persisted?.render?.markdown ?? '', /### Open the project/);
     assert.equal(typeof persisted?.content, 'object');
   } finally {

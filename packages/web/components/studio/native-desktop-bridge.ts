@@ -41,6 +41,21 @@ export function hasNativeDesktopBridge(): boolean {
   return getWindowBridge() !== null;
 }
 
+/**
+ * Returns the raw Tauri `invoke` function from `window.__TAURI_INTERNALS__`, or
+ * `null` when not running inside the native desktop webview (SSR, browser
+ * preview, CLI). Story 9.5: the native StudioHost uses this to drive the Rust
+ * fs commands and `set_active_project_root`.
+ */
+export function getDesktopInvoke(): (<T>(command: string, args?: Record<string, unknown>) => Promise<T>) | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const invoke = (window as TauriWindow).__TAURI_INTERNALS__?.invoke;
+  return typeof invoke === 'function' ? invoke : null;
+}
+
 export async function pickNativeDesktopProjectDirectory(): Promise<string | null> {
   const bridge = getWindowBridge();
   if (!bridge?.pickProjectDirectory) {

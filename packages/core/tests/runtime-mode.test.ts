@@ -6,6 +6,7 @@ import {
   getRuntimeMode,
   isRuntimeMode,
   resolveRuntimeMode,
+  RUNTIME_MODE_GLOBAL_KEY,
 } from '../src/runtime/runtime-mode.ts';
 import { RuntimeModeResolutionError } from '../src/runtime/runtime-mode-error.ts';
 
@@ -15,6 +16,7 @@ afterEach(() => {
   __resetRuntimeModeForTests();
   delete (globalThis as MutableGlobal).__TAURI_INTERNALS__;
   delete (globalThis as MutableGlobal).__TAURI__;
+  delete (globalThis as MutableGlobal)[RUNTIME_MODE_GLOBAL_KEY];
 });
 
 test('resolves web from explicit injectedMode', () => {
@@ -34,6 +36,34 @@ test('resolves from ANYDOCS_RUNTIME_MODE env injection', () => {
 test('resolves desktop from the Tauri global probe (fallback only)', () => {
   (globalThis as MutableGlobal).__TAURI_INTERNALS__ = {};
   assert.equal(resolveRuntimeMode({ env: {} }), 'desktop');
+});
+
+test('resolves from the injected __ANYDOCS_RUNTIME_MODE__ renderer global', () => {
+  (globalThis as MutableGlobal)[RUNTIME_MODE_GLOBAL_KEY] = 'desktop';
+  assert.equal(resolveRuntimeMode({ env: {} }), 'desktop');
+});
+
+test('injected runtime-mode global outranks the defensive Tauri probe', () => {
+  // Tauri probe alone would resolve 'desktop'; the explicit global wins.
+  (globalThis as MutableGlobal).__TAURI_INTERNALS__ = {};
+  (globalThis as MutableGlobal)[RUNTIME_MODE_GLOBAL_KEY] = 'web';
+  assert.equal(resolveRuntimeMode({ env: {} }), 'web');
+});
+
+test('env injection outranks the renderer global', () => {
+  (globalThis as MutableGlobal)[RUNTIME_MODE_GLOBAL_KEY] = 'desktop';
+  assert.equal(resolveRuntimeMode({ env: { ANYDOCS_RUNTIME_MODE: 'web' } }), 'web');
+});
+
+test('rejects an invalid injected runtime-mode global', () => {
+  (globalThis as MutableGlobal)[RUNTIME_MODE_GLOBAL_KEY] = 'native';
+  assert.throws(
+    () => resolveRuntimeMode({ env: {} }),
+    (err: unknown) =>
+      err instanceof RuntimeModeResolutionError &&
+      err.code === 'RUNTIME_MODE_INVALID_INJECTION' &&
+      err.details.metadata?.received === 'native',
+  );
 });
 
 test('fails fast when the environment is ambiguous', () => {

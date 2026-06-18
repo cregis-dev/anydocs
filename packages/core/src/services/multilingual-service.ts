@@ -1,7 +1,8 @@
 import type { DocsLang, PageStatus } from '../types/docs.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 import { loadProjectContract } from '../fs/content-repository.ts';
-import { createDocsRepository, listPages, loadPage } from '../fs/docs-repository.ts';
+import { listPages, loadPage } from '../fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../fs/node-fs-port.ts';
 import { createPage, type AuthoringPageResult } from './authoring-service.ts';
 
 export type ClonePageToLanguageInput = {
@@ -60,7 +61,7 @@ export async function clonePageToLanguage<TContent = unknown>(
   assertLanguageEnabled(languages, input.sourceLang, 'sourceLang');
   assertLanguageEnabled(languages, input.targetLang, 'targetLang');
 
-  const repository = createDocsRepository(input.projectRoot);
+  const repository = createNodeDocsRepository(input.projectRoot);
   const sourcePage = await loadPage<TContent>(repository, input.sourceLang, input.sourcePageId);
   if (!sourcePage) {
     throw new ValidationError(`Source page "${input.sourcePageId}" does not exist.`, {
@@ -102,7 +103,7 @@ export async function listTranslationStatus(
   assertLanguageEnabled(languages, sourceLang, 'sourceLang');
   assertLanguageEnabled(languages, targetLang, 'targetLang');
 
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
   const [sourcePages, targetPages] = await Promise.all([
     listPages(repository, sourceLang),
     listPages(repository, targetLang),

@@ -2,7 +2,8 @@ import { access, cp, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { loadProjectContract } from '../fs/content-repository.ts';
-import { createDocsRepository, listPages, loadNavigation } from '../fs/docs-repository.ts';
+import { listPages, loadNavigation } from '../fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../fs/node-fs-port.ts';
 import {
   buildPublishedSiteLanguageContent,
   isPageApprovedForPublication,
@@ -143,7 +144,7 @@ export async function loadPublishedSiteBuildArtifacts<TContent = unknown>(
   }
 
   const contract = contractResult.value;
-  const repository = createDocsRepository(contract.paths.projectRoot);
+  const repository = createNodeDocsRepository(contract.paths.projectRoot);
   const results: BuildWorkflowPublishedSiteResult<TContent>[] = [];
 
   for (const lang of contract.config.languages) {

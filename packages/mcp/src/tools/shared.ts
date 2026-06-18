@@ -5,7 +5,7 @@ import {
   DomainError,
   PAGE_STATUSES,
   ValidationError,
-  createDocsRepository,
+  createNodeDocsRepository,
   loadProjectContract,
   type DocsLang,
   type PageDoc,
@@ -517,5 +517,5 @@ export function navigationFilePath(projectRoot: string, lang: string): string {
 }
 
 export function createRepository(projectRoot: string) {
-  return createDocsRepository(projectRoot);
+  return createNodeDocsRepository(projectRoot);
 }

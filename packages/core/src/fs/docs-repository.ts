@@ -1,6 +1,5 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-
+import { joinPosix } from '../utils/posix-path.ts';
+import { isMissingFileError, type FileSystemPort } from './file-system-port.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 import { isPageApprovedForPublication } from '../publishing/publication-filter.ts';
 import {
@@ -18,6 +17,8 @@ export type DocsRepository = {
   projectRoot: string;
   pagesRoot: string;
   navigationRoot: string;
+  /** Injectable filesystem seam (default node-backed; desktop swaps in the Tauri adapter). */
+  port: FileSystemPort;
 };
 
 export type NavigationValidationOptions = {
@@ -44,7 +45,7 @@ function createRepositoryValidationError(
   });
 }
 
-export function createDocsRepository(projectRoot: string): DocsRepository {
+export function createDocsRepository(projectRoot: string, port: FileSystemPort): DocsRepository {
   if (!projectRoot || projectRoot.includes('..')) {
     throw createRepositoryValidationError(
       'project-root-safe-path',
@@ -55,38 +56,30 @@ export function createDocsRepository(projectRoot: string): DocsRepository {
 
   return {
     projectRoot,
-    pagesRoot: path.join(projectRoot, 'pages'),
-    navigationRoot: path.join(projectRoot, 'navigation'),
+    pagesRoot: joinPosix(projectRoot, 'pages'),
+    navigationRoot: joinPosix(projectRoot, 'navigation'),
+    port,
   };
 }
 
 function pagesDir(repository: DocsRepository, lang: DocsLang): string {
-  return path.join(repository.pagesRoot, lang);
+  return joinPosix(repository.pagesRoot, lang);
 }
 
 function navigationFile(repository: DocsRepository, lang: DocsLang): string {
-  return path.join(repository.navigationRoot, `${lang}.json`);
+  return joinPosix(repository.navigationRoot, `${lang}.json`);
 }
 
-async function readJson<T>(filePath: string): Promise<T> {
-  const raw = await fs.readFile(filePath, 'utf8');
-  return JSON.parse(raw) as T;
+async function readJson<T>(port: FileSystemPort, filePath: string): Promise<T> {
+  return JSON.parse(await port.readText(filePath)) as T;
 }
 
-function isMissingFileError(error: unknown): boolean {
-  return !!error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT';
-}
-
-async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
-  const dir = path.dirname(filePath);
-  const tempFilePath = path.join(
-    dir,
-    `.${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
-  );
-
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(tempFilePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
-  await fs.rename(tempFilePath, filePath);
+async function writeJsonAtomic(
+  port: FileSystemPort,
+  filePath: string,
+  value: unknown,
+): Promise<void> {
+  await port.writeFileAtomic(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
 function findDuplicateSlug<TContent>(
@@ -169,16 +162,17 @@ export async function initializeDocsRepository(
   repository: DocsRepository,
   languages: DocsLang[] = ['en', 'zh'],
 ): Promise<void> {
-  await fs.mkdir(repository.navigationRoot, { recursive: true });
+  await repository.port.ensureDir(repository.navigationRoot);
 
   for (const lang of languages) {
-    await fs.mkdir(pagesDir(repository, lang), { recursive: true });
+    await repository.port.ensureDir(pagesDir(repository, lang));
 
     const navFile = navigationFile(repository, lang);
-    try {
-      await fs.access(navFile);
-    } catch {
-      await writeJsonAtomic(navFile, { version: 1, items: [] } satisfies NavigationDoc);
+    if (!(await repository.port.exists(navFile))) {
+      await writeJsonAtomic(repository.port, navFile, {
+        version: 1,
+        items: [],
+      } satisfies NavigationDoc);
     }
   }
 }
@@ -188,7 +182,9 @@ export async function loadNavigation(
   lang: DocsLang,
 ): Promise<NavigationDoc> {
   try {
-    return validateNavigationDoc(await readJson<unknown>(navigationFile(repository, lang)));
+    return validateNavigationDoc(
+      await readJson<unknown>(repository.port, navigationFile(repository, lang)),
+    );
   } catch (error: unknown) {
     if (isMissingFileError(error)) {
       return { version: 1, items: [] };
@@ -235,7 +231,7 @@ export async function saveNavigation(
       });
     }
   }
-  await writeJsonAtomic(navigationFile(repository, lang), validated);
+  await writeJsonAtomic(repository.port, navigationFile(repository, lang), validated);
   return validated;
 }
 
@@ -246,7 +242,7 @@ export async function listPages<TContent = unknown>(
 ): Promise<PageDoc<TContent>[]> {
   let entries: string[] = [];
   try {
-    entries = await fs.readdir(pagesDir(repository, lang));
+    entries = await repository.port.readDir(pagesDir(repository, lang));
   } catch {
     return [];
   }
@@ -257,7 +253,7 @@ export async function listPages<TContent = unknown>(
 
     try {
       const page = validatePageDoc<TContent>(
-        await readJson<unknown>(path.join(pagesDir(repository, lang), entry)),
+        await readJson<unknown>(repository.port, joinPosix(pagesDir(repository, lang), entry)),
         options,
       );
       if (page.lang === lang) {
@@ -286,7 +282,10 @@ export async function loadPage<TContent = unknown>(
 
   try {
     const page = validatePageDoc<TContent>(
-      await readJson<unknown>(path.join(pagesDir(repository, lang), `${pageId}.json`)),
+      await readJson<unknown>(
+        repository.port,
+        joinPosix(pagesDir(repository, lang), `${pageId}.json`),
+      ),
       options,
     );
     return page.lang === lang && page.id === pageId ? page : null;
@@ -365,7 +364,8 @@ export async function savePage<TContent = unknown>(
   }
 
   await writeJsonAtomic(
-    path.join(pagesDir(repository, lang), `${normalizedPage.id}.json`),
+    repository.port,
+    joinPosix(pagesDir(repository, lang), `${normalizedPage.id}.json`),
     normalizedPage,
   );
 
@@ -398,7 +398,7 @@ export async function deletePage(
     });
   }
 
-  await fs.rm(path.join(pagesDir(repository, lang), `${pageId}.json`));
+  await repository.port.remove(joinPosix(pagesDir(repository, lang), `${pageId}.json`));
 
   const navigation = await loadNavigation(repository, lang);
   const cleaned = removePageReferences(navigation.items, pageId);

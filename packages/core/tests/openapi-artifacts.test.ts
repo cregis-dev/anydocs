@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { loadProjectContract } from '../src/fs/content-repository.ts';
-import { createApiSourceRepository, saveApiSource } from '../src/fs/api-source-repository.ts';
+import { saveApiSource } from '../src/fs/api-source-repository.ts';
+import { createNodeApiSourceRepository } from '../src/fs/node-fs-port.ts';
 import { writePublishedOpenApiArtifacts } from '../src/publishing/build-openapi-artifacts.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 
@@ -83,7 +84,7 @@ test('writePublishedOpenApiArtifacts emits machine-readable OpenAPI artifacts fo
       'utf8',
     );
 
-    const repository = createApiSourceRepository(repoRoot);
+    const repository = createNodeApiSourceRepository(repoRoot);
     await saveApiSource(repository, {
       id: 'petstore',
       type: 'openapi',
@@ -303,7 +304,7 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
       'utf8',
     );
 
-    const repository = createApiSourceRepository(repoRoot);
+    const repository = createNodeApiSourceRepository(repoRoot);
     await saveApiSource(repository, {
       id: 'shop',
       type: 'openapi',
