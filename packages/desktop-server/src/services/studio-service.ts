@@ -4,9 +4,9 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createApiSourceRepository,
+  createNodeApiSourceRepository,
   createDefaultProjectConfig,
-  createDocsRepository,
+  createNodeDocsRepository,
   deleteApiSource,
   deletePage,
   docContentToYoopta,
@@ -126,7 +126,7 @@ async function getDocsRepository(
   defaultProjectRoot?: string,
 ): Promise<DocsRepository> {
   const contract = await resolveProjectContract(scope, defaultProjectRoot);
-  return createDocsRepository(contract.paths.projectRoot);
+  return createNodeDocsRepository(contract.paths.projectRoot);
 }
 
 function derivePageIdFromSlug(slug: string): string {
@@ -572,7 +572,7 @@ async function getApiSourceRepository(
   defaultProjectRoot?: string,
 ): Promise<ApiSourceRepository> {
   const contract = await resolveProjectContract(scope, defaultProjectRoot);
-  return createApiSourceRepository(contract.paths.projectRoot);
+  return createNodeApiSourceRepository(contract.paths.projectRoot);
 }
 
 export async function getApiSources(

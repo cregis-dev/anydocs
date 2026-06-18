@@ -3,12 +3,12 @@ import path from 'node:path';
 
 import { ValidationError } from '../errors/validation-error.ts';
 import {
-  createDocsRepository,
   listPages,
   loadNavigation,
   saveNavigation,
   savePage,
 } from '../fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../fs/node-fs-port.ts';
 import { loadProjectContract } from '../fs/content-repository.ts';
 import type { DocsLang, NavItem, NavigationDoc, PageDoc } from '../types/docs.ts';
 import type { DocContentV1 } from '../types/content.ts';
@@ -650,7 +650,7 @@ export async function convertImportedLegacyContent(
     );
   }
 
-  const repository = createDocsRepository(contract.paths.projectRoot);
+  const repository = createNodeDocsRepository(contract.paths.projectRoot);
   const convertedAt = new Date().toISOString();
   const plansByLang = new Map<DocsLang, ConversionPlan[]>();
   const globalWarnings: LegacyImportWarning[] = [];

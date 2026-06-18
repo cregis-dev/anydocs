@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { ValidationError } from '../errors/validation-error.ts';
-import { createDocsRepository, loadPage } from '../fs/index.ts';
+import { createNodeDocsRepository, loadPage } from '../fs/index.ts';
 import type {
   DocsLang,
   PageDoc,
@@ -429,7 +429,7 @@ export async function updatePageFromMarkdown(
     sourcePath: input.sourcePath,
   });
 
-  const repository = createDocsRepository(input.projectRoot);
+  const repository = createNodeDocsRepository(input.projectRoot);
   const existingPage = await loadPage(repository, input.lang, input.pageId);
   if (!existingPage) {
     throw new ValidationError(`Page "${input.pageId}" not found.`, {

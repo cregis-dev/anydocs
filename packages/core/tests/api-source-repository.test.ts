@@ -5,13 +5,13 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
-  createApiSourceRepository,
   deleteApiSource,
   initializeApiSourceRepository,
   listApiSources,
   loadApiSource,
   saveApiSource,
 } from '../src/fs/api-source-repository.ts';
+import { createNodeApiSourceRepository } from '../src/fs/node-fs-port.ts';
 import type { ApiSourceDoc } from '../src/types/api-source.ts';
 
 const tempRoots: string[] = [];
@@ -24,7 +24,7 @@ async function createTempRepository() {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), 'anydocs-api-source-'));
   tempRoots.push(projectRoot);
 
-  const repository = createApiSourceRepository(projectRoot);
+  const repository = createNodeApiSourceRepository(projectRoot);
   await initializeApiSourceRepository(repository);
 
   return {

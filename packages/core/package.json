@@ -13,6 +13,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./client-fs": {
+      "types": "./dist/client-fs.d.ts",
+      "import": "./dist/client-fs.js"
+    },
     "./render-page-content": {
       "types": "./dist/utils/render-page-content.d.ts",
       "import": "./dist/utils/render-page-content.js"

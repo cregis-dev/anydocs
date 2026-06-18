@@ -5,7 +5,7 @@ import { isPageApprovedForPublication } from '../publishing/publication-filter.t
 import { validatePageDoc } from '../schemas/docs-schema.ts';
 import { validatePageAgainstProjectTemplates } from './page-template-service.ts';
 import {
-  createDocsRepository,
+  createNodeDocsRepository,
   deletePage as deletePageFromRepository,
   findPageBySlug,
   listPages,
@@ -441,7 +441,7 @@ async function loadAuthoringContext(projectRoot: string, lang: DocsLang) {
 
   return {
     contract,
-    repository: createDocsRepository(contract.paths.projectRoot),
+    repository: createNodeDocsRepository(contract.paths.projectRoot),
   };
 }
 
@@ -571,7 +571,7 @@ function assertSlugAvailableInPageMap<TContent>(
 }
 
 async function persistBatchPages<TContent>(
-  repository: ReturnType<typeof createDocsRepository>,
+  repository: ReturnType<typeof createNodeDocsRepository>,
   projectRoot: string,
   lang: DocsLang,
   pages: Array<PageDoc<TContent>>,

@@ -4,8 +4,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import {
-  createApiSourceRepository,
-  createDocsRepository,
+  createNodeApiSourceRepository,
+  createNodeDocsRepository,
   deleteApiSource as deleteApiSourceFromRepository,
   deletePage as deletePageFromRepository,
   findPageBySlug as findPageBySlugInRepository,
@@ -136,11 +136,11 @@ export async function loadStudioProjectContract(projectId: string = '', customPa
 }
 
 async function getDocsRepository(projectId: string = '', customPath?: string) {
-  return createDocsRepository(await getProjectRoot(projectId, customPath));
+  return createNodeDocsRepository(await getProjectRoot(projectId, customPath));
 }
 
 async function getApiSourceRepository(projectId: string = '', customPath?: string) {
-  return createApiSourceRepository(await getProjectRoot(projectId, customPath));
+  return createNodeApiSourceRepository(await getProjectRoot(projectId, customPath));
 }
 
 function derivePageIdFromSlug(slug: string): string {

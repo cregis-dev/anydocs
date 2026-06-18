@@ -5,7 +5,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  createDocsRepository,
   deletePage,
   findPageBySlug,
   initializeDocsRepository,
@@ -15,6 +14,7 @@ import {
   saveNavigation,
   savePage,
 } from '../src/fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../src/fs/node-fs-port.ts';
 import { ValidationError } from '../src/errors/validation-error.ts';
 import { writeFile } from 'node:fs/promises';
 
@@ -24,7 +24,7 @@ async function createTempProjectRoot(): Promise<string> {
 
 test('initializeDocsRepository creates canonical pages and navigation structure', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en', 'zh']);
@@ -37,7 +37,7 @@ test('initializeDocsRepository creates canonical pages and navigation structure'
 
 test('savePage and loadPage persist validated page content through shared repository logic', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -62,7 +62,7 @@ test('savePage and loadPage persist validated page content through shared reposi
 
 test('savePage canonicalizes legacy Yoopta content before writing page files', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -122,7 +122,7 @@ test('savePage canonicalizes legacy Yoopta content before writing page files', a
 
 test('savePage merges adjacent canonical list blocks before persisting', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -173,7 +173,7 @@ test('savePage merges adjacent canonical list blocks before persisting', async (
 
 test('savePage rejects duplicate slugs within the same language', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -205,7 +205,7 @@ test('savePage rejects duplicate slugs within the same language', async () => {
 
 test('saveNavigation validates and persists structured navigation items', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -231,7 +231,7 @@ test('saveNavigation validates and persists structured navigation items', async 
 
 test('loadNavigation throws when persisted navigation is invalid instead of silently masking corruption', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -249,7 +249,7 @@ test('loadNavigation throws when persisted navigation is invalid instead of sile
 
 test('loadPage throws when persisted page content is invalid instead of returning null', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -267,7 +267,7 @@ test('loadPage throws when persisted page content is invalid instead of returnin
 
 test('saveNavigation rejects references to missing pages', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -292,7 +292,7 @@ test('saveNavigation rejects references to missing pages', async () => {
 
 test('savePage rejects publishing reviewed content before explicit approval', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -321,7 +321,7 @@ test('savePage rejects publishing reviewed content before explicit approval', as
 
 test('deletePage removes the page file and all matching navigation references', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);
@@ -408,7 +408,7 @@ test('deletePage removes the page file and all matching navigation references', 
 
 test('deletePage rejects deleting a missing page', async () => {
   const projectRoot = await createTempProjectRoot();
-  const repository = createDocsRepository(projectRoot);
+  const repository = createNodeDocsRepository(projectRoot);
 
   try {
     await initializeDocsRepository(repository, ['en']);

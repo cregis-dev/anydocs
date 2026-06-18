@@ -16,6 +16,24 @@ const RUNTIME_MODES: readonly RuntimeMode[] = ['web', 'desktop'];
 /** Environment channel used by host bootstraps that inject the mode via env. */
 const RUNTIME_MODE_ENV_KEY = 'ANYDOCS_RUNTIME_MODE';
 
+/**
+ * Renderer-global channel used by the desktop (Tauri) host bootstrap to inject
+ * the mode into a browser context that cannot read `process.env`. The Tauri
+ * shell sets `globalThis.__ANYDOCS_RUNTIME_MODE__ = 'desktop'` before any
+ * application JS runs (see `packages/desktop/src-tauri/src/bootstrap.rs`). This
+ * is an *explicit* host-bootstrap signal — it outranks the defensive Tauri
+ * capability probe below. Keep this string in sync with the Rust constant.
+ */
+export const RUNTIME_MODE_GLOBAL_KEY = '__ANYDOCS_RUNTIME_MODE__';
+
+/** Read the renderer-injected runtime-mode global, if present. */
+function readInjectedRuntimeModeGlobal(): unknown {
+  if (typeof globalThis === 'undefined') {
+    return undefined;
+  }
+  return (globalThis as Record<string, unknown>)[RUNTIME_MODE_GLOBAL_KEY];
+}
+
 /** Type guard for {@link RuntimeMode}. */
 export function isRuntimeMode(value: unknown): value is RuntimeMode {
   return typeof value === 'string' && (RUNTIME_MODES as readonly string[]).includes(value);
@@ -50,7 +68,8 @@ function detectTauriGlobal(): boolean {
  * Compute the candidate mode in priority order:
  * 1. explicit programmatic injection
  * 2. explicit env injection (`ANYDOCS_RUNTIME_MODE`)
- * 3. Tauri capability probe (defensive fallback)
+ * 3. explicit renderer-global injection (`__ANYDOCS_RUNTIME_MODE__`)
+ * 4. Tauri capability probe (defensive fallback)
  * Returns `undefined` when nothing resolves. Throws on an explicitly-provided
  * but invalid injection value (never silently defaults).
  */
@@ -92,7 +111,25 @@ function computeCandidate(options: ResolveRuntimeModeOptions): RuntimeMode | und
     return fromEnv;
   }
 
-  // 3. capability probe (defensive fallback only)
+  // 3. explicit renderer-global injection (browser context, e.g. Tauri shell)
+  const fromGlobal = readInjectedRuntimeModeGlobal();
+  if (fromGlobal !== undefined && fromGlobal !== null && fromGlobal !== '') {
+    if (!isRuntimeMode(fromGlobal)) {
+      throw new RuntimeModeResolutionError(
+        'RUNTIME_MODE_INVALID_INJECTION',
+        `Invalid ${RUNTIME_MODE_GLOBAL_KEY}: ${String(fromGlobal)}.`,
+        {
+          entity: 'runtime-mode',
+          rule: 'global-mode-must-be-web-or-desktop',
+          remediation: `Set globalThis.${RUNTIME_MODE_GLOBAL_KEY} to 'web' or 'desktop'.`,
+          metadata: { received: fromGlobal, globalKey: RUNTIME_MODE_GLOBAL_KEY },
+        },
+      );
+    }
+    return fromGlobal;
+  }
+
+  // 4. capability probe (defensive fallback only)
   if (detectTauriGlobal()) {
     return 'desktop';
   }

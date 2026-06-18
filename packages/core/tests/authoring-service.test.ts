@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { ValidationError } from '../src/errors/validation-error.ts';
-import { createDocsRepository, loadNavigation, loadPage } from '../src/fs/docs-repository.ts';
+import { loadNavigation, loadPage } from '../src/fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../src/fs/node-fs-port.ts';
 import { updateProjectConfig } from '../src/fs/content-repository.ts';
 import {
   createPagesBatch,
@@ -470,7 +471,7 @@ test('setPageStatus persists a valid status transition', async () => {
     });
 
     assert.equal(result.page.status, 'in_review');
-    const persisted = await loadPage(createDocsRepository(projectRoot), 'en', 'guide');
+    const persisted = await loadPage(createNodeDocsRepository(projectRoot), 'en', 'guide');
     assert.equal(persisted?.status, 'in_review');
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -556,8 +557,8 @@ test('deleteAuthoredPage removes the page file and matching navigation reference
 
     assert.match(result.filePath, /pages\/en\/guide\.json$/);
     assert.equal(result.removedNavigationRefs, 1);
-    assert.equal(await loadPage(createDocsRepository(projectRoot), 'en', 'guide'), null);
-    const navigation = await loadNavigation(createDocsRepository(projectRoot), 'en');
+    assert.equal(await loadPage(createNodeDocsRepository(projectRoot), 'en', 'guide'), null);
+    const navigation = await loadNavigation(createNodeDocsRepository(projectRoot), 'en');
     assert.deepEqual(navigation.items, [
       {
         type: 'section',
@@ -605,7 +606,7 @@ test('setNavigation persists canonical navigation with existing page validation'
     });
 
     assert.equal(result.navigation.items.length, 1);
-    const persisted = await loadNavigation(createDocsRepository(projectRoot), 'en');
+    const persisted = await loadNavigation(createNodeDocsRepository(projectRoot), 'en');
     assert.deepEqual(persisted.items, result.navigation.items);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
