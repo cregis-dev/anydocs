@@ -2,6 +2,18 @@ import type { ResolvedSchema } from '@anydocs/core';
 
 type SchemaDict = Record<string, ResolvedSchema>;
 
+function orderedPropertyEntries(
+  properties: Record<string, ResolvedSchema>,
+  required: readonly string[] | undefined,
+): Array<[string, ResolvedSchema]> {
+  const requiredSet = new Set(required ?? []);
+  const entries = Object.entries(properties);
+  return [
+    ...entries.filter(([name]) => requiredSet.has(name)),
+    ...entries.filter(([name]) => !requiredSet.has(name)),
+  ];
+}
+
 /**
  * 从 ResolvedSchema 合成一个示例值（用于 operation 页右侧的请求/响应示例）。
  * 优先级：显式 example → 解引用命名 schema → 组合 → 对象/数组递归 → default/enum → 按类型占位。
@@ -37,7 +49,7 @@ export function synthesizeExample(
           Object.assign(merged, part);
         }
       }
-      for (const [key, value] of Object.entries(schema.properties ?? {})) {
+      for (const [key, value] of orderedPropertyEntries(schema.properties ?? {}, schema.required)) {
         merged[key] = synthesizeExample(value, schemas, visited);
       }
       return merged;
@@ -49,7 +61,7 @@ export function synthesizeExample(
   }
   if (schema.properties && Object.keys(schema.properties).length > 0) {
     const obj: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(schema.properties)) {
+    for (const [key, value] of orderedPropertyEntries(schema.properties, schema.required)) {
       obj[key] = synthesizeExample(value, schemas, visited);
     }
     return obj;
