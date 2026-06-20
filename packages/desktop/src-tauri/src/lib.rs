@@ -3,6 +3,7 @@ use std::{
     path::PathBuf,
     process::{Child, Command, Stdio},
     sync::{Arc, Mutex},
+    time::Instant,
 };
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
@@ -34,6 +35,12 @@ pub(crate) struct DesktopRuntimeState {
 /// Stored canonicalized; set once via `set_active_project_root`. Path-safety
 /// containment is enforced against THIS value, never a root passed per-call.
 pub(crate) struct ActiveProjectRoot(pub(crate) Mutex<Option<PathBuf>>);
+
+/// Cold-start clock (Story 9.7 / NFR26). Captured at the very top of `run()` so
+/// `report_cold_start` can measure process-start → editable from a single
+/// authoritative origin (the renderer's `performance.now()` would miss Rust
+/// init + the desktop-server spawn + webview creation).
+pub(crate) struct ColdStartClock(pub(crate) Instant);
 
 fn emit_menu_action(window: &tauri::WebviewWindow, action: &str) {
     let script = format!(
@@ -266,6 +273,9 @@ fn create_runtime_state() -> Result<Arc<DesktopRuntimeState>, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // NFR26: anchor the cold-start clock as early as possible, before any
+    // initialization work (desktop-server spawn, menu, webview) happens.
+    let cold_start_clock = ColdStartClock(Instant::now());
     let runtime_state = create_runtime_state().expect("failed to initialize desktop runtime state");
 
     tauri::Builder::default()
@@ -275,6 +285,7 @@ pub fn run() {
                 .build(),
         )
         .manage(runtime_state.clone())
+        .manage(cold_start_clock)
         .manage(ActiveProjectRoot(Mutex::new(None)))
         .setup(|app| {
             let menu = build_app_menu(app.handle())?;
@@ -308,6 +319,7 @@ pub fn run() {
             commands::get_desktop_context,
             commands::pick_project_directory,
             commands::open_path,
+            commands::report_cold_start,
             commands::fs_commands::set_active_project_root,
             commands::fs_commands::fs_read,
             commands::fs_commands::fs_write,

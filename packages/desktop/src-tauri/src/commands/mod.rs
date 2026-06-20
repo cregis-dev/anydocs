@@ -16,7 +16,7 @@ use std::{
 use serde::Serialize;
 use tauri::State;
 
-use crate::{DesktopContext, DesktopRuntimeState};
+use crate::{ColdStartClock, DesktopContext, DesktopRuntimeState};
 
 /// Native filesystem commands (Story 9.2) — read/write/list/delete confined to
 /// the active project root, with atomic writes. Re-exported for `generate_handler!`.
@@ -44,6 +44,22 @@ pub fn get_bridge_state() -> BridgeState {
 #[tauri::command]
 pub fn get_desktop_context(state: State<'_, Arc<DesktopRuntimeState>>) -> DesktopContext {
     state.context.clone()
+}
+
+/// Cold-start measurement (Story 9.7 / NFR26). The renderer calls this once the
+/// editor is editable; it returns process-start → editable elapsed in ms. When
+/// `ANYDOCS_COLD_START_BENCH` is set (the launcher's bench mode), it also prints
+/// a single `ANYDOCS_COLD_START_MS=<n>` stdout marker so the harness can collect
+/// one sample per cold launch without an IPC round trip.
+#[tauri::command]
+pub fn report_cold_start(clock: State<'_, ColdStartClock>) -> u64 {
+    let elapsed_ms = clock.0.elapsed().as_millis() as u64;
+    if std::env::var_os("ANYDOCS_COLD_START_BENCH").is_some() {
+        use std::io::Write;
+        println!("ANYDOCS_COLD_START_MS={elapsed_ms}");
+        let _ = std::io::stdout().flush();
+    }
+    elapsed_ms
 }
 
 #[tauri::command]

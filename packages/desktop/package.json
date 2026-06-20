@@ -29,7 +29,9 @@
     "tauri:build:lite": "pnpm prepare:runtime && tauri build --config src-tauri/tauri.lite.conf.json && pnpm bundle:stage:lite",
     "tauri:build:lite:app": "pnpm prepare:runtime && tauri build --config src-tauri/tauri.lite.conf.json --bundles app && pnpm bundle:stage:lite",
     "tauri:build:lite:dmg": "pnpm prepare:runtime && tauri build --config src-tauri/tauri.lite.conf.json --bundles app --no-sign && pnpm bundle:stage:lite && node ../../scripts/create-desktop-dmg.mjs lite",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:bench": "node --experimental-strip-types --test --test-concurrency=1 bench/*.test.ts",
+    "bench:cold-start": "node --experimental-strip-types ../../scripts/bench-desktop-cold-start.mjs"
   },
   "dependencies": {},
   "devDependencies": {

@@ -6,3 +6,4 @@ resources/cli-runtime
 .DS_Store
 .eslintcache
 *.log*
+bench/trend/
