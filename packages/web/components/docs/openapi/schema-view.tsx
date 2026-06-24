@@ -1,7 +1,13 @@
 import type { ResolvedSchema } from '@anydocs/core';
 
 import { cn } from '@/lib/utils';
-import { schemaTypeLabel } from '@/components/docs/openapi/schema-format';
+import {
+  formatSchemaDescription,
+  hasFriendlySchemaLabel,
+  schemaRefDisplayName,
+  schemaTypeLabel,
+  type SchemaLabelLang,
+} from '@/components/docs/openapi/schema-format';
 
 type SchemaDict = Record<string, ResolvedSchema>;
 
@@ -32,10 +38,10 @@ function deref(schema: ResolvedSchema, schemas: SchemaDict, visited: string[]): 
   return { target: schemas[schema.ref] ?? schema, cyclic: false, name: schema.ref };
 }
 
-function TypePill({ schema }: { schema: ResolvedSchema | undefined }) {
+function TypePill({ schema, lang }: { schema: ResolvedSchema | undefined; lang?: SchemaLabelLang }) {
   return (
     <code className="rounded bg-[color:var(--fd-muted,rgba(0,0,0,0.04))] px-1.5 py-0.5 font-mono text-[12px] text-fd-foreground">
-      {schemaTypeLabel(schema)}
+      {schemaTypeLabel(schema, { lang })}
     </code>
   );
 }
@@ -57,14 +63,26 @@ function Constraints({ schema }: { schema: ResolvedSchema }) {
   return <div className="mt-1 font-mono text-[11px] text-fd-muted-foreground">{bits.join(' · ')}</div>;
 }
 
+function optionLabel(index: number, lang: SchemaLabelLang | undefined): string {
+  return lang === 'zh' ? `选项 ${index + 1}` : `Option ${index + 1}`;
+}
+
+function joinLabels(labels: string[], lang: SchemaLabelLang | undefined): string {
+  return labels.join(lang === 'zh' ? '、' : ', ');
+}
+
 function StructuredContentSchema({
   schema,
   schemas,
   visited,
+  showRequired,
+  lang,
 }: {
   schema: ResolvedSchema;
   schemas: SchemaDict;
   visited: string[];
+  showRequired: boolean;
+  lang?: SchemaLabelLang;
 }) {
   if (!schema.contentSchema) {
     return null;
@@ -76,7 +94,7 @@ function StructuredContentSchema({
         <span>JSON 内部字段</span>
         {schema.contentMediaType ? <code className="font-mono text-[11px]">{schema.contentMediaType}</code> : null}
       </div>
-      <SchemaView schema={schema.contentSchema} schemas={schemas} visited={visited} />
+      <SchemaView schema={schema.contentSchema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />
     </div>
   );
 }
@@ -169,20 +187,24 @@ function PropertyRow({
   required,
   schemas,
   visited,
+  showRequired,
+  lang,
 }: {
   name: string;
   schema: ResolvedSchema;
   required: boolean;
   schemas: SchemaDict;
   visited: string[];
+  showRequired: boolean;
+  lang?: SchemaLabelLang;
 }) {
   const expandable = isExpandable(schema);
 
   const header = (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <code className="font-mono text-[13px] font-semibold text-fd-foreground">{name}</code>
-      <TypePill schema={schema} />
-      {required ? <span className="text-[11px] font-medium text-red-600">required</span> : null}
+      <TypePill schema={schema} lang={lang} />
+      {showRequired && required ? <span className="text-[11px] font-medium text-red-600">required</span> : null}
       {schema.nullable ? <span className="text-[11px] text-fd-muted-foreground">nullable</span> : null}
       {schema.deprecated ? <span className="text-[11px] text-amber-700">deprecated</span> : null}
     </div>
@@ -192,9 +214,11 @@ function PropertyRow({
     <>
       <Constraints schema={schema} />
       {schema.description ? (
-        <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{schema.description}</p>
+        <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+          {formatSchemaDescription(schema.description, { lang })}
+        </p>
       ) : null}
-      <StructuredContentSchema schema={schema} schemas={schemas} visited={visited} />
+      <StructuredContentSchema schema={schema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />
     </>
   );
 
@@ -227,7 +251,7 @@ function PropertyRow({
           </span>
         </summary>
         <div className="mt-2 border-l border-[color:var(--fd-border)] pl-3">
-          <SchemaView schema={schema} schemas={schemas} visited={visited} />
+          <SchemaView schema={schema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />
         </div>
       </details>
     </li>
@@ -238,10 +262,14 @@ export function SchemaView({
   schema,
   schemas,
   visited = [],
+  showRequired = true,
+  lang,
 }: {
   schema: ResolvedSchema;
   schemas: SchemaDict;
   visited?: string[];
+  showRequired?: boolean;
+  lang?: SchemaLabelLang;
 }) {
   const { target, cyclic, name } = deref(schema, schemas, visited);
 
@@ -259,25 +287,32 @@ export function SchemaView({
   if (target.type === 'array' && target.items) {
     return (
       <div className="space-y-1.5">
-        <p className="text-[12px] text-fd-muted-foreground">数组元素 · <TypePill schema={target.items} /></p>
-        <SchemaView schema={target.items} schemas={schemas} visited={nextVisited} />
+        <p className="text-[12px] text-fd-muted-foreground">数组元素 · <TypePill schema={target.items} lang={lang} /></p>
+        <SchemaView schema={target.items} schemas={schemas} visited={nextVisited} showRequired={showRequired} lang={lang} />
       </div>
     );
   }
 
   // 组合类型
   if (target.composition && (target.composition.kind === 'oneOf' || target.composition.kind === 'anyOf')) {
-    const label = target.composition.kind === 'oneOf' ? '满足其一（oneOf）' : '满足任意（anyOf）';
+    const label =
+      lang === 'zh'
+        ? target.composition.kind === 'oneOf'
+          ? '按事件类型匹配其一'
+          : '按事件类型匹配任意'
+        : target.composition.kind === 'oneOf'
+          ? 'Match one event payload shape'
+          : 'Match any event payload shape';
     return (
       <div className="space-y-2">
         <p className="text-[12px] font-medium text-fd-muted-foreground">{label}</p>
         {target.composition.members.map((member, index) => (
           <details key={index} className="group rounded-md border border-[color:var(--fd-border)] p-2">
             <summary className="cursor-pointer list-none text-[13px] font-medium text-fd-foreground">
-              选项 {index + 1} · <TypePill schema={member} />
+              {optionLabel(index, lang)} · <TypePill schema={member} lang={lang} />
             </summary>
             <div className="mt-2">
-              <SchemaView schema={member} schemas={schemas} visited={nextVisited} />
+              <SchemaView schema={member} schemas={schemas} visited={nextVisited} showRequired={showRequired} lang={lang} />
             </div>
           </details>
         ))}
@@ -289,10 +324,24 @@ export function SchemaView({
   const objectView = collectObjectView(target, schemas, nextVisited);
   if (objectView) {
     const { properties, required, inheritedRefs } = objectView;
+    const friendlyInheritedRefs = inheritedRefs.length > 0 && inheritedRefs.every(hasFriendlySchemaLabel);
+    const inheritedPrefix = friendlyInheritedRefs
+      ? lang === 'zh'
+        ? '字段组成：'
+        : 'Field groups: '
+      : lang === 'zh'
+        ? '继承自：'
+        : 'Extends: ';
     return (
       <div>
         {inheritedRefs.length > 0 ? (
-          <p className="mb-1.5 text-[12px] text-fd-muted-foreground">继承自：{inheritedRefs.join('、')}</p>
+          <p className="mb-1.5 text-[12px] text-fd-muted-foreground">
+            {inheritedPrefix}
+            {joinLabels(
+              inheritedRefs.map((ref) => schemaRefDisplayName(ref, { lang })),
+              lang,
+            )}
+          </p>
         ) : null}
         <ul className="m-0 list-none p-0">
           {orderedPropertyEntries(properties, required).map(([propName, propSchema]) => (
@@ -303,6 +352,8 @@ export function SchemaView({
               required={required.has(propName)}
               schemas={schemas}
               visited={nextVisited}
+              showRequired={showRequired}
+              lang={lang}
             />
           ))}
         </ul>
@@ -313,10 +364,12 @@ export function SchemaView({
   // 标量 / 兜底
   return (
     <div className={cn('text-[13px]')}>
-      <TypePill schema={target} />
+      <TypePill schema={target} lang={lang} />
       <Constraints schema={target} />
       {target.description ? (
-        <p className="mt-1 leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{target.description}</p>
+        <p className="mt-1 leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+          {formatSchemaDescription(target.description, { lang })}
+        </p>
       ) : null}
     </div>
   );
