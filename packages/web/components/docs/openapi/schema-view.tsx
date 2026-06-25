@@ -1,6 +1,7 @@
 import type { ResolvedSchema } from '@anydocs/core';
 
 import { cn } from '@/lib/utils';
+import { InlineMarkdown } from '@/components/docs/openapi/inline-markdown';
 import {
   formatSchemaDescription,
   hasFriendlySchemaLabel,
@@ -53,9 +54,6 @@ function Constraints({ schema }: { schema: ResolvedSchema }) {
   }
   if (schema.enum && schema.enum.length > 0) {
     bits.push(`enum: ${schema.enum.map((value) => JSON.stringify(value)).join(', ')}`);
-  }
-  if (schema.format) {
-    bits.push(`format: ${schema.format}`);
   }
   if (bits.length === 0) {
     return null;
@@ -214,9 +212,9 @@ function PropertyRow({
     <>
       <Constraints schema={schema} />
       {schema.description ? (
-        <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+        <InlineMarkdown className="mt-1 prose-p:!my-0 prose-p:!text-[13px] prose-p:!leading-6">
           {formatSchemaDescription(schema.description, { lang })}
-        </p>
+        </InlineMarkdown>
       ) : null}
       <StructuredContentSchema schema={schema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />
     </>

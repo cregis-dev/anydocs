@@ -1,7 +1,41 @@
+import type { CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { cn } from '@/lib/utils';
+
+const markdownTableWrapperStyle: CSSProperties = {
+  margin: '0.75rem 0',
+  width: '100%',
+  overflowX: 'auto',
+  border: '1px solid var(--fd-border)',
+  borderRadius: '0.5rem',
+  background: 'var(--fd-card)',
+};
+
+const markdownTableStyle: CSSProperties = {
+  width: '100%',
+  borderCollapse: 'separate',
+  borderSpacing: 0,
+  fontSize: '14px',
+  lineHeight: 1.5,
+};
+
+const markdownTableHeaderCellStyle: CSSProperties = {
+  background: 'var(--fd-muted)',
+  padding: '0.5rem 0.75rem',
+  textAlign: 'left',
+  fontWeight: 600,
+  color: 'var(--fd-foreground)',
+  whiteSpace: 'nowrap',
+};
+
+const markdownTableCellStyle: CSSProperties = {
+  borderTop: '1px solid var(--fd-border)',
+  padding: '0.5rem 0.75rem',
+  color: 'var(--docs-body-copy,var(--fd-muted-foreground))',
+  verticalAlign: 'top',
+};
 
 /**
  * 轻量内联 markdown 渲染，用于 operation/字段描述。
@@ -22,7 +56,26 @@ export function InlineMarkdown({ children, className }: { children: string; clas
         className,
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table({ node: _node, style, ...props }) {
+            return (
+              <div data-inline-markdown-table style={markdownTableWrapperStyle}>
+                <table {...props} style={{ ...markdownTableStyle, ...style }} />
+              </div>
+            );
+          },
+          th({ node: _node, style, ...props }) {
+            return <th {...props} style={{ ...markdownTableHeaderCellStyle, ...style }} />;
+          },
+          td({ node: _node, style, ...props }) {
+            return <td {...props} style={{ ...markdownTableCellStyle, ...style }} />;
+          },
+        }}
+      >
+        {children}
+      </ReactMarkdown>
     </div>
   );
 }
