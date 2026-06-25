@@ -1,5 +1,6 @@
 import type { ResolvedParameter } from '@anydocs/core';
 
+import { InlineMarkdown } from '@/components/docs/openapi/inline-markdown';
 import { schemaTypeLabel } from '@/components/docs/openapi/schema-format';
 
 export function ParamTable({ title, params }: { title: string; params: ResolvedParameter[] }) {
@@ -22,7 +23,9 @@ export function ParamTable({ title, params }: { title: string; params: ResolvedP
               {param.deprecated ? <span className="text-[11px] text-amber-700">deprecated</span> : null}
             </div>
             {param.description ? (
-              <p className="mt-1 text-[13px] leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">{param.description}</p>
+              <InlineMarkdown className="mt-1 prose-p:!my-0 prose-p:!text-[13px] prose-p:!leading-6">
+                {param.description}
+              </InlineMarkdown>
             ) : null}
           </li>
         ))}

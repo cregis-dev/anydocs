@@ -12,7 +12,17 @@ import type { DocsLang } from '@/lib/docs/types';
 type SchemaDict = Record<string, ResolvedSchema>;
 type ExampleItem = { label: string; value: unknown };
 
-function MediaSchemas({ contents, schemas }: { contents: ResolvedMediaType[]; schemas: SchemaDict }) {
+function MediaSchemas({
+  contents,
+  schemas,
+  showRequired,
+  lang,
+}: {
+  contents: ResolvedMediaType[];
+  schemas: SchemaDict;
+  showRequired?: boolean;
+  lang: DocsLang;
+}) {
   const withSchema = contents.filter((content) => content.schema);
   if (withSchema.length === 0) {
     return null;
@@ -23,7 +33,7 @@ function MediaSchemas({ contents, schemas }: { contents: ResolvedMediaType[]; sc
         <div key={`${content.mediaType}:${index}`} className="space-y-1.5">
           <code className="font-mono text-[11px] text-fd-muted-foreground">{content.mediaType}</code>
           <div className="rounded-lg border border-[color:var(--fd-border)] p-3">
-            <SchemaView schema={content.schema!} schemas={schemas} />
+            <SchemaView schema={content.schema!} schemas={schemas} showRequired={showRequired} lang={lang} />
           </div>
         </div>
       ))}
@@ -102,9 +112,17 @@ export function OperationView({
 
   const { request: requestExamples, responses: responseExamples } = collectExamples(operation, schemas);
   const hasExamples = requestExamples.length > 0 || responseExamples.length > 0;
+  const isWebhook = operation.kind === 'webhook';
   // 仅可调用接口（非 webhook）且配置开启时显示 Try-it
   const showTryIt = Boolean(tryIt?.enabled) && operation.kind === 'endpoint' && Boolean(sourceId);
   const showColumns = hasExamples || showTryIt;
+  const requestBodyTitle = isWebhook
+    ? lang === 'zh'
+      ? '回调载荷'
+      : 'Callback Payload'
+    : lang === 'zh'
+      ? '请求体'
+      : 'Request Body';
 
   const main = (
     <div className="min-w-0 space-y-8 xl:flex-1">
@@ -119,14 +137,14 @@ export function OperationView({
       ) : null}
 
       {operation.requestBody ? (
-        <Section title={lang === 'zh' ? '请求体' : 'Request Body'}>
-          {operation.requestBody.required ? (
+        <Section title={requestBodyTitle}>
+          {operation.requestBody.required && !isWebhook ? (
             <p className="text-[12px] font-medium text-red-600">required</p>
           ) : null}
           {operation.requestBody.description ? (
             <InlineMarkdown>{operation.requestBody.description}</InlineMarkdown>
           ) : null}
-          <MediaSchemas contents={operation.requestBody.contents} schemas={schemas} />
+          <MediaSchemas contents={operation.requestBody.contents} schemas={schemas} showRequired={!isWebhook} lang={lang} />
         </Section>
       ) : null}
 
@@ -141,7 +159,7 @@ export function OperationView({
                     <span className="text-[13px] text-fd-muted-foreground">{response.description}</span>
                   ) : null}
                 </div>
-                <MediaSchemas contents={response.contents} schemas={schemas} />
+                <MediaSchemas contents={response.contents} schemas={schemas} lang={lang} />
               </div>
             ))}
           </div>
@@ -172,7 +190,7 @@ export function OperationView({
         <div className="flex flex-wrap items-center gap-2">
           <MethodBadge method={operation.method} />
           <code className="font-mono text-[14px] text-fd-foreground">{operation.path}</code>
-          {operation.kind === 'webhook' ? (
+          {isWebhook ? (
             <span className="rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-purple-700 ring-1 ring-inset ring-purple-600/20">
               Webhook
             </span>
@@ -184,7 +202,7 @@ export function OperationView({
           ) : null}
         </div>
         <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-fd-foreground">{operation.summary}</h1>
-        {operation.kind === 'webhook' ? (
+        {isWebhook ? (
           <p className="text-[13px] text-fd-muted-foreground">
             {lang === 'zh'
               ? '由服务端主动推送的回调通知，需在你的服务实现接收端点。'
