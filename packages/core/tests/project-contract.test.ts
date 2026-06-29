@@ -716,6 +716,7 @@ test('updateProjectConfig persists docs theme changes', async () => {
           branding: {
             siteTitle: 'Classic Knowledge Base',
             homeLabel: 'Knowledge Home',
+            faviconSrc: '/assets/favicon.png',
             logoSrc: '/classic-logo.svg',
             logoAlt: 'Classic logo',
           },
@@ -743,6 +744,7 @@ test('updateProjectConfig persists docs theme changes', async () => {
     assert.equal(result.value.site.theme.id, 'classic-docs');
     assert.equal(result.value.site.theme.branding?.siteTitle, 'Classic Knowledge Base');
     assert.equal(result.value.site.theme.branding?.homeLabel, 'Knowledge Home');
+    assert.equal(result.value.site.theme.branding?.faviconSrc, '/assets/favicon.png');
     assert.equal(result.value.site.theme.branding?.logoSrc, '/classic-logo.svg');
     assert.equal(result.value.site.theme.branding?.logoAlt, 'Classic logo');
     assert.equal(result.value.site.theme.chrome?.showSearch, false);
@@ -759,6 +761,7 @@ test('updateProjectConfig persists docs theme changes', async () => {
           branding?: {
             siteTitle?: string;
             homeLabel?: string;
+            faviconSrc?: string;
             logoSrc?: string;
             logoAlt?: string;
           };
@@ -780,6 +783,7 @@ test('updateProjectConfig persists docs theme changes', async () => {
     assert.equal(persistedConfig.site?.theme?.id, 'classic-docs');
     assert.equal(persistedConfig.site?.theme?.branding?.siteTitle, 'Classic Knowledge Base');
     assert.equal(persistedConfig.site?.theme?.branding?.homeLabel, 'Knowledge Home');
+    assert.equal(persistedConfig.site?.theme?.branding?.faviconSrc, '/assets/favicon.png');
     assert.equal(persistedConfig.site?.theme?.branding?.logoSrc, '/classic-logo.svg');
     assert.equal(persistedConfig.site?.theme?.branding?.logoAlt, 'Classic logo');
     assert.equal(persistedConfig.site?.theme?.chrome?.showSearch, false);
@@ -1012,7 +1016,7 @@ test('loadProjectContract rejects invalid classic-docs chrome and color override
   }
 });
 
-test('loadProjectContract requires a branding site title or logo when branding overrides are present', async () => {
+test('loadProjectContract requires a non-empty branding override when branding is present', async () => {
   const repoRoot = await createTempRepoRoot();
   await writeValidContract(repoRoot);
   const projectRoot = repoRoot;
@@ -1052,7 +1056,7 @@ test('loadProjectContract requires a branding site title or logo when branding o
     let result = await loadProjectContract(repoRoot);
     assert.equal(result.ok, false);
     if (!result.ok) {
-      assert.equal(result.error.details.rule, 'site-theme-branding-site-title-or-logo-required');
+      assert.equal(result.error.details.rule, 'site-theme-branding-non-empty');
     }
 
     const titleOnlyConfig = {
@@ -1075,6 +1079,32 @@ test('loadProjectContract requires a branding site title or logo when branding o
 
     result = await loadProjectContract(repoRoot);
     assert.equal(result.ok, true);
+
+    const faviconOnlyConfig = {
+      ...invalidBrandingConfig,
+      site: {
+        theme: {
+          id: 'classic-docs',
+          branding: {
+            faviconSrc: '/assets/favicon.png',
+          },
+        },
+      },
+    };
+
+    await writeFile(
+      path.join(projectRoot, ANYDOCS_CONFIG_FILE),
+      `${JSON.stringify(faviconOnlyConfig, null, 2)}\n`,
+      'utf8',
+    );
+
+    result = await loadProjectContract(repoRoot);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.deepEqual(result.value.config.site.theme.branding, {
+        faviconSrc: '/assets/favicon.png',
+      });
+    }
 
     const blankTitleWithLogoConfig = {
       ...invalidBrandingConfig,
@@ -1150,7 +1180,7 @@ test('loadProjectContract requires a branding site title or logo when branding o
     result = await loadProjectContract(repoRoot);
     assert.equal(result.ok, false);
     if (!result.ok) {
-      assert.equal(result.error.details.rule, 'site-theme-branding-site-title-or-logo-required');
+      assert.equal(result.error.details.rule, 'site-theme-branding-non-empty');
     }
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

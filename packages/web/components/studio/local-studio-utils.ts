@@ -17,6 +17,7 @@ export type ProjectState = {
   themeId: string;
   siteTitle: string;
   homeLabel: string;
+  faviconSrc: string;
   logoSrc: string;
   logoAlt: string;
   showSearch: boolean;

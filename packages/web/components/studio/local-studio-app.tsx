@@ -571,6 +571,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
         themeId: project.config.site.theme.id,
         siteTitle: project.config.site.theme.branding?.siteTitle ?? '',
         homeLabel: project.config.site.theme.branding?.homeLabel ?? '',
+        faviconSrc: project.config.site.theme.branding?.faviconSrc ?? '',
         logoSrc: project.config.site.theme.branding?.logoSrc ?? '',
         logoAlt: project.config.site.theme.branding?.logoAlt ?? '',
         showSearch: project.config.site.theme.chrome?.showSearch ?? true,
@@ -912,6 +913,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
       const branding = {
         ...(projectState.siteTitle.trim() ? { siteTitle: projectState.siteTitle.trim() } : {}),
         ...(projectState.homeLabel.trim() ? { homeLabel: projectState.homeLabel.trim() } : {}),
+        ...(projectState.faviconSrc.trim() ? { faviconSrc: projectState.faviconSrc.trim() } : {}),
         ...(projectState.logoSrc.trim() ? { logoSrc: projectState.logoSrc.trim() } : {}),
         ...(projectState.logoAlt.trim() ? { logoAlt: projectState.logoAlt.trim() } : {}),
       };
@@ -969,6 +971,7 @@ export function LocalStudioApp({ bootContext, host }: LocalStudioAppProps) {
               themeId: response.config.site.theme.id,
               siteTitle: response.config.site.theme.branding?.siteTitle ?? '',
               homeLabel: response.config.site.theme.branding?.homeLabel ?? '',
+              faviconSrc: response.config.site.theme.branding?.faviconSrc ?? '',
               logoSrc: response.config.site.theme.branding?.logoSrc ?? '',
               logoAlt: response.config.site.theme.branding?.logoAlt ?? '',
               showSearch: response.config.site.theme.chrome?.showSearch ?? true,

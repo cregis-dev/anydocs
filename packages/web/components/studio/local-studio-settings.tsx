@@ -33,6 +33,7 @@ type ProjectSettingsValue = {
   themeId: string;
   siteTitle: string;
   homeLabel: string;
+  faviconSrc: string;
   logoSrc: string;
   logoAlt: string;
   showSearch: boolean;
@@ -56,6 +57,7 @@ type ProjectSettingsPatch = {
   themeId?: string;
   siteTitle?: string;
   homeLabel?: string;
+  faviconSrc?: string;
   logoSrc?: string;
   logoAlt?: string;
   showSearch?: boolean;
@@ -771,6 +773,16 @@ function ProjectSettingsContent({
             onChange={(e) => onProjectChange({ homeLabel: e.target.value })}
             placeholder="Docs Home"
             data-testid="studio-home-label-input"
+          />
+        </div>
+
+        <div>
+          <div className="mb-1 text-xs text-fd-muted-foreground">Favicon Source</div>
+          <Input
+            value={project.faviconSrc}
+            onChange={(e) => onProjectChange({ faviconSrc: e.target.value })}
+            placeholder="/assets/favicon.png or https://..."
+            data-testid="studio-favicon-src-input"
           />
         </div>
 

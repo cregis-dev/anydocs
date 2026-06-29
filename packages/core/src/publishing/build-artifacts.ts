@@ -86,6 +86,7 @@ type MachineReadableArtifactIndex = {
       branding?: {
         siteTitle?: string;
         homeLabel?: string;
+        faviconSrc?: string;
       };
       codeTheme?: string;
     };
@@ -112,6 +113,7 @@ type SerializedThemeMetadata = {
   branding?: {
     siteTitle?: string;
     homeLabel?: string;
+    faviconSrc?: string;
     logoSrc?: string;
     logoAlt?: string;
   };
