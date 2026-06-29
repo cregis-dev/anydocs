@@ -1,4 +1,5 @@
 import type { ResolvedSchema } from '@anydocs/core';
+import { ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { InlineMarkdown } from '@/components/docs/openapi/inline-markdown';
@@ -41,7 +42,7 @@ function deref(schema: ResolvedSchema, schemas: SchemaDict, visited: string[]): 
 
 function TypePill({ schema, lang }: { schema: ResolvedSchema | undefined; lang?: SchemaLabelLang }) {
   return (
-    <code className="rounded bg-[color:var(--fd-muted,rgba(0,0,0,0.04))] px-1.5 py-0.5 font-mono text-[12px] text-fd-foreground">
+    <code className="rounded-md border border-[color:var(--fd-border)] bg-[color:var(--fd-muted,rgba(0,0,0,0.04))] px-1.5 py-0.5 font-mono text-[11px] font-medium leading-5 text-fd-muted-foreground">
       {schemaTypeLabel(schema, { lang })}
     </code>
   );
@@ -58,7 +59,7 @@ function Constraints({ schema }: { schema: ResolvedSchema }) {
   if (bits.length === 0) {
     return null;
   }
-  return <div className="mt-1 font-mono text-[11px] text-fd-muted-foreground">{bits.join(' · ')}</div>;
+  return <div className="mt-1.5 font-mono text-[10.5px] leading-5 tracking-[0.01em] text-fd-muted-foreground">{bits.join(' · ')}</div>;
 }
 
 function optionLabel(index: number, lang: SchemaLabelLang | undefined): string {
@@ -67,6 +68,36 @@ function optionLabel(index: number, lang: SchemaLabelLang | undefined): string {
 
 function joinLabels(labels: string[], lang: SchemaLabelLang | undefined): string {
   return labels.join(lang === 'zh' ? '、' : ', ');
+}
+
+function ExpandIndicator({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'schema-expand-control mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-[color:var(--fd-border)] bg-[color:var(--fd-card,#fff)] text-fd-muted-foreground shadow-sm transition duration-200',
+        className,
+      )}
+    >
+      <ChevronRight className="schema-expand-icon size-4 transition-transform duration-200" />
+    </span>
+  );
+}
+
+function ExpandableSummary({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <summary
+      className={cn(
+        'schema-expand-summary -mx-2 flex cursor-pointer list-none items-start gap-2.5 rounded-lg border border-[color:var(--fd-border)] bg-[color:var(--fd-card,#fff)] px-2 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--docs-accent,var(--fd-primary))] focus-visible:ring-offset-2',
+        '[&::-webkit-details-marker]:hidden',
+        className,
+      )}
+    >
+      <ExpandIndicator />
+      {children}
+    </summary>
+  );
 }
 
 function StructuredContentSchema({
@@ -199,8 +230,8 @@ function PropertyRow({
   const expandable = isExpandable(schema);
 
   const header = (
-    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <code className="font-mono text-[13px] font-semibold text-fd-foreground">{name}</code>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <code className="schema-field-name font-mono tracking-[-0.01em]">{name}</code>
       <TypePill schema={schema} lang={lang} />
       {showRequired && required ? <span className="text-[11px] font-medium text-red-600">required</span> : null}
       {schema.nullable ? <span className="text-[11px] text-fd-muted-foreground">nullable</span> : null}
@@ -212,7 +243,7 @@ function PropertyRow({
     <>
       <Constraints schema={schema} />
       {schema.description ? (
-        <InlineMarkdown className="mt-1 prose-p:!my-0 prose-p:!text-[13px] prose-p:!leading-6">
+        <InlineMarkdown className="schema-field-description mt-1.5 prose-p:!my-0">
           {formatSchemaDescription(schema.description, { lang })}
         </InlineMarkdown>
       ) : null}
@@ -240,14 +271,13 @@ function PropertyRow({
 
   return (
     <li className="border-b border-[color:var(--fd-border)] py-2.5 last:border-b-0">
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-start gap-2">
-          <span className="mt-1 text-fd-muted-foreground transition-transform group-open:rotate-90">▸</span>
+      <details className="schema-expand-details">
+        <ExpandableSummary>
           <span className="min-w-0 flex-1">
             {header}
             {body}
           </span>
-        </summary>
+        </ExpandableSummary>
         <div className="mt-2 border-l border-[color:var(--fd-border)] pl-3">
           <SchemaView schema={schema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />
         </div>
@@ -305,10 +335,12 @@ export function SchemaView({
       <div className="space-y-2">
         <p className="text-[12px] font-medium text-fd-muted-foreground">{label}</p>
         {target.composition.members.map((member, index) => (
-          <details key={index} className="group rounded-md border border-[color:var(--fd-border)] p-2">
-            <summary className="cursor-pointer list-none text-[13px] font-medium text-fd-foreground">
-              {optionLabel(index, lang)} · <TypePill schema={member} lang={lang} />
-            </summary>
+          <details key={index} className="schema-expand-details rounded-lg border border-[color:var(--fd-border)] p-2">
+            <ExpandableSummary className="mx-0 border-transparent bg-transparent px-0 py-0 shadow-none">
+              <span className="min-w-0 flex-1 text-[13px] font-medium text-fd-foreground">
+                {optionLabel(index, lang)} · <TypePill schema={member} lang={lang} />
+              </span>
+            </ExpandableSummary>
             <div className="mt-2">
               <SchemaView schema={member} schemas={schemas} visited={nextVisited} showRequired={showRequired} lang={lang} />
             </div>
@@ -365,7 +397,7 @@ export function SchemaView({
       <TypePill schema={target} lang={lang} />
       <Constraints schema={target} />
       {target.description ? (
-        <p className="mt-1 leading-6 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+        <p className="schema-field-description mt-1.5 leading-6">
           {formatSchemaDescription(target.description, { lang })}
         </p>
       ) : null}
