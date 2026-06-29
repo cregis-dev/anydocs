@@ -47,6 +47,7 @@ export type ProjectAuthoringConfig = {
 export type ProjectSiteThemeBranding = {
   siteTitle?: string;
   homeLabel?: string;
+  faviconSrc?: string;
   logoSrc?: string;
   logoAlt?: string;
 };

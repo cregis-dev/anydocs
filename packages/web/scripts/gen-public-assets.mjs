@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { cp, mkdir, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -170,13 +170,32 @@ async function restoreTsconfig(tsconfigFile, originalContent) {
   }
 }
 
-function shouldCopyRuntimeEntry(srcPath) {
+function getConfiguredProjectFaviconSrc() {
+  const configPath = path.join(getProjectRoot(), 'anydocs.config.json');
+  if (!existsSync(configPath)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(configPath, 'utf8'));
+    const faviconSrc = parsed?.site?.theme?.branding?.faviconSrc;
+    return typeof faviconSrc === 'string' && faviconSrc.trim() ? faviconSrc.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function shouldCopyRuntimeEntry(srcPath, options = {}) {
   const relativePath = path.relative(webRoot, srcPath);
   if (!relativePath || relativePath === '') {
     return true;
   }
 
   if (relativePath.startsWith(`..${path.sep}`) || relativePath === '..') {
+    return false;
+  }
+
+  if (options.skipDefaultAppFavicon && relativePath === path.join('app', 'favicon.ico')) {
     return false;
   }
 
@@ -196,13 +215,30 @@ function shouldCopyRuntimeEntry(srcPath) {
 async function prepareRuntimeWorkspace(runtimeWorkspaceRoot) {
   await rm(runtimeWorkspaceRoot, { recursive: true, force: true });
   await mkdir(path.dirname(runtimeWorkspaceRoot), { recursive: true });
+  const skipDefaultAppFavicon = Boolean(getConfiguredProjectFaviconSrc());
   await cp(webRoot, runtimeWorkspaceRoot, {
     recursive: true,
     force: true,
-    filter: shouldCopyRuntimeEntry,
+    filter: (srcPath) => shouldCopyRuntimeEntry(srcPath, { skipDefaultAppFavicon }),
   });
   await symlink(path.join(webRoot, 'node_modules'), path.join(runtimeWorkspaceRoot, 'node_modules'), 'dir');
+  await copyProjectAssetsToRuntimePublic(runtimeWorkspaceRoot);
   return runtimeWorkspaceRoot;
+}
+
+async function copyProjectAssetsToRuntimePublic(runtimeWorkspaceRoot) {
+  const sourceAssetsRoot = path.join(getProjectRoot(), 'assets');
+  if (!existsSync(sourceAssetsRoot)) {
+    return;
+  }
+
+  const targetAssetsRoot = path.join(runtimeWorkspaceRoot, 'public', 'assets');
+  await rm(targetAssetsRoot, { recursive: true, force: true });
+  await mkdir(path.dirname(targetAssetsRoot), { recursive: true });
+  await cp(sourceAssetsRoot, targetAssetsRoot, {
+    recursive: true,
+    force: true,
+  });
 }
 
 async function prepareExportWorkspace() {

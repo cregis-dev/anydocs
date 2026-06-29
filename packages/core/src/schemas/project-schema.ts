@@ -653,6 +653,12 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
     'Use a string for "site.theme.branding.homeLabel" when overriding the footer home label.',
   );
 
+  const faviconSrc = normalizeOptionalTrimmedString(
+    branding?.faviconSrc,
+    'site-theme-branding-favicon-src-string',
+    'Use a string for "site.theme.branding.faviconSrc" when configuring a site favicon URL or project asset path.',
+  );
+
   const logoSrc = normalizeOptionalTrimmedString(
     branding?.logoSrc,
     'site-theme-branding-logo-src-string',
@@ -668,14 +674,16 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
   if (
     branding
     && siteTitle === undefined
+    && faviconSrc === undefined
     && logoSrc === undefined
   ) {
     throw makeValidationError(
-      'site-theme-branding-site-title-or-logo-required',
-      'Provide at least one of "site.theme.branding.siteTitle" or "site.theme.branding.logoSrc" when setting branding overrides.',
+      'site-theme-branding-non-empty',
+      'Provide at least one branding override such as "site.theme.branding.siteTitle", "site.theme.branding.faviconSrc", or "site.theme.branding.logoSrc".',
       {
         received: {
           siteTitle,
+          faviconSrc,
           logoSrc,
         },
       },
@@ -849,6 +857,7 @@ export function validateProjectConfig(input: unknown): ProjectConfig {
               branding: {
                 ...(siteTitle !== undefined ? { siteTitle } : {}),
                 ...(homeLabel !== undefined ? { homeLabel } : {}),
+                ...(faviconSrc !== undefined ? { faviconSrc } : {}),
                 ...(logoSrc !== undefined ? { logoSrc } : {}),
                 ...(logoAlt !== undefined ? { logoAlt } : {}),
               },

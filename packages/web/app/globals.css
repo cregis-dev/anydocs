@@ -217,19 +217,96 @@ body [data-radix-popper-content-wrapper] {
 
 .prose.schema-field-description :where(code),
 .schema-field-description :where(code) {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.45em;
-  border: 1px solid color-mix(in srgb, var(--fd-border) 78%, transparent);
-  border-radius: 0.35rem;
-  background: color-mix(in srgb, var(--fd-muted) 70%, transparent);
-  padding: 0 0.32rem;
-  color: color-mix(in srgb, var(--fd-foreground) 88%, var(--fd-muted-foreground));
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0;
+  color: color-mix(in srgb, var(--fd-foreground) 92%, var(--fd-muted-foreground));
   font-family: var(--font-geist-mono), "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.88em;
+  font-size: 0.9em;
   font-weight: 500;
   letter-spacing: -0.01em;
-  vertical-align: 0.03em;
+  overflow-wrap: anywhere;
+  vertical-align: baseline;
+}
+
+.prose.schema-field-description :where(ul:has(> .schema-rule-row), .schema-rule-list),
+.schema-field-description :where(ul:has(> .schema-rule-row), .schema-rule-list) {
+  margin: 0.85rem 0 1rem !important;
+  padding: 0.35rem 0.85rem !important;
+  list-style: none !important;
+  border: 1px solid color-mix(in srgb, var(--fd-border) 86%, transparent);
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--fd-muted) 34%, transparent),
+    color-mix(in srgb, var(--fd-card) 94%, transparent)
+  );
+}
+
+.prose.schema-field-description :where(.schema-rule-row),
+.schema-field-description :where(.schema-rule-row) {
+  display: grid;
+  grid-template-columns: minmax(7.25rem, max-content) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.35rem 0.9rem;
+  margin: 0 !important;
+  padding: 0.52rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--fd-border) 72%, transparent);
+}
+
+.prose.schema-field-description :where(.schema-rule-row:first-child),
+.schema-field-description :where(.schema-rule-row:first-child) {
+  border-top: 0;
+}
+
+.prose.schema-field-description :where(.schema-rule-row)::marker,
+.schema-field-description :where(.schema-rule-row)::marker {
+  content: "";
+}
+
+.prose.schema-field-description :where(.schema-rule-label),
+.schema-field-description :where(.schema-rule-label) {
+  min-width: 0;
+  color: var(--fd-foreground);
+  font-family: var(--font-geist-mono), "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.prose.schema-field-description :where(.schema-rule-label)::after,
+.schema-field-description :where(.schema-rule-label)::after {
+  content: ":";
+  margin-left: 0.1rem;
+  color: var(--fd-muted-foreground);
+  font-weight: 600;
+}
+
+.prose.schema-field-description :where(.schema-rule-value),
+.schema-field-description :where(.schema-rule-value) {
+  min-width: 0;
+  color: color-mix(in srgb, var(--fd-foreground) 84%, var(--fd-muted-foreground));
+  font-size: 0.98em;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.prose.schema-field-description :where(.schema-rule-value code),
+.schema-field-description :where(.schema-rule-value code) {
+  color: inherit;
+  font-size: 0.96em;
+  font-weight: inherit;
+}
+
+@media (max-width: 640px) {
+  .prose.schema-field-description :where(.schema-rule-row),
+  .schema-field-description :where(.schema-rule-row) {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
 }
 
 :where([data-card]) {

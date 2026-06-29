@@ -374,6 +374,7 @@ export async function updateStudioProjectSettings(
         branding?: {
           siteTitle?: string;
           homeLabel?: string;
+          faviconSrc?: string;
           logoSrc?: string;
           logoAlt?: string;
         };
