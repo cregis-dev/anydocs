@@ -164,6 +164,9 @@ importers:
       '@anydocs/core':
         specifier: workspace:*
         version: link:../core
+      '@ariakit/react':
+        specifier: ^0.4.15
+        version: 0.4.29(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@udecode/plate':
         specifier: ^49.0.0
         version: 49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3))
@@ -176,6 +179,9 @@ importers:
       '@udecode/plate-code-block':
         specifier: ^49.0.0
         version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@udecode/plate-combobox':
+        specifier: ^49.0.0
+        version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@udecode/plate-heading':
         specifier: ^49.0.0
         version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -186,6 +192,9 @@ importers:
         specifier: ^49.0.0
         version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@udecode/plate-media':
+        specifier: ^49.0.0
+        version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@udecode/plate-slash-command':
         specifier: ^49.0.0
         version: 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@udecode/plate-table':
@@ -365,6 +374,37 @@ packages:
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
+
+  '@ariakit/components@0.1.2':
+    resolution: {integrity: sha512-tvh2P0x1cJnoPXnmDEJwdRk3z7x6cTB8ArctcZdAUXlRg9tuwW/rJoBFJMzD5qMI9CDDlQ3Zctx58HvENw4BYw==}
+
+  '@ariakit/react-components@0.1.2':
+    resolution: {integrity: sha512-SM+SPMAVlOZmGAfWNBza+0k9y4mkA5/dJhDoOyhE96cbNARy665uLdwowSJl1JGuFfcZzuzAwGon7f/rYeyfkQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@ariakit/react-store@0.1.2':
+    resolution: {integrity: sha512-1r1Gn0tqhnOS0LFvHNGzn5/8C5aOANO5vb0Gxh94oR/be4zwCSE2zfQjOjRfpL+BBDhOcProME2+G6UslEJxbg==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@ariakit/react-utils@0.1.2':
+    resolution: {integrity: sha512-Rnl6D1542Mqu80xK++oUv1JXS0PtNmKXd9nkdud5nyvySiBDTrmPqRW44/D+5GbuZrboreQuY3tPYwKL7a7onQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@ariakit/react@0.4.29':
+    resolution: {integrity: sha512-SLXlsddWHSwfUol4Yi0zULlalNWjzWjpS3zg7B7aaPd64saONQ5ktWf9KMxqBklcpjMLeF2dB9BAHAvpPVdCIQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@ariakit/store@0.1.2':
+    resolution: {integrity: sha512-SS7bV4+a+1q9M9i0WV6DD4P/ypRKlCvII8soo2UMe1yuaxZA/Fc0htHe+EZwjJ6TMLjHfHh2TDSnXyrjC7QImA==}
+
+  '@ariakit/utils@0.1.2':
+    resolution: {integrity: sha512-lBJhtBWpKjIck/9i7G8cahvaUgLsyGklI/Pjv+VtY9KTzyuzX5GpRbbLKMS/e1qLnFPS4C3CybYB70b1bVcAkw==}
 
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
@@ -1951,6 +1991,14 @@ packages:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
+  '@udecode/plate-combobox@49.0.0':
+    resolution: {integrity: sha512-iAHMIE8nozTK+n2j3m9h18lX9P4wqp61abt0tWCUay6LvYf+sJfv707Th0M9NsE06JxWb9NHI9jQjyhGHQ6xAQ==}
+    deprecated: Package no longer supported, use @platejs/combobox instead.
+    peerDependencies:
+      '@udecode/plate': '>=49.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
   '@udecode/plate-core@49.0.0':
     resolution: {integrity: sha512-KaLv2coeHWy/Q3L9ldMXqfVK/d17EnyiMNH39M2iW3NSG6PZ1Kr9i43/z2u59pwFIUlJd4yt/g9idz8jgaWXfw==}
     deprecated: Package no longer supported, use @platejs/core instead.
@@ -2001,6 +2049,14 @@ packages:
   '@udecode/plate-resizable@49.0.0':
     resolution: {integrity: sha512-5rJ7r+dXbgaJKGe11aUZTy8wYxP9S4kUIdQEFQBA9qY4fAQxv3Rkt+K8dGYpEbUVjF4hSzl00iW1j6O6gODlRg==}
     deprecated: Package no longer supported, use @platejs/resizable instead.
+    peerDependencies:
+      '@udecode/plate': '>=49.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@udecode/plate-slash-command@49.0.0':
+    resolution: {integrity: sha512-k6/cmBkJOcG3CSqVxnshL6sVgJU8RNuJrJcKzStvvG6r6m4joTJFUz1CSL+ohbLWG2ns4PUJIUCJ1ZPF+cDs+g==}
+    deprecated: Package no longer supported, use @platejs/slash-command instead.
     peerDependencies:
       '@udecode/plate': '>=49.0.0'
       react: '>=18.0.0'
@@ -4486,6 +4542,11 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  use-sync-external-store@1.6.0:
+    resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
@@ -4677,6 +4738,48 @@ snapshots:
     dependencies:
       package-manager-detector: 1.6.0
       tinyexec: 1.0.4
+
+  '@ariakit/components@0.1.2':
+    dependencies:
+      '@ariakit/store': 0.1.2
+      '@ariakit/utils': 0.1.2
+
+  '@ariakit/react-components@0.1.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@ariakit/components': 0.1.2
+      '@ariakit/react-store': 0.1.2(react@19.2.3)
+      '@ariakit/react-utils': 0.1.2(react@19.2.3)
+      '@ariakit/store': 0.1.2
+      '@ariakit/utils': 0.1.2
+      '@floating-ui/dom': 1.7.6
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@ariakit/react-store@0.1.2(react@19.2.3)':
+    dependencies:
+      '@ariakit/react-utils': 0.1.2(react@19.2.3)
+      '@ariakit/store': 0.1.2
+      '@ariakit/utils': 0.1.2
+      react: 19.2.3
+      use-sync-external-store: 1.6.0(react@19.2.3)
+
+  '@ariakit/react-utils@0.1.2(react@19.2.3)':
+    dependencies:
+      '@ariakit/store': 0.1.2
+      '@ariakit/utils': 0.1.2
+      react: 19.2.3
+
+  '@ariakit/react@0.4.29(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@ariakit/react-components': 0.1.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@ariakit/store@0.1.2':
+    dependencies:
+      '@ariakit/utils': 0.1.2
+
+  '@ariakit/utils@0.1.2': {}
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
@@ -6113,6 +6216,12 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
+  '@udecode/plate-combobox@49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@udecode/plate': 49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3))
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
   '@udecode/plate-core@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3))':
     dependencies:
       '@udecode/react-hotkeys': 37.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -6180,6 +6289,13 @@ snapshots:
   '@udecode/plate-resizable@49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@udecode/plate': 49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3))
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@udecode/plate-slash-command@49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@udecode/plate': 49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3))
+      '@udecode/plate-combobox': 49.0.0(@udecode/plate@49.0.0(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(scheduler@0.27.0)(slate-dom@0.123.0(slate@0.114.0))(slate@0.114.0)(use-sync-external-store@1.4.0(react@19.2.3)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
@@ -9291,6 +9407,10 @@ snapshots:
       '@types/react': 19.2.14
 
   use-sync-external-store@1.4.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
+  use-sync-external-store@1.6.0(react@19.2.3):
     dependencies:
       react: 19.2.3
 

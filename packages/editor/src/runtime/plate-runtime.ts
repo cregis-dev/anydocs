@@ -59,7 +59,7 @@ import {
 } from '../plugins/plugin-contract.ts';
 import { EditorNotImplementedError } from './not-implemented-error.ts';
 import { InlineLinkPlugin } from './inline-link-plugin.ts';
-import { SlashMenuController } from './slash-menu.ts';
+import { SlashCommandPlugin } from './slash-menu.ts';
 import { BlockHandleController } from './block-handle.ts';
 
 function collectPlatePlugins(hostPlugins: ReadonlyArray<EditorPlugin> | undefined): unknown[] {
@@ -67,7 +67,10 @@ function collectPlatePlugins(hostPlugins: ReadonlyArray<EditorPlugin> | undefine
   // The inline link plugin keeps `a` nodes inline — without it, Slate treats
   // links as unknown block elements and the editor crashes on any page
   // containing one (see inline-link-plugin.ts).
-  const out: unknown[] = [InlineLinkPlugin];
+  // `SlashCommandPlugin` bundles `SlashInputPlugin`, so adding it here wires up
+  // both the `/` trigger behaviour and the transient `slash_input` node. Its
+  // render component is registered via `override.components` (SlashInputElement).
+  const out: unknown[] = [InlineLinkPlugin, SlashCommandPlugin];
   for (const plugin of BUILTIN_PLUGINS) {
     const builtin = plugin as BuiltinPlugin;
     if (builtin.platePlugin !== undefined) {
@@ -354,7 +357,6 @@ export function createPlateEditorInstance(config: EditorConfig): EditorInstance 
               // host piping Tailwind into the editor.
               style: { outline: 'none' },
             }),
-            React.createElement(SlashMenuController, { key: 'slash-menu' }),
             React.createElement(BlockHandleController, { key: 'block-handle' }),
           ]),
           key: renderKey,

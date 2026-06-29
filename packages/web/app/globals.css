@@ -4,6 +4,12 @@
 @source "../lib";
 @source "../themes";
 @source "../utils";
+/* @anydocs/editor renders block elements with its own Tailwind utility classes
+   (list-disc, list-decimal, callout colors, etc.). `source(none)` disables
+   auto-detection, so the editor package must be listed explicitly or those
+   editor-only utilities are never generated and blocks render unstyled (e.g.
+   lists show no bullet/number markers). */
+@source "../../editor/src";
 @import "../themes/classic-docs/tokens.css";
 @import "../themes/atlas-docs/tokens.css";
 @import "../themes/blueprint-review/tokens.css";

@@ -40,11 +40,13 @@ import {
   PLATE_LIST_TODO,
   PLATE_MERMAID,
   PLATE_PARAGRAPH,
+  PLATE_SLASH_INPUT,
   PLATE_TABLE,
   PLATE_TABLE_CELL,
   PLATE_TABLE_HEADER_CELL,
   PLATE_TABLE_ROW,
 } from '../converters/element-types.ts';
+import { SlashInputElement } from './slash-menu.ts';
 
 // Plate v49 component props the runtime passes in. We accept `unknown` and
 // narrow inside; using `PlateElementProps` directly would require generics
@@ -386,4 +388,5 @@ export const BUILTIN_ELEMENT_COMPONENTS: Record<string, ElementComponent> = {
   [PLATE_DIVIDER]: DividerElement,
   [PLATE_MERMAID]: MermaidElement,
   [PLATE_LINK]: LinkElement,
+  [PLATE_SLASH_INPUT]: SlashInputElement,
 };

@@ -33,14 +33,17 @@
   },
   "dependencies": {
     "@anydocs/core": "workspace:*",
+    "@ariakit/react": "^0.4.15",
     "@udecode/plate": "^49.0.0",
     "@udecode/plate-block-quote": "^49.0.0",
     "@udecode/plate-callout": "^49.0.0",
     "@udecode/plate-code-block": "^49.0.0",
+    "@udecode/plate-combobox": "^49.0.0",
     "@udecode/plate-heading": "^49.0.0",
     "@udecode/plate-horizontal-rule": "^49.0.0",
     "@udecode/plate-list": "^49.0.0",
     "@udecode/plate-media": "^49.0.0",
+    "@udecode/plate-slash-command": "^49.0.0",
     "@udecode/plate-table": "^49.0.0"
   },
   "peerDependencies": {

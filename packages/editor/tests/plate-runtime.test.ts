@@ -711,7 +711,103 @@ test('mounting a doc covering ALL block types (incl. link + captioned image) doe
 // A drifting node shape here would crash the editor or corrupt saves.
 // ---------------------------------------------------------------------------
 
-const { SLASH_MENU_ITEMS, filterSlashItems, applySlashItem } = await import('../src/runtime/slash-menu.ts');
+const { SLASH_MENU_ITEMS, filterSlashItems, applySlashItem, isEmptyTriggerBlock, applySlashItemAtSelection } =
+  await import('../src/runtime/slash-menu.ts');
+
+// A doc-content list with a non-empty item followed by an empty trailing item —
+// the shape produced when an author presses Enter after the last bullet.
+function listWithEmptyTrailingItemDoc(): DocContentV1 {
+  return {
+    version: 1,
+    blocks: [
+      { type: 'paragraph', children: [{ type: 'text', text: 'lead' }] },
+      {
+        type: 'list',
+        style: 'bulleted',
+        items: [
+          { children: [{ type: 'text', text: 'one' }] },
+          { children: [{ type: 'text', text: '' }] },
+        ],
+      },
+    ],
+  } as unknown as DocContentV1;
+}
+
+test('slash trigger fires inside an empty list item (regression: ends-with-list page)', () => {
+  // The Plate slash plugin converts a typed `/` into a `slash_input` node only
+  // when our `triggerQuery` (isEmptyTriggerBlock) returns true. This is the
+  // exact context the desktop bug report hit: a page ending in a list, Enter
+  // after the last bullet, then `/`.
+  const instance = editorModule.createEditor({ initialContent: listWithEmptyTrailingItemDoc() });
+  const raw = getRawPlateEditorForTesting(instance) as RawSlateEditor & {
+    children: unknown[];
+    selection: unknown;
+    tf: { select: (at: unknown) => void; insertText: (t: string) => void };
+    api: { start: (at: number[]) => unknown };
+  };
+  // Caret into the empty trailing list item (plate path [listIndex, itemIndex]).
+  raw.tf.select(raw.api.start([1, 1]));
+  assert.equal(isEmptyTriggerBlock(raw), true, 'empty list item must be a valid trigger context');
+
+  raw.tf.insertText('/');
+  assert.ok(
+    JSON.stringify(raw.children).includes('slash_input'),
+    'typing "/" in an empty list item must create a slash_input node (menu opens)',
+  );
+});
+
+test('slash trigger stays OFF in a non-empty list item', () => {
+  const instance = editorModule.createEditor({ initialContent: listWithEmptyTrailingItemDoc() });
+  const raw = getRawPlateEditorForTesting(instance) as RawSlateEditor & {
+    tf: { select: (at: unknown) => void };
+    api: { start: (at: number[]) => unknown };
+  };
+  raw.tf.select(raw.api.start([1, 0])); // "one" — not empty
+  assert.equal(isEmptyTriggerBlock(raw), false);
+});
+
+test('applySlashItemAtSelection lifts the block OUT of the list (list survives)', () => {
+  const instance = editorModule.createEditor({ initialContent: listWithEmptyTrailingItemDoc() });
+  const raw = getRawPlateEditorForTesting(instance) as RawSlateEditor & {
+    tf: { select: (at: unknown) => void };
+    api: { start: (at: number[]) => unknown };
+  };
+  raw.tf.select(raw.api.start([1, 1])); // empty trailing item
+  const h2 = SLASH_MENU_ITEMS.find((i) => i.key === 'h2')!;
+  applySlashItemAtSelection(raw, h2);
+
+  const blocks = instance.getContent().blocks;
+  // paragraph, list (with its single remaining item), heading appended after.
+  assert.equal(blocks[0]?.type, 'paragraph', 'lead paragraph untouched');
+  const list = blocks[1] as { type: string; items: unknown[] };
+  assert.equal(list.type, 'list', 'list survives');
+  assert.equal(list.items.length, 1, 'empty trailing item removed');
+  const heading = blocks[2] as { type: string; level?: number };
+  assert.equal(heading.type, 'heading', 'chosen block lifted out after the list');
+  assert.equal(heading.level, 2);
+});
+
+test('applySlashItemAtSelection replaces a single-item list entirely', () => {
+  const instance = editorModule.createEditor({
+    initialContent: {
+      version: 1,
+      blocks: [
+        { type: 'list', style: 'bulleted', items: [{ children: [{ type: 'text', text: '' }] }] },
+      ],
+    } as unknown as DocContentV1,
+  });
+  const raw = getRawPlateEditorForTesting(instance) as RawSlateEditor & {
+    tf: { select: (at: unknown) => void };
+    api: { start: (at: number[]) => unknown };
+  };
+  raw.tf.select(raw.api.start([0, 0]));
+  const code = SLASH_MENU_ITEMS.find((i) => i.key === 'code-block')!;
+  applySlashItemAtSelection(raw, code);
+
+  const blocks = instance.getContent().blocks;
+  assert.equal(blocks.length, 1, 'sole-item list replaced in place (no empty list left behind)');
+  assert.equal(blocks[0]?.type, 'codeBlock');
+});
 
 test('filterSlashItems: empty query returns the full catalogue, queries narrow it', () => {
   assert.equal(filterSlashItems('').length, SLASH_MENU_ITEMS.length);
@@ -795,94 +891,20 @@ test('code block with code_line children (post-edit Plate shape) round-trips as 
 });
 
 // ---------------------------------------------------------------------------
-// Slash menu — keyboard interaction (jsdom). Synthetic keydown events through
-// the capture-phase listener; the portal renders into document.body.
+// Slash menu — keyboard interaction.
+//
+// The `/` trigger now flows through `@udecode/plate-slash-command` (Slate's
+// input pipeline inserts a transient `slash_input` node) and the dropdown is
+// an `@ariakit/react` combobox positioned via floating UI. None of that is
+// driveable with synthetic keydown events in jsdom, so the open / filter /
+// navigate / apply / dismiss flow is covered by a real-browser Playwright
+// spec: packages/web/tests/e2e/studio-slash-menu.spec.ts. The pure data layer
+// (filterSlashItems + applySlashItem catalogue round-trip) is asserted above.
 // ---------------------------------------------------------------------------
-
-function dispatchKey(target: Element, key: string): void {
-  target.dispatchEvent(
-    new (globalThis as unknown as { KeyboardEvent: typeof KeyboardEvent }).KeyboardEvent('keydown', {
-      key,
-      bubbles: true,
-      cancelable: true,
-    }),
-  );
-}
 
 function tick(ms = 30): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-test('slash menu: "/" on an empty paragraph opens the menu; Escape closes it', async () => {
-  const host = createHost();
-  document.body.appendChild(host);
-  const instance = editorModule.createEditor({
-    initialContent: { version: 1, blocks: [{ type: 'paragraph', children: [{ type: 'text', text: '' }] }] },
-  });
-  const dispose = instance.mount(host);
-  const raw = getRawPlateEditorForTesting(instance) as {
-    tf: { select: (at: unknown) => void };
-    api: { start: (at: number[]) => unknown };
-  };
-  raw.tf.select(raw.api.start([0]));
-
-  const editable = host.querySelector('[contenteditable="true"]');
-  assert.ok(editable, 'editable present');
-
-  dispatchKey(editable, '/');
-  await tick();
-  const menu = document.body.querySelector('[data-anydocs-slash-menu]');
-  assert.ok(menu, 'menu opens on slash');
-  assert.equal(
-    menu?.querySelectorAll('[data-slash-index]').length,
-    SLASH_MENU_ITEMS.length,
-    'empty query lists the full catalogue',
-  );
-
-  dispatchKey(editable, 'Escape');
-  await tick();
-  assert.equal(
-    document.body.querySelector('[data-anydocs-slash-menu]'),
-    null,
-    'Escape closes the menu',
-  );
-
-  dispose();
-  host.remove();
-});
-
-test('slash menu: Enter applies the highlighted item and replaces the block', async () => {
-  const host = createHost();
-  document.body.appendChild(host);
-  const instance = editorModule.createEditor({
-    initialContent: { version: 1, blocks: [{ type: 'paragraph', children: [{ type: 'text', text: '' }] }] },
-  });
-  const dispose = instance.mount(host);
-  const raw = getRawPlateEditorForTesting(instance) as {
-    tf: { select: (at: unknown) => void };
-    api: { start: (at: number[]) => unknown };
-  };
-  raw.tf.select(raw.api.start([0]));
-
-  const editable = host.querySelector('[contenteditable="true"]')!;
-  dispatchKey(editable, '/');
-  await tick();
-  assert.ok(document.body.querySelector('[data-anydocs-slash-menu]'), 'menu open');
-
-  // ArrowDown once → highlight moves to the second item (Heading 2).
-  dispatchKey(editable, 'ArrowDown');
-  await tick();
-  dispatchKey(editable, 'Enter');
-  await tick();
-
-  assert.equal(document.body.querySelector('[data-anydocs-slash-menu]'), null, 'menu closed after apply');
-  const block = instance.getContent().blocks[0] as { type: string; level?: number };
-  assert.equal(block.type, 'heading');
-  assert.equal(block.level, 2, 'ArrowDown+Enter applied the second item (Heading 2)');
-
-  dispose();
-  host.remove();
-});
 
 // ---------------------------------------------------------------------------
 // Block handle — pure transforms (move / delete / turn-into). The hover/menu
@@ -1016,32 +1038,6 @@ test('turn-into preserves marks and links for text-container sources', () => {
   assert.deepEqual(block.children[0]?.marks, ['bold'], 'bold mark carried');
   assert.equal(block.children[1]?.type, 'link', 'link inline carried');
   assert.equal(block.children[1]?.href, '/x');
-});
-
-test('slash menu: "/" triggers from an empty heading block too (post-Enter-on-heading state)', async () => {
-  const host = createHost();
-  document.body.appendChild(host);
-  const instance = editorModule.createEditor({
-    initialContent: { version: 1, blocks: [{ type: 'heading', level: 2, children: [{ type: 'text', text: '' }] }] },
-  });
-  const dispose = instance.mount(host);
-  const raw = getRawPlateEditorForTesting(instance) as {
-    tf: { select: (at: unknown) => void };
-    api: { start: (at: number[]) => unknown };
-  };
-  raw.tf.select(raw.api.start([0]));
-
-  const editable = host.querySelector('[contenteditable="true"]')!;
-  dispatchKey(editable, '/');
-  await tick();
-  assert.ok(
-    document.body.querySelector('[data-anydocs-slash-menu]'),
-    'menu opens from an empty heading',
-  );
-  dispatchKey(editable, 'Escape');
-  await tick();
-  dispose();
-  host.remove();
 });
 
 test('Enter at the end of a heading resets the new block to a paragraph (exit break)', () => {

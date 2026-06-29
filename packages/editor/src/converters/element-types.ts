@@ -38,6 +38,12 @@ export const PLATE_MERMAID = 'mermaid';
 
 export const PLATE_LINK = 'a';
 
+// Transient inline node inserted by `@udecode/plate-slash-command` while the
+// slash menu is open (holds the `/query` text). It is removed when an item is
+// chosen or the input is cancelled, so it NEVER reaches storage — but the
+// converter guards against it defensively (see `plateChildrenToInline`).
+export const PLATE_SLASH_INPUT = 'slash_input';
+
 // Set used by the inverse converter to detect "is this a list-container
 // element type?" without enumerating cases inline.
 export const PLATE_LIST_CONTAINER_TYPES = new Set<string>([

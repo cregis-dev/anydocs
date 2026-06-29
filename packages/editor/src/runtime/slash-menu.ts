@@ -1,34 +1,56 @@
 // =============================================================================
 // Slash command menu
 // -----------------------------------------------------------------------------
-// Notion-style block-insert menu: typing `/` at the start of an empty
-// paragraph opens a floating menu listing the canonical block types; further
-// typing filters it, Arrow keys navigate, Enter/Tab applies, Escape closes.
-// Applying an item REPLACES the trigger paragraph (which at that point
-// contains only `/` + the query text) with a fresh node of the chosen type.
+// Notion-style block-insert menu: typing `/` at the start of an empty block
+// opens a floating menu listing the canonical block types; further typing
+// filters it, Arrow keys navigate, Enter/Tab/click applies, Escape closes.
 //
-// Implementation notes:
-//   * Zero new dependencies. `@udecode/plate-slash-command`'s combobox
-//     pipeline drags in the cmdk-based InlineCombobox UI stack; this menu
-//     only needs trigger detection + a filtered list, which a capture-phase
-//     keydown listener on the contenteditable covers.
-//   * The component lives INSIDE the <Plate> tree (sibling of PlateContent)
-//     so `useEditorRef()` resolves the editor from context. The dropdown
-//     itself renders through a portal to <body> — interactive UI inside the
-//     contenteditable would fight Slate for DOM ownership.
-//   * Inline styles, not Tailwind classes — the menu must not depend on the
-//     host piping Tailwind into the editor.
+// Implementation (Story: official-slash):
+//   * Trigger + state are owned by `@udecode/plate-slash-command`'s
+//     `SlashPlugin`. Typing `/` inserts a transient inline `slash_input`
+//     node (Plate's `withTriggerCombobox`); the node's text is the query.
+//     This routes through Slate's normal input pipeline — IME-safe, robust,
+//     no capture-phase keydown hacks.
+//   * The dropdown is `@ariakit/react`'s combobox (the same primitive Plate's
+//     own registry uses), anchored to the inline `slash_input` node so it
+//     tracks the caret and follows scrollable containers automatically.
+//   * Styling is INLINE (plus one scoped <style> for the active-item/hover
+//     states, which attribute selectors can't express inline) — the menu
+//     must not depend on the host piping Tailwind into the editor, matching
+//     slash-menu's long-standing constraint.
 //   * Pure `.ts` (React.createElement) like the rest of the runtime.
 //
-// Node shapes below MUST stay in sync with the builtin plugin converters
-// (see src/plugins/builtin/*.ts) — `createNode()` output feeds straight into
-// `editor.tf.insertNodes` and later round-trips through `plateToDocContent`.
+// Node shapes in SLASH_MENU_ITEMS MUST stay in sync with the builtin plugin
+// converters (see src/plugins/builtin/*.ts) — `createNode()` output feeds
+// straight into `editor.tf.insertNodes` and later round-trips through
+// `plateToDocContent`.
 // =============================================================================
 
 import * as React from 'react';
-import { createPortal } from 'react-dom';
 
-import { useEditorRef } from '@udecode/plate/react';
+import type { Point, TElement } from '@udecode/plate';
+import {
+  Combobox,
+  ComboboxItem,
+  type ComboboxItemProps,
+  ComboboxPopover,
+  ComboboxProvider,
+  Portal,
+  useComboboxContext,
+  useComboboxStore,
+} from '@ariakit/react';
+import {
+  type UseComboboxInputResult,
+  useComboboxInput,
+  useHTMLInputCursorState,
+} from '@udecode/plate-combobox/react';
+import {
+  PlateElement,
+  type PlateElementProps,
+  useComposedRef,
+  useEditorRef,
+} from '@udecode/plate/react';
+import { SlashPlugin } from '@udecode/plate-slash-command/react';
 
 import {
   PLATE_BLOCKQUOTE,
@@ -60,7 +82,7 @@ export type SlashMenuItem = {
   description: string;
   /** Extra match terms beyond label (lower-case). */
   keywords: string[];
-  /** Builds the Plate node that replaces the trigger paragraph. */
+  /** Builds the Plate node that replaces the trigger block. */
   createNode: () => Record<string, unknown>;
 };
 
@@ -208,10 +230,11 @@ export function filterSlashItems(query: string): SlashMenuItem[] {
 // Editor transform
 // -----------------------------------------------------------------------------
 
-// Structural minimum of the Plate editor surface the menu touches.
+// Structural minimum of the Plate editor surface the transforms touch.
+type SlashNode = { type?: string; text?: string; children?: SlashNode[] };
 type SlashEditor = {
-  children: Array<{ type?: string; children?: Array<{ text?: string }> }>;
-  selection?: unknown;
+  children: SlashNode[];
+  selection?: { anchor: { path: number[]; offset: number } } | null;
   api: {
     start: (at: number[]) => unknown;
     toDOMNode: (node: unknown) => HTMLElement | undefined;
@@ -224,15 +247,8 @@ type SlashEditor = {
   };
 };
 
-/**
- * Replaces the block at `blockIndex` (the trigger paragraph holding the
- * `/query` text) with the item's node and places the caret at its start.
- * Exported for tests — drives the same `editor.tf` pipeline as the UI.
- */
-export function applySlashItem(editorLike: unknown, blockIndex: number, item: SlashMenuItem): void {
-  const editor = editorLike as SlashEditor;
-  editor.tf.removeNodes({ at: [blockIndex] });
-  editor.tf.insertNodes(item.createNode(), { at: [blockIndex] });
+/** Places the caret at the start of the block at `blockIndex` and refocuses. */
+function finishApply(editor: SlashEditor, blockIndex: number): void {
   try {
     // Pure model-state op — safe even when the editor isn't mounted.
     editor.tf.select(editor.api.start([blockIndex]));
@@ -252,16 +268,104 @@ export function applySlashItem(editorLike: unknown, blockIndex: number, item: Sl
   }
 }
 
+/**
+ * Resolves the lowest element block containing the caret: its path (without the
+ * trailing text-leaf index) and node. Returns null when there is no collapsed
+ * selection inside an element. Used to gate the trigger and to decide how an
+ * item applies (top-level block vs. nested list item).
+ */
+function leafBlockEntry(editorLike: unknown): { path: number[]; node: SlashNode } | null {
+  const editor = editorLike as SlashEditor;
+  const anchorPath = editor.selection?.anchor.path;
+  if (!Array.isArray(anchorPath) || anchorPath.length === 0) return null;
+  const blockPath = anchorPath.slice(0, -1);
+  if (blockPath.length === 0) return null;
+  let nodes: SlashNode[] | undefined = editor.children;
+  let node: SlashNode | undefined;
+  for (const idx of blockPath) {
+    if (!nodes) return null;
+    node = nodes[idx];
+    if (!node) return null;
+    nodes = node.children;
+  }
+  if (!node || typeof node.type !== 'string' || !Array.isArray(node.children)) return null;
+  return { path: blockPath, node };
+}
+
+/** A block is empty when its children are text leaves that concatenate to ''. */
+function isEmptyBlock(node: SlashNode): boolean {
+  if (!Array.isArray(node.children)) return false;
+  let text = '';
+  for (const child of node.children) {
+    if (typeof child.text === 'string') text += child.text;
+    else return false; // a non-text child (inline element) ⇒ not empty
+  }
+  return text === '';
+}
+
+/**
+ * Replaces the block at `blockIndex` (the trigger block, which at apply time
+ * is the empty block the `slash_input` node lived in) with the item's node and
+ * places the caret at its start. Exported for tests — drives the same
+ * `editor.tf` pipeline as the UI.
+ */
+export function applySlashItem(editorLike: unknown, blockIndex: number, item: SlashMenuItem): void {
+  const editor = editorLike as SlashEditor;
+  editor.tf.removeNodes({ at: [blockIndex] });
+  editor.tf.insertNodes(item.createNode(), { at: [blockIndex] });
+  finishApply(editor, blockIndex);
+}
+
+/**
+ * Applies an item from inside an empty list item: lifts the chosen block OUT of
+ * the list rather than nesting it. If the list holds only this (empty) item the
+ * whole list is replaced; otherwise the empty item is removed and the new block
+ * is inserted right after the list. `itemPath` is the path to the list item.
+ */
+function applySlashItemFromListItem(editor: SlashEditor, itemPath: number[], item: SlashMenuItem): void {
+  const listIndex = itemPath[0];
+  const list = editor.children[listIndex];
+  const itemCount = Array.isArray(list?.children) ? list.children.length : 0;
+  if (itemCount <= 1) {
+    // The list holds only this empty item — replace the whole list.
+    applySlashItem(editor, listIndex, item);
+    return;
+  }
+  const insertAt = listIndex + 1;
+  editor.tf.removeNodes({ at: itemPath });
+  editor.tf.insertNodes(item.createNode(), { at: [insertAt] });
+  finishApply(editor, insertAt);
+}
+
+/**
+ * Applies an item at the current selection. Used by the UI: after the combobox
+ * removes the `slash_input` node it restores the caret into the (now empty)
+ * host block. A top-level text block is replaced in place; an empty list item
+ * lifts the new block out of the list (see {@link applySlashItemFromListItem}).
+ */
+export function applySlashItemAtSelection(editorLike: unknown, item: SlashMenuItem): void {
+  const editor = editorLike as SlashEditor;
+  const entry = leafBlockEntry(editor);
+  if (!entry) {
+    const blockIndex = editor.selection?.anchor.path[0];
+    if (typeof blockIndex === 'number') applySlashItem(editor, blockIndex, item);
+    return;
+  }
+  if (entry.path.length === 1) {
+    applySlashItem(editor, entry.path[0], item);
+    return;
+  }
+  applySlashItemFromListItem(editor, entry.path, item);
+}
+
 // -----------------------------------------------------------------------------
-// Trigger detection helpers
+// Trigger gating
 // -----------------------------------------------------------------------------
 
-type SlateRangePoint = { path: number[]; offset: number };
-type SlateRange = { anchor: SlateRangePoint; focus: SlateRangePoint };
-
-// Block types whose children are plain inline content — `/` in an EMPTY one
-// of these opens the menu. Structural blocks (lists, tables, code) own their
-// children's semantics, so the trigger stays off there.
+// Block types whose children are plain inline content — `/` in an EMPTY one of
+// these opens the menu. Plain text blocks are replaced in place; empty list
+// items lift the chosen block out of the list. Other structural blocks (tables,
+// code) own their children's semantics, so the trigger stays off there.
 const SLASH_TRIGGER_TYPES = new Set<string>([
   PLATE_PARAGRAPH,
   PLATE_HEADING[1],
@@ -269,42 +373,39 @@ const SLASH_TRIGGER_TYPES = new Set<string>([
   PLATE_HEADING[3],
   PLATE_BLOCKQUOTE,
   PLATE_CALLOUT,
+  PLATE_LIST_ITEM,
+  PLATE_LIST_ITEM_TODO,
 ]);
 
-function isCollapsed(range: SlateRange): boolean {
-  return (
-    range.anchor.offset === range.focus.offset &&
-    range.anchor.path.length === range.focus.path.length &&
-    range.anchor.path.every((seg, i) => seg === range.focus.path[i])
-  );
+/**
+ * `/` only opens the menu inside an empty, whitelisted block (including empty
+ * list items). Runs at the instant `/` is typed (before the char is inserted),
+ * so the block text is still empty for a fresh block.
+ */
+export function isEmptyTriggerBlock(editorLike: unknown): boolean {
+  const entry = leafBlockEntry(editorLike);
+  if (!entry || typeof entry.node.type !== 'string') return false;
+  return SLASH_TRIGGER_TYPES.has(entry.node.type) && isEmptyBlock(entry.node);
 }
 
-function blockText(editor: SlashEditor, blockIndex: number): string | null {
-  const block = editor.children[blockIndex];
-  if (!block || !Array.isArray(block.children)) return null;
-  let out = '';
-  for (const child of block.children) {
-    if (typeof child.text === 'string') out += child.text;
-    else return null; // non-text child (inline element) — not a trigger block
-  }
-  return out;
-}
+/**
+ * The configured slash plugin registered by the runtime. `SlashPlugin` already
+ * bundles `SlashInputPlugin` (the `slash_input` node), so registering this one
+ * plugin wires up both the trigger behaviour and the node type. The
+ * `slash_input` render component is supplied separately via `override.components`
+ * (see element-components.ts → `SlashInputElement`).
+ */
+export const SlashCommandPlugin = SlashPlugin.configure({
+  options: {
+    triggerQuery: (editor: unknown) => isEmptyTriggerBlock(editor),
+  },
+});
 
 // -----------------------------------------------------------------------------
-// Menu component
+// Dropdown UI — @ariakit/react combobox, inline-styled
 // -----------------------------------------------------------------------------
 
-type MenuState = {
-  blockIndex: number;
-  query: string;
-  highlighted: number;
-  // Viewport coordinates of the caret when the menu opened (position: fixed).
-  left: number;
-  top: number;
-};
-
-const MENU_STYLE: React.CSSProperties = {
-  position: 'fixed',
+const POPOVER_STYLE: React.CSSProperties = {
   zIndex: 1000,
   minWidth: 240,
   maxWidth: 320,
@@ -326,220 +427,286 @@ const ITEM_STYLE: React.CSSProperties = {
   textAlign: 'left',
   padding: '6px 10px',
   borderRadius: 6,
-  border: 'none',
-  background: 'transparent',
   cursor: 'pointer',
-  font: 'inherit',
-  color: 'inherit',
+  outline: 'none',
 };
 
-function caretViewportPosition(editor: SlashEditor, blockIndex: number): { left: number; top: number } {
-  const selection = typeof window !== 'undefined' ? window.getSelection() : null;
-  if (selection && selection.rangeCount > 0) {
-    const rect = selection.getRangeAt(0).getBoundingClientRect();
-    if (rect && (rect.left !== 0 || rect.bottom !== 0)) {
-      return { left: rect.left, top: rect.bottom + 4 };
-    }
-  }
-  // Empty text nodes can report a zero rect — fall back to the block element.
-  try {
-    const blockEl = editor.api.toDOMNode(editor.children[blockIndex]);
-    if (blockEl) {
-      const rect = blockEl.getBoundingClientRect();
-      return { left: rect.left, top: rect.bottom + 4 };
-    }
-  } catch {
-    // fall through to a safe default
-  }
-  return { left: 16, top: 16 };
+const EMPTY_STYLE: React.CSSProperties = {
+  padding: '6px 10px',
+  color: '#71717a',
+  fontSize: 13,
+};
+
+// Active-item / hover backgrounds depend on attribute + pseudo selectors that
+// inline styles cannot express, so a single scoped rule set is injected once.
+const STYLE_TAG_ID = 'anydocs-slash-menu-styles';
+const STYLE_RULES = [
+  '[data-anydocs-slash-menu] [data-slash-item]:hover{background:#f4f4f5;}',
+  '[data-anydocs-slash-menu] [data-slash-item][data-active-item="true"]{background:#f4f4f5;}',
+].join('');
+
+function useSlashMenuStyles(): void {
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(STYLE_TAG_ID)) return;
+    const tag = document.createElement('style');
+    tag.id = STYLE_TAG_ID;
+    tag.textContent = STYLE_RULES;
+    document.head.appendChild(tag);
+    // Leave the tag mounted — it is shared by every editor instance and
+    // carries no per-instance state.
+  }, []);
 }
 
-/**
- * Mounted as a sibling of `<PlateContent>` inside the `<Plate>` tree (see
- * plate-runtime.ts). Owns the slash-menu lifecycle via a capture-phase
- * keydown listener on the contenteditable.
- */
-export function SlashMenuController(): React.ReactElement | null {
-  const editor = useEditorRef() as unknown as SlashEditor;
-  const [menu, setMenu] = React.useState<MenuState | null>(null);
-  const menuRef = React.useRef<MenuState | null>(null);
-  menuRef.current = menu;
-  const listRef = React.useRef<HTMLDivElement | null>(null);
-  // Hidden sibling of <PlateContent> — used to locate the contenteditable
-  // via the DOM. `editor.api.toDOMNode(editor)` returns undefined for the
-  // editor root in Plate v49, so DOM-relative lookup is the reliable path,
-  // and it stays correct with multiple editor instances on one page.
-  const anchorRef = React.useRef<HTMLSpanElement | null>(null);
+// Case-insensitive substring match over value/label/keywords. Preserves the
+// `filterSlashItems` semantics (incl. CJK partial matches, which word-boundary
+// filters miss).
+function itemMatches(item: SlashMenuItem, search: string): boolean {
+  const q = search.trim().toLowerCase();
+  if (q === '') return true;
+  if (item.label.toLowerCase().includes(q)) return true;
+  if (item.key.toLowerCase().includes(q)) return true;
+  return item.keywords.some((k) => k.toLowerCase().includes(q));
+}
 
+type InlineComboboxContextValue = {
+  inputProps: UseComboboxInputResult['props'];
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  removeInput: UseComboboxInputResult['removeInput'];
+  trigger: string;
+};
+
+const InlineComboboxContext = React.createContext<InlineComboboxContextValue>(
+  null as unknown as InlineComboboxContextValue,
+);
+
+type InlineComboboxProps = {
+  // Optional so React.createElement's variadic children satisfy it (TS won't
+  // treat a required `children` as filled by trailing createElement args).
+  children?: React.ReactNode;
+  element: TElement;
+  trigger: string;
+};
+
+// ariakit's component prop types are heavily overloaded; casting at the
+// createElement boundary (like element-components.ts's PlateElementUnsafe)
+// keeps call sites tidy without changing runtime behaviour. `open` is a valid
+// ariakit ComboboxProvider store prop that the createElement overload misreads.
+const ComboboxProviderUnsafe = ComboboxProvider as unknown as React.FC<Record<string, unknown>>;
+
+function InlineCombobox(props: InlineComboboxProps): React.ReactElement {
+  const { children, element, trigger } = props;
+  const editor = useEditorRef();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const cursorState = useHTMLInputCursorState(inputRef);
+
+  const [value, setValue] = React.useState('');
+
+  // Track the point just before the input node so a cancel (non-backspace)
+  // can re-insert the literal `/query` text the user had typed.
+  const insertPoint = React.useRef<Point | null>(null);
   React.useEffect(() => {
-    const container = anchorRef.current?.parentElement;
-    const editable = container?.querySelector<HTMLElement>('[data-slate-editor="true"]') ?? undefined;
-    if (!editable) return;
-
-    function syncQueryAfterInput(): void {
-      // Runs after Slate has applied the keystroke.
-      setTimeout(() => {
-        const state = menuRef.current;
-        if (state === null) return;
-        const text = blockText(editor, state.blockIndex);
-        if (text === null || !text.startsWith('/')) {
-          setMenu(null);
-          return;
-        }
-        const query = text.slice(1);
-        if (filterSlashItems(query).length === 0 && query.length > 0) {
-          setMenu(null);
-          return;
-        }
-        setMenu({ ...state, query, highlighted: 0 });
-      }, 0);
-    }
-
-    function onKeyDown(event: KeyboardEvent): void {
-      const state = menuRef.current;
-
-      if (state === null) {
-        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
-        const selection = editor.selection as SlateRange | null | undefined;
-        if (!selection || !isCollapsed(selection)) return;
-        const blockIndex = selection.anchor.path[0];
-        if (blockIndex === undefined) return;
-        const block = editor.children[blockIndex];
-        // Trigger from ANY empty text-container block, not just paragraphs —
-        // pressing Enter at the end of a heading leaves the new block as a
-        // heading (no exit-break yet at that instant), and Notion-style UX
-        // expects `/` to work there too.
-        if (!block || typeof block.type !== 'string' || !SLASH_TRIGGER_TYPES.has(block.type)) return;
-        if (blockText(editor, blockIndex) !== '') return;
-        // Let the `/` character insert normally, then open the menu.
-        setTimeout(() => {
-          const pos = caretViewportPosition(editor, blockIndex);
-          setMenu({ blockIndex, query: '', highlighted: 0, ...pos });
-        }, 0);
-        return;
-      }
-
-      // Menu is open — intercept navigation keys before Slate sees them.
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        event.stopPropagation();
-        const items = filterSlashItems(state.query);
-        if (items.length === 0) return;
-        const delta = event.key === 'ArrowDown' ? 1 : -1;
-        const next = (state.highlighted + delta + items.length) % items.length;
-        setMenu({ ...state, highlighted: next });
-        return;
-      }
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault();
-        event.stopPropagation();
-        const items = filterSlashItems(state.query);
-        const item = items[state.highlighted] ?? items[0];
-        setMenu(null);
-        if (item) applySlashItem(editor, state.blockIndex, item);
-        return;
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        setMenu(null);
-        return;
-      }
-      // Anything else (typing, backspace, arrows we don't own) updates the
-      // query once Slate has processed it.
-      syncQueryAfterInput();
-    }
-
-    function onMouseDown(): void {
-      // Clicking elsewhere in the document closes the menu (item buttons
-      // call preventDefault on mousedown before this runs — see below —
-      // so applying an item still works).
-      if (menuRef.current !== null) setMenu(null);
-    }
-
-    editable.addEventListener('keydown', onKeyDown, true);
-    document.addEventListener('mousedown', onMouseDown);
+    const editorApi = (editor as unknown as {
+      api: {
+        findPath: (el: unknown) => number[] | undefined;
+        before: (at: number[]) => Point | undefined;
+        pointRef: (p: Point) => { current: Point; unref: () => void };
+      };
+    }).api;
+    const path = editorApi.findPath(element);
+    if (!path) return;
+    const point = editorApi.before(path);
+    if (!point) return;
+    const pointRef = editorApi.pointRef(point);
+    insertPoint.current = pointRef.current;
     return () => {
-      editable.removeEventListener('keydown', onKeyDown, true);
-      document.removeEventListener('mousedown', onMouseDown);
+      pointRef.unref();
     };
-    // The editor instance is stable for the lifetime of this tree (key-bump
-    // remounts build a fresh tree), so mount-once wiring is correct.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editor, element]);
 
-  // Keep the highlighted row visible while arrowing through a long list.
-  React.useEffect(() => {
-    if (menu === null || listRef.current === null) return;
-    const el = listRef.current.querySelector(`[data-slash-index="${menu.highlighted}"]`);
-    // jsdom doesn't implement scrollIntoView — an unguarded call here threw
-    // inside the effect and unmounted the whole controller (incl. the menu).
-    if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
-      (el as HTMLElement).scrollIntoView({ block: 'nearest' });
-    }
-  }, [menu]);
-
-  // The hidden anchor must render unconditionally — the mount effect uses it
-  // to locate the contenteditable sibling.
-  const anchor = React.createElement('span', {
-    key: 'anchor',
-    ref: anchorRef,
-    style: { display: 'none' },
-    'data-anydocs-slash-anchor': 'true',
+  const { props: inputProps, removeInput } = useComboboxInput({
+    cancelInputOnBlur: false,
+    cursorState,
+    // Focus the combobox input as soon as the `slash_input` node mounts so the
+    // characters typed after `/` flow into the filter (single-user editor —
+    // the local author is always the node's creator).
+    autoFocus: true,
+    ref: inputRef,
+    onCancelInput: (cause) => {
+      const tf = (editor as unknown as {
+        tf: {
+          insertText: (text: string, opts?: { at?: Point }) => void;
+          move: (opts: { distance: number; reverse: boolean }) => void;
+        };
+      }).tf;
+      if (cause !== 'backspace') {
+        tf.insertText(trigger + value, { at: insertPoint.current ?? undefined });
+      }
+      if (cause === 'arrowLeft' || cause === 'arrowRight') {
+        tf.move({ distance: 1, reverse: cause === 'arrowLeft' });
+      }
+    },
   });
 
-  if (menu === null || typeof document === 'undefined') {
-    return anchor;
-  }
-
-  const items = filterSlashItems(menu.query);
-
-  const menuNode = React.createElement(
-    'div',
-    {
-      ref: listRef,
-      role: 'listbox',
-      'aria-label': 'Insert block',
-      'data-anydocs-slash-menu': 'true',
-      style: { ...MENU_STYLE, left: menu.left, top: menu.top },
-    },
-    items.map((item, index) =>
-      React.createElement(
-        'button',
-        {
-          key: item.key,
-          type: 'button',
-          role: 'option',
-          'aria-selected': index === menu.highlighted,
-          'data-slash-index': index,
-          style: {
-            ...ITEM_STYLE,
-            background: index === menu.highlighted ? '#f4f4f5' : 'transparent',
-          },
-          // preventDefault keeps focus + selection in the editor so the
-          // block replacement targets the right path.
-          onMouseDown: (event: React.MouseEvent) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setMenu(null);
-            applySlashItem(editor, menu.blockIndex, item);
-          },
-          onMouseEnter: () => setMenu({ ...menu, highlighted: index }),
-        },
-        React.createElement('div', { style: { fontWeight: 500 } }, item.label),
-        React.createElement(
-          'div',
-          { style: { fontSize: 12, color: '#71717a' } },
-          item.description,
-        ),
-      ),
-    ),
+  const contextValue = React.useMemo<InlineComboboxContextValue>(
+    () => ({ inputProps, inputRef, removeInput, trigger }),
+    [inputProps, removeInput, trigger],
   );
 
+  const store = useComboboxStore({
+    setValue: (newValue) => React.startTransition(() => setValue(newValue)),
+  });
+
+  const items = store.useState('items');
+  React.useEffect(() => {
+    if (!store.getState().activeId) {
+      store.setActiveId(store.first());
+    }
+  }, [items, store]);
+
+  return React.createElement(
+    'span',
+    { contentEditable: false },
+    React.createElement(
+      ComboboxProviderUnsafe,
+      { open: items.length > 0, store },
+      React.createElement(InlineComboboxContext.Provider, { value: contextValue }, children),
+    ),
+  );
+}
+
+function InlineComboboxInput(): React.ReactElement {
+  const { inputProps, inputRef, trigger } = React.useContext(InlineComboboxContext);
+  const store = useComboboxContext()!;
+  const value = store.useState('value');
+  const ref = useComposedRef(inputRef);
+
+  // Auto-resizing input: a visually hidden span sizes the slot; the real
+  // ariakit Combobox input is absolutely positioned over it.
   return React.createElement(
     React.Fragment,
     null,
-    anchor,
-    createPortal(menuNode, document.body),
+    trigger,
+    React.createElement(
+      'span',
+      { style: { position: 'relative', display: 'inline-block', minHeight: '1lh' } },
+      React.createElement(
+        'span',
+        { 'aria-hidden': 'true', style: { visibility: 'hidden', whiteSpace: 'nowrap', overflow: 'hidden' } },
+        value || '​',
+      ),
+      React.createElement(Combobox, {
+        ref,
+        value,
+        autoSelect: true,
+        style: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'transparent',
+          outline: 'none',
+          border: 'none',
+        },
+        ...inputProps,
+      }),
+    ),
+  );
+}
+
+function InlineComboboxContent(props: { children: React.ReactNode }): React.ReactElement {
+  return React.createElement(
+    Portal,
+    null,
+    React.createElement(
+      ComboboxPopover,
+      {
+        'data-anydocs-slash-menu': 'true',
+        role: 'listbox',
+        'aria-label': 'Insert block',
+        gutter: 4,
+        style: POPOVER_STYLE,
+      },
+      props.children,
+    ),
+  );
+}
+
+type InlineComboboxItemProps = {
+  item: SlashMenuItem;
+  onSelect: () => void;
+};
+
+function InlineComboboxItem(props: InlineComboboxItemProps): React.ReactElement | null {
+  const { item, onSelect } = props;
+  const { removeInput } = React.useContext(InlineComboboxContext);
+  const store = useComboboxContext()!;
+  const search = store.useState('value');
+
+  const visible = React.useMemo(() => itemMatches(item, search), [item, search]);
+  if (!visible) return null;
+
+  const itemProps: ComboboxItemProps & { 'data-slash-item': string } = {
+    value: item.key,
+    'data-slash-item': item.key,
+    focusOnHover: true,
+    style: ITEM_STYLE,
+    onClick: () => {
+      removeInput(true);
+      onSelect();
+    },
+  };
+
+  return React.createElement(
+    ComboboxItem,
+    itemProps,
+    React.createElement('div', { style: { fontWeight: 500 } }, item.label),
+    React.createElement('div', { style: { fontSize: 12, color: '#71717a' } }, item.description),
+  );
+}
+
+function InlineComboboxEmpty(): React.ReactElement | null {
+  const store = useComboboxContext()!;
+  const items = store.useState('items');
+  if (items.length > 0) return null;
+  return React.createElement('div', { style: EMPTY_STYLE }, 'No results');
+}
+
+// `PlateElement`'s props are heavily generic; cast at the boundary like
+// element-components.ts does. Runtime behaviour is unaffected.
+const PlateElementUnsafe = PlateElement as unknown as React.FC<Record<string, unknown>>;
+
+/**
+ * Render component for the transient `slash_input` node. Registered via
+ * `override.components` under the `slash_input` type. Renders the inline
+ * combobox in place of the node and lists the block catalogue.
+ */
+export function SlashInputElement(props: PlateElementProps): React.ReactElement {
+  useSlashMenuStyles();
+  const editor = useEditorRef();
+  const element = props.element as unknown as TElement;
+
+  return React.createElement(
+    PlateElementUnsafe,
+    { ...(props as unknown as Record<string, unknown>), as: 'span' },
+    React.createElement(
+      InlineCombobox,
+      { element, trigger: '/' },
+      React.createElement(InlineComboboxInput),
+      React.createElement(
+        InlineComboboxContent,
+        null,
+        React.createElement(InlineComboboxEmpty),
+        ...SLASH_MENU_ITEMS.map((item) =>
+          React.createElement(InlineComboboxItem, {
+            key: item.key,
+            item,
+            onSelect: () => applySlashItemAtSelection(editor, item),
+          }),
+        ),
+      ),
+    ),
+    props.children,
   );
 }

@@ -10,7 +10,7 @@
 import type { InlineNode, LinkNode, TextNode } from '@anydocs/core';
 
 import { marksToPlateFlags, plateFlagsToMarks } from './mark-mapping.ts';
-import { PLATE_LINK, PLATE_PARAGRAPH } from './element-types.ts';
+import { PLATE_LINK, PLATE_PARAGRAPH, PLATE_SLASH_INPUT } from './element-types.ts';
 
 export type PlateTextNode = {
   text: string;
@@ -108,6 +108,12 @@ export function plateChildrenToInline(children: Array<PlateInlineNode | PlateEle
     }
     if (isPlateLink(child)) {
       inline.push(plateLinkToLinkNode(child));
+      continue;
+    }
+    // Transient slash-command input node — dropped, never persisted. The
+    // plugin normally removes it before save, but a content read mid-edit
+    // (e.g. autosave while the menu is open) must not crash.
+    if ((child as PlateElementNode).type === PLATE_SLASH_INPUT) {
       continue;
     }
     throw new Error(
