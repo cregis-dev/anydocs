@@ -1,0 +1,153 @@
+# generated: 2026-06-30
+# project: anydocs — Cloud Team Edition
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts
+#
+# PRODUCT LINE: Cloud Team Edition (independent from the local-first edition).
+# This file is SEPARATE from sprint-status.yaml (the local-first sprint status) and must not be merged with it.
+# Source epics: artifacts/bmad/planning-artifacts/epics-cloud-team-edition.md (11 epics C1–C11, 61 stories).
+# Architecture: artifacts/bmad/planning-artifacts/architecture-cloud-team-edition.md.
+# Readiness: implementation-readiness-report-cloud-team-edition-2026-06-30.md (READY, 0 critical).
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story is created (create-story).
+# - SM typically creates next story after previous one is 'done' to incorporate learnings.
+# - Dev moves story to 'review', then runs code-review (fresh context, ideally different LLM).
+#
+# CLOUD-SPECIFIC SEQUENCING (from readiness report + architecture):
+# - Story c1-0 (scaffold cloud packages + Postgres/Drizzle/Better Auth/Hocuspocus baseline) is the TRUE first story.
+# - Spike EARLY (alongside C1/C2, before C3+C6): the Y.Doc <-> doc-content-v1 bridge, and routing agent writes through the Y.Doc.
+# - Epic C10 (Team Governance) is tagged "needs UX design first" — run a small UX pass before building its stories.
+# - Epics are ordered C1 -> C11 with no forward dependencies (C2 single-user-usable; C9 only needs C1).
+
+generated: 2026-06-30
+project: anydocs — Cloud Team Edition
+project_key: NOKEY
+tracking_system: file-system
+story_location: /Users/shawn/workspace/code/anydocs/artifacts/bmad/implementation-artifacts
+
+development_status:
+  # ─── Epic C1: Sign-in & Cloud Workspace Foundation ───
+  epic-c1: in-progress
+  c1-0-scaffold-cloud-packages-and-baseline-infrastructure: ready-for-dev
+  c1-1-sign-in-and-establish-a-session: backlog
+  c1-2-provision-a-default-organization-and-workspace: backlog
+  c1-3-workspace-rail-switch-context-and-list-projects: backlog
+  c1-4-four-region-app-shell-with-collapsible-regions: backlog
+  c1-5-project-mode-field-single-team: backlog
+  c1-6-project-and-page-addressing-under-the-workspace: backlog
+  epic-c1-retrospective: optional
+
+  # ─── Epic C2: Cloud Authoring — Navigation, Editor & Focus ───
+  epic-c2: backlog
+  c2-1-render-the-navigation-tree: backlog
+  c2-2-per-item-navigation-affordances: backlog
+  c2-3-drag-reorder-the-navigation-tree: backlog
+  c2-4-navigation-header-filter-language-create: backlog
+  c2-5-mount-the-block-editor-with-top-bar: backlog
+  c2-6-autosave-and-status-bar: backlog
+  c2-7-focus-writing-mode: backlog
+  c2-8-bilingual-side-by-side-compare: backlog
+  c2-9-large-project-performance-states: backlog
+  epic-c2-retrospective: optional
+
+  # ─── Epic C3: Inline Agent ───
+  epic-c3: backlog
+  c3-1-agent-service-and-provider-port-foundation: backlog
+  c3-2-write-ahead-audit-foundation: backlog
+  c3-3-cmdk-inline-command-bar: backlog
+  c3-4-selection-floating-toolbar: backlog
+  c3-5-slash-ai-command-block: backlog
+  c3-6-inline-diff-with-accept-reject-micro-interactions: backlog
+  c3-7-agent-personas-and-in-canvas-editing-indicator: backlog
+  epic-c3-retrospective: optional
+
+  # ─── Epic C4: Page Agent & Task Card ───
+  epic-c4: backlog
+  c4-1-page-agent-input-and-plan-mode: backlog
+  c4-2-task-card-state-machine: backlog
+  c4-3-preview-and-apply-page-changes: backlog
+  c4-4-task-card-fields-and-actions: backlog
+  c4-5-rollback-and-history: backlog
+  c4-6-page-agent-error-recovery: backlog
+  epic-c4-retrospective: optional
+
+  # ─── Epic C5: Workspace Agent & Run Inspector ───
+  epic-c5: backlog
+  c5-1-workspace-scope-task-orchestration: backlog
+  c5-2-run-inspector-shell-with-full-screen: backlog
+  c5-3-split-unified-diff-toggle: backlog
+  c5-4-partial-accept: backlog
+  c5-5-step-intervention-and-re-run: backlog
+  c5-6-roll-back-an-applied-run: backlog
+  epic-c5-retrospective: optional
+
+  # ─── Epic C6: Real-time Collaboration ───
+  epic-c6: backlog
+  c6-1-realtime-document-sync: backlog
+  c6-2-presence-avatar-group: backlog
+  c6-3-live-cursors-and-selection: backlog
+  c6-4-comments-and-threads: backlog
+  c6-5-mentions-for-people-and-agents: backlog
+  c6-6-authorship-attribution: backlog
+  epic-c6-retrospective: optional
+
+  # ─── Epic C7: Review, Approval & Publish ───
+  epic-c7: backlog
+  c7-1-review-stepper-with-owner-and-reviewers: backlog
+  c7-2-ai-auto-check-report: backlog
+  c7-3-reviewer-approval: backlog
+  c7-4-publish-gate-with-owner-override: backlog
+  epic-c7-retrospective: optional
+
+  # ─── Epic C8: Workspace Home, Onboarding & Command Palette ───
+  epic-c8: backlog
+  c8-1-workspace-home: backlog
+  c8-2-new-project-blank-or-template: backlog
+  c8-3-let-agent-draft-onboarding: backlog
+  c8-4-global-command-palette: backlog
+  epic-c8-retrospective: optional
+
+  # ─── Epic C9: Remote MCP Service (Auth + Read-only Profile) ───
+  epic-c9: backlog
+  c9-1-http-transport-adapter: backlog
+  c9-2-authentication-on-the-remote-transport: backlog
+  c9-3-read-only-tool-profile: backlog
+  c9-4-remote-service-smoke-matrix: backlog
+  epic-c9-retrospective: optional
+
+  # ─── Epic C10: Team Governance — Permissions & Audit Retention (NEEDS UX DESIGN FIRST) ───
+  epic-c10: backlog
+  c10-1-role-based-agent-permission-boundaries: backlog
+  c10-2-enforce-permission-boundaries-at-invocation: backlog
+  c10-3-audit-retention-policy-and-prune: backlog
+  c10-4-audit-query-view: backlog
+  epic-c10-retrospective: optional
+
+  # ─── Epic C11: Design-System Conformance — Dark Mode, A11y & Visual Regression ───
+  epic-c11: backlog
+  c11-1-dark-mode-across-surfaces: backlog
+  c11-2-accessibility-conformance: backlog
+  c11-2b-internationalization-conformance: backlog
+  c11-3-component-inventory-and-visual-regression: backlog
+  epic-c11-retrospective: optional
