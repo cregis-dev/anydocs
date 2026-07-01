@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Design contract (CNFR4). All design values come from here — never hard-coded. */
+@import "./tokens.css";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  background: var(--n-0);
+  color: var(--n-800);
+}

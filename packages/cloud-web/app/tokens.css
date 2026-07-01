@@ -1,0 +1,124 @@
+/* Anydocs Studio — design tokens (Cloud Team Edition copy of the shared design contract)
+ * Source of truth: design handoff tokens.css (shared with the desktop edition).
+ * CNFR4: immutable design contract. Do NOT hard-code design values elsewhere — read these vars.
+ * Quiet, Notion-grade. Inter + JetBrains Mono. Warm neutrals.
+ * Brand: cool teal-blue. AI: cool indigo. Status colors share chroma.
+ */
+
+:root {
+  /* === Neutral (warm, h≈80) — 10-step =========================== */
+  --n-0:  oklch(0.995 0.003 80);   /* canvas */
+  --n-50: oklch(0.985 0.004 80);   /* surface raised */
+  --n-100:oklch(0.965 0.005 80);   /* hover */
+  --n-150:oklch(0.945 0.006 80);
+  --n-200:oklch(0.910 0.007 80);   /* hairline */
+  --n-300:oklch(0.835 0.008 80);
+  --n-400:oklch(0.700 0.009 80);   /* secondary text */
+  --n-500:oklch(0.560 0.010 80);
+  --n-600:oklch(0.430 0.010 80);   /* body */
+  --n-700:oklch(0.330 0.010 80);
+  --n-800:oklch(0.230 0.010 80);   /* heading */
+  --n-900:oklch(0.150 0.010 80);   /* near-black */
+
+  /* === Brand (cool teal-blue) =================================== */
+  --brand-50:  oklch(0.965 0.020 210);
+  --brand-100: oklch(0.930 0.040 210);
+  --brand-300: oklch(0.770 0.080 210);
+  --brand-500: oklch(0.580 0.100 210);
+  --brand-600: oklch(0.500 0.105 210);
+  --brand-700: oklch(0.420 0.090 210);
+
+  /* === AI accent (cool indigo) ================================== */
+  --ai-50:  oklch(0.965 0.025 275);
+  --ai-100: oklch(0.930 0.045 275);
+  --ai-200: oklch(0.880 0.075 275);
+  --ai-300: oklch(0.760 0.115 275);
+  --ai-500: oklch(0.560 0.160 275);
+  --ai-600: oklch(0.490 0.165 275);
+  --ai-700: oklch(0.400 0.140 275);
+  --ai-glow: oklch(0.560 0.160 275 / 0.16);
+
+  /* === Status (shared chroma ~0.13) ============================= */
+  --ok-50:    oklch(0.965 0.025 155);
+  --ok-500:   oklch(0.580 0.130 155);
+  --ok-700:   oklch(0.430 0.115 155);
+  --warn-50:  oklch(0.970 0.030 85);
+  --warn-500: oklch(0.720 0.130 85);
+  --warn-700: oklch(0.530 0.110 85);
+  --bad-50:   oklch(0.965 0.025 25);
+  --bad-500:  oklch(0.590 0.150 25);
+  --bad-700:  oklch(0.450 0.140 25);
+  --info-50:  oklch(0.965 0.025 240);
+  --info-500: oklch(0.590 0.130 240);
+
+  /* === Cursor colors (presence, fixed per user) ================= */
+  --p-amber:  oklch(0.700 0.150 65);
+  --p-pink:   oklch(0.660 0.165 0);
+  --p-green:  oklch(0.620 0.130 145);
+  --p-cyan:   oklch(0.660 0.110 195);
+  --p-violet: oklch(0.560 0.160 275);  /* = AI */
+
+  /* === Typography =============================================== */
+  --font-ui: "Inter", -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  --t-11: 11px;
+  --t-12: 12px;
+  --t-13: 13px;
+  --t-14: 14px;
+  --t-15: 15px;
+  --t-16: 16px;
+  --t-18: 18px;
+  --t-20: 20px;
+  --t-24: 24px;
+  --t-28: 28px;
+  --t-32: 32px;
+  --t-40: 40px;
+
+  /* === Radius / shadow ========================================== */
+  --r-4: 4px;
+  --r-6: 6px;
+  --r-8: 8px;
+  --r-12: 12px;
+  --r-16: 16px;
+
+  --sh-1: 0 1px 0 rgba(20,18,14,0.04), 0 1px 2px rgba(20,18,14,0.04);
+  --sh-2: 0 4px 12px rgba(20,18,14,0.06), 0 1px 2px rgba(20,18,14,0.04);
+  --sh-3: 0 14px 40px rgba(20,18,14,0.10), 0 2px 6px rgba(20,18,14,0.05);
+
+  /* === Easing =================================================== */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Dark mode tokens — apply via [data-theme=dark] on any container. */
+[data-theme="dark"] {
+  --n-0:  oklch(0.155 0.006 270);
+  --n-50: oklch(0.180 0.007 270);
+  --n-100:oklch(0.215 0.008 270);
+  --n-150:oklch(0.245 0.009 270);
+  --n-200:oklch(0.290 0.010 270);
+  --n-300:oklch(0.360 0.010 270);
+  --n-400:oklch(0.510 0.010 270);
+  --n-500:oklch(0.640 0.008 270);
+  --n-600:oklch(0.760 0.006 270);
+  --n-700:oklch(0.850 0.005 270);
+  --n-800:oklch(0.930 0.004 270);
+  --n-900:oklch(0.985 0.003 270);
+
+  --brand-500: oklch(0.700 0.110 210);
+  --brand-600: oklch(0.620 0.110 210);
+  --brand-50:  oklch(0.260 0.035 210);
+  --brand-100: oklch(0.300 0.045 210);
+
+  --ai-500: oklch(0.700 0.170 275);
+  --ai-600: oklch(0.620 0.170 275);
+  --ai-200: oklch(0.330 0.080 275);
+  --ai-100: oklch(0.270 0.060 275);
+  --ai-50:  oklch(0.235 0.045 275);
+  --ai-glow: oklch(0.700 0.170 275 / 0.20);
+
+  --ok-50: oklch(0.260 0.045 155);
+  --warn-50: oklch(0.275 0.050 85);
+  --bad-50:  oklch(0.265 0.050 25);
+  --info-50: oklch(0.265 0.045 240);
+}

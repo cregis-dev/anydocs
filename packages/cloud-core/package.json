@@ -1,0 +1,45 @@
+{
+  "name": "@anydocs/cloud-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Anydocs Cloud Team Edition — server domain (Drizzle/Postgres + Better Auth + tenancy). Apps are adapters.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/index.d.ts",
+      "import": "./dist/db/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "import": "./dist/auth/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.22",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "drizzle-kit": "^0.31.0",
+    "typescript": "^5"
+  }
+}

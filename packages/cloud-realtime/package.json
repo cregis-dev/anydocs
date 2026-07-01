@@ -1,0 +1,37 @@
+{
+  "name": "@anydocs/cloud-realtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Anydocs Cloud Team Edition — Hocuspocus (Yjs) realtime WebSocket backend. Persistent Node service, not serverless.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cregis-dev/anydocs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "node --experimental-strip-types src/server.ts",
+    "start": "node dist/server.js",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/**/*.test.ts"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^4.3.0",
+    "yjs": "^13.6.20"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/ws": "^8",
+    "typescript": "^5",
+    "ws": "^8.18.0"
+  }
+}
