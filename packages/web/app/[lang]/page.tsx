@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import {
@@ -21,6 +21,7 @@ import {
 import type { DocsLang } from "@/lib/docs/types";
 import { ClassicDocsLanding } from "@/components/docs/classic-docs-landing";
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
+import { findFirstNavPageId } from "@/lib/docs/nav";
 import { CLASSIC_DOCS_THEME_ID } from "@/themes/classic-docs/manifest";
 
 export async function generateStaticParams() {
@@ -80,6 +81,20 @@ export default async function Page({
         searchIndexHref={getReaderSearchIndexHref(docsLang)}
       />
     );
+  }
+
+  const { nav, pages } = await getPublishedContext(
+    docsLang,
+    source.projectId,
+    source.customPath,
+  );
+  const firstPageId = findFirstNavPageId(nav.items);
+  const firstPage = firstPageId
+    ? pages.find((page) => page.id === firstPageId)
+    : null;
+  const firstSlug = firstPage?.slug?.trim();
+  if (firstSlug) {
+    redirect(`/${docsLang}/${firstSlug}`);
   }
 
   return (
