@@ -35,6 +35,21 @@ export function buildBreadcrumbsByPageId(nav: NavigationDoc) {
   return map;
 }
 
+export function findFirstNavPageId(items: NavItem[]): string | null {
+  for (const item of items) {
+    if (item.type === 'page') {
+      if (!item.hidden) return item.pageId;
+      continue;
+    }
+    if (item.type === 'link') continue;
+
+    const childPageId = findFirstNavPageId(item.children);
+    if (childPageId) return childPageId;
+  }
+
+  return null;
+}
+
 export function findNextPrevPageIds(nav: NavItem[], currentPageId: string) {
   const flat: string[] = [];
   const walk = (items: NavItem[]) => {
@@ -54,4 +69,3 @@ export function findNextPrevPageIds(nav: NavItem[], currentPageId: string) {
     next: idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null,
   };
 }
-
