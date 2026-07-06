@@ -317,7 +317,7 @@ export async function generateMetadata({
     );
     return {
       title: operation.summary,
-      description: `${operation.method} ${operation.path}`,
+      description: operation.kind === "webhook" ? "Webhook" : `${operation.method} ${operation.path}`,
       robots: buildPreviewRobotsMetadata(),
       ...(canonical ? { alternates: { canonical } } : {}),
       other: {

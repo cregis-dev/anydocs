@@ -188,13 +188,14 @@ export function OperationView({
     <article className="space-y-8">
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <MethodBadge method={operation.method} />
-          <code className="font-mono text-[14px] text-fd-foreground">{operation.path}</code>
           {isWebhook ? (
-            <span className="rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-purple-700 ring-1 ring-inset ring-purple-600/20">
-              Webhook
-            </span>
-          ) : null}
+            <MethodBadge method="WEBHOOK" />
+          ) : (
+            <>
+              <MethodBadge method={operation.method} />
+              <code className="font-mono text-[14px] text-fd-foreground">{operation.path}</code>
+            </>
+          )}
           {operation.deprecated ? (
             <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold uppercase text-amber-700 ring-1 ring-inset ring-amber-600/20">
               Deprecated

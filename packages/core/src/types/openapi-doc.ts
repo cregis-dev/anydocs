@@ -118,6 +118,7 @@ export type OpenApiNavGroup = {
   description?: string;
   items: Array<{
     operationId: string;
+    kind: OpenApiOperation['kind'];
     method: string;
     path: string;
     title: string;
