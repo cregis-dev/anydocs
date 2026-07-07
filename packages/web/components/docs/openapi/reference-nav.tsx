@@ -65,7 +65,7 @@ export function ReferenceNav({
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(linkBase, isActive ? active : inactive)}
                   >
-                    <MethodBadge method={item.method} className="scale-90" />
+                    <MethodBadge method={item.kind === 'webhook' ? 'WEBHOOK' : item.method} className="scale-90" />
                     <span className="min-w-0 truncate">{item.title}</span>
                   </Link>
                 </li>

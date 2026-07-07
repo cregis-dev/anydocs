@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { contentLinkTargetProps } from '@/components/docs/content-link-target';
 import { createHeadingIdGenerator } from '@/lib/docs/markdown';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +64,10 @@ function withHeadingClass(tag: 'h2' | 'h3' | 'h4') {
   };
 }
 
+function MarkdownLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
+  return <a {...props} href={href} {...contentLinkTargetProps(href)} />;
+}
+
 export function MarkdownView({ markdown, className }: { markdown: string; className?: string }) {
   return (
     <div
@@ -74,6 +79,7 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkDeduplicateHeadingIds]}
         components={{
+          a: MarkdownLink,
           h2: withHeadingClass('h2'),
           h3: withHeadingClass('h3'),
           h4: withHeadingClass('h4'),

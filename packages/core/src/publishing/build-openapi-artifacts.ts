@@ -658,6 +658,7 @@ function buildNavGroups(operations: OpenApiOperation[], spec: Record<string, unk
   for (const operation of operations) {
     ensureGroup(operation.tag).items.push({
       operationId: operation.id,
+      kind: operation.kind,
       method: operation.method,
       path: operation.path,
       title: operation.summary,

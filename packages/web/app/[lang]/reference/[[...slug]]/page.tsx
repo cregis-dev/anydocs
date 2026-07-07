@@ -31,7 +31,20 @@ type ApiReferenceIndexItem = {
   description: string;
 };
 
+const API_REFERENCE_INDEX_ORDER = ["waas-api", "payment-engine-api", "team-api"];
+
+function getApiReferenceIndexRank(item: ApiReferenceIndexItem) {
+  const rank = API_REFERENCE_INDEX_ORDER.indexOf(item.routeSlug);
+  return rank === -1 ? API_REFERENCE_INDEX_ORDER.length : rank;
+}
+
 function renderApiReferenceIndex(lang: DocsLang, items: ApiReferenceIndexItem[]) {
+  const sortedItems = [...items].sort((left, right) => {
+    const rankDelta =
+      getApiReferenceIndexRank(left) - getApiReferenceIndexRank(right);
+    return rankDelta || left.title.localeCompare(right.title);
+  });
+
   return (
     <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-8 px-6 py-8 sm:px-8 lg:px-10">
       <header className="space-y-3">
@@ -49,7 +62,7 @@ function renderApiReferenceIndex(lang: DocsLang, items: ApiReferenceIndexItem[])
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {items.map((item) => (
+        {sortedItems.map((item) => (
           <Link
             key={item.routeSlug}
             href={`/${lang}/reference/${item.routeSlug}`}
@@ -317,7 +330,7 @@ export async function generateMetadata({
     );
     return {
       title: operation.summary,
-      description: `${operation.method} ${operation.path}`,
+      description: operation.kind === "webhook" ? "Webhook" : `${operation.method} ${operation.path}`,
       robots: buildPreviewRobotsMetadata(),
       ...(canonical ? { alternates: { canonical } } : {}),
       other: {
