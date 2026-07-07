@@ -7,7 +7,6 @@ import {
   formatSchemaDescription,
   hasFriendlySchemaLabel,
   schemaRefDisplayName,
-  schemaTypeLabel,
   type SchemaLabelLang,
 } from '@/components/docs/openapi/schema-format';
 
@@ -41,11 +40,72 @@ function deref(schema: ResolvedSchema, schemas: SchemaDict, visited: string[]): 
 }
 
 function TypePill({ schema, lang }: { schema: ResolvedSchema | undefined; lang?: SchemaLabelLang }) {
+  const label = schemaTypePillLabel(schema, lang);
+  if (!label) {
+    return null;
+  }
   return (
     <code className="rounded-md border border-[color:var(--fd-border)] bg-[color:var(--fd-muted,rgba(0,0,0,0.04))] px-1.5 py-0.5 font-mono text-[11px] font-medium leading-5 text-fd-muted-foreground">
-      {schemaTypeLabel(schema, { lang })}
+      {label}
     </code>
   );
+}
+
+function shouldShowTypePill(schema: ResolvedSchema | undefined, lang?: SchemaLabelLang): boolean {
+  return Boolean(schemaTypePillLabel(schema, lang));
+}
+
+function isFriendlyCallbackUnion(schema: ResolvedSchema): boolean {
+  if (!schema.composition || (schema.composition.kind !== 'oneOf' && schema.composition.kind !== 'anyOf')) {
+    return false;
+  }
+  return schema.composition.members.length > 0 && schema.composition.members.every((member) => member.ref && hasFriendlySchemaLabel(member.ref));
+}
+
+function callbackUnionLabel(lang: SchemaLabelLang | undefined): string {
+  return lang === 'zh' ? '回调数据对象' : 'Callback data object';
+}
+
+function schemaTypePillLabel(schema: ResolvedSchema | undefined, lang?: SchemaLabelLang): string | null {
+  if (!schema) {
+    return 'any';
+  }
+  if (schema.ref) {
+    return hasFriendlySchemaLabel(schema.ref) ? schemaRefDisplayName(schema.ref, { lang }) : null;
+  }
+  if (isFriendlyCallbackUnion(schema)) {
+    return callbackUnionLabel(lang);
+  }
+  if (schema.type === 'array') {
+    const itemLabel = schemaTypePillLabel(schema.items, lang);
+    return itemLabel && itemLabel !== 'any' ? `array<${itemLabel}>` : 'array';
+  }
+  if (schema.composition) {
+    const separator = schema.composition.kind === 'allOf' ? ' & ' : ' | ';
+    let parts = schema.composition.members
+      .map((member) => schemaTypePillLabel(member, lang))
+      .filter((part): part is string => Boolean(part));
+    if (schema.composition.kind === 'allOf' && parts.length > 1) {
+      parts = parts.filter((part) => part !== 'object');
+    }
+    if (parts.length > 0) {
+      return parts.join(separator);
+    }
+    return schema.properties ? 'object' : null;
+  }
+  if (schema.type) {
+    if (schema.contentMediaType === 'application/json') {
+      return schema.format ? `${schema.type}<${schema.format}, json>` : `${schema.type}<json>`;
+    }
+    return schema.format ? `${schema.type}<${schema.format}>` : schema.type;
+  }
+  if (schema.properties) {
+    return 'object';
+  }
+  if (schema.enum) {
+    return 'enum';
+  }
+  return 'any';
 }
 
 function Constraints({ schema }: { schema: ResolvedSchema }) {
@@ -64,10 +124,6 @@ function Constraints({ schema }: { schema: ResolvedSchema }) {
 
 function optionLabel(index: number, lang: SchemaLabelLang | undefined): string {
   return lang === 'zh' ? `选项 ${index + 1}` : `Option ${index + 1}`;
-}
-
-function joinLabels(labels: string[], lang: SchemaLabelLang | undefined): string {
-  return labels.join(lang === 'zh' ? '、' : ', ');
 }
 
 function ExpandIndicator({ className }: { className?: string }) {
@@ -153,10 +209,9 @@ function collectObjectView(
   schema: ResolvedSchema,
   schemas: SchemaDict,
   visited: string[],
-): { properties: Record<string, ResolvedSchema>; required: Set<string>; inheritedRefs: string[] } | undefined {
+): { properties: Record<string, ResolvedSchema>; required: Set<string> } | undefined {
   const properties = new Map<string, ResolvedSchema>();
   const required = new Set(schema.required ?? []);
-  const inheritedRefs: string[] = [];
 
   const mergeProperties = (source: ResolvedSchema) => {
     for (const [name, value] of Object.entries(source.properties ?? {})) {
@@ -169,9 +224,6 @@ function collectObjectView(
 
   const mergeSchema = (source: ResolvedSchema, sourceVisited: string[]) => {
     const { target, cyclic, name } = deref(source, schemas, sourceVisited);
-    if (name && !inheritedRefs.includes(name)) {
-      inheritedRefs.push(name);
-    }
     if (cyclic) {
       return;
     }
@@ -186,11 +238,6 @@ function collectObjectView(
     }
     for (const propName of nested.required) {
       required.add(propName);
-    }
-    for (const ref of nested.inheritedRefs) {
-      if (!inheritedRefs.includes(ref)) {
-        inheritedRefs.push(ref);
-      }
     }
   };
 
@@ -207,7 +254,7 @@ function collectObjectView(
     return undefined;
   }
 
-  return { properties: Object.fromEntries(properties), required, inheritedRefs };
+  return { properties: Object.fromEntries(properties), required };
 }
 
 function PropertyRow({
@@ -315,7 +362,15 @@ export function SchemaView({
   if (target.type === 'array' && target.items) {
     return (
       <div className="space-y-1.5">
-        <p className="text-[12px] text-fd-muted-foreground">数组元素 · <TypePill schema={target.items} lang={lang} /></p>
+        <p className="text-[12px] text-fd-muted-foreground">
+          {lang === 'zh' ? '数组元素' : 'Array items'}
+          {shouldShowTypePill(target.items, lang) ? (
+            <>
+              {' · '}
+              <TypePill schema={target.items} lang={lang} />
+            </>
+          ) : null}
+        </p>
         <SchemaView schema={target.items} schemas={schemas} visited={nextVisited} showRequired={showRequired} lang={lang} />
       </div>
     );
@@ -338,7 +393,13 @@ export function SchemaView({
           <details key={index} className="schema-expand-details rounded-lg border border-[color:var(--fd-border)] p-2">
             <ExpandableSummary className="mx-0 border-transparent bg-transparent px-0 py-0 shadow-none">
               <span className="min-w-0 flex-1 text-[13px] font-medium text-fd-foreground">
-                {optionLabel(index, lang)} · <TypePill schema={member} lang={lang} />
+                {optionLabel(index, lang)}
+                {shouldShowTypePill(member, lang) ? (
+                  <>
+                    {' · '}
+                    <TypePill schema={member} lang={lang} />
+                  </>
+                ) : null}
               </span>
             </ExpandableSummary>
             <div className="mt-2">
@@ -353,26 +414,9 @@ export function SchemaView({
   // object：渲染前合并 allOf 命名引用与内联成员，避免公共 envelope 字段被隐藏。
   const objectView = collectObjectView(target, schemas, nextVisited);
   if (objectView) {
-    const { properties, required, inheritedRefs } = objectView;
-    const friendlyInheritedRefs = inheritedRefs.length > 0 && inheritedRefs.every(hasFriendlySchemaLabel);
-    const inheritedPrefix = friendlyInheritedRefs
-      ? lang === 'zh'
-        ? '字段组成：'
-        : 'Field groups: '
-      : lang === 'zh'
-        ? '继承自：'
-        : 'Extends: ';
+    const { properties, required } = objectView;
     return (
       <div>
-        {inheritedRefs.length > 0 ? (
-          <p className="mb-1.5 text-[12px] text-fd-muted-foreground">
-            {inheritedPrefix}
-            {joinLabels(
-              inheritedRefs.map((ref) => schemaRefDisplayName(ref, { lang })),
-              lang,
-            )}
-          </p>
-        ) : null}
         <ul className="m-0 list-none p-0">
           {orderedPropertyEntries(properties, required).map(([propName, propSchema]) => (
             <PropertyRow

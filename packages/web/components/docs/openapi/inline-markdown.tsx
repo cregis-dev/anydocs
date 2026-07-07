@@ -1,7 +1,15 @@
-import { Children, isValidElement, type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { contentLinkTargetProps } from '@/components/docs/content-link-target';
 import { cn } from '@/lib/utils';
 
 const markdownTableWrapperStyle: CSSProperties = {
@@ -158,6 +166,10 @@ function splitRuleParagraph(children: ReactNode): RuleListItem[] | null {
   return rules as RuleListItem[];
 }
 
+function InlineMarkdownLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
+  return <a {...props} href={href} {...contentLinkTargetProps(href)} />;
+}
+
 /**
  * 轻量内联 markdown 渲染，用于 operation/字段描述。
  * 与文档正文的 MarkdownView 区分：字号更小、无 heading 锚点逻辑，适配参考页的紧凑排版。
@@ -182,6 +194,7 @@ export function InlineMarkdown({ children, className }: { children: string; clas
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          a: InlineMarkdownLink,
           table({ node, style, ...props }) {
             void node;
             return (

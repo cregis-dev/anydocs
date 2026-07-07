@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import type { CalloutTone, DocBlock, DocContentV1, InlineNode, ListItem, TextMark, TextNode } from '@anydocs/core';
 
+import { contentLinkTargetProps } from '@/components/docs/content-link-target';
 import { DOC_READER_ROOT_CLASSNAME } from '@/components/docs/doc-reader-classnames';
 import { MermaidViewer } from '@/components/docs/mermaid-viewer';
 import { createHeadingIdGenerator } from '@/lib/docs/markdown';
@@ -45,7 +46,7 @@ function renderInline(nodes: InlineNode[], keyPrefix: string): ReactNode[] {
     }
 
     return (
-      <a key={key} href={node.href} title={node.title}>
+      <a key={key} href={node.href} title={node.title} {...contentLinkTargetProps(node.href)}>
         {node.children.map((child, childIndex) => renderTextNode(child, `${key}-${childIndex + 1}`))}
       </a>
     );
