@@ -3,6 +3,7 @@
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -156,6 +157,7 @@ export function SearchPanel({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState<LoadedReaderSearchIndex | null>(null);
+  const [searchIndexRequested, setSearchIndexRequested] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
@@ -170,13 +172,21 @@ export function SearchPanel({
       ? "Ctrl K"
       : "⌘K";
 
+  const requestSearchIndex = useCallback(() => {
+    setSearchIndexRequested(true);
+  }, []);
+
   const openWithSeed = (seed = "") => {
+    requestSearchIndex();
     setQ(seed);
     setOpen(true);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
+    if (nextOpen) {
+      requestSearchIndex();
+    }
     if (!nextOpen) {
       setQ("");
       setActiveIndex(-1);
@@ -184,6 +194,10 @@ export function SearchPanel({
   };
 
   useEffect(() => {
+    if (!searchIndexRequested) {
+      return;
+    }
+
     let cancelled = false;
     loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
       .then((data) => {
@@ -198,7 +212,7 @@ export function SearchPanel({
     return () => {
       cancelled = true;
     };
-  }, [findHref, indexHref, lang]);
+  }, [findHref, indexHref, lang, searchIndexRequested]);
 
   useEffect(() => {
     if (!open) {
@@ -374,7 +388,11 @@ export function SearchPanel({
                 <Input
                   ref={inputRef}
                   value={q}
-                  onChange={(event) => setQ(event.target.value)}
+                  onChange={(event) => {
+                    requestSearchIndex();
+                    setQ(event.target.value);
+                  }}
+                  onFocus={requestSearchIndex}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={resolvedPlaceholder}
                   aria-label={resolvedPlaceholder}

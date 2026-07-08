@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 
-import type { DocsLang, NavItem, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavItem, NavigationDoc, PublishedPageSummary } from '@/lib/docs/types';
 import { SearchPanel } from '@/components/docs/search-panel';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
-function findPage(pages: PublishedPageDoc[], pageId: string) {
+function findPage(pages: PublishedPageSummary[], pageId: string) {
   return pages.find((p) => p.id === pageId) ?? null;
 }
 
@@ -189,7 +189,7 @@ function NavNode({
 }: {
   lang: DocsLang;
   item: NavItem;
-  pages: PublishedPageDoc[];
+  pages: PublishedPageSummary[];
   activePageId: string | null;
   depth: number;
   rootFolderDisplay: 'collapsible' | 'section';
@@ -362,7 +362,7 @@ function NavNode({
 type DocsSidebarProps = {
   lang: DocsLang;
   nav: NavigationDoc;
-  pages: PublishedPageDoc[];
+  pages: PublishedPageSummary[];
   searchFindHref?: string;
   searchIndexHref?: string;
   homeLabel?: string;

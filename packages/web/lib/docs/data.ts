@@ -18,7 +18,7 @@ import {
 } from '@/lib/docs/fs';
 import { getPublishedApiSources } from '@/lib/docs/api-sources';
 import { sanitizeCookieDocsSource, type DocsRuntimeSource } from '@/lib/docs/request-source';
-import type { DocsLang, NavigationDoc, PublishedPageDoc } from '@/lib/docs/types';
+import type { DocsLang, NavigationDoc, PublishedPageDoc, PublishedPageSummary } from '@/lib/docs/types';
 import { readCliDocsRuntimeMode, readRuntimeConfig } from '@/lib/runtime/runtime-config';
 export type { DocsRuntimeSource } from '@/lib/docs/request-source';
 
@@ -175,6 +175,24 @@ export async function getAllPages(lang: DocsLang, projectId: string = '', custom
 
 export async function getPublishedPages(lang: DocsLang, projectId: string = '', customPath?: string) {
   return (await getPublishedSite(lang, projectId, customPath)).pages as PublishedPageDoc[];
+}
+
+export async function getPublishedPageSummaries(
+  lang: DocsLang,
+  projectId: string = '',
+  customPath?: string,
+): Promise<PublishedPageSummary[]> {
+  const pages = await getPublishedPages(lang, projectId, customPath);
+  return pages.map(({ id, lang, slug, title, description, status, template, metadata }) => ({
+    id,
+    lang,
+    slug,
+    title,
+    description,
+    status,
+    template,
+    metadata,
+  }));
 }
 
 export async function getPublishedNavigation(lang: DocsLang, projectId: string = '', customPath?: string) {

@@ -23,6 +23,10 @@ export type PageStatus = CorePageStatus;
 // content forward via `yooptaToDocContent` on read.
 export type StudioPageDoc = CorePageDoc<DocContentV1>;
 export type PublishedPageDoc = CorePageDoc<unknown>;
+export type PublishedPageSummary = Pick<
+  PublishedPageDoc,
+  'id' | 'lang' | 'slug' | 'title' | 'description' | 'status' | 'template' | 'metadata'
+>;
 export type PageDoc = StudioPageDoc;
 export const SUPPORTED_DOCS_LANGUAGES = ['zh', 'en'] as const satisfies readonly DocsLang[];
 export type { ApiSourceDoc, NavItem, NavigationDoc, PageRender, PageReview };
