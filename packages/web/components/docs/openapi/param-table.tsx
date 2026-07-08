@@ -10,7 +10,7 @@ export function ParamTable({ title, params }: { title: string; params: ResolvedP
 
   return (
     <section className="space-y-2">
-      <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-fd-muted-foreground">{title}</h3>
+      <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-fd-foreground">{title}</h3>
       <ul className="m-0 list-none rounded-lg border border-[color:var(--fd-border)] p-0">
         {params.map((param) => (
           <li key={`${param.in}:${param.name}`} className="border-b border-[color:var(--fd-border)] px-3 py-2.5 last:border-b-0">
