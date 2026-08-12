@@ -105,6 +105,7 @@ export type StartDocsPreviewServerOptions = BaseBridgeOptions & {
   port?: number;
   readyPath?: string;
   startTimeoutMs?: number;
+  production?: boolean;
 };
 
 export type DocsPreviewServerProcess = {
@@ -428,11 +429,11 @@ export async function startDocsPreviewServer(
     const port = options.port ?? (await pickAvailablePort(host));
     const readyPath = options.readyPath ?? '/';
     const startTimeoutMs = options.startTimeoutMs ?? 120_000;
-    const child = await createBridgeChild(
-      'preview',
-      ['--webpack', '--hostname', host, '--port', String(port)],
-      options,
-    );
+    const bridgeArgs = ['--webpack', '--hostname', host, '--port', String(port)];
+    if (options.production) {
+      bridgeArgs.push('--production');
+    }
+    const child = await createBridgeChild('preview', bridgeArgs, options);
     const url = `http://${host}:${port}`;
     const readyUrl = new URL(readyPath, `${url}/`).toString();
     const exitPromise = waitForChildExit(child).finally(() => releaseLock());
