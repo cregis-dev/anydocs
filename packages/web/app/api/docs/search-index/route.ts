@@ -40,14 +40,16 @@ export async function GET(request: NextRequest) {
     return new NextResponse(content, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store',
+        // Allow browser/proxy caching so the client-side `cache: 'force-cache'`
+        // fetch actually hits the HTTP cache on subsequent page loads.
+        'Cache-Control': 'public, max-age=300, must-revalidate',
       },
     });
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return NextResponse.json(buildEmptySearchIndex(lang), {
         headers: {
-          'Cache-Control': 'no-store',
+          'Cache-Control': 'public, max-age=60',
         },
       });
     }
