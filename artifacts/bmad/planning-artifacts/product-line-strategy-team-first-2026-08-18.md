@@ -16,7 +16,9 @@ Concretely:
 - Local-first **Epics 1–8 + 10 are done**; **Epic 9** (desktop native fs) and **Epic 13**
   (Studio desktop shell) finish as planned — they complete the self-installed product and have
   no cloud equivalent worth deferring.
-- No new epics are opened against the local-first edition.
+- No new epics are opened against the local-first edition, and **no new features are added to it**
+  at all — only maintenance (bug fixes, dependency and security updates). All feature demand is
+  routed to the Cloud Team Edition. Confirmed by Shawn, 2026-08-18.
 
 ## Why
 
@@ -96,7 +98,7 @@ entry point + offline fallback**.
 | 2 | Wire `cloud-core → @anydocs/core` reuse seam | Without it, C2–C7 rewrite 22k lines of core | 1–2 stories |
 | 3 | Run the Y.Doc ↔ `doc-content-v1` bridge spike | Determines C2 autosave **and** C6 realtime architecture; the sprint file already flags it as "spike EARLY, before C3+C6" | 1 spike |
 | 4 | Re-scope C3.2 from *build* to *adapt* Epic 10's audit domain | Avoids rebuilding 582 fs-free lines | edit epic |
-| 5 | Sync `feat/cloud-team-edition` with `origin/main` (18 commits behind) | Branch predates Epics 8–10/13 landing; 11 conflict hunks in editor/web | 1 chore |
+| 5 | Sync `feat/cloud-team-edition` with `origin/main` | Branch predated Epics 8–10/13 landing, so it consumed a June snapshot of core | ✅ done 2026-08-18 (merge `4a268e8`) |
 
 ## Non-goals
 
