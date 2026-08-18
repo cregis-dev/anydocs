@@ -50,7 +50,7 @@ development_status:
   # ─── Epic C1: Sign-in & Cloud Workspace Foundation ───
   epic-c1: in-progress
   c1-0-scaffold-cloud-packages-and-baseline-infrastructure: done
-  c1-1-sign-in-and-establish-a-session: backlog
+  c1-1-sign-in-and-establish-a-session: done
   c1-2-provision-a-default-organization-and-workspace: backlog
   c1-3-workspace-rail-switch-context-and-list-projects: backlog
   c1-4-four-region-app-shell-with-collapsible-regions: backlog

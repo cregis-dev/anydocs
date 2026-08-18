@@ -36,6 +36,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but shared example env files are meant to be committed (onboarding + OAuth extension docs)
+!.env.example
+!.env.*.example
 
 # vercel
 .vercel
