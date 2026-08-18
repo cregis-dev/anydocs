@@ -39,6 +39,23 @@
 # - Spike EARLY (alongside C1/C2, before C3+C6): the Y.Doc <-> doc-content-v1 bridge, and routing agent writes through the Y.Doc.
 # - Epic C10 (Team Governance) is tagged "needs UX design first" — run a small UX pass before building its stories.
 # - Epics are ordered C1 -> C11 with no forward dependencies (C2 single-user-usable; C9 only needs C1).
+#
+# ═══ PRODUCT LINE STRATEGY (2026-08-18) — TEAM FIRST ═════════════════════════
+# The Cloud Team Edition is now the PRIMARY product line. The local-first edition is
+# repositioned as a free, single-user, self-installed offline product: maintained, not
+# extended. Its Epics 11 (Agent subsystem) + 12 (Scope escalation) are FROZEN — those
+# capabilities land here instead (C3/C4/C5 + C10.1/C10.2).
+# Full rationale: artifacts/bmad/planning-artifacts/product-line-strategy-team-first-2026-08-18.md
+#
+# REUSE FROM THE LOCAL-FIRST EDITION (already built, tested, and fs-free — do NOT rewrite):
+#   @anydocs/core  audit-entry-schema.ts (321 L) + audit-log-service.ts (261 L)  → C3.2, C10.3, C10.4
+#                  runtime-mode.ts (217 L) + capability-matrix.ts (60 L)          → C1.5
+#                  schemas/ (1663 L), utils/ (1995 L), types/ (805 L), search/    → C2.*, C7.*
+#                  publishing/ (2016 L, 3/5 files fs-free)                        → C7.4
+#   Only the storage adapter is fs-bound (audit-repository.ts) — write a Postgres adapter,
+#   keep the domain logic. cloud-core does NOT yet depend on @anydocs/core: wiring that
+#   reuse seam is a PREREQUISITE before C3 (see strategy doc, action 2).
+# ═════════════════════════════════════════════════════════════════════════════
 
 generated: 2026-06-30
 project: anydocs — Cloud Team Edition
