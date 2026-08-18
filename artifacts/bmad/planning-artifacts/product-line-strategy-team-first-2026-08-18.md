@@ -54,21 +54,33 @@ because neither epic has started.
 
 `@anydocs/core` domain logic is largely filesystem-free and can back the cloud edition directly:
 
-| Asset | Lines | fs-bound? | Cloud consumer |
+| Asset | Lines | fs-reachable? | Cloud consumer |
 |---|---|---|---|
-| `schemas/audit-entry-schema.ts` | 321 | no | C3.2, C10.3, C10.4 |
-| `services/audit-log-service.ts` (write-ahead lifecycle) | 261 | no | C3.2 |
-| `runtime/runtime-mode.ts` + `capability-matrix.ts` | 277 | no | C1.5 |
-| `schemas/` | 1663 | no | C2.\*, C7.\* |
+| `schemas/` (incl. `audit-entry-schema.ts`, doc-content-v1) | 1663 | no | C2.\*, C3.2, C7.\* |
 | `utils/` | 1995 | no | across |
 | `types/` | 805 | no | across |
-| `publishing/` | 2016 | 2 of 5 files | C7.4 |
 | `search/` | 336 | no | C2.\* |
-| `fs/audit-repository.ts` | 202 | **yes** | replace with a Postgres adapter |
+| `runtime/` (`runtime-mode.ts` + `capability-matrix.ts`) | 277 | no | C1.5 |
+| `config/` + `errors/` | 99 | no | across |
+| **Subtotal — directly importable today** | **~5175** | **no** | — |
+| `services/audit-log-service.ts` (write-ahead lifecycle) | 261 | **yes** (statically imports 5 functions from `fs/audit-repository.ts`) | C3.2 — needs a repository-port refactor first |
+| `services/rollback-service.ts` | — | **yes** (same coupling) | C4.5/C5.6 — same refactor |
+| `publishing/` | 2016 | **yes** (via `build-artifacts.ts`) | C7.4 — needs the same treatment |
 
-Epic 10's audit subsystem is **already built and tested**, and its domain layer is fs-free. The
-only fs-bound piece is the storage adapter — exactly the right seam. Cloud story C3.2
-("write-ahead audit foundation") should therefore be re-scoped from *build* to *adapt*.
+> **Correction (2026-08-18, after transitive import analysis).** An earlier draft of this
+> document listed `audit-log-service.ts` and most of `publishing/` as fs-free, based on a
+> direct-`grep` check that missed `node:fs/promises` and did not follow the import graph.
+> The corrected analysis is above: **7 core modules are transitively fs-free and importable
+> as-is (~5175 lines)**, but the audit *service* and publishing pipeline are statically
+> coupled to filesystem repositories. The audit *schema* — the actual data contract — is in
+> `schemas/` and IS reusable.
+
+Epic 10's audit subsystem is **already built and tested**, and its *entry schema and validation
+rules* are fs-free and reusable as-is. Its *service layer* is not: `audit-log-service.ts` calls
+`fs/audit-repository.ts` functions directly rather than through an injected port. Cloud story
+C3.2 ("write-ahead audit foundation") should therefore be re-scoped from *build* to
+**"extract a repository port in core, then supply a Postgres implementation"** — cheaper than a
+rewrite, but not free.
 
 `doc-content-v1`, `@anydocs/editor` and `tokens.css` are already shared contracts.
 
@@ -95,10 +107,36 @@ entry point + offline fallback**.
 | # | Action | Why it blocks | Size |
 |---|---|---|---|
 | 1 | Freeze Epics 11–12 in `sprint-status.yaml` | Stops duplicate investment | ✅ done 2026-08-18 |
-| 2 | Wire `cloud-core → @anydocs/core` reuse seam | Without it, C2–C7 rewrite 22k lines of core | 1–2 stories |
+| 2 | Wire `cloud-core → @anydocs/core` reuse seam | Without it, C2–C7 rewrite 22k lines of core | ✅ done 2026-08-18 |
 | 3 | Run the Y.Doc ↔ `doc-content-v1` bridge spike | Determines C2 autosave **and** C6 realtime architecture; the sprint file already flags it as "spike EARLY, before C3+C6" | 1 spike |
 | 4 | Re-scope C3.2 from *build* to *adapt* Epic 10's audit domain | Avoids rebuilding 582 fs-free lines | edit epic |
 | 5 | Sync `feat/cloud-team-edition` with `origin/main` | Branch predated Epics 8–10/13 landing, so it consumed a June snapshot of core | ✅ done 2026-08-18 (merge `4a268e8`) |
+
+## The reuse seam (action 2, delivered)
+
+`@anydocs/core` gained a **`/portable`** subpath export: the transitively fs-free subset
+(`config`, `errors`, `runtime`, `schemas`, `search`, `types`, `utils` — ~5175 lines). The root
+entry still re-exports `fs/` and `services/` and stays local-first-only.
+
+`@anydocs/cloud-core` now depends on `@anydocs/core` and re-exports the shared contracts through
+`cloud-core/src/content/`: `doc-content-v1` validators, the audit entry schema, and the runtime
+capability matrix. **The cloud edition has no content model of its own.**
+
+Two tests keep the seam honest:
+
+- `packages/core/tests/portable-entry.test.ts` walks the real import graph from `portable.ts` and
+  fails if anything reachable imports `node:fs` — so a future core change cannot silently break
+  cloud bundles. It also asserts the root entry is still fs-reaching, proving the split is
+  load-bearing rather than a no-op alias.
+- `packages/cloud-core/tests/content-reuse.test.ts` executes core's validators from inside the
+  cloud package (valid + invalid documents, precise error path, audit schema version, runtime
+  mode) — proving the seam works at runtime, not just at typecheck.
+
+Root `test:cloud` now builds core first, then runs cloud-core / cloud-realtime / cloud-web.
+
+**Rule for cloud stories:** never re-declare a domain type that exists in core. If a needed rule
+sits behind a filesystem repository (audit persistence, publishing), extract a port in core and
+supply a Postgres implementation in cloud-core — do not copy the logic.
 
 ## Non-goals
 
