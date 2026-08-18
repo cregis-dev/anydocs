@@ -383,22 +383,52 @@ async function exportDocsSite(mode) {
   }
 }
 
+function findPortArg(args) {
+  const portIndex = args.indexOf('--port');
+  if (portIndex !== -1 && args[portIndex + 1]) {
+    return args[portIndex + 1];
+  }
+  return null;
+}
+
 async function runPreviewProxy() {
   const args = process.argv.slice(3);
-  const distDir = '.next-cli-preview';
+  const productionMode = args.includes('--production');
+  const nextArgs = args.filter(arg => arg !== '--production' && arg !== '--webpack');
+  const distDir = productionMode ? '.next-cli-preview-prod' : '.next-cli-preview';
   const runtimeWebRoot = await prepareRuntimeWorkspace(previewWorkspaceRoot);
   const tsconfigPath = path.join(runtimeWebRoot, 'tsconfig.json');
   const originalTsconfig = await snapshotTsconfig(tsconfigPath);
   await prepareTsconfigForDist(tsconfigPath, originalTsconfig, distDir);
   await rm(path.join(runtimeWebRoot, distDir), { recursive: true, force: true });
   let shuttingDown = false;
-  const child = spawn(process.execPath, [nextBin, 'dev', '--webpack', ...args], {
-    cwd: runtimeWebRoot,
-    stdio: 'inherit',
-    env: createRuntimeEnv('preview', {
+
+  let child;
+  if (productionMode) {
+    // Production mode: build first, then start with optimized output
+    console.log('[preview] Running in production mode (next build + next start)...');
+    const buildEnv = createRuntimeEnv('preview', {
       ANYDOCS_NEXT_DIST_DIR: distDir,
-    }),
-  });
+      NODE_ENV: 'production',
+    });
+    await runNext(['build'], { cwd: runtimeWebRoot, env: buildEnv });
+    const portArg = findPortArg(nextArgs) || '3000';
+    const startArgs = ['start', '-p', portArg];
+    child = spawn(process.execPath, [nextBin, ...startArgs], {
+      cwd: runtimeWebRoot,
+      stdio: 'inherit',
+      env: buildEnv,
+    });
+  } else {
+    // Development mode: next dev with HMR
+    child = spawn(process.execPath, [nextBin, 'dev', '--webpack', ...nextArgs], {
+      cwd: runtimeWebRoot,
+      stdio: 'inherit',
+      env: createRuntimeEnv('preview', {
+        ANYDOCS_NEXT_DIST_DIR: distDir,
+      }),
+    });
+  }
 
   let cleanupPromise;
   const cleanupPreviewWorkspace = async () => {

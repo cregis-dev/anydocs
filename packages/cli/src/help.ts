@@ -92,7 +92,9 @@ export function printCommandHelp(command: string): boolean {
         `  ${formatCliCommand(['preview', '[targetDir]', '[options]'])}`,
         '',
         'Options:',
+        '  --port <port>        Port to bind (default: auto)',
         '  --watch              Compatibility flag; preview already runs live',
+        '  --production         Use production build (faster, no HMR)',
         '  --no-open            Do not attempt to open a browser automatically',
         '  --json               Print structured JSON output',
       ]);
