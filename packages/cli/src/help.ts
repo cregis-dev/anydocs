@@ -33,6 +33,7 @@ export function printGeneralHelp(): void {
     '  workflow inspect [targetDir]           Inspect the workflow standard definition',
     '  page <subcommand> [options]            Inspect pages by language, id, or slug',
     '  nav get [targetDir] --lang <lang>      Inspect a navigation document',
+    '  audit prune [targetDir] [options]      Prune audit shards beyond the retention window',
     '  import <sourceDir> [targetDir] [lang]  Stage legacy Markdown/MDX for conversion',
     '  convert-import <importId> [targetDir]  Convert imported content',
     '  help [command]                         Show general or command-specific help',
@@ -91,7 +92,9 @@ export function printCommandHelp(command: string): boolean {
         `  ${formatCliCommand(['preview', '[targetDir]', '[options]'])}`,
         '',
         'Options:',
+        '  --port <port>        Port to bind (default: auto)',
         '  --watch              Compatibility flag; preview already runs live',
+        '  --production         Use production build (faster, no HMR)',
         '  --no-open            Do not attempt to open a browser automatically',
         '  --json               Print structured JSON output',
       ]);
@@ -220,6 +223,22 @@ export function printCommandHelp(command: string): boolean {
         `  ${formatCliCommand(['nav', 'get', '--target', '<targetDir>', '--lang', '<lang>', '[options]'])}`,
         '',
         'Options:',
+        '  --json               Print structured JSON output',
+      ]);
+      return true;
+    case 'audit':
+    case 'audit prune':
+      printLines([
+        'Usage:',
+        `  ${formatCliCommand(['audit', 'prune', '[targetDir]', '[options]'])}`,
+        `  ${formatCliCommand(['audit', 'prune', '--target', '<targetDir>', '[options]'])}`,
+        '',
+        'Description:',
+        '  Delete audit shards older than the retention window (default 30 days) and',
+        '  record a system audit entry summarizing the prune.',
+        '',
+        'Options:',
+        '  --retention-days <n>  Retention window in days (default: 30)',
         '  --json               Print structured JSON output',
       ]);
       return true;

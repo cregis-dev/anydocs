@@ -1,9 +1,9 @@
 'use client';
 
 import { FilePlus2, FolderOpen, Loader2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { LocalChip } from '@/lib/desktop-shell';
 import { ProjectPathDialog } from '@/components/studio/project-path-dialog';
 import type { StudioProject } from '@/components/studio/project-registry';
 
@@ -20,6 +20,13 @@ interface WelcomeScreenProps {
   onRemoveProject: (project: StudioProject) => void;
 }
 
+/**
+ * WelcomeScreen — first-launch project picker, restyled to the Claude Design
+ * desktop handoff vocabulary (Anydocs Desktop · v1.0). Token-only styling:
+ * warm neutrals (`--n-*`), near-black primary `.btn`, brand-gradient logo and
+ * mono paths — matching the rest of the migrated Studio shell. The radial
+ * backdrop mirrors the handoff `DesktopBG`.
+ */
 export function WelcomeScreen({
   recentProjects,
   isOpeningFolder,
@@ -35,31 +42,97 @@ export function WelcomeScreen({
   const [isProjectPathDialogOpen, setIsProjectPathDialogOpen] = useState(false);
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
 
+  const tallButton: CSSProperties = {
+    width: '100%',
+    height: 42,
+    justifyContent: 'center',
+    fontSize: 13.5,
+    borderRadius: 'var(--r-8)',
+  };
+
   return (
-    <div className="min-h-dvh bg-fd-background text-fd-foreground flex flex-col items-center justify-center p-8">
-      <div className="max-w-md w-full text-center space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Anydocs Studio</h1>
-          <p className="text-fd-muted-foreground">
-            Open an existing docs project or create a new local project.
+    <div
+      className="ax"
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 32,
+        background:
+          'radial-gradient(120% 80% at 50% 0%, oklch(0.985 0.005 80), oklch(0.945 0.006 80) 70%)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 440,
+          background: 'var(--n-0)',
+          border: '1px solid var(--n-200)',
+          borderRadius: 'var(--r-16)',
+          boxShadow: 'var(--sh-3)',
+          padding: '32px 28px 24px',
+        }}
+      >
+        {/* Brand mark + title */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 22,
+              fontWeight: 700,
+              boxShadow: 'var(--sh-1)',
+              marginBottom: 4,
+            }}
+          >
+            A
+          </div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 'var(--t-20)',
+              fontWeight: 700,
+              color: 'var(--n-900)',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Anydocs Studio
+          </h1>
+          <p style={{ margin: 0, fontSize: 'var(--t-13)', color: 'var(--n-500)', lineHeight: 1.5 }}>
+            Open an existing docs project or create a new local one.
           </p>
+          <div style={{ marginTop: 2 }}>
+            <LocalChip />
+          </div>
         </div>
 
+        {/* Primary actions */}
         {allowExternalProjectOpen ? (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
             {allowProjectCreate ? (
-              <Button
+              <button
+                type="button"
+                className="btn primary"
+                style={tallButton}
                 onClick={() => setIsCreateProjectDialogOpen(true)}
                 disabled={isOpeningFolder}
-                className="w-full h-12 text-lg gap-2"
-                size="lg"
                 data-testid="studio-create-project-button"
               >
-                <FilePlus2 className="size-5" />
+                <FilePlus2 className="size-4" />
                 New Project
-              </Button>
+              </button>
             ) : null}
-            <Button
+            <button
+              type="button"
+              className="btn"
+              style={tallButton}
               onClick={() => {
                 if (supportsNativeDirectoryPicker) {
                   void onOpenProject();
@@ -69,25 +142,34 @@ export function WelcomeScreen({
                 setIsProjectPathDialogOpen(true);
               }}
               disabled={isOpeningFolder}
-              className="w-full h-12 text-lg gap-2"
-              size="lg"
               data-testid="studio-open-project-button"
             >
               {isOpeningFolder ? (
                 <>
-                  <Loader2 className="size-5 animate-spin" />
-                  Opening...
+                  <Loader2 className="size-4 animate-spin" />
+                  Opening…
                 </>
               ) : (
                 <>
-                  <FolderOpen className="size-5" />
+                  <FolderOpen className="size-4" />
                   Open Project
                 </>
               )}
-            </Button>
+            </button>
           </div>
         ) : (
-          <div className="rounded-lg border border-fd-border bg-fd-card px-4 py-3 text-sm text-fd-muted-foreground">
+          <div
+            style={{
+              marginTop: 24,
+              borderRadius: 'var(--r-8)',
+              border: '1px solid var(--n-200)',
+              background: 'var(--n-50)',
+              padding: '12px 14px',
+              fontSize: 'var(--t-13)',
+              color: 'var(--n-500)',
+              lineHeight: 1.5,
+            }}
+          >
             This Studio session is locked to one project and cannot open another directory.
           </div>
         )}
@@ -116,42 +198,141 @@ export function WelcomeScreen({
           />
         ) : null}
 
+        {/* Recent projects */}
         {allowRecentProjects && recentProjects.length > 0 && (
-          <div className="space-y-3 pt-8">
-            <h2 className="text-sm font-semibold text-fd-muted-foreground">Recent External Projects</h2>
-            <div className="space-y-2">
+          <div style={{ marginTop: 28 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--n-400)',
+                padding: '0 2px 8px',
+              }}
+            >
+              Recent Projects
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {recentProjects.map((project) => (
-                <div
+                <RecentProjectRow
                   key={project.id}
-                  className="flex items-center gap-2 rounded-lg border border-fd-border p-2 transition-colors hover:bg-fd-accent"
-                >
-                  <button
-                    onClick={() => onSelectProject(project)}
-                    className="flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 text-left"
-                  >
-                    <FolderOpen className="size-5 text-fd-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{project.name}</div>
-                      <div className="text-xs text-fd-muted-foreground truncate">{project.path}</div>
-                    </div>
-                  </button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-fd-muted-foreground hover:text-fd-error"
-                    onClick={() => onRemoveProject(project)}
-                    title="Remove from history"
-                    data-testid={`studio-remove-recent-project-${project.id}`}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                  project={project}
+                  onSelect={() => onSelectProject(project)}
+                  onRemove={() => onRemoveProject(project)}
+                />
               ))}
             </div>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function RecentProjectRow({
+  project,
+  onSelect,
+  onRemove,
+}: {
+  project: StudioProject;
+  onSelect: () => void;
+  onRemove: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const displayPath = project.path.replace(/^\/Users\/[^/]+/, '~');
+  const initial = (project.name.trim()[0] ?? 'A').toUpperCase();
+
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '8px 8px 8px 9px',
+        borderRadius: 'var(--r-8)',
+        border: '1px solid var(--n-200)',
+        background: hover ? 'var(--n-100)' : 'var(--n-50)',
+        transition: 'background 120ms var(--ease)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        style={{
+          display: 'flex',
+          minWidth: 0,
+          flex: 1,
+          alignItems: 'center',
+          gap: 10,
+          textAlign: 'left',
+        }}
+      >
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            flex: 'none',
+            borderRadius: 6,
+            background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            fontWeight: 700,
+          }}
+        >
+          {initial}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 'var(--t-13)',
+              fontWeight: 500,
+              color: 'var(--n-900)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {project.name}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--n-500)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              marginTop: 1,
+            }}
+          >
+            {displayPath}
+          </div>
+        </div>
+      </button>
+      <button
+        type="button"
+        className="btn ghost sm"
+        style={{
+          width: 28,
+          height: 28,
+          padding: 0,
+          justifyContent: 'center',
+          flex: 'none',
+          opacity: hover ? 1 : 0.45,
+        }}
+        onClick={onRemove}
+        title="Remove from history"
+        aria-label={`Remove ${project.name} from history`}
+        data-testid={`studio-remove-recent-project-${project.id}`}
+      >
+        <Trash2 className="size-4" />
+      </button>
     </div>
   );
 }

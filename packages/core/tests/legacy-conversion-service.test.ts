@@ -5,11 +5,11 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
-  createDocsRepository,
   loadNavigation,
   loadPage,
   savePage,
 } from '../src/fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../src/fs/node-fs-port.ts';
 import { convertImportedLegacyContent } from '../src/services/legacy-conversion-service.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 import { importLegacyDocumentation } from '../src/services/legacy-import-service.ts';
@@ -80,7 +80,7 @@ test('convertImportedLegacyContent converts staged imports into draft pages and 
       false,
     );
 
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     const guidePage = await loadPage(repository, 'en', 'guide');
     assert.ok(guidePage);
     assert.equal(guidePage.status, 'draft');
@@ -144,7 +144,7 @@ test('convertImportedLegacyContent flags conflicts and keeps imported pages in d
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'guide',
       lang: 'en',
@@ -212,7 +212,7 @@ test('convertImportedLegacyContent rolls back partial writes when conversion fai
         }),
     );
 
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     assert.equal(await loadPage(repository, 'en', 'guide'), null);
 
     const navigation = await loadNavigation(repository, 'en');

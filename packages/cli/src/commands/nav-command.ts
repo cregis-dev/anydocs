@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { createDocsRepository, loadNavigation, loadProjectContract } from '@anydocs/core';
+import { createNodeDocsRepository, loadNavigation, loadProjectContract } from '@anydocs/core';
 
 import { error, info } from '../output/logger.ts';
 import { writeJsonError, writeJsonSuccess } from '../output/structured.ts';
@@ -31,7 +31,7 @@ export async function runNavigationGetCommand(options: NavigationCommandOptions 
   try {
     const contract = contractResult.value;
     const lang = assertEnabledLanguage(contract, options.lang);
-    const repository = createDocsRepository(contract.paths.projectRoot);
+    const repository = createNodeDocsRepository(contract.paths.projectRoot);
     const navigation = await loadNavigation(repository, lang);
     const file = path.join(contract.paths.navigationRoot, `${lang}.json`);
 

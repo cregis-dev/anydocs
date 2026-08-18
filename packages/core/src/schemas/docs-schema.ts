@@ -6,6 +6,7 @@ import {
   type PageDoc,
   type PageReview,
   type PageReviewWarning,
+  type PageSeo,
 } from '../types/docs.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 
@@ -324,6 +325,62 @@ function validatePageReview(input: unknown): PageReview {
   };
 }
 
+function validatePageSeo(input: unknown): PageSeo {
+  if (!isRecord(input)) {
+    throw createDocsValidationError(
+      'page-doc',
+      'page-seo-object',
+      'Use an object for "seo" when page SEO metadata is present.',
+      { received: input },
+    );
+  }
+
+  if (input.title != null && typeof input.title !== 'string') {
+    throw createDocsValidationError(
+      'page-doc',
+      'page-seo-title-string',
+      'Use a string for seo.title when it is present.',
+      { received: input.title },
+    );
+  }
+
+  if (input.description != null && typeof input.description !== 'string') {
+    throw createDocsValidationError(
+      'page-doc',
+      'page-seo-description-string',
+      'Use a string for seo.description when it is present.',
+      { received: input.description },
+    );
+  }
+
+  assertOptionalStringArray(
+    input.keywords,
+    'page-doc',
+    'page-seo-keywords-string-array',
+    'Use a string array for seo.keywords when it is present.',
+  );
+
+  const keywords = Array.isArray(input.keywords)
+    ? [
+        ...new Set(
+          input.keywords
+            .map((keyword) => keyword.trim())
+            .filter((keyword) => keyword.length > 0),
+        ),
+      ]
+    : [];
+
+  return {
+    ...(typeof input.title === 'string' && input.title.trim().length > 0
+      ? { title: input.title.trim() }
+      : {}),
+    ...(typeof input.description === 'string' && input.description.trim().length > 0
+      ? { description: input.description.trim() }
+      : {}),
+    ...(keywords.length > 0 ? { keywords } : {}),
+  };
+}
+
 export function validateNavigationDoc(input: unknown): NavigationDoc {
   if (!isRecord(input)) {
     throw createDocsValidationError(
@@ -414,6 +471,10 @@ export function validatePageDoc<TContent = unknown>(
     );
   }
 
+  if (input.seo != null) {
+    validatePageSeo(input.seo);
+  }
+
   assertOptionalStringArray(
     input.tags,
     'page-doc',
@@ -495,6 +556,7 @@ export function validatePageDoc<TContent = unknown>(
     slug: input.slug.trim(),
     title: input.title.trim(),
     ...(typeof input.description === 'string' ? { description: input.description } : {}),
+    ...(input.seo != null ? { seo: validatePageSeo(input.seo) } : {}),
     ...(typeof input.template === 'string' ? { template: input.template.trim() } : {}),
     ...(isRecord(input.metadata) ? { metadata: input.metadata } : {}),
     ...(Array.isArray(input.tags) ? { tags: input.tags } : {}),

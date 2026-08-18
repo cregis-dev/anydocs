@@ -47,6 +47,7 @@ export type ProjectAuthoringConfig = {
 export type ProjectSiteThemeBranding = {
   siteTitle?: string;
   homeLabel?: string;
+  faviconSrc?: string;
   logoSrc?: string;
   logoAlt?: string;
 };
@@ -133,6 +134,8 @@ export type ProjectPathContract = {
   workflowFile: string;
   importsRoot: string;
   apiSourcesRoot: string;
+  /** Project-local audit log root: `<projectRoot>/.anydocs/audit` (daily NDJSON shards). */
+  auditRoot: string;
   pagesRoot: string;
   navigationRoot: string;
   artifactRoot: string;

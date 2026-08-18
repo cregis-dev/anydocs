@@ -8,6 +8,8 @@ export type PreviewCommandArgs = {
   targetDir?: string;
   watch: boolean;
   open: boolean;
+  port?: number;
+  production: boolean;
 };
 
 export type GlobalCommandArgs = {
@@ -49,6 +51,11 @@ export type ConvertImportCommandArgs = {
 
 export type ProjectReadCommandArgs = {
   targetDir?: string;
+};
+
+export type AuditPruneCommandArgs = {
+  targetDir?: string;
+  retentionDays?: number;
 };
 
 export type PageListCommandArgs = {
@@ -138,6 +145,8 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
   let targetDir: string | undefined;
   let watch = false;
   let open = true;
+  let port: number | undefined;
+  let production = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -152,6 +161,22 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
       continue;
     }
 
+    if (arg === '--production') {
+      production = true;
+      continue;
+    }
+
+    if (arg === '--port') {
+      const value = readRequiredOptionValue(args, i, arg);
+      const parsed = Number(value);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65_535) {
+        throw new Error(`Option "${arg}" requires an integer between 1 and 65535.`);
+      }
+      port = parsed;
+      i++;
+      continue;
+    }
+
     if (arg.startsWith('-')) {
       throw new Error(`Unknown option "${arg}".`);
     }
@@ -163,7 +188,7 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
     targetDir = arg;
   }
 
-  return { targetDir, watch, open };
+  return { targetDir, watch, open, port, production };
 }
 
 export function parseOptionalTargetDirCommandArgs(args: string[]): OptionalTargetDirCommandArgs {
@@ -434,6 +459,44 @@ export function parseProjectReadCommandArgs(args: string[]): ProjectReadCommandA
   }
 
   return { targetDir };
+}
+
+export function parseAuditPruneCommandArgs(args: string[]): AuditPruneCommandArgs {
+  let targetDir: string | undefined;
+  let retentionDays: number | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '--target') {
+      targetDir = readRequiredOptionValue(args, i, arg);
+      i++;
+      continue;
+    }
+
+    if (arg === '--retention-days') {
+      const value = readRequiredOptionValue(args, i, arg);
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isInteger(parsed) || parsed < 0 || String(parsed) !== value) {
+        throw new Error(`Option "${arg}" requires a non-negative integer.`);
+      }
+      retentionDays = parsed;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('-')) {
+      throw new Error(`Unknown option "${arg}".`);
+    }
+
+    if (targetDir !== undefined) {
+      throw new Error('Too many positional arguments provided.');
+    }
+
+    targetDir = arg;
+  }
+
+  return { targetDir, retentionDays };
 }
 
 export function parsePageListCommandArgs(args: string[]): PageListCommandArgs {

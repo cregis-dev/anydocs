@@ -19,13 +19,48 @@ import { resolveDocsTheme } from '@/lib/themes/resolve-theme';
 
 import '../globals.css';
 
-export const metadata: Metadata = {
+const fallbackMetadata: Metadata = {
   title: {
     default: 'Dev Docs',
     template: '%s | Dev Docs',
   },
   description: '面向开发者的产品/组件文档与示例',
 };
+
+function buildReaderMetadata(siteTitle: string, faviconSrc?: string): Metadata {
+  const normalizedFaviconSrc = faviconSrc?.trim();
+
+  return {
+    title: {
+      default: siteTitle,
+      template: `%s | ${siteTitle}`,
+    },
+    description: '面向开发者的产品/组件文档与示例',
+    ...(normalizedFaviconSrc
+      ? {
+          icons: {
+            icon: [{ url: normalizedFaviconSrc }],
+            shortcut: [{ url: normalizedFaviconSrc }],
+          },
+        }
+      : {}),
+  };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (!isDocsReaderAvailable()) {
+    return fallbackMetadata;
+  }
+
+  const source = await resolveRequestDocsSource();
+  const [projectName, siteTheme] = await Promise.all([
+    getPublishedProjectName(source.projectId, source.customPath),
+    getPublishedSiteTheme(source.projectId, source.customPath),
+  ]);
+  const siteTitle = siteTheme.branding?.siteTitle?.trim() || projectName || 'Dev Docs';
+
+  return buildReaderMetadata(siteTitle, siteTheme.branding?.faviconSrc);
+}
 
 export default async function Layout({
   children,

@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"Core default permissions for the main window, plus webview devtools toggling for local debugging (Inspect / Network panel). Harmless in release builds, where the devtools command is not compiled in.","local":true,"windows":["main"],"permissions":["core:default","core:webview:allow-internal-toggle-devtools"]}}

@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import {
-  createDocsRepository,
+  createNodeDocsRepository,
   findPageBySlug,
   listPages,
   loadPage,
@@ -88,7 +88,7 @@ export async function runPageListCommand(options: PageListCommandOptions = {}): 
     const lang = assertEnabledLanguage(contract, options.lang);
     assertKnownPageStatus(options.status);
 
-    const repository = createDocsRepository(contract.paths.projectRoot);
+    const repository = createNodeDocsRepository(contract.paths.projectRoot);
     const pages = filterPages(await listPages(repository, lang), options);
     const data = {
       lang,
@@ -143,7 +143,7 @@ export async function runPageGetCommand(options: PageGetCommandOptions = {}): Pr
       });
     }
 
-    const repository = createDocsRepository(contract.paths.projectRoot);
+    const repository = createNodeDocsRepository(contract.paths.projectRoot);
     const page = await loadPage(repository, lang, options.pageId);
     if (!page) {
       throw new ValidationError(`Page "${options.pageId}" not found.`, {
@@ -206,7 +206,7 @@ export async function runPageFindCommand(options: PageFindCommandOptions = {}): 
     const lang = assertEnabledLanguage(contract, options.lang);
     assertKnownPageStatus(options.status);
 
-    const repository = createDocsRepository(contract.paths.projectRoot);
+    const repository = createNodeDocsRepository(contract.paths.projectRoot);
     let pages: PageDoc[] = [];
 
     if (options.pageId) {

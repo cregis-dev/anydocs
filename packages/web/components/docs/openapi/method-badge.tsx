@@ -6,6 +6,7 @@ const METHOD_STYLES: Record<string, string> = {
   PUT: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   PATCH: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   DELETE: 'bg-red-50 text-red-700 ring-red-600/20',
+  WEBHOOK: 'bg-purple-50 text-purple-700 ring-purple-600/25',
 };
 
 const DEFAULT_STYLE = 'bg-slate-100 text-slate-600 ring-slate-500/20';

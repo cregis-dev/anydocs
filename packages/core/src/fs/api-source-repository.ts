@@ -1,6 +1,5 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-
+import { joinPosix } from '../utils/posix-path.ts';
+import { isMissingFileError, type FileSystemPort } from './file-system-port.ts';
 import type { DocsLang } from '../types/docs.ts';
 import type { ApiSourceDoc } from '../types/api-source.ts';
 import { validateApiSourceDoc } from '../schemas/api-source-schema.ts';
@@ -8,43 +7,44 @@ import { validateApiSourceDoc } from '../schemas/api-source-schema.ts';
 export type ApiSourceRepository = {
   projectRoot: string;
   apiSourcesRoot: string;
+  /** Injectable filesystem seam (default node-backed; desktop swaps in the Tauri adapter). */
+  port: FileSystemPort;
 };
 
-function isMissingFileError(error: unknown): boolean {
-  return !!error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT';
+async function readJson<T>(port: FileSystemPort, filePath: string): Promise<T> {
+  return JSON.parse(await port.readText(filePath)) as T;
 }
 
-async function readJson<T>(filePath: string): Promise<T> {
-  const raw = await fs.readFile(filePath, 'utf8');
-  return JSON.parse(raw) as T;
-}
-
-async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
-  const dir = path.dirname(filePath);
-  const tempFilePath = path.join(dir, `.${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(tempFilePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
-  await fs.rename(tempFilePath, filePath);
+async function writeJsonAtomic(
+  port: FileSystemPort,
+  filePath: string,
+  value: unknown,
+): Promise<void> {
+  await port.writeFileAtomic(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
 function sourceFile(repository: ApiSourceRepository, sourceId: string): string {
-  return path.join(repository.apiSourcesRoot, `${sourceId}.json`);
+  return joinPosix(repository.apiSourcesRoot, `${sourceId}.json`);
 }
 
-export function createApiSourceRepository(projectRoot: string): ApiSourceRepository {
+export function createApiSourceRepository(
+  projectRoot: string,
+  port: FileSystemPort,
+): ApiSourceRepository {
   return {
     projectRoot,
-    apiSourcesRoot: path.join(projectRoot, 'api-sources'),
+    apiSourcesRoot: joinPosix(projectRoot, 'api-sources'),
+    port,
   };
 }
 
 export async function initializeApiSourceRepository(repository: ApiSourceRepository): Promise<void> {
-  await fs.mkdir(repository.apiSourcesRoot, { recursive: true });
+  await repository.port.ensureDir(repository.apiSourcesRoot);
 }
 
 export async function loadApiSource(repository: ApiSourceRepository, sourceId: string): Promise<ApiSourceDoc | null> {
   try {
-    return validateApiSourceDoc(await readJson<unknown>(sourceFile(repository, sourceId)));
+    return validateApiSourceDoc(await readJson<unknown>(repository.port, sourceFile(repository, sourceId)));
   } catch (error: unknown) {
     if (isMissingFileError(error)) {
       return null;
@@ -62,7 +62,7 @@ export async function listApiSources(
 ): Promise<ApiSourceDoc[]> {
   let entries: string[] = [];
   try {
-    entries = await fs.readdir(repository.apiSourcesRoot);
+    entries = await repository.port.readDir(repository.apiSourcesRoot);
   } catch {
     return [];
   }
@@ -74,7 +74,7 @@ export async function listApiSources(
     }
     try {
       const source = validateApiSourceDoc(
-        await readJson<unknown>(path.join(repository.apiSourcesRoot, entry)),
+        await readJson<unknown>(repository.port, joinPosix(repository.apiSourcesRoot, entry)),
       );
       if (options.lang && source.lang !== options.lang) {
         continue;
@@ -97,13 +97,13 @@ export async function listApiSources(
 
 export async function saveApiSource(repository: ApiSourceRepository, source: ApiSourceDoc): Promise<ApiSourceDoc> {
   const validated = validateApiSourceDoc(source);
-  await writeJsonAtomic(sourceFile(repository, validated.id), validated);
+  await writeJsonAtomic(repository.port, sourceFile(repository, validated.id), validated);
   return validated;
 }
 
 export async function deleteApiSource(repository: ApiSourceRepository, sourceId: string): Promise<void> {
   try {
-    await fs.unlink(sourceFile(repository, sourceId));
+    await repository.port.remove(sourceFile(repository, sourceId));
   } catch (error: unknown) {
     if (isMissingFileError(error)) {
       return;

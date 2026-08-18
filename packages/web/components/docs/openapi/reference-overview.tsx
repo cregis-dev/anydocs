@@ -79,8 +79,10 @@ export function ReferenceOverview({ doc, lang }: { doc: OpenApiDocArtifact; lang
                     className="flex flex-col gap-1.5 rounded-lg border border-[color:var(--fd-border)] bg-[color:var(--fd-card,white)] p-3 transition hover:border-fd-foreground/20 hover:shadow-sm"
                   >
                     <div className="flex items-center gap-2">
-                      <MethodBadge method={item.method} />
-                      <code className="min-w-0 truncate font-mono text-[12px] text-fd-muted-foreground">{item.path}</code>
+                      <MethodBadge method={item.kind === 'webhook' ? 'WEBHOOK' : item.method} />
+                      {item.kind !== 'webhook' ? (
+                        <code className="min-w-0 truncate font-mono text-[12px] text-fd-muted-foreground">{item.path}</code>
+                      ) : null}
                     </div>
                     <span className="text-[14px] font-medium text-fd-foreground">{item.title}</span>
                   </Link>

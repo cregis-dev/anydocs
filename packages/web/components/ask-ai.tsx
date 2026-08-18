@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { ArrowUp, BookOpen, Sparkles, ThumbsDown, ThumbsUp, User, X } from 'lucide-react';
+import { ArrowUp, BookOpen, Sparkles, ThumbsDown, ThumbsUp, X } from 'lucide-react';
 
 import {
   buildAskFeedbackRequestBody,
@@ -20,6 +20,8 @@ import {
   type AskApiCitation,
   type AskApiResponse,
 } from '@/components/ask-ai-api';
+import { getAskDisclaimerText } from '@/components/ask-ai-shared';
+import { useAskStreamBuffer } from '@/components/use-ask-stream-buffer';
 
 const AskAIMarkdown = dynamic(() =>
   import('@/components/ask-ai-markdown').then((module) => module.AskAIMarkdown),
@@ -60,11 +62,13 @@ function createMessage(
 }
 
 function createIntroMessage(isZh: boolean): Message {
+  const intro = isZh
+    ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
+    : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.';
+
   return createMessage(
     'assistant',
-    isZh
-      ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
-      : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.',
+    `${intro}\n\n${getAskDisclaimerText(isZh)}`,
   );
 }
 
@@ -131,7 +135,7 @@ function SourceCard({
   );
 
   const className =
-    'block rounded-lg border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_72%,white)] p-4 transition hover:border-[color:var(--atlas-primary,var(--fd-primary))]/35 hover:bg-[color:var(--docs-sidebar-hover,var(--fd-muted))]';
+    'block rounded-xl border border-[color:var(--docs-divider,var(--fd-border))] bg-white/70 p-3 transition hover:border-[color:var(--atlas-primary,var(--fd-primary))]/35 hover:bg-white';
 
   const href = group.citations.length === 1 ? citation.url : group.url;
 
@@ -175,27 +179,23 @@ function SourceList({
 
 function IntroCopy({ isZh }: { isZh: boolean }) {
   return (
-    <p className="text-base leading-7 text-fd-foreground">
-      {isZh ? '我是根据 ' : 'I am trained on '}
-      <span className="inline-flex rounded-md bg-[color:var(--atlas-primary,var(--fd-primary))] px-2 py-0.5 font-semibold text-white">
-        Cregis
-      </span>
-      {isZh
-        ? ' 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
-        : ' documentation and can answer questions about payments, WaaS wallets, and API integration.'}
-    </p>
+    <div className="mx-auto flex max-w-[28rem] flex-col items-center text-center">
+      <Sparkles className="mb-6 size-[72px] text-[#96999d]" strokeWidth={1.6} />
+      <h2 className="mb-3 text-[25px] font-bold leading-8 text-[#020304]">Ask AI</h2>
+      <p className="max-w-[28rem] text-[15px] leading-[22px] text-[#020304]">
+        {isZh
+          ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
+          : 'I am trained on Cregis documentation and can answer questions about payments, WaaS wallets, and API integration.'}
+      </p>
+    </div>
   );
 }
 
 function LoadingCopy({ isZh }: { isZh: boolean }) {
   return (
-    <div className="flex items-center gap-2 text-sm text-fd-muted-foreground">
-      <span>{isZh ? '正在查询 Cregis 文档' : 'Searching Cregis docs'}</span>
-      <span className="flex items-center gap-1">
-        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] [animation-delay:-0.3s]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] [animation-delay:-0.15s]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))]" />
-      </span>
+    <div className="flex items-center gap-2 text-[15px] leading-[22px] text-[#7c8086]">
+      <Sparkles className="size-4 animate-pulse text-[#96999d]" strokeWidth={1.8} />
+      <span>{isZh ? '正在思考...' : 'Thinking...'}</span>
     </div>
   );
 }
@@ -213,28 +213,19 @@ function FeedbackControls({
 
   const isSending = message.feedbackStatus === 'sending';
   const isSent = message.feedbackStatus === 'sent';
-  const label = isSent
-    ? isZh
-      ? '感谢反馈'
-      : 'Thanks for the feedback'
-    : isZh
-      ? '这个回答有帮助吗？'
-      : 'Was this answer helpful?';
-
   const buttonClass = (rating: AskFeedbackRating) => {
     const active = message.feedbackRating === rating && isSent;
     return [
-      'inline-flex size-8 items-center justify-center rounded-full border transition',
+      'inline-flex size-6 items-center justify-center rounded-md transition',
       active
-        ? 'border-[color:var(--atlas-primary,var(--fd-primary))] bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[color:var(--atlas-primary,var(--fd-primary))]'
-        : 'border-[color:var(--docs-divider,var(--fd-border))] text-fd-muted-foreground hover:border-[color:var(--atlas-primary,var(--fd-primary))]/40 hover:text-fd-foreground',
+        ? 'bg-[color:var(--atlas-primary,var(--fd-primary))]/10 text-[color:var(--atlas-primary,var(--fd-primary))]'
+        : 'text-[#96999d] hover:bg-black/[0.04] hover:text-[#020304]',
       isSending ? 'cursor-wait opacity-60' : '',
     ].join(' ');
   };
 
   return (
-    <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-fd-muted-foreground">
-      <span>{label}</span>
+    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-[#96999d]">
       <button
         type="button"
         onClick={() => onFeedback(message.id, 1)}
@@ -283,23 +274,25 @@ function MessageRow({
 
   const isUser = message.role === 'user';
 
-  return (
-    <div className="grid grid-cols-[2.75rem_1fr] gap-4 border-b border-[color:var(--docs-divider,var(--fd-border))] py-6 last:border-b-0">
-      <div
-        className={`flex size-10 items-center justify-center rounded-full ${
-          isUser
-            ? 'bg-[color:var(--atlas-primary,var(--fd-primary))] text-white shadow-[0_10px_28px_rgba(34,197,94,0.24)]'
-            : 'border border-[color:var(--docs-divider,var(--fd-border))] bg-[color:color-mix(in_srgb,var(--atlas-panel-subtle,var(--fd-muted))_76%,white)] text-[color:var(--atlas-primary,var(--fd-primary))]'
-        }`}
-      >
-        {isUser ? <User className="size-5" /> : <Sparkles className="size-5" />}
+  if (isIntro) {
+    return (
+      <div className="flex min-h-[430px] items-center justify-center px-12 py-10">
+        <IntroCopy isZh={isZh} />
       </div>
+    );
+  }
 
-      <div className="min-w-0 pt-1">
-        {isIntro ? (
-          <IntroCopy isZh={isZh} />
-        ) : isUser ? (
-          <p className="text-base font-medium leading-7 text-fd-foreground">{message.content}</p>
+  return (
+    <div className={`flex w-full py-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={
+          isUser
+            ? 'max-w-[26rem] rounded-xl bg-[#f1f2f3] px-4 py-3 text-[15px] font-semibold leading-[22px] text-[#020304]'
+            : 'max-w-[34rem] text-[15px] leading-[22px] text-[#020304]'
+        }
+      >
+        {isUser ? (
+          <p>{message.content}</p>
         ) : message.content.length > 0 ? (
           <>
             <AskAIMarkdown content={message.content} />
@@ -329,21 +322,33 @@ export function AskAI({
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
+  const appendToMessage = useCallback((id: string, text: string) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
+      ),
+    );
+  }, []);
+
+  const { appendBufferedText, clearBufferedText } = useAskStreamBuffer(appendToMessage);
+
   const closeDialog = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearBufferedText();
     setIsLoading(false);
     setOpen(false);
-  }, []);
+  }, [clearBufferedText]);
 
   const clearConversation = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearBufferedText();
     setIsLoading(false);
     setInput('');
     setMessages([createIntroMessage(isZh)]);
     sessionIdRef.current = null;
-  }, [isZh]);
+  }, [clearBufferedText, isZh]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -365,16 +370,9 @@ export function AskAI({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      clearBufferedText();
     };
-  }, []);
-
-  const appendToMessage = (id: string, text: string) => {
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
-      ),
-    );
-  };
+  }, [clearBufferedText]);
 
   const replaceMessage = (
     id: string,
@@ -491,7 +489,7 @@ export function AskAI({
       });
       const payload = await readAskStreamResponse(response, {
         onDelta: (text) => {
-          appendToMessage(assistantMessage.id, text);
+          appendBufferedText(assistantMessage.id, text);
         },
       });
       if (isEmptyAskStreamResponse(payload) && !controller.signal.aborted) {
@@ -504,6 +502,7 @@ export function AskAI({
       if (next.sessionId) {
         sessionIdRef.current = next.sessionId;
       }
+      clearBufferedText(assistantMessage.id);
       replaceMessage(
         assistantMessage.id,
         next.content,
@@ -513,6 +512,7 @@ export function AskAI({
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      clearBufferedText(assistantMessage.id);
       const message =
         error instanceof Error
           ? error.message
@@ -529,9 +529,13 @@ export function AskAI({
       }
       if (!controller.signal.aborted) {
         setIsLoading(false);
+      } else {
+        clearBufferedText(assistantMessage.id);
       }
     }
   };
+
+  const showIntro = messages.length === 1;
 
   return (
     <>
@@ -550,74 +554,89 @@ export function AskAI({
 
       {open &&
         createPortal(
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm sm:p-6">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(2,3,4,0.5)] p-4 backdrop-blur-[40px] sm:p-6">
             <div
-              className="relative flex h-full max-h-[760px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[color:var(--docs-divider,var(--fd-border))] bg-fd-background shadow-2xl"
+              className="relative flex h-[min(768px,calc(100dvh-32px))] w-[min(640px,calc(100vw-32px))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-[#fafbfc] shadow-[0_8px_24px_rgba(2,3,4,0.2)]"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between gap-4 border-b border-[color:var(--docs-divider,var(--fd-border))] bg-[color:var(--atlas-search-background,var(--fd-muted))] px-5 py-4">
-                <div className="inline-flex h-10 items-center gap-2 rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] px-4 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(34,197,94,0.26)]">
-                  <Sparkles className="size-5" aria-hidden />
-                  <span>Ask AI</span>
-                </div>
-
-                <div className="flex min-w-0 items-center">
-                  <button
-                    type="button"
-                    onClick={closeDialog}
-                    className="inline-flex size-9 items-center justify-center rounded-lg text-fd-muted-foreground transition hover:bg-fd-accent hover:text-fd-accent-foreground"
-                  >
-                    <X className="size-5" />
-                    <span className="sr-only">{isZh ? '关闭' : 'Close'}</span>
-                  </button>
-                </div>
+              <div
+                className={`flex h-10 shrink-0 items-center justify-between px-3 ${
+                  showIntro ? '' : 'border-b border-black/[0.08]'
+                }`}
+              >
+                <span
+                  className={`pl-2 pt-1 text-[11px] font-bold uppercase leading-[14px] tracking-normal ${
+                    showIntro ? 'text-transparent' : 'text-[#7c8086]'
+                  }`}
+                >
+                  Ask AI
+                </span>
+                <button
+                  type="button"
+                  onClick={closeDialog}
+                  className="inline-flex size-7 items-center justify-center rounded-full text-[#96999d] transition hover:bg-black/[0.06] hover:text-[#020304]"
+                >
+                  <X className="size-4" />
+                  <span className="sr-only">{isZh ? '关闭' : 'Close'}</span>
+                </button>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5">
-                {messages.map((message, index) => (
-                  <MessageRow
-                    key={message.id}
-                    message={message}
-                    isIntro={index === 0 && message.role === 'assistant'}
-                    isLoadingPlaceholder={
-                      isLoading &&
-                      message.role === 'assistant' &&
-                      message.content.length === 0 &&
-                      index === messages.length - 1
-                    }
-                    isZh={isZh}
-                    onFeedback={handleFeedback}
-                  />
-                ))}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-7 py-3">
+                {messages.map((message, index) => {
+                  const isInitialIntro = index === 0 && message.role === 'assistant';
+
+                  if (!showIntro && isInitialIntro) {
+                    return null;
+                  }
+
+                  return (
+                    <MessageRow
+                      key={message.id}
+                      message={message}
+                      isIntro={showIntro && isInitialIntro}
+                      isLoadingPlaceholder={
+                        isLoading &&
+                        message.role === 'assistant' &&
+                        message.content.length === 0 &&
+                        index === messages.length - 1
+                      }
+                      isZh={isZh}
+                      onFeedback={handleFeedback}
+                    />
+                  );
+                })}
               </div>
 
-              <div className="border-t border-[color:var(--docs-divider,var(--fd-border))] bg-fd-background p-4">
-                <form onSubmit={handleSubmit} className="relative flex items-center">
+              <div className="shrink-0 bg-[#fafbfc] px-7 pb-4 pt-3">
+                <form
+                  onSubmit={handleSubmit}
+                  className="relative min-h-[102px] rounded-[20px] border border-black/[0.12] bg-white p-4 shadow-[0_6px_16px_rgba(2,3,4,0.03)]"
+                >
                   <input
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
                     placeholder={
                       isZh ? '输入 Cregis 文档问题...' : 'Ask a question about Cregis...'
                     }
-                    className="h-14 flex-1 rounded-2xl border border-fd-input bg-[color:var(--atlas-search-background,var(--fd-muted))] px-4 pr-14 text-base shadow-sm transition-colors placeholder:text-fd-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--atlas-primary,var(--fd-ring))]"
+                    className="w-full bg-transparent pr-12 text-[15px] leading-[22px] text-[#020304] placeholder:text-[#96999d] focus-visible:outline-none"
                     autoFocus
                   />
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
-                    className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="absolute bottom-4 right-4 inline-flex size-9 items-center justify-center rounded-full bg-[color:var(--atlas-primary,var(--fd-primary))] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-[rgba(31,195,90,0.4)]"
                   >
                     <ArrowUp className="size-5" />
                     <span className="sr-only">{isZh ? '发送' : 'Send'}</span>
                   </button>
                 </form>
-                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-fd-muted-foreground">
-                  <span>{isZh ? 'AI 回答可能不准确。' : 'AI responses may be inaccurate.'}</span>
+                <div className="mt-3 flex items-start justify-between gap-3 px-6 text-center text-[11px] leading-[14px] text-[#96999d]">
+                  <span className="min-w-0 flex-1">{getAskDisclaimerText(isZh)}</span>
                   {messages.length > 1 ? (
                     <button
                       type="button"
                       onClick={clearConversation}
-                      className="rounded-full border border-[color:var(--docs-divider,var(--fd-border))] px-3 py-1.5 font-medium text-fd-foreground transition hover:bg-fd-accent"
+                      className="shrink-0 rounded-full border border-black/[0.12] bg-white px-3 py-1.5 text-xs font-medium text-[#020304] transition hover:bg-black/[0.04]"
                     >
                       {isZh ? '清空' : 'Clear'}
                     </button>

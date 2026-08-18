@@ -15,7 +15,8 @@ import {
   assertProjectContractStructure,
   createProjectPathContract,
 } from './project-paths.ts';
-import { createDocsRepository, initializeDocsRepository, listPages, loadNavigation } from './docs-repository.ts';
+import { initializeDocsRepository, listPages, loadNavigation } from './docs-repository.ts';
+import { createNodeDocsRepository } from './node-fs-port.ts';
 
 function collectReferencedTopNavGroupIds(config: ProjectConfig): string[] {
   return (config.site.navigation?.topNav ?? [])
@@ -39,7 +40,7 @@ async function assertTopNavGroupsExistForLanguages(config: ProjectConfig, paths:
     return;
   }
 
-  const repository = createDocsRepository(paths.projectRoot);
+  const repository = createNodeDocsRepository(paths.projectRoot);
 
   for (const language of config.languages) {
     const navigation = await loadNavigation(repository, language);
@@ -80,7 +81,7 @@ async function assertPagesMatchProjectAuthoringTemplates(
   config: ProjectConfig,
   paths: ProjectContract['paths'],
 ) {
-  const repository = createDocsRepository(paths.projectRoot);
+  const repository = createNodeDocsRepository(paths.projectRoot);
 
   for (const language of config.languages) {
     const pages = await listPages(repository, language);
@@ -282,7 +283,7 @@ export async function updateProjectConfig(
         paths: nextPaths,
       }),
     );
-    await initializeDocsRepository(createDocsRepository(nextPaths.projectRoot), nextConfig.languages);
+    await initializeDocsRepository(createNodeDocsRepository(nextPaths.projectRoot), nextConfig.languages);
     return nextConfig;
   });
 }

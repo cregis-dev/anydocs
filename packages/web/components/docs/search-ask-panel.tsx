@@ -37,9 +37,11 @@ import {
   citationNumber,
   citationPath,
   createAskMessage,
+  getAskDisclaimerText,
   getDocumentationName,
   type AskMessage,
 } from "@/components/ask-ai-shared";
+import { useAskStreamBuffer } from "@/components/use-ask-stream-buffer";
 import { getDocsUiCopy } from "@/components/docs/docs-ui-copy";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -282,6 +284,9 @@ function AskIntro({
           ? `可以向 AI 提问，它会基于 ${documentationName} 已发布文档内容回答。`
           : `Ask AI questions grounded in the published ${documentationName} documentation.`}
       </p>
+      <p className="mt-3 text-[12px] leading-5 text-fd-muted-foreground">
+        {getAskDisclaimerText(isZh)}
+      </p>
     </div>
   );
 }
@@ -420,12 +425,23 @@ export function SearchAskPanel({
       ? "⌘K"
       : "Ctrl K";
 
+  const appendToAskMessage = useCallback((id: string, text: string) => {
+    setAskMessages((prev) =>
+      prev.map((message) =>
+        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
+      ),
+    );
+  }, []);
+
+  const { appendBufferedText, clearBufferedText } = useAskStreamBuffer(appendToAskMessage);
+
   const closeDialog = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearBufferedText();
     setIsAskLoading(false);
     setOpen(false);
-  }, []);
+  }, [clearBufferedText]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -504,8 +520,9 @@ export function SearchAskPanel({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      clearBufferedText();
     };
-  }, []);
+  }, [clearBufferedText]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -589,14 +606,6 @@ export function SearchAskPanel({
     }
   }
 
-  const appendToAskMessage = (id: string, text: string) => {
-    setAskMessages((prev) =>
-      prev.map((message) =>
-        message.id === id ? { ...message, content: `${message.content}${text}` } : message,
-      ),
-    );
-  };
-
   const replaceAskMessage = (
     id: string,
     content: string,
@@ -667,7 +676,7 @@ export function SearchAskPanel({
       });
       const payload = await readAskStreamResponse(response, {
         onDelta: (text) => {
-          appendToAskMessage(assistantMessage.id, text);
+          appendBufferedText(assistantMessage.id, text);
         },
       });
       if (isEmptyAskStreamResponse(payload) && !controller.signal.aborted) {
@@ -680,6 +689,7 @@ export function SearchAskPanel({
       if (payload.session_id) {
         askSessionIdRef.current = payload.session_id;
       }
+      clearBufferedText(assistantMessage.id);
       replaceAskMessage(
         assistantMessage.id,
         next.content,
@@ -689,6 +699,7 @@ export function SearchAskPanel({
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      clearBufferedText(assistantMessage.id);
       const message =
         error instanceof Error
           ? error.message
@@ -705,6 +716,8 @@ export function SearchAskPanel({
       }
       if (!controller.signal.aborted) {
         setIsAskLoading(false);
+      } else {
+        clearBufferedText(assistantMessage.id);
       }
     }
   };
@@ -877,13 +890,14 @@ export function SearchAskPanel({
                     onClarifySelect={handleClarifySelect}
                   />
                   <div className="flex items-center justify-between gap-3 px-1 text-xs text-fd-muted-foreground">
-                    <span>{isZh ? "AI 回答可能不准确。" : "AI responses may be inaccurate."}</span>
+                    <span className="max-w-[42rem] leading-5">{getAskDisclaimerText(isZh)}</span>
                     {askMessages.length > 0 ? (
                       <button
                         type="button"
                         onClick={() => {
                           abortRef.current?.abort();
                           abortRef.current = null;
+                          clearBufferedText();
                           setIsAskLoading(false);
                           setAskMessages([]);
                           askSessionIdRef.current = null;

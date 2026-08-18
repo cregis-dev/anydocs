@@ -31,6 +31,9 @@ export type ResolvedSchema = {
     kind: 'allOf' | 'oneOf' | 'anyOf';
     members: ResolvedSchema[];
   };
+  /** JSON string 等带结构化内容的字段可通过 OpenAPI content* 元数据描述内部对象。 */
+  contentMediaType?: string;
+  contentSchema?: ResolvedSchema;
   /** 渲染层解引用时检测到环可置位（build 期默认不置位，预留给渲染层标注）。 */
   cyclic?: boolean;
 };
@@ -115,6 +118,7 @@ export type OpenApiNavGroup = {
   description?: string;
   items: Array<{
     operationId: string;
+    kind: OpenApiOperation['kind'];
     method: string;
     path: string;
     title: string;

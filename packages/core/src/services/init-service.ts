@@ -8,11 +8,11 @@ import {
 } from '../config/project-config.ts';
 import { ValidationError } from '../errors/validation-error.ts';
 import {
-  createDocsRepository,
   initializeDocsRepository,
   saveNavigation,
   savePage,
 } from '../fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../fs/node-fs-port.ts';
 import { validateProjectConfig } from '../schemas/project-schema.ts';
 import type { NavigationDoc, PageDoc } from '../types/docs.ts';
 import type { DocsLanguage, ProjectContract } from '../types/project.ts';
@@ -281,7 +281,7 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
   const skillGuideCopyPlan = await resolveProjectSkillGuideCopyPlan(paths.projectRoot, options.agent);
   const claudeCommandCopyPlans = await resolveClaudeCommandTemplateCopyPlans(paths.projectRoot, options.agent);
 
-  await initializeDocsRepository(createDocsRepository(paths.projectRoot), config.languages);
+  await initializeDocsRepository(createNodeDocsRepository(paths.projectRoot), config.languages);
   await writeJson(paths.configFile, config);
   await writeJson(
     paths.workflowFile,
@@ -297,7 +297,7 @@ export async function initializeProject(options: InitProjectOptions): Promise<In
     createdFiles.push(skillGuideFile);
   }
   createdFiles.push(...(await copyClaudeCommandTemplates(paths.projectRoot, claudeCommandCopyPlans)));
-  const repository = createDocsRepository(paths.projectRoot);
+  const repository = createNodeDocsRepository(paths.projectRoot);
 
   for (const language of config.languages) {
     await saveNavigation(repository, language, createStarterNavigation(language));

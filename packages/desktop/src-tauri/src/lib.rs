@@ -1,14 +1,17 @@
 use serde::Serialize;
 use std::{
-    ffi::OsStr,
     path::PathBuf,
     process::{Child, Command, Stdio},
     sync::{Arc, Mutex},
+    time::Instant,
 };
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
-    Manager, State,
+    Manager,
 };
+
+mod bootstrap;
+mod commands;
 
 const DESKTOP_MENU_EVENT_NAME: &str = "__ANYDOCS_DESKTOP_MENU__";
 const MENU_ACTION_OPEN_PROJECT: &str = "open-project";
@@ -17,25 +20,27 @@ const MENU_ACTION_SAVE: &str = "save";
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct BridgeState {
-    app_name: &'static str,
-    platform: &'static str,
-    runtime: &'static str,
-    version: &'static str,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct DesktopContext {
+pub(crate) struct DesktopContext {
     runtime: &'static str,
     server_base_url: String,
     managed_server: bool,
 }
 
-struct DesktopRuntimeState {
+pub(crate) struct DesktopRuntimeState {
     child: Mutex<Option<Child>>,
-    context: DesktopContext,
+    pub(crate) context: DesktopContext,
 }
+
+/// Authoritative active project root for native fs commands (Story 9.2).
+/// Stored canonicalized; set once via `set_active_project_root`. Path-safety
+/// containment is enforced against THIS value, never a root passed per-call.
+pub(crate) struct ActiveProjectRoot(pub(crate) Mutex<Option<PathBuf>>);
+
+/// Cold-start clock (Story 9.7 / NFR26). Captured at the very top of `run()` so
+/// `report_cold_start` can measure process-start → editable from a single
+/// authoritative origin (the renderer's `performance.now()` would miss Rust
+/// init + the desktop-server spawn + webview creation).
+pub(crate) struct ColdStartClock(pub(crate) Instant);
 
 fn emit_menu_action(window: &tauri::WebviewWindow, action: &str) {
     let script = format!(
@@ -266,76 +271,22 @@ fn create_runtime_state() -> Result<Arc<DesktopRuntimeState>, String> {
     }))
 }
 
-#[tauri::command]
-fn get_bridge_state() -> BridgeState {
-    BridgeState {
-        app_name: "Anydocs",
-        platform: std::env::consts::OS,
-        runtime: "tauri",
-        version: env!("CARGO_PKG_VERSION"),
-    }
-}
-
-#[tauri::command]
-fn get_desktop_context(state: State<'_, Arc<DesktopRuntimeState>>) -> DesktopContext {
-    state.context.clone()
-}
-
-#[tauri::command]
-fn pick_project_directory() -> Option<String> {
-    rfd::FileDialog::new()
-        .set_title("Select an Anydocs project directory")
-        .pick_folder()
-        .map(|path| path.display().to_string())
-}
-
-fn spawn_open_command(program: &str, args: &[&OsStr]) -> Result<(), String> {
-    Command::new(program)
-        .args(args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| format!("Failed to launch {program}: {error}"))
-}
-
-#[tauri::command]
-fn open_path(path: String) -> Result<bool, String> {
-    let trimmed = path.trim();
-    if trimmed.is_empty() {
-        return Err("Path is required.".to_string());
-    }
-
-    let target = PathBuf::from(trimmed);
-    if !target.exists() {
-        return Err(format!("Path does not exist: {}", target.display()));
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        spawn_open_command("open", &[target.as_os_str()])?;
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        spawn_open_command("explorer", &[target.as_os_str()])?;
-    }
-
-    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
-    {
-        spawn_open_command("xdg-open", &[target.as_os_str()])?;
-    }
-
-    Ok(true)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // NFR26: anchor the cold-start clock as early as possible, before any
+    // initialization work (desktop-server spawn, menu, webview) happens.
+    let cold_start_clock = ColdStartClock(Instant::now());
     let runtime_state = create_runtime_state().expect("failed to initialize desktop runtime state");
 
     tauri::Builder::default()
+        .plugin(
+            tauri::plugin::Builder::<tauri::Wry>::new("anydocs-bootstrap")
+                .js_init_script(bootstrap::desktop_bootstrap_script())
+                .build(),
+        )
         .manage(runtime_state.clone())
+        .manage(cold_start_clock)
+        .manage(ActiveProjectRoot(Mutex::new(None)))
         .setup(|app| {
             let menu = build_app_menu(app.handle())?;
             app.set_menu(menu)?;
@@ -364,10 +315,17 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_bridge_state,
-            get_desktop_context,
-            pick_project_directory,
-            open_path
+            commands::get_bridge_state,
+            commands::get_desktop_context,
+            commands::pick_project_directory,
+            commands::open_path,
+            commands::report_cold_start,
+            commands::fs_commands::set_active_project_root,
+            commands::fs_commands::fs_read,
+            commands::fs_commands::fs_write,
+            commands::fs_commands::fs_list,
+            commands::fs_commands::fs_delete,
+            commands::fs_commands::fs_mkdir
         ])
         .run(tauri::generate_context!())
         .expect("error while running Anydocs desktop shell");

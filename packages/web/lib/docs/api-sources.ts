@@ -3,14 +3,14 @@ import 'server-only';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 
-import { createApiSourceRepository, listApiSources, loadApiSource, type ApiSourceDoc } from '@anydocs/core';
+import { createNodeApiSourceRepository, listApiSources, loadApiSource, type ApiSourceDoc } from '@anydocs/core';
 
 import { loadStudioProjectContract } from '@/lib/docs/fs';
 import type { DocsLang } from '@/lib/docs/types';
 
 async function getApiSourceRepository(projectId: string = '', customPath?: string) {
   const contract = await loadStudioProjectContract(projectId, customPath);
-  return createApiSourceRepository(contract.paths.projectRoot);
+  return createNodeApiSourceRepository(contract.paths.projectRoot);
 }
 
 export async function getPublishedApiSources(lang: DocsLang, projectId: string = '', customPath?: string): Promise<ApiSourceDoc[]> {

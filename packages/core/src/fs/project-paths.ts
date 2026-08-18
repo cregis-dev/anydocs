@@ -60,6 +60,7 @@ export function createProjectPathContract(
     workflowFile: path.join(projectRoot, ANYDOCS_WORKFLOW_FILE),
     importsRoot: path.join(projectRoot, 'imports'),
     apiSourcesRoot: path.join(projectRoot, 'api-sources'),
+    auditRoot: path.join(projectRoot, '.anydocs', 'audit'),
     pagesRoot,
     navigationRoot,
     artifactRoot,

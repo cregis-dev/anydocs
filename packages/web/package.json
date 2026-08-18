@@ -19,7 +19,7 @@
     "test": "pnpm --filter @anydocs/editor build && playwright test",
     "test:ui": "pnpm --filter @anydocs/editor build && playwright test --ui",
     "test:p0": "pnpm --filter @anydocs/editor build && playwright test --grep @p0",
-    "test:unit": "pnpm --filter @anydocs/editor build && node --experimental-strip-types --test --test-concurrency=1 lib/editor-host/*.test.ts"
+    "test:unit": "pnpm --filter @anydocs/core build && pnpm --filter @anydocs/editor build && node --experimental-strip-types --test --test-concurrency=1 lib/editor-host/*.test.ts lib/runtime/*.test.ts components/studio/hosts/*.test.ts components/studio/*.test.ts"
   },
   "dependencies": {
     "@anydocs/core": "workspace:*",

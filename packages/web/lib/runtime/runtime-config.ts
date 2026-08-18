@@ -47,6 +47,13 @@ export function isCliStudioMode(mode?: string | null): mode is 'cli' | 'cli-sing
   return isCliStudioModeValue(mode);
 }
 
+// TODO(Story 9.5): unify this legacy server-side desktop detection with the
+// Epic 8 runtime-mode resolver. The desktop Tauri shell now injects an explicit
+// `__ANYDOCS_RUNTIME_MODE__ = 'desktop'` renderer global (Story 9.1), which
+// `@anydocs/core` `resolveRuntimeMode()` / `RUNTIME_MODE_GLOBAL_KEY` consumes.
+// `isDesktopRuntime` (build-time `ANYDOCS_DESKTOP_RUNTIME` env, baked into the
+// static export) is retained until 9.5 routes the web host through
+// `getRuntimeMode()` and the native fs adapter (Stories 9.3/9.5).
 export function isDesktopRuntimeFlagEnabled(): boolean {
   return process.env[ANYDOCS_RUNTIME_ENV.desktopRuntime] === '1';
 }

@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { loadProjectContract } from '../src/fs/content-repository.ts';
-import { createApiSourceRepository, saveApiSource } from '../src/fs/api-source-repository.ts';
+import { saveApiSource } from '../src/fs/api-source-repository.ts';
+import { createNodeApiSourceRepository } from '../src/fs/node-fs-port.ts';
 import { writePublishedOpenApiArtifacts } from '../src/publishing/build-openapi-artifacts.ts';
 import { initializeProject } from '../src/services/init-service.ts';
 
@@ -83,7 +84,7 @@ test('writePublishedOpenApiArtifacts emits machine-readable OpenAPI artifacts fo
       'utf8',
     );
 
-    const repository = createApiSourceRepository(repoRoot);
+    const repository = createNodeApiSourceRepository(repoRoot);
     await saveApiSource(repository, {
       id: 'petstore',
       type: 'openapi',
@@ -294,7 +295,23 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
               ],
             },
             Base: { type: 'object', properties: { id: { type: 'string' } } },
-            CreateOrder: { type: 'object', properties: { items: { type: 'array', items: { type: 'string' } } } },
+            CreateOrder: {
+              type: 'object',
+              properties: {
+                items: { type: 'array', items: { type: 'string' } },
+                metadata: {
+                  type: 'string',
+                  contentMediaType: 'application/json',
+                  contentSchema: { $ref: '#/components/schemas/OrderMetadata' },
+                },
+              },
+            },
+            OrderMetadata: {
+              type: 'object',
+              properties: {
+                source: { type: 'string' },
+              },
+            },
             // 自引用，验证去环
             Node: { type: 'object', properties: { children: { type: 'array', items: { $ref: '#/components/schemas/Node' } } } },
           },
@@ -303,7 +320,7 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
       'utf8',
     );
 
-    const repository = createApiSourceRepository(repoRoot);
+    const repository = createNodeApiSourceRepository(repoRoot);
     await saveApiSource(repository, {
       id: 'shop',
       type: 'openapi',
@@ -333,7 +350,7 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
         requestBody?: { required: boolean; contents: Array<{ schema?: { ref?: string } }> };
       }>;
       schemas: Record<string, {
-        properties?: Record<string, { ref?: string; items?: { ref?: string } }>;
+        properties?: Record<string, { ref?: string; items?: { ref?: string }; contentMediaType?: string; contentSchema?: { ref?: string } }>;
         required?: string[];
         composition?: { kind: string; members: Array<{ ref?: string }> };
       }>;
@@ -355,6 +372,8 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
     const createOrder = doc.operations.find((operation) => operation.id === 'createOrder');
     assert.equal(createOrder?.requestBody?.required, true);
     assert.equal(createOrder?.requestBody?.contents[0]?.schema?.ref, 'CreateOrder');
+    assert.equal(doc.schemas.CreateOrder?.properties?.metadata?.contentMediaType, 'application/json');
+    assert.equal(doc.schemas.CreateOrder?.properties?.metadata?.contentSchema?.ref, 'OrderMetadata');
 
     // allOf：命名引用成员保留在 composition.members，内联成员 properties 浅合并到顶层
     const order = doc.schemas.Order;

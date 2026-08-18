@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { createDocsRepository, saveNavigation, savePage } from '../src/fs/docs-repository.ts';
+import { saveNavigation, savePage } from '../src/fs/docs-repository.ts';
+import { createNodeDocsRepository } from '../src/fs/node-fs-port.ts';
 import { loadProjectContract } from '../src/fs/content-repository.ts';
 import { updateProjectConfig } from '../src/fs/content-repository.ts';
 import { initializeProject } from '../src/services/init-service.ts';
@@ -283,7 +284,7 @@ test('published artifacts emit a fallback chunk for published pages without head
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'welcome',
       lang: 'en',
@@ -329,7 +330,7 @@ test('published search index emits section-level records with stable anchors and
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
 
     await savePage(repository, 'en', {
       id: 'guide',
@@ -455,7 +456,7 @@ test('published search index normalizes formatted markdown headings to reader-st
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
 
     await savePage(repository, 'en', {
       id: 'formatted-guide',
@@ -504,7 +505,7 @@ test('published search index ignores heading-like lines inside fenced code block
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
 
     await savePage(repository, 'en', {
       id: 'code-guide',
@@ -559,7 +560,7 @@ test('published artifacts preserve inline code text in chunk content', async () 
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'welcome',
       lang: 'en',
@@ -591,7 +592,7 @@ test('published artifacts derive text from canonical content when render is omit
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'welcome',
       lang: 'en',
@@ -678,7 +679,7 @@ test('published pages artifacts serialize template and only public metadata', as
     });
     assert.equal(update.ok, true);
 
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'adr-001',
       lang: 'en',
@@ -737,7 +738,7 @@ test('runBuildWorkflow keeps an empty-state docs shell when there are no publish
 
   try {
     await initializeProject({ repoRoot, languages: ['en'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await savePage(repository, 'en', {
       id: 'welcome',
       lang: 'en',
@@ -779,6 +780,7 @@ test('published artifacts serialize expanded classic-docs theme metadata', async
           branding: {
             siteTitle: 'Console Docs',
             homeLabel: 'Console Home',
+            faviconSrc: '/assets/favicon.png',
             logoSrc: '/console.svg',
             logoAlt: 'Console logo',
           },
@@ -803,7 +805,7 @@ test('published artifacts serialize expanded classic-docs theme metadata', async
     const mcpIndex = JSON.parse(await readFile(path.join(contract.paths.machineReadableRoot, 'index.json'), 'utf8')) as {
       site: {
         theme: {
-          branding?: { siteTitle?: string; logoSrc?: string };
+          branding?: { siteTitle?: string; faviconSrc?: string; logoSrc?: string };
           chrome?: { showSearch?: boolean };
           colors?: { primary?: string; sidebarActiveForeground?: string };
           codeTheme?: string;
@@ -814,7 +816,7 @@ test('published artifacts serialize expanded classic-docs theme metadata', async
       source: {
         site: {
           theme: {
-            branding?: { homeLabel?: string; logoAlt?: string };
+            branding?: { homeLabel?: string; faviconSrc?: string; logoAlt?: string };
             chrome?: { showSearch?: boolean };
             colors?: { accent?: string; primaryForeground?: string };
             codeTheme?: string;
@@ -831,6 +833,7 @@ test('published artifacts serialize expanded classic-docs theme metadata', async
     };
 
     assert.equal(mcpIndex.site.theme.branding?.siteTitle, 'Console Docs');
+    assert.equal(mcpIndex.site.theme.branding?.faviconSrc, '/assets/favicon.png');
     assert.equal(mcpIndex.site.theme.branding?.logoSrc, '/console.svg');
     assert.equal(mcpIndex.site.theme.chrome?.showSearch, false);
     assert.equal(mcpIndex.site.theme.colors?.primary, '#161616');
@@ -838,6 +841,7 @@ test('published artifacts serialize expanded classic-docs theme metadata', async
     assert.equal(mcpIndex.site.theme.codeTheme, 'github-light');
 
     assert.equal(manifest.source.site.theme.branding?.homeLabel, 'Console Home');
+    assert.equal(manifest.source.site.theme.branding?.faviconSrc, '/assets/favicon.png');
     assert.equal(manifest.source.site.theme.branding?.logoAlt, 'Console logo');
     assert.equal(manifest.source.site.theme.chrome?.showSearch, false);
     assert.equal(manifest.source.site.theme.colors?.accent, '#f3f0ea');
@@ -854,7 +858,7 @@ test('published artifacts serialize atlas-docs top navigation metadata', async (
 
   try {
     await initializeProject({ repoRoot, languages: ['en', 'zh'], defaultLanguage: 'en' });
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     await saveNavigation(repository, 'en', {
       version: 2,
       items: [
@@ -950,7 +954,7 @@ test('runPreviewWorkflow starts a live preview server and reflects published con
       },
     });
     assert.equal(update.ok, true);
-    const repository = createDocsRepository(repoRoot);
+    const repository = createNodeDocsRepository(repoRoot);
     let result: Awaited<ReturnType<typeof runPreviewWorkflow>>;
     try {
       result = await runPreviewWorkflow({ repoRoot, startTimeoutMs: 60_000 });

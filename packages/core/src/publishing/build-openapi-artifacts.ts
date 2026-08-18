@@ -16,7 +16,8 @@ import type {
   ResolvedSecurityRequirement,
 } from '../types/openapi-doc.ts';
 import { OPENAPI_DOC_ARTIFACT_VERSION } from '../types/openapi-doc.ts';
-import { createApiSourceRepository, listApiSources } from '../fs/api-source-repository.ts';
+import { listApiSources } from '../fs/api-source-repository.ts';
+import { createNodeApiSourceRepository } from '../fs/node-fs-port.ts';
 import { buildTryItManifestSource, TRY_IT_MANIFEST_VERSION, type TryItManifestSource } from '../services/try-it-proxy.ts';
 
 type OpenApiSourceIndexDoc = {
@@ -358,6 +359,7 @@ function resolveSchemaNode(node: unknown, depth = 0): ResolvedSchema | undefined
   if (typeof node.deprecated === 'boolean') resolved.deprecated = node.deprecated;
   if (typeof node.readOnly === 'boolean') resolved.readOnly = node.readOnly;
   if (typeof node.writeOnly === 'boolean') resolved.writeOnly = node.writeOnly;
+  if (typeof node.contentMediaType === 'string') resolved.contentMediaType = node.contentMediaType;
   if (Array.isArray(node.enum)) resolved.enum = node.enum;
   if ('default' in node) resolved.default = node.default;
   if ('example' in node) resolved.example = node.example;
@@ -378,6 +380,10 @@ function resolveSchemaNode(node: unknown, depth = 0): ResolvedSchema | undefined
 
   if (node.items !== undefined) {
     resolved.items = resolveSchemaNode(node.items, depth + 1);
+  }
+
+  if (node.contentSchema !== undefined) {
+    resolved.contentSchema = resolveSchemaNode(node.contentSchema, depth + 1);
   }
 
   for (const kind of ['allOf', 'oneOf', 'anyOf'] as const) {
@@ -652,6 +658,7 @@ function buildNavGroups(operations: OpenApiOperation[], spec: Record<string, unk
   for (const operation of operations) {
     ensureGroup(operation.tag).items.push({
       operationId: operation.id,
+      kind: operation.kind,
       method: operation.method,
       path: operation.path,
       title: operation.summary,
@@ -716,7 +723,7 @@ export function buildDocArtifact(source: ApiSourceDoc, spec: Record<string, unkn
 
 /** 加载所有 published API source 并解析为 doc artifact（供搜索索引等下游复用）。 */
 export async function loadPublishedOpenApiDocs(contract: ProjectContract): Promise<OpenApiDocArtifact[]> {
-  const repository = createApiSourceRepository(contract.paths.projectRoot);
+  const repository = createNodeApiSourceRepository(contract.paths.projectRoot);
   const publishedSources = await listApiSources(repository, { status: 'published' });
   const docs: OpenApiDocArtifact[] = [];
   for (const source of publishedSources) {
@@ -745,7 +752,7 @@ function buildLlmsOpenApiTxt(indexesByLanguage: OpenApiArtifactsByLanguage): str
 }
 
 export async function writePublishedOpenApiArtifacts(contract: ProjectContract): Promise<void> {
-  const repository = createApiSourceRepository(contract.paths.projectRoot);
+  const repository = createNodeApiSourceRepository(contract.paths.projectRoot);
   const publishedSources = await listApiSources(repository, { status: 'published' });
   const openApiRoot = path.join(contract.paths.machineReadableRoot, 'openapi');
   await cleanupOpenApiArtifacts(openApiRoot);

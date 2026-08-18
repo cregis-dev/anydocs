@@ -172,6 +172,149 @@ body [data-radix-popper-content-wrapper] {
   line-height: inherit !important;
 }
 
+.schema-expand-summary::-webkit-details-marker {
+  display: none;
+}
+
+.schema-expand-summary:hover,
+.schema-expand-details[open] > .schema-expand-summary {
+  border-color: var(--fd-border);
+  background: var(--fd-muted, rgba(15, 23, 42, 0.04));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.schema-expand-summary:hover .schema-expand-control,
+.schema-expand-summary:focus-visible .schema-expand-control,
+.schema-expand-details[open] > .schema-expand-summary .schema-expand-control {
+  border-color: var(--docs-accent, var(--fd-primary));
+  color: var(--docs-accent, var(--fd-primary));
+}
+
+.schema-expand-details[open] > .schema-expand-summary .schema-expand-control {
+  background: var(--docs-accent-soft, rgba(34, 197, 94, 0.1));
+}
+
+.schema-expand-details[open] > .schema-expand-summary .schema-expand-icon {
+  transform: rotate(90deg);
+}
+
+.schema-field-name {
+  color: var(--docs-schema-name, var(--fd-foreground));
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.prose.schema-field-description,
+.schema-field-description {
+  color: var(--docs-schema-description, var(--docs-body-copy, var(--fd-muted-foreground))) !important;
+  font-size: 13.5px !important;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: 1.65 !important;
+}
+
+.prose.schema-field-description :where(p, li),
+.schema-field-description :where(p, li) {
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.prose.schema-field-description :where(code),
+.schema-field-description :where(code) {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0;
+  color: color-mix(in srgb, var(--fd-foreground) 92%, var(--fd-muted-foreground));
+  font-family: var(--font-geist-mono), "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  vertical-align: baseline;
+}
+
+.prose.schema-field-description :where(ul:has(> .schema-rule-row), .schema-rule-list),
+.schema-field-description :where(ul:has(> .schema-rule-row), .schema-rule-list) {
+  margin: 0.85rem 0 1rem !important;
+  padding: 0.35rem 0.85rem !important;
+  list-style: none !important;
+  border: 1px solid color-mix(in srgb, var(--fd-border) 86%, transparent);
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--fd-muted) 34%, transparent),
+    color-mix(in srgb, var(--fd-card) 94%, transparent)
+  );
+}
+
+.prose.schema-field-description :where(.schema-rule-row),
+.schema-field-description :where(.schema-rule-row) {
+  display: grid;
+  grid-template-columns: minmax(7.25rem, max-content) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.35rem 0.9rem;
+  margin: 0 !important;
+  padding: 0.52rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--fd-border) 72%, transparent);
+}
+
+.prose.schema-field-description :where(.schema-rule-row:first-child),
+.schema-field-description :where(.schema-rule-row:first-child) {
+  border-top: 0;
+}
+
+.prose.schema-field-description :where(.schema-rule-row)::marker,
+.schema-field-description :where(.schema-rule-row)::marker {
+  content: "";
+}
+
+.prose.schema-field-description :where(.schema-rule-label),
+.schema-field-description :where(.schema-rule-label) {
+  min-width: 0;
+  color: var(--fd-foreground);
+  font-family: var(--font-geist-mono), "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.prose.schema-field-description :where(.schema-rule-label)::after,
+.schema-field-description :where(.schema-rule-label)::after {
+  content: ":";
+  margin-left: 0.1rem;
+  color: var(--fd-muted-foreground);
+  font-weight: 600;
+}
+
+.prose.schema-field-description :where(.schema-rule-value),
+.schema-field-description :where(.schema-rule-value) {
+  min-width: 0;
+  color: color-mix(in srgb, var(--fd-foreground) 84%, var(--fd-muted-foreground));
+  font-size: 0.98em;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.prose.schema-field-description :where(.schema-rule-value code),
+.schema-field-description :where(.schema-rule-value code) {
+  color: inherit;
+  font-size: 0.96em;
+  font-weight: inherit;
+}
+
+@media (max-width: 640px) {
+  .prose.schema-field-description :where(.schema-rule-row),
+  .schema-field-description :where(.schema-rule-row) {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
 :where([data-card]) {
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -180,4 +323,3 @@ body [data-radix-popper-content-wrapper] {
 :where([data-card]:hover) {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
-

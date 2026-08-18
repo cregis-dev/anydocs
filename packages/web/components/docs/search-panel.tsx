@@ -159,6 +159,7 @@ export function SearchPanel({
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const searchIndexLoadStartedRef = useRef(false);
   const router = useRouter();
   const copy = getDocsUiCopy(lang);
   const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
@@ -184,21 +185,40 @@ export function SearchPanel({
   };
 
   useEffect(() => {
-    let cancelled = false;
-    loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
-      .then((data) => {
-        if (cancelled) return;
-        setIdx(data);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setIdx(null);
-      });
+    // Already loaded — nothing to do.
+    if (idx) return;
+    // A load was already initiated (immediately or via idle) — skip.
+    if (searchIndexLoadStartedRef.current) return;
 
-    return () => {
-      cancelled = true;
+    const startIndexLoad = () => {
+      if (searchIndexLoadStartedRef.current) return;
+      searchIndexLoadStartedRef.current = true;
+      loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
+        .then((data) => setIdx(data))
+        .catch(() => setIdx(null));
     };
-  }, [findHref, indexHref, lang]);
+
+    // Dialog is open — load immediately so the user can search ASAP.
+    if (open) {
+      startIndexLoad();
+      return;
+    }
+
+    // Dialog is closed — prefetch during browser idle time so the index is
+    // warm by the time the user opens search, without blocking initial
+    // page hydration/render. requestIdleCallback defers execution until
+    // the main thread is free, so the ~4 MB index fetch + MiniSearch build
+    // no longer competes with first render.
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(startIndexLoad, {
+        timeout: 10_000,
+      });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(startIndexLoad, 4_000);
+    return () => window.clearTimeout(timeoutId);
+  }, [open, findHref, indexHref, lang, idx]);
 
   useEffect(() => {
     if (!open) {

@@ -48,6 +48,12 @@ export function getDocumentationName(
   return isZh ? '当前文档' : 'this documentation';
 }
 
+export function getAskDisclaimerText(isZh: boolean): string {
+  return isZh
+    ? 'Cregis AI 助手仅根据文档提供说明、示例代码和排查建议，不会代表您调用 API 或操作账户。生产使用前请自行审核、测试并确认所有代码与业务逻辑。'
+    : 'Cregis AI Assistant only provides documentation-based guidance, code examples, and troubleshooting suggestions. It will not call APIs or operate accounts for you. Review, test, and verify all code and business logic before production use.';
+}
+
 export function assistantPayloadFromResponse(
   response: AskApiResponse,
   lang: string,
