@@ -108,8 +108,9 @@ entry point + offline fallback**.
 |---|---|---|---|
 | 1 | Freeze Epics 11–12 in `sprint-status.yaml` | Stops duplicate investment | ✅ done 2026-08-18 |
 | 2 | Wire `cloud-core → @anydocs/core` reuse seam | Without it, C2–C7 rewrite 22k lines of core | ✅ done 2026-08-18 |
-| 3 | Run the Y.Doc ↔ `doc-content-v1` bridge spike | Determines C2 autosave **and** C6 realtime architecture; the sprint file already flags it as "spike EARLY, before C3+C6" | 1 spike |
-| 4 | Re-scope C3.2 from *build* to *adapt* Epic 10's audit domain | Avoids rebuilding 582 fs-free lines | edit epic |
+| 3 | Run the Y.Doc ↔ `doc-content-v1` bridge spike | Determines C2 autosave **and** C6 realtime architecture | ✅ done 2026-08-18 — **green light**, see `spike-ydoc-doc-content-bridge-2026-08-18.md` |
+| 4 | Re-scope C3.2 to "extract a repository port in core, then supply a Postgres implementation" | Avoids rebuilding the audit domain; scope corrected after the import-graph analysis | edit epic |
+| 6 | Add `@anydocs/editor/converters` subpath + resolve two Yjs version conflicts | Surfaced by the action-3 spike; both block C6.1 | before C6.1 |
 | 5 | Sync `feat/cloud-team-edition` with `origin/main` | Branch predated Epics 8–10/13 landing, so it consumed a June snapshot of core | ✅ done 2026-08-18 (merge `4a268e8`) |
 
 ## The reuse seam (action 2, delivered)
