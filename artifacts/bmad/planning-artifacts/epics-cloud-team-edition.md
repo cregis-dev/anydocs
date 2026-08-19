@@ -484,6 +484,44 @@ So that no audit-missing write can occur (write-ahead).
 **Then** a `pending` audit entry is persisted before the write, transitioning to `committed` on success or `rejected` on failure
 **And** if audit persistence fails, the write is rolled back or rejected (CNFR9)
 
+> **Scope note — REUSE, do not rebuild (revised 2026-08-18, Team First action 4).**
+> The local-first edition already ships this domain (Epic 10, done). Verified against the code,
+> not assumed:
+>
+> **Reuse as-is (no cloud copy):**
+> - `runWriteAhead()` in `core/src/services/audit-log-service.ts` is pure orchestration —
+>   persist-pending → apply write → commit, or reject-and-rethrow with a best-effort rejection
+>   record that never masks the original error. That IS the CNFR9 guarantee. Storage-agnostic.
+> - The audit entry contract and validators (`schemas/audit-entry-schema.ts`, `types/audit.ts`)
+>   are already reachable from `@anydocs/core/portable` and re-exported by `cloud-core/content`.
+> - `AuditQuery` / `AuditQueryResult` are the shared query contract (reuse the shape; see below
+>   for the implementation).
+>
+> **Extract a port (the real work):** `audit-log-service.ts` statically imports five functions
+> from `fs/audit-repository.ts` (`appendAuditEntry`, `readAuditShard`, `overwriteAuditShard`,
+> `listAuditShardDates`, `auditShardFileName`) and threads an `auditRoot: string` through every
+> public function. Define an `AuditRepositoryPort` over those operations, keep the NDJSON
+> implementation as the local-first default (no behaviour change, Epic 10 tests must stay green),
+> and supply a Postgres implementation in `cloud-core`.
+>
+> **Reimplement, same contract:** `query()` scans daily NDJSON shards and filters in memory. The
+> cloud must push filtering/pagination into SQL. Keep `AuditQuery` → `AuditQueryResult` identical
+> so C10.4's UI is storage-agnostic.
+>
+> **Three schema gaps blocking a cloud entry (all verified by running the validator):**
+> 1. `runtimeMode` enum is `web | desktop`; `'cloud'` is **rejected** (`runtime-mode-enum`).
+>    Extending it touches `core/src/runtime/runtime-mode.ts` and interacts with C1.5.
+> 2. `organizationId` is **rejected** — the entry schema is closed
+>    (`no-additional-properties`). Multi-tenant audit needs tenant scoping for RLS, so this
+>    requires a deliberate schema change plus updates to `AUDIT_SCHEMA_CHANGE_HISTORY` and the
+>    pinned v1 guard tests (Story 10.7's versioning rule).
+> 3. `actor.userId` is currently **accepted** — the nested `AuditActor` is not closed the way the
+>    top level is. Do not rely on that asymmetry silently; either close it deliberately or record
+>    `userId` as a supported field when the schema changes for gap 2.
+>
+> Sequencing: the schema change (gaps 1+2) is shared with the local-first edition and must be
+> additive and version-recorded. See `product-line-strategy-team-first-2026-08-18.md`.
+
 ### Story C3.3: ⌘K inline command bar
 
 As an author,

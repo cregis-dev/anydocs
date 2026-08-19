@@ -109,7 +109,7 @@ entry point + offline fallback**.
 | 1 | Freeze Epics 11–12 in `sprint-status.yaml` | Stops duplicate investment | ✅ done 2026-08-18 |
 | 2 | Wire `cloud-core → @anydocs/core` reuse seam | Without it, C2–C7 rewrite 22k lines of core | ✅ done 2026-08-18 |
 | 3 | Run the Y.Doc ↔ `doc-content-v1` bridge spike | Determines C2 autosave **and** C6 realtime architecture | ✅ done 2026-08-18 — **green light**, see `spike-ydoc-doc-content-bridge-2026-08-18.md` |
-| 4 | Re-scope C3.2 to "extract a repository port in core, then supply a Postgres implementation" | Avoids rebuilding the audit domain; scope corrected after the import-graph analysis | edit epic |
+| 4 | Re-scope C3.2 to "extract a repository port in core, then supply a Postgres implementation" | Avoids rebuilding the audit domain | ✅ done 2026-08-18 — scope note written into `epics-cloud-team-edition.md` § C3.2 |
 | 6 | Add `@anydocs/editor/converters` subpath + resolve two Yjs version conflicts | Surfaced by the action-3 spike; both block C6.1 | before C6.1 |
 | 5 | Sync `feat/cloud-team-edition` with `origin/main` | Branch predated Epics 8–10/13 landing, so it consumed a June snapshot of core | ✅ done 2026-08-18 (merge `4a268e8`) |
 
@@ -138,6 +138,22 @@ Root `test:cloud` now builds core first, then runs cloud-core / cloud-realtime /
 **Rule for cloud stories:** never re-declare a domain type that exists in core. If a needed rule
 sits behind a filesystem repository (audit persistence, publishing), extract a port in core and
 supply a Postgres implementation in cloud-core — do not copy the logic.
+
+## Shared-schema changes the cloud forces (found doing action 4)
+
+The audit entry schema is a **closed** contract shared by both editions, with a versioning rule
+and pinned guard tests (Story 10.7). Three gaps were found by running the validator against a
+realistic cloud entry:
+
+| Cloud need | Today | Consequence |
+|---|---|---|
+| `runtimeMode: 'cloud'` | **rejected** — enum is `web \| desktop` | Extend `core/src/runtime/runtime-mode.ts`; interacts with C1.5's project `mode` field |
+| `organizationId` on the entry | **rejected** — `no-additional-properties` | Multi-tenant audit needs tenant scoping for RLS; requires a deliberate, version-recorded schema change |
+| `actor.userId` | **accepted** — nested `AuditActor` is not closed like the top level | An inconsistency, not a feature. Close it deliberately or formalise `userId` in the same change |
+
+These are edits to a contract the frozen local-first edition also consumes. They are **maintenance
+of a shared contract, not new local-first features**, so they stay in scope — but they must be
+additive, recorded in `AUDIT_SCHEMA_CHANGE_HISTORY`, and land with the Epic 10 guard tests green.
 
 ## Non-goals
 
