@@ -21,6 +21,11 @@ import {
   type AskApiResponse,
 } from '@/components/ask-ai-api';
 import { getAskDisclaimerText } from '@/components/ask-ai-shared';
+import {
+  askConversationStorageKey,
+  createPersistedAskConversation,
+  parsePersistedAskConversation,
+} from '@/components/ask-ai-storage';
 import { useAskStreamBuffer } from '@/components/use-ask-stream-buffer';
 
 const AskAIMarkdown = dynamic(() =>
@@ -321,6 +326,8 @@ export function AskAI({
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const skipNextStorageWriteRef = useRef(false);
+  const storageKey = askConversationStorageKey(lang, endpointBaseUrl);
 
   const appendToMessage = useCallback((id: string, text: string) => {
     setMessages((prev) =>
@@ -348,7 +355,52 @@ export function AskAI({
     setInput('');
     setMessages([createIntroMessage(isZh)]);
     sessionIdRef.current = null;
-  }, [clearBufferedText, isZh]);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // Storage can be unavailable in private browsing or hardened contexts.
+    }
+  }, [clearBufferedText, isZh, storageKey]);
+
+  useEffect(() => {
+    skipNextStorageWriteRef.current = true;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const stored = raw ? parsePersistedAskConversation(raw) : null;
+      if (stored) {
+        sessionIdRef.current = stored.sessionId;
+        setMessages(stored.messages);
+      } else {
+        sessionIdRef.current = null;
+        setMessages([createIntroMessage(isZh)]);
+        if (raw) localStorage.removeItem(storageKey);
+      }
+    } catch {
+      sessionIdRef.current = null;
+      setMessages([createIntroMessage(isZh)]);
+    }
+  }, [isZh, storageKey]);
+
+  useEffect(() => {
+    if (skipNextStorageWriteRef.current) {
+      skipNextStorageWriteRef.current = false;
+      return;
+    }
+    if (isLoading) return;
+
+    try {
+      if (!messages.some((message) => message.role === 'user')) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(createPersistedAskConversation(messages, sessionIdRef.current)),
+      );
+    } catch {
+      // Conversation persistence is best-effort; chat must remain usable.
+    }
+  }, [isLoading, messages, storageKey]);
 
   useEffect(() => {
     if (scrollRef.current) {

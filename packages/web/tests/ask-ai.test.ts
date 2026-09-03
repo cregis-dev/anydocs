@@ -17,6 +17,83 @@ import {
   ASK_AI_MARKDOWN_TABLE_CELL_CLASSNAME,
   ASK_AI_MARKDOWN_TABLE_WRAPPER_CLASSNAME,
 } from '../components/ask-ai-markdown-styles.ts';
+import {
+  ASK_CONVERSATION_MAX_MESSAGES,
+  ASK_CONVERSATION_STORAGE_TTL_MS,
+  askConversationStorageKey,
+  createPersistedAskConversation,
+  parsePersistedAskConversation,
+} from '../components/ask-ai-storage.ts';
+
+test('Ask AI storage keys isolate language and endpoint', () => {
+  assert.notEqual(
+    askConversationStorageKey('en', '/ask-api'),
+    askConversationStorageKey('zh', '/ask-api'),
+  );
+  assert.notEqual(
+    askConversationStorageKey('en', '/ask-api'),
+    askConversationStorageKey('en', 'https://ask.example.com'),
+  );
+});
+
+test('Ask AI conversation storage restores a live session and redacts credentials', () => {
+  const now = Date.UTC(2026, 8, 3, 8, 0, 0);
+  const stored = createPersistedAskConversation([
+    {
+      id: 'm1',
+      role: 'user',
+      content: [
+        "curl --header 'Access-Key: private-key' \\",
+        "  --header 'Access-Signature: private-signature' \\",
+        '  --data \'{"to_address":"TSabc ","sign":"private-sign"}\'',
+      ].join('\n'),
+    },
+    {
+      id: 'm2',
+      role: 'assistant',
+      content: 'Check the trailing whitespace in `to_address`.',
+      answerId: 'ans_1',
+      sessionId: 's_1',
+    },
+  ], 's_1', now);
+
+  const restored = parsePersistedAskConversation(JSON.stringify(stored), now + 1_000);
+  assert.equal(restored?.sessionId, 's_1');
+  assert.match(restored?.messages[0]?.content ?? '', /"to_address":"TSabc "/);
+  assert.doesNotMatch(restored?.messages[0]?.content ?? '', /private-sign/);
+  assert.doesNotMatch(restored?.messages[0]?.content ?? '', /private-key/);
+  assert.match(restored?.messages[0]?.content ?? '', /Access-Key: \[REDACTED\]/);
+  assert.match(restored?.messages[0]?.content ?? '', /Access-Signature: \[REDACTED\]/);
+  assert.match(restored?.messages[0]?.content ?? '', /"sign":"\[REDACTED\]"/);
+});
+
+test('Ask AI conversation storage rejects expired and malformed snapshots', () => {
+  const now = Date.UTC(2026, 8, 3, 8, 0, 0);
+  const stored = createPersistedAskConversation([
+    { id: 'm1', role: 'user', content: 'How do I authenticate?' },
+  ], 's_1', now);
+
+  assert.equal(
+    parsePersistedAskConversation(
+      JSON.stringify(stored),
+      now + ASK_CONVERSATION_STORAGE_TTL_MS + 1,
+    ),
+    null,
+  );
+  assert.equal(parsePersistedAskConversation('{broken', now), null);
+});
+
+test('Ask AI conversation storage keeps at most 20 user/assistant turns', () => {
+  const messages = Array.from({ length: ASK_CONVERSATION_MAX_MESSAGES + 5 }, (_, index) => ({
+    id: `m${index}`,
+    role: (index % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+    content: `message ${index}`,
+  }));
+  const stored = createPersistedAskConversation(messages, 's_1', 1);
+
+  assert.equal(stored.messages.length, ASK_CONVERSATION_MAX_MESSAGES);
+  assert.equal(stored.messages[0]?.id, 'm5');
+});
 
 test('resolveAskEndpoint uses an explicit base URL when provided', () => {
   assert.equal(
