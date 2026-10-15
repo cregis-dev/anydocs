@@ -31,7 +31,7 @@ type ApiReferenceIndexItem = {
   description: string;
 };
 
-const API_REFERENCE_INDEX_ORDER = ["waas-api", "waas-order-api", "payment-engine-api", "team-api"];
+const API_REFERENCE_INDEX_ORDER = ["waas-api", "waas-ordermode-api", "payment-engine-api", "team-api"];
 
 function getApiReferenceIndexRank(item: ApiReferenceIndexItem) {
   const rank = API_REFERENCE_INDEX_ORDER.indexOf(item.routeSlug);
