@@ -31,7 +31,7 @@ type ApiReferenceIndexItem = {
   description: string;
 };
 
-const API_REFERENCE_INDEX_ORDER = ["waas-api", "payment-engine-api", "team-api"];
+const API_REFERENCE_INDEX_ORDER = ["waas-api", "waas-order-api", "payment-engine-api", "team-api"];
 
 function getApiReferenceIndexRank(item: ApiReferenceIndexItem) {
   const rank = API_REFERENCE_INDEX_ORDER.indexOf(item.routeSlug);
@@ -127,7 +127,7 @@ export default async function ApiReferencePage({
         return {
           routeSlug,
           title: doc?.info.title ?? apiSource.display.title,
-          description: doc?.info.description ?? "",
+          description: (doc?.info.description ?? "").split(/\n\s*\n/)[0] ?? "",
         };
       }),
     );
