@@ -201,6 +201,8 @@ export function AtlasDocsReaderLayout({
     : optimisticNavState && optimisticNavState.sourcePath === pathname
       ? optimisticNavState.groupId
       : activeGroupId;
+  const showReaderSidebar =
+    !isReferenceRoute && effectiveActiveGroupId !== "platform-overview";
   const effectiveFilteredNav = useMemo(() => {
     if (!effectiveActiveGroupId) {
       return filteredNav;
@@ -599,7 +601,7 @@ export function AtlasDocsReaderLayout({
                     </div>
                   ) : null}
                 </div>
-                {!isReferenceRoute ? (
+                {showReaderSidebar ? (
                   <DocsSidebar
                     lang={lang}
                     nav={effectiveFilteredNav}
@@ -701,11 +703,11 @@ export function AtlasDocsReaderLayout({
       <div
         className={cn(
           "mx-auto lg:!max-w-[1600px]",
-          !isReferenceRoute && "lg:!grid lg:!grid-cols-[296px_minmax(0,1fr)]",
+          showReaderSidebar && "lg:!grid lg:!grid-cols-[296px_minmax(0,1fr)]",
         )}
         style={{ minHeight: `calc(100dvh - ${headerOffset}px)` }}
       >
-        {!isReferenceRoute ? (
+        {showReaderSidebar ? (
           <aside className="hidden border-r border-[color:color-mix(in_srgb,var(--fd-border)_74%,white)] bg-[color:var(--atlas-sidebar-surface)] lg:col-start-1 lg:!block">
             <div
               className="sticky overflow-hidden"
@@ -721,7 +723,7 @@ export function AtlasDocsReaderLayout({
         <main
           className={cn(
             "min-w-0 bg-[color:var(--atlas-body-background)]",
-            !isReferenceRoute && "lg:col-start-2",
+            showReaderSidebar && "lg:col-start-2",
           )}
         >
           {children}
