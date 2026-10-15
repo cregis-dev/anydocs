@@ -1,16 +1,15 @@
 import type { OpenApiOperation, ResolvedMediaType, ResolvedSchema, TryItConfig } from '@anydocs/core';
 
+import { ExampleCard, type ExampleItem } from '@/components/docs/openapi/example-card';
 import { InlineMarkdown } from '@/components/docs/openapi/inline-markdown';
 import { TryItPanel } from '@/components/docs/openapi/try-it-panel';
 import { MethodBadge } from '@/components/docs/openapi/method-badge';
 import { ParamTable } from '@/components/docs/openapi/param-table';
 import { SchemaView } from '@/components/docs/openapi/schema-view';
-import { formatExampleValue } from '@/components/docs/openapi/schema-format';
 import { synthesizeExample } from '@/components/docs/openapi/schema-example';
 import type { DocsLang } from '@/lib/docs/types';
 
 type SchemaDict = Record<string, ResolvedSchema>;
-type ExampleItem = { label: string; value: unknown };
 
 function MediaSchemas({
   contents,
@@ -59,44 +58,43 @@ function RequestSubsection({ title, children }: { title: string; children: React
   );
 }
 
-function ExampleCard({ title, items }: { title: string; items: ExampleItem[] }) {
-  if (items.length === 0) {
-    return null;
-  }
-  return (
-    <div className="overflow-hidden rounded-xl border border-[color:var(--fd-border)] bg-[#0f172a] shadow-sm">
-      <div className="border-b border-white/10 px-4 py-2.5 text-[12px] font-semibold text-slate-200">{title}</div>
-      <div className="space-y-3 p-4">
-        {items.map((item, index) => (
-          <div key={index} className="space-y-1">
-            <p className="font-mono text-[11px] text-slate-400">{item.label}</p>
-            <pre className="overflow-x-auto font-mono text-[12px] leading-5 text-slate-100">
-              {formatExampleValue(item.value)}
-            </pre>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function collectExamples(
   operation: OpenApiOperation,
   schemas: SchemaDict,
 ): { request: ExampleItem[]; responses: ExampleItem[] } {
   // 优先用 media 级显式 example，否则从 schema 合成示例 JSON。
   const exampleFor = (content: ResolvedMediaType): unknown =>
-    content.example !== undefined ? content.example : synthesizeExample(content.schema, schemas);
+    content.example !== undefined
+      ? content.example
+      : content.examples?.[0]?.value ?? synthesizeExample(content.schema, schemas);
 
   const request = (operation.requestBody?.contents ?? [])
-    .map((content) => ({ label: content.mediaType, value: exampleFor(content) }))
+    .flatMap((content, contentIndex) =>
+      content.examples?.length
+        ? content.examples.map((example) => ({
+            id: `request:${contentIndex}:${example.name}`,
+            label: example.summary ?? example.name,
+            context: content.mediaType,
+            description: example.description,
+            value: example.value,
+          }))
+        : [{ id: `request:${contentIndex}`, label: content.mediaType, value: exampleFor(content) }],
+    )
     .filter((item) => item.value !== null && item.value !== undefined);
   const responses = operation.responses
-    .flatMap((response) =>
-      response.contents.map((content) => ({
-        label: `${response.status} · ${content.mediaType}`,
-        value: exampleFor(content),
-      })),
+    .flatMap((response, responseIndex) =>
+      response.contents.flatMap((content, contentIndex) => {
+        const context = `${response.status} · ${content.mediaType}`;
+        return content.examples?.length
+          ? content.examples.map((example) => ({
+              id: `response:${responseIndex}:${contentIndex}:${example.name}`,
+              label: example.summary ?? example.name,
+              context,
+              description: example.description,
+              value: example.value,
+            }))
+          : [{ id: `response:${responseIndex}:${contentIndex}`, label: context, value: exampleFor(content) }];
+      }),
     )
     .filter((item) => item.value !== null && item.value !== undefined);
   return { request, responses };

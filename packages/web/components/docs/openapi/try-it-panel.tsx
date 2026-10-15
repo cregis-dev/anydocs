@@ -46,7 +46,7 @@ export function TryItPanel({
   const initialBody = useMemo(() => {
     const content = operation.requestBody?.contents?.[0];
     if (!content?.schema) return '';
-    const example = content.example ?? synthesizeExample(content.schema, schemas);
+    const example = content.example ?? content.examples?.[0]?.value ?? synthesizeExample(content.schema, schemas);
     return example === undefined ? '' : JSON.stringify(example, null, 2);
   }, [operation, schemas]);
 

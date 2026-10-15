@@ -42,6 +42,12 @@ export type ResolvedMediaType = {
   mediaType: string;
   schema?: ResolvedSchema;
   example?: unknown;
+  examples?: Array<{
+    name: string;
+    summary?: string;
+    description?: string;
+    value: unknown;
+  }>;
 };
 
 export type ResolvedParameter = {

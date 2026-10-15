@@ -46,6 +46,17 @@ test('writePublishedOpenApiArtifacts emits machine-readable OpenAPI artifacts fo
                         schema: {
                           $ref: '#/components/schemas/PetList',
                         },
+                        examples: {
+                          available: {
+                            summary: 'Available pets',
+                            description: 'Pets currently available for adoption.',
+                            value: [{ id: 'pet-1', name: 'Miso' }],
+                          },
+                          empty: {
+                            summary: 'No pets',
+                            value: [],
+                          },
+                        },
                       },
                     },
                   },
@@ -206,7 +217,19 @@ test('writePublishedOpenApiArtifacts emits machine-readable OpenAPI artifacts fo
       version: number;
       sourceId: string;
       href: string;
-      operations: Array<{ id: string; method: string; path: string; href: string; responses: Array<{ status: string; contents: Array<{ schema?: { ref?: string } }> }> }>;
+      operations: Array<{
+        id: string;
+        method: string;
+        path: string;
+        href: string;
+        responses: Array<{
+          status: string;
+          contents: Array<{
+            schema?: { ref?: string };
+            examples?: Array<{ name: string; summary?: string; description?: string; value: unknown }>;
+          }>;
+        }>;
+      }>;
       nav: Array<{ tag: string; items: Array<{ operationId: string }> }>;
       schemas: Record<string, { type?: string; items?: { ref?: string } }>;
     };
@@ -216,6 +239,19 @@ test('writePublishedOpenApiArtifacts emits machine-readable OpenAPI artifacts fo
     assert.equal(doc.operations.length, 1);
     assert.equal(doc.operations[0]?.href, '/en/reference/petstore/listPets');
     assert.equal(doc.operations[0]?.responses[0]?.contents[0]?.schema?.ref, 'PetList');
+    assert.deepEqual(doc.operations[0]?.responses[0]?.contents[0]?.examples, [
+      {
+        name: 'available',
+        summary: 'Available pets',
+        description: 'Pets currently available for adoption.',
+        value: [{ id: 'pet-1', name: 'Miso' }],
+      },
+      {
+        name: 'empty',
+        summary: 'No pets',
+        value: [],
+      },
+    ]);
     assert.deepEqual(
       doc.nav.map((group) => ({ tag: group.tag, ops: group.items.map((item) => item.operationId) })),
       [{ tag: 'Pets', ops: ['listPets'] }],
