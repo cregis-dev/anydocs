@@ -84,21 +84,23 @@ function collectExamples(
   operation: OpenApiOperation,
   schemas: SchemaDict,
 ): { request: ExampleItem[]; responses: ExampleItem[] } {
-  // 优先用 media 级显式 example，否则从 schema 合成示例 JSON。
-  const exampleFor = (content: ResolvedMediaType): unknown =>
-    content.example !== undefined ? content.example : synthesizeExample(content.schema, schemas);
+  const examplesFor = (content: ResolvedMediaType, label: string): ExampleItem[] => {
+    if (content.examples?.length) {
+      return content.examples.map((example) => ({
+        label: `${label} · ${example.summary ?? example.name}`,
+        value: example.value,
+      }));
+    }
+    const value = content.example !== undefined ? content.example : synthesizeExample(content.schema, schemas);
+    return value === null || value === undefined ? [] : [{ label, value }];
+  };
 
   const request = (operation.requestBody?.contents ?? [])
-    .map((content) => ({ label: content.mediaType, value: exampleFor(content) }))
-    .filter((item) => item.value !== null && item.value !== undefined);
+    .flatMap((content) => examplesFor(content, content.mediaType));
   const responses = operation.responses
     .flatMap((response) =>
-      response.contents.map((content) => ({
-        label: `${response.status} · ${content.mediaType}`,
-        value: exampleFor(content),
-      })),
-    )
-    .filter((item) => item.value !== null && item.value !== undefined);
+      response.contents.flatMap((content) => examplesFor(content, `${response.status} · ${content.mediaType}`)),
+    );
   return { request, responses };
 }
 

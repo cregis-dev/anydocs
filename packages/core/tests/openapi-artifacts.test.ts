@@ -250,7 +250,13 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
               operationId: 'orderEvent',
               summary: 'Order event',
               tags: ['Events'],
-              requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateOrder' } } } },
+              requestBody: { required: true, content: { 'application/json': {
+                schema: { $ref: '#/components/schemas/CreateOrder' },
+                examples: {
+                  initiated: { summary: 'Order created', value: { status: 'initiated' } },
+                  paid: { summary: 'Order paid', value: { status: 'paid' } },
+                },
+              } } },
               responses: { '200': { description: 'ok' } },
             },
           },
@@ -347,7 +353,7 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
         id: string;
         kind: string;
         parameters: Array<{ in: string; name: string; required: boolean }>;
-        requestBody?: { required: boolean; contents: Array<{ schema?: { ref?: string } }> };
+        requestBody?: { required: boolean; contents: Array<{ schema?: { ref?: string }; example?: unknown; examples?: unknown[] }> };
       }>;
       schemas: Record<string, {
         properties?: Record<string, { ref?: string; items?: { ref?: string }; contentMediaType?: string; contentSchema?: { ref?: string } }>;
@@ -388,6 +394,11 @@ test('buildDocArtifact resolves parameters, requestBody, allOf, cycles, and serv
     // OAS 3.1 webhooks 纳入 operations 并标记 kind=webhook
     const orderEvent = doc.operations.find((operation) => operation.id === 'orderEvent');
     assert.equal(orderEvent?.kind, 'webhook');
+    assert.deepEqual(orderEvent?.requestBody?.contents[0]?.examples, [
+      { name: 'initiated', summary: 'Order created', value: { status: 'initiated' } },
+      { name: 'paid', summary: 'Order paid', value: { status: 'paid' } },
+    ]);
+    assert.deepEqual(orderEvent?.requestBody?.contents[0]?.example, { status: 'initiated' });
     assert.equal(getOrder?.kind, 'endpoint');
 
     // nav 按顶层 tags 顺序分组并带描述；webhook 归入 Events
