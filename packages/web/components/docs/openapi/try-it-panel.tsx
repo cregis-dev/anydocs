@@ -47,8 +47,22 @@ export function TryItPanel({
     const content = operation.requestBody?.contents?.[0];
     if (!content?.schema) return '';
     const example = content.example ?? synthesizeExample(content.schema, schemas);
+    // Use the configured UAT currencies and server-side authentication for Order Mode.
+    if ((sourceId === 'waas-order-api' || sourceId === 'waas-order-api-en') && example && typeof example === 'object' && !Array.isArray(example)) {
+      const fields = example as Record<string, unknown>;
+      if (operation.path === '/waas/order/v1/create_order') {
+        return JSON.stringify({
+          order_amount: fields.order_amount ?? '5.00',
+          order_currency: fields.order_currency ?? 'USD',
+          valid_time: 10,
+        }, null, 2);
+      }
+      if (operation.path === '/waas/order/v1/query_order') {
+        return JSON.stringify({ cregis_id: fields.cregis_id ?? 0 }, null, 2);
+      }
+    }
     return example === undefined ? '' : JSON.stringify(example, null, 2);
-  }, [operation, schemas]);
+  }, [operation, schemas, sourceId]);
 
   const [params, setParams] = useState<Record<string, string>>(initialParams);
   const [bodyText, setBodyText] = useState(initialBody);

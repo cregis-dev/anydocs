@@ -91,7 +91,7 @@ function schemaTypePillLabel(schema: ResolvedSchema | undefined, lang?: SchemaLa
     if (parts.length > 0) {
       return parts.join(separator);
     }
-    return schema.properties ? 'object' : null;
+    return schema.type ?? (schema.properties ? 'object' : null);
   }
   if (schema.type) {
     if (schema.contentMediaType === 'application/json') {
