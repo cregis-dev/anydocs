@@ -10,6 +10,7 @@ export type PreviewWorkflowOptions = {
   port?: number;
   startTimeoutMs?: number;
   stdio?: 'pipe' | 'inherit';
+  production?: boolean;
 };
 
 export type PreviewTarget = {
@@ -66,6 +67,7 @@ export async function runPreviewWorkflow(options: PreviewWorkflowOptions): Promi
     readyPath: target.docsPath,
     startTimeoutMs: options.startTimeoutMs,
     stdio: options.stdio,
+    production: options.production,
   });
 
   return {

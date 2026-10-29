@@ -15,7 +15,9 @@ type PreviewCommandOptions = {
   targetDir?: string;
   watch?: boolean;
   open?: boolean;
+  port?: number;
   json?: boolean;
+  production?: boolean;
 };
 
 async function tryOpenBrowser(url: string): Promise<void> {
@@ -72,7 +74,7 @@ function logPreviewFailure(caughtError: unknown, kind: PreviewFailureKind = 'sta
 }
 
 export async function runPreviewCommand(options: PreviewCommandOptions = {}): Promise<number> {
-  const { targetDir, watch = false, open = true, json = false } = options;
+  const { targetDir, watch = false, open = true, port, json = false, production = false } = options;
   const repoRoot = path.resolve(process.cwd(), targetDir ?? '.');
 
   try {
@@ -82,7 +84,7 @@ export async function runPreviewCommand(options: PreviewCommandOptions = {}): Pr
       info('Preview runs in live mode by default; --watch is kept as a compatibility flag.');
     }
 
-    const result = await runPreviewWorkflow({ repoRoot, stdio: json ? 'pipe' : 'inherit' });
+    const result = await runPreviewWorkflow({ repoRoot, port, stdio: json ? 'pipe' : 'inherit', production });
     if (json) {
       writeJsonSuccess(
         'preview',

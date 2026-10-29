@@ -12,6 +12,7 @@ import {
   parsePageFindCommandArgs,
   parsePageGetCommandArgs,
   parsePageListCommandArgs,
+  parsePreviewCommandArgs,
   parseProjectReadCommandArgs,
   parseStudioCommandArgs,
   parseWorkflowCommandArgs,
@@ -55,6 +56,41 @@ test('parseWorkflowCommandArgs accepts watch mode with or without target dir', (
 test('parseWorkflowCommandArgs rejects unsupported options and extra positionals', () => {
   assert.throws(() => parseWorkflowCommandArgs(['--watch-path']), /Unknown option/);
   assert.throws(() => parseWorkflowCommandArgs(['first', 'second']), /Too many positional arguments/);
+});
+
+test('parsePreviewCommandArgs accepts a fixed preview port', () => {
+  assert.deepEqual(parsePreviewCommandArgs(['fixtures/docs', '--port', '4311', '--no-open']), {
+    targetDir: 'fixtures/docs',
+    watch: false,
+    open: false,
+    port: 4311,
+    production: false,
+  });
+
+  assert.deepEqual(parsePreviewCommandArgs([]), {
+    targetDir: undefined,
+    watch: false,
+    open: true,
+    port: undefined,
+    production: false,
+  });
+});
+
+test('parsePreviewCommandArgs accepts --production flag', () => {
+  assert.deepEqual(parsePreviewCommandArgs(['--production', '--port', '4311']), {
+    targetDir: undefined,
+    watch: false,
+    open: true,
+    port: 4311,
+    production: true,
+  });
+});
+
+test('parsePreviewCommandArgs rejects invalid port values', () => {
+  assert.throws(() => parsePreviewCommandArgs(['--port', 'abc']), /integer between 1 and 65535/);
+  assert.throws(() => parsePreviewCommandArgs(['--port', '0']), /integer between 1 and 65535/);
+  assert.throws(() => parsePreviewCommandArgs(['--port', '65536']), /integer between 1 and 65535/);
+  assert.throws(() => parsePreviewCommandArgs(['--port', '4.2']), /integer between 1 and 65535/);
 });
 
 test('parseOptionalTargetDirCommandArgs accepts zero or one positional argument', () => {

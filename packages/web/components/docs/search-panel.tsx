@@ -3,7 +3,6 @@
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -157,10 +156,10 @@ export function SearchPanel({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState<LoadedReaderSearchIndex | null>(null);
-  const [searchIndexRequested, setSearchIndexRequested] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const searchIndexLoadStartedRef = useRef(false);
   const router = useRouter();
   const copy = getDocsUiCopy(lang);
   const resolvedPlaceholder = placeholder ?? copy.sidebar.searchPlaceholder;
@@ -172,21 +171,13 @@ export function SearchPanel({
       ? "Ctrl K"
       : "⌘K";
 
-  const requestSearchIndex = useCallback(() => {
-    setSearchIndexRequested(true);
-  }, []);
-
   const openWithSeed = (seed = "") => {
-    requestSearchIndex();
     setQ(seed);
     setOpen(true);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (nextOpen) {
-      requestSearchIndex();
-    }
     if (!nextOpen) {
       setQ("");
       setActiveIndex(-1);
@@ -194,25 +185,40 @@ export function SearchPanel({
   };
 
   useEffect(() => {
-    if (!searchIndexRequested) {
+    // Already loaded — nothing to do.
+    if (idx) return;
+    // A load was already initiated (immediately or via idle) — skip.
+    if (searchIndexLoadStartedRef.current) return;
+
+    const startIndexLoad = () => {
+      if (searchIndexLoadStartedRef.current) return;
+      searchIndexLoadStartedRef.current = true;
+      loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
+        .then((data) => setIdx(data))
+        .catch(() => setIdx(null));
+    };
+
+    // Dialog is open — load immediately so the user can search ASAP.
+    if (open) {
+      startIndexLoad();
       return;
     }
 
-    let cancelled = false;
-    loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
-      .then((data) => {
-        if (cancelled) return;
-        setIdx(data);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setIdx(null);
+    // Dialog is closed — prefetch during browser idle time so the index is
+    // warm by the time the user opens search, without blocking initial
+    // page hydration/render. requestIdleCallback defers execution until
+    // the main thread is free, so the ~4 MB index fetch + MiniSearch build
+    // no longer competes with first render.
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(startIndexLoad, {
+        timeout: 10_000,
       });
+      return () => window.cancelIdleCallback(idleId);
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [findHref, indexHref, lang, searchIndexRequested]);
+    const timeoutId = window.setTimeout(startIndexLoad, 4_000);
+    return () => window.clearTimeout(timeoutId);
+  }, [open, findHref, indexHref, lang, idx]);
 
   useEffect(() => {
     if (!open) {
@@ -388,11 +394,7 @@ export function SearchPanel({
                 <Input
                   ref={inputRef}
                   value={q}
-                  onChange={(event) => {
-                    requestSearchIndex();
-                    setQ(event.target.value);
-                  }}
-                  onFocus={requestSearchIndex}
+                  onChange={(event) => setQ(event.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={resolvedPlaceholder}
                   aria-label={resolvedPlaceholder}

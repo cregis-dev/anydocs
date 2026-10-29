@@ -33,7 +33,12 @@ export async function GET(request: NextRequest) {
     return new NextResponse(content, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store',
+        // Allow browser/proxy caching so the client-side `cache: 'force-cache'`
+        // fetch actually hits the HTTP cache on subsequent page loads. The
+        // artifact is regenerated only when the project is rebuilt, so a
+        // short max-age with revalidation is safe and avoids re-downloading
+        // the multi-megabyte index on every navigation.
+        'Cache-Control': 'public, max-age=300, must-revalidate',
       },
     });
   } catch (error) {
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
         {
           error: `search-find.${lang}.json not found for current preview source.`,
         },
-        { status: 404, headers: { 'Cache-Control': 'no-store' } },
+        { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } },
       );
     }
 

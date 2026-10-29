@@ -8,6 +8,8 @@ export type PreviewCommandArgs = {
   targetDir?: string;
   watch: boolean;
   open: boolean;
+  port?: number;
+  production: boolean;
 };
 
 export type GlobalCommandArgs = {
@@ -143,6 +145,8 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
   let targetDir: string | undefined;
   let watch = false;
   let open = true;
+  let port: number | undefined;
+  let production = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -157,6 +161,22 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
       continue;
     }
 
+    if (arg === '--production') {
+      production = true;
+      continue;
+    }
+
+    if (arg === '--port') {
+      const value = readRequiredOptionValue(args, i, arg);
+      const parsed = Number(value);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65_535) {
+        throw new Error(`Option "${arg}" requires an integer between 1 and 65535.`);
+      }
+      port = parsed;
+      i++;
+      continue;
+    }
+
     if (arg.startsWith('-')) {
       throw new Error(`Unknown option "${arg}".`);
     }
@@ -168,7 +188,7 @@ export function parsePreviewCommandArgs(args: string[]): PreviewCommandArgs {
     targetDir = arg;
   }
 
-  return { targetDir, watch, open };
+  return { targetDir, watch, open, port, production };
 }
 
 export function parseOptionalTargetDirCommandArgs(args: string[]): OptionalTargetDirCommandArgs {
