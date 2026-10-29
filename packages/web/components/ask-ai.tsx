@@ -63,8 +63,8 @@ function createMessage(
 
 function createIntroMessage(isZh: boolean): Message {
   const intro = isZh
-    ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
-    : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS wallets, and API integration.';
+    ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS项目和 API 接入问题。'
+    : 'I am an AI assistant trained on Cregis documentation. Ask me about payments, WaaS projects, and API integration.';
 
   return createMessage(
     'assistant',
@@ -184,8 +184,8 @@ function IntroCopy({ isZh }: { isZh: boolean }) {
       <h2 className="mb-3 text-[25px] font-bold leading-8 text-[#020304]">Ask AI</h2>
       <p className="max-w-[28rem] text-[15px] leading-[22px] text-[#020304]">
         {isZh
-          ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS 钱包和 API 接入问题。'
-          : 'I am trained on Cregis documentation and can answer questions about payments, WaaS wallets, and API integration.'}
+          ? '我是根据 Cregis 文档训练的 AI 助手，可以回答支付引擎、WaaS项目和 API 接入问题。'
+          : 'I am trained on Cregis documentation and can answer questions about payments, WaaS projects, and API integration.'}
       </p>
     </div>
   );

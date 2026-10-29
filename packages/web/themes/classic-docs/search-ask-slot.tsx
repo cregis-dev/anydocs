@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { SearchAskPanel } from '@/components/docs/search-ask-panel';
-import type { DocsLang, PublishedPageDoc } from '@/lib/docs/types';
+import type { DocsLang, PublishedPageSummary } from '@/lib/docs/types';
 import { CLASSIC_DOCS_THEME_CLASS_NAME } from '@/themes/classic-docs/manifest';
 
 function normalizeRoutePath(pathname: string) {
@@ -22,7 +22,7 @@ function normalizeRoutePath(pathname: string) {
 
 type ClassicDocsSearchAskSlotProps = {
   lang: DocsLang;
-  pages: PublishedPageDoc[];
+  pages: PublishedPageSummary[];
   findHref?: string;
   indexHref?: string;
   documentationName: string;

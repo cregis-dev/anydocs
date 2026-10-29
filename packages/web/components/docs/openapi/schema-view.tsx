@@ -91,7 +91,7 @@ function schemaTypePillLabel(schema: ResolvedSchema | undefined, lang?: SchemaLa
     if (parts.length > 0) {
       return parts.join(separator);
     }
-    return schema.properties ? 'object' : null;
+    return schema.type ?? (schema.properties ? 'object' : null);
   }
   if (schema.type) {
     if (schema.contentMediaType === 'application/json') {
@@ -176,7 +176,7 @@ function StructuredContentSchema({
   return (
     <div className="mt-2 rounded-md border border-[color:var(--fd-border)] bg-[color:var(--fd-muted,rgba(0,0,0,0.03))] p-2.5">
       <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[12px] font-medium text-fd-muted-foreground">
-        <span>JSON 内部字段</span>
+        <span>{lang === 'zh' ? 'JSON 内部字段' : 'JSON fields'}</span>
         {schema.contentMediaType ? <code className="font-mono text-[11px]">{schema.contentMediaType}</code> : null}
       </div>
       <SchemaView schema={schema.contentSchema} schemas={schemas} visited={visited} showRequired={showRequired} lang={lang} />

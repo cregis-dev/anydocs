@@ -405,6 +405,7 @@ export function SearchAskPanel({
   const [mode, setMode] = useState<Mode>("search");
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState<LoadedReaderSearchIndex | null>(null);
+  const [searchIndexRequested, setSearchIndexRequested] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [askMessages, setAskMessages] = useState<AskMessage[]>([]);
   const [isAskLoading, setIsAskLoading] = useState(false);
@@ -435,6 +436,10 @@ export function SearchAskPanel({
 
   const { appendBufferedText, clearBufferedText } = useAskStreamBuffer(appendToAskMessage);
 
+  const requestSearchIndex = useCallback(() => {
+    setSearchIndexRequested(true);
+  }, []);
+
   const closeDialog = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -452,14 +457,24 @@ export function SearchAskPanel({
     }
 
     setOpen(true);
+    if (mode === "search") {
+      requestSearchIndex();
+    }
   };
 
   const openWithSeed = (seed = "") => {
+    if (mode === "search") {
+      requestSearchIndex();
+    }
     setQ(seed);
     setOpen(true);
   };
 
   useEffect(() => {
+    if (!searchIndexRequested) {
+      return;
+    }
+
     let cancelled = false;
     loadPreferredReaderSearchIndex(lang, { findHref, indexHref })
       .then((data) => {
@@ -474,7 +489,13 @@ export function SearchAskPanel({
     return () => {
       cancelled = true;
     };
-  }, [findHref, indexHref, lang]);
+  }, [findHref, indexHref, lang, searchIndexRequested]);
+
+  useEffect(() => {
+    if (open && mode === "search") {
+      requestSearchIndex();
+    }
+  }, [mode, open, requestSearchIndex]);
 
   useEffect(() => {
     if (!open) {
@@ -813,6 +834,9 @@ export function SearchAskPanel({
                         onClick={() => {
                           setMode(nextMode);
                           setActiveIndex(-1);
+                          if (nextMode === "search") {
+                            requestSearchIndex();
+                          }
                         }}
                         className={cn(
                           "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition",
@@ -850,7 +874,17 @@ export function SearchAskPanel({
                 <Input
                   ref={inputRef}
                   value={q}
-                  onChange={(event) => setQ(event.target.value)}
+                  onChange={(event) => {
+                    if (mode === "search") {
+                      requestSearchIndex();
+                    }
+                    setQ(event.target.value);
+                  }}
+                  onFocus={() => {
+                    if (mode === "search") {
+                      requestSearchIndex();
+                    }
+                  }}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={resolvedPlaceholder}
                   aria-label={resolvedPlaceholder}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 import type { OpenApiNavGroup } from '@anydocs/core';
 
@@ -25,6 +26,8 @@ export function ReferenceNav({
   overviewLabel: string;
 }) {
   const pathname = normalize(usePathname());
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const visiblePendingHref = pendingHref === pathname ? null : pendingHref;
 
   const linkBase =
     'flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] leading-5 transition';
@@ -37,6 +40,7 @@ export function ReferenceNav({
     <nav aria-label={lang === 'zh' ? 'API 导航' : 'API navigation'} className="space-y-4 text-sm">
       <Link
         href={`/${lang}/reference`}
+        prefetch={false}
         className="inline-flex items-center gap-1 text-[12px] font-medium text-fd-muted-foreground transition hover:text-fd-foreground"
       >
         <span aria-hidden>←</span>
@@ -45,7 +49,13 @@ export function ReferenceNav({
 
       <Link
         href={overviewHref}
-        className={cn(linkBase, normalize(overviewHref) === pathname ? active : inactive)}
+        prefetch={false}
+        onClick={() => setPendingHref(normalize(overviewHref))}
+        className={cn(
+          linkBase,
+          normalize(overviewHref) === pathname || visiblePendingHref === normalize(overviewHref) ? active : inactive,
+          visiblePendingHref === normalize(overviewHref) && 'opacity-75',
+        )}
       >
         {overviewLabel}
       </Link>
@@ -58,15 +68,25 @@ export function ReferenceNav({
           <ul className="m-0 list-none space-y-0.5 p-0">
             {group.items.map((item) => {
               const isActive = normalize(item.href) === pathname;
+              const isPending = visiblePendingHref === normalize(item.href) && !isActive;
               return (
                 <li key={item.operationId}>
                   <Link
                     href={item.href}
+                    prefetch={false}
                     aria-current={isActive ? 'page' : undefined}
-                    className={cn(linkBase, isActive ? active : inactive)}
+                    aria-busy={isPending ? 'true' : undefined}
+                    onClick={() => setPendingHref(normalize(item.href))}
+                    className={cn(linkBase, isActive || isPending ? active : inactive, isPending && 'opacity-75')}
                   >
                     <MethodBadge method={item.kind === 'webhook' ? 'WEBHOOK' : item.method} className="scale-90" />
                     <span className="min-w-0 truncate">{item.title}</span>
+                    {isPending ? (
+                      <span
+                        aria-hidden="true"
+                        className="ml-auto size-1.5 shrink-0 rounded-full bg-current opacity-70 motion-safe:animate-pulse"
+                      />
+                    ) : null}
                   </Link>
                 </li>
               );

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import {
   getPublishedContext,
   getPublishedLanguages,
+  getPublishedPageSummaries,
   getPublishedProjectName,
   getReaderSearchFindHref,
   getReaderSearchIndexHref,
@@ -81,8 +82,9 @@ export default async function Layout({
   }
   const docsLang = lang as DocsLang;
 
-  const { nav, pages } = await getPublishedContext(docsLang, source.projectId, source.customPath);
-  const [projectName, siteTheme, siteNavigation] = await Promise.all([
+  const [{ nav }, pages, projectName, siteTheme, siteNavigation] = await Promise.all([
+    getPublishedContext(docsLang, source.projectId, source.customPath),
+    getPublishedPageSummaries(docsLang, source.projectId, source.customPath),
     getPublishedProjectName(source.projectId, source.customPath),
     getPublishedSiteTheme(source.projectId, source.customPath),
     getPublishedSiteNavigation(docsLang, source.projectId, source.customPath),

@@ -442,8 +442,17 @@ function resolveContents(rawContent: unknown): ResolvedMediaType[] {
     if ('example' in rawMedia) {
       media.example = rawMedia.example;
     } else if (isRecord(rawMedia.examples)) {
-      const first = Object.values(rawMedia.examples).find(isRecord);
-      if (first && 'value' in first) media.example = first.value;
+      const examples = Object.entries(rawMedia.examples)
+        .filter((entry): entry is [string, Record<string, unknown>] => isRecord(entry[1]) && 'value' in entry[1])
+        .map(([name, example]) => ({
+          name,
+          ...(pickString(example.summary) ? { summary: pickString(example.summary) } : {}),
+          value: example.value,
+        }));
+      if (examples.length > 0) {
+        media.examples = examples;
+        media.example = examples[0]!.value;
+      }
     }
     contents.push(media);
   }

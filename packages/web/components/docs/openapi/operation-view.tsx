@@ -44,7 +44,16 @@ function MediaSchemas({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fd-foreground">{title}</h2>
+      <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-fd-foreground">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function RequestSubsection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-2">
+      <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-fd-foreground">{title}</h3>
       {children}
     </section>
   );
@@ -75,21 +84,23 @@ function collectExamples(
   operation: OpenApiOperation,
   schemas: SchemaDict,
 ): { request: ExampleItem[]; responses: ExampleItem[] } {
-  // 优先用 media 级显式 example，否则从 schema 合成示例 JSON。
-  const exampleFor = (content: ResolvedMediaType): unknown =>
-    content.example !== undefined ? content.example : synthesizeExample(content.schema, schemas);
+  const examplesFor = (content: ResolvedMediaType, label: string): ExampleItem[] => {
+    if (content.examples?.length) {
+      return content.examples.map((example) => ({
+        label: `${label} · ${example.summary ?? example.name}`,
+        value: example.value,
+      }));
+    }
+    const value = content.example !== undefined ? content.example : synthesizeExample(content.schema, schemas);
+    return value === null || value === undefined ? [] : [{ label, value }];
+  };
 
   const request = (operation.requestBody?.contents ?? [])
-    .map((content) => ({ label: content.mediaType, value: exampleFor(content) }))
-    .filter((item) => item.value !== null && item.value !== undefined);
+    .flatMap((content) => examplesFor(content, content.mediaType));
   const responses = operation.responses
     .flatMap((response) =>
-      response.contents.map((content) => ({
-        label: `${response.status} · ${content.mediaType}`,
-        value: exampleFor(content),
-      })),
-    )
-    .filter((item) => item.value !== null && item.value !== undefined);
+      response.contents.flatMap((content) => examplesFor(content, `${response.status} · ${content.mediaType}`)),
+    );
   return { request, responses };
 }
 
@@ -116,6 +127,7 @@ export function OperationView({
   // 仅可调用接口（非 webhook）且配置开启时显示 Try-it
   const showTryIt = Boolean(tryIt?.enabled) && operation.kind === 'endpoint' && Boolean(sourceId);
   const showColumns = hasExamples || showTryIt;
+  const hasRequestContent = operation.parameters.length > 0 || Boolean(operation.requestBody);
   const requestBodyTitle = isWebhook
     ? lang === 'zh'
       ? '回调载荷'
@@ -128,23 +140,22 @@ export function OperationView({
     <div className="min-w-0 space-y-8 xl:flex-1">
       {operation.description ? <InlineMarkdown>{operation.description}</InlineMarkdown> : null}
 
-      {operation.parameters.length > 0 ? (
-        <Section title={lang === 'zh' ? '参数' : 'Parameters'}>
+      {hasRequestContent ? (
+        <Section title={lang === 'zh' ? '请求' : 'Request'}>
           <ParamTable title={lang === 'zh' ? '路径参数' : 'Path'} params={pathParams} />
           <ParamTable title={lang === 'zh' ? '查询参数' : 'Query'} params={queryParams} />
           <ParamTable title={lang === 'zh' ? '请求头' : 'Headers'} params={headerParams} />
-        </Section>
-      ) : null}
-
-      {operation.requestBody ? (
-        <Section title={requestBodyTitle}>
-          {operation.requestBody.required && !isWebhook ? (
-            <p className="text-[12px] font-medium text-red-600">required</p>
+          {operation.requestBody ? (
+            <RequestSubsection title={requestBodyTitle}>
+              {operation.requestBody.required && !isWebhook ? (
+                <p className="text-[12px] font-medium text-red-600">required</p>
+              ) : null}
+              {operation.requestBody.description ? (
+                <InlineMarkdown>{operation.requestBody.description}</InlineMarkdown>
+              ) : null}
+              <MediaSchemas contents={operation.requestBody.contents} schemas={schemas} showRequired={!isWebhook} lang={lang} />
+            </RequestSubsection>
           ) : null}
-          {operation.requestBody.description ? (
-            <InlineMarkdown>{operation.requestBody.description}</InlineMarkdown>
-          ) : null}
-          <MediaSchemas contents={operation.requestBody.contents} schemas={schemas} showRequired={!isWebhook} lang={lang} />
         </Section>
       ) : null}
 

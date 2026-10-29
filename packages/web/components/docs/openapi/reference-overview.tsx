@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { OpenApiDocArtifact, OpenApiServer } from '@anydocs/core';
 
 import { MethodBadge } from '@/components/docs/openapi/method-badge';
+import { InlineMarkdown } from '@/components/docs/openapi/inline-markdown';
 import type { DocsLang } from '@/lib/docs/types';
 
 function ServerPanel({ server }: { server: OpenApiServer }) {
@@ -45,9 +46,9 @@ export function ReferenceOverview({ doc, lang }: { doc: OpenApiDocArtifact; lang
           ) : null}
         </div>
         {doc.info.description ? (
-          <p className="max-w-[720px] whitespace-pre-line text-[15px] leading-7 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
+          <InlineMarkdown className="max-w-[720px] text-[15px] leading-7 text-[color:var(--docs-body-copy,var(--fd-muted-foreground))]">
             {doc.info.description}
-          </p>
+          </InlineMarkdown>
         ) : null}
       </header>
 

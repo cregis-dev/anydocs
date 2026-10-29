@@ -246,7 +246,7 @@ body [data-radix-popper-content-wrapper] {
 .prose.schema-field-description :where(.schema-rule-row),
 .schema-field-description :where(.schema-rule-row) {
   display: grid;
-  grid-template-columns: minmax(7.25rem, max-content) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
   align-items: start;
   gap: 0.35rem 0.9rem;
   margin: 0 !important;
@@ -316,4 +316,19 @@ body [data-radix-popper-content-wrapper] {
 
 :where([data-card]:hover) {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Cregis: align schema rules within the available field width. */
+.prose.schema-field-description,
+.schema-field-description {
+  container-name: schema-field-description;
+  container-type: inline-size;
+}
+
+@container schema-field-description (max-width: 24rem) {
+  .prose.schema-field-description :where(.schema-rule-row),
+  .schema-field-description :where(.schema-rule-row) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
 }
