@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
-import { SearchPanel } from '@/components/docs/search-panel';
 import { DocsSidebar } from '@/components/docs/sidebar';
 import { DocsReaderColumns } from '@/components/docs/docs-reader-columns';
 import { Button } from '@/components/ui/button';
@@ -33,12 +32,7 @@ function getClassicDocsThemeStyle(siteTheme: DocsThemeReaderLayoutProps['siteThe
   return style;
 }
 
-// `NEXT_PUBLIC_*` env vars are inlined into both server and client bundles by
-// Next.js, so this read is safe in both contexts. A missing or whitespace-only
-// value means the Ask AI backend isn't wired up for this deploy; we then fall
-// back to the plain SearchPanel rather than show a broken Ask AI entry.
 const ASK_BACKEND_URL = (process.env.NEXT_PUBLIC_ANYDOCS_ASK_URL ?? '').trim();
-const ASK_BACKEND_CONFIGURED = ASK_BACKEND_URL.length > 0;
 
 export function ClassicDocsReaderLayout({
   children,
@@ -60,10 +54,7 @@ export function ClassicDocsReaderLayout({
   const showSearch = siteTheme.chrome?.showSearch ?? true;
   const themeStyle = getClassicDocsThemeStyle(siteTheme);
 
-  // Ask AI is only offered when the backend URL is configured. Otherwise the
-  // sidebar falls back to a plain SearchPanel — same find-only experience the
-  // other classic-docs sites had before the Ask AI integration landed.
-  const searchSlot = ASK_BACKEND_CONFIGURED ? (
+  const searchSlot = (
     <ClassicDocsSearchAskSlot
       lang={lang}
       pages={pages}
@@ -71,15 +62,6 @@ export function ClassicDocsReaderLayout({
       indexHref={searchIndexHref}
       documentationName={siteTitle}
       endpointBaseUrl={ASK_BACKEND_URL}
-    />
-  ) : (
-    <SearchPanel
-      lang={lang}
-      findHref={searchFindHref}
-      indexHref={searchIndexHref}
-      placeholder={copy.sidebar.searchPlaceholder}
-      inputClassName="h-9 rounded-md border bg-fd-background px-3.5 text-[13px]"
-      resultsClassName="rounded-lg"
     />
   );
 

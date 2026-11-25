@@ -4,20 +4,23 @@ import type { DocContentV1 } from '@anydocs/core';
 
 import { CanonicalDocView } from '@/components/docs/canonical-doc-view';
 import { MarkdownView } from '@/components/docs/markdown-view';
+import type { ReaderImages } from '@/lib/docs/reader-images';
 
 export function DocContentView({
   docContent,
+  readerImages,
   markdown,
   markdownClassName,
   hasUnsupportedLegacyContent,
 }: {
   docContent: DocContentV1 | null;
+  readerImages?: ReaderImages;
   markdown: string;
   markdownClassName?: string;
   hasUnsupportedLegacyContent?: boolean;
 }) {
   if (docContent) {
-    return <CanonicalDocView content={docContent} className={markdownClassName} />;
+    return <CanonicalDocView content={docContent} className={markdownClassName} images={readerImages} />;
   }
 
   if (hasUnsupportedLegacyContent) {

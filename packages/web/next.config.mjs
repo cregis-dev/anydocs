@@ -1,4 +1,4 @@
-import { ANYDOCS_RUNTIME_ENV, DOCS_RUNTIME_MODES } from '@anydocs/core/runtime-contract';
+import { ANYDOCS_RUNTIME_ENV, DOCS_RUNTIME_MODES, isCliStudioModeValue } from '@anydocs/core/runtime-contract';
 
 const forceDesktopStaticExport = process.env.ANYDOCS_DESKTOP_STATIC_EXPORT === '1';
 
@@ -38,7 +38,11 @@ const nextConfig = {
     }
     const proxyOrigin = process.env.ANYDOCS_TRYIT_PROXY_ORIGIN?.trim().replace(/\/+$/, '');
     const destination = proxyOrigin ? `${proxyOrigin}/invoke` : '/api/local/try-it';
-    return [{ source: '/try-it/invoke', destination }];
+    const rewrites = [{ source: '/try-it/invoke', destination }];
+    if (isCliStudioModeValue(process.env[ANYDOCS_RUNTIME_ENV.studioMode])) {
+      rewrites.push({ source: '/assets/:assetPath+', destination: '/api/local/assets/:assetPath+' });
+    }
+    return rewrites;
   },
 };
 
