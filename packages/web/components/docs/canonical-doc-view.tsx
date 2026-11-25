@@ -7,6 +7,7 @@ import { contentLinkTargetProps } from '@/components/docs/content-link-target';
 import { DOC_READER_ROOT_CLASSNAME } from '@/components/docs/doc-reader-classnames';
 import { MermaidViewer } from '@/components/docs/mermaid-viewer';
 import { createHeadingIdGenerator } from '@/lib/docs/markdown';
+import type { ReaderImage, ReaderImages } from '@/lib/docs/reader-images';
 import { cn } from '@/lib/utils';
 
 const DOC_ROOT_CLASSNAME = `docs-canonical-view ${DOC_READER_ROOT_CLASSNAME}`;
@@ -175,7 +176,13 @@ function CodeGroupTabs({
   );
 }
 
-function renderBlock(block: DocBlock, nextHeadingId: (title: string) => string, index: number): ReactNode {
+function renderBlock(
+  block: DocBlock,
+  nextHeadingId: (title: string) => string,
+  index: number,
+  image?: ReaderImage,
+  priority?: boolean,
+): ReactNode {
   const key = block.id ?? `block-${index + 1}`;
 
   switch (block.type) {
@@ -252,7 +259,26 @@ function renderBlock(block: DocBlock, nextHeadingId: (title: string) => string, 
     case 'image':
       return (
         <figure key={key} className="my-6 space-y-3">
-          <img src={block.src} alt={block.alt ?? ''} title={block.title} width={block.width} height={block.height} />
+          {image ? (
+            <a href={block.src}
+              aria-label={block.alt?.trim() || block.title?.trim() || 'Original image'}
+              {...contentLinkTargetProps(block.src)}>
+              <picture>
+                {image.preview && <source srcSet={image.preview} type="image/webp" />}
+                <img src={block.src}
+                  alt={block.alt ?? ''}
+                  title={block.title}
+                  width={block.width ?? image.width}
+                  height={block.height ?? (block.width ? Math.round(block.width * image.height / image.width) : image.height)}
+                  loading={priority ? 'eager' : 'lazy'}
+                  fetchPriority={priority ? 'high' : undefined}
+                  decoding={priority ? undefined : 'async'}
+                  style={{ height: 'auto', maxWidth: '100%' }} />
+              </picture>
+            </a>
+          ) : (
+            <img src={block.src} alt={block.alt ?? ''} title={block.title} width={block.width} height={block.height} />
+          )}
           {block.caption && block.caption.length > 0 ? (
             <figcaption className="text-sm leading-6 text-[color:var(--docs-body-copy-subtle,var(--fd-muted-foreground))]">
               {renderInline(block.caption, `${key}-caption`)}
@@ -277,15 +303,20 @@ function renderBlock(block: DocBlock, nextHeadingId: (title: string) => string, 
 export function CanonicalDocView({
   content,
   className,
+  images,
 }: {
   content: DocContentV1;
   className?: string;
+  images?: ReaderImages;
 }) {
   const nextHeadingId = createHeadingIdGenerator();
+  const firstImage = images ? content.blocks.findIndex((block) => block.type === 'image' && images[block.src]) : -1;
 
   return (
     <div className={cn(DOC_ROOT_CLASSNAME, className)}>
-      {content.blocks.map((block, index) => renderBlock(block, nextHeadingId, index))}
+      {content.blocks.map((block, index) => renderBlock(
+        block, nextHeadingId, index, block.type === 'image' ? images?.[block.src] : undefined, index === firstImage,
+      ))}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { ChevronRight } from 'lucide-react';
 import type { DocsLang, NavItem, NavigationDoc, PublishedPageSummary } from '@/lib/docs/types';
 import { SearchPanel } from '@/components/docs/search-panel';
 import { getDocsUiCopy } from '@/components/docs/docs-ui-copy';
+import { resolveReaderLanguageHref } from '@/lib/docs/language-switch';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
@@ -47,23 +48,6 @@ function buildReferenceLanguageHref(pathname: string, nextLang: DocsLang) {
   const routeSlug = getApiSourceRouteSlug(sourceId);
 
   return routeSlug ? `/${nextLang}/reference/${routeSlug}/` : null;
-}
-
-function buildLanguageHref(pathname: string, currentLang: DocsLang, nextLang: DocsLang) {
-  const referenceHref = buildReferenceLanguageHref(pathname, nextLang);
-  if (referenceHref) {
-    return referenceHref;
-  }
-
-  if (!pathname || pathname === `/${currentLang}`) {
-    return `/${nextLang}`;
-  }
-
-  if (pathname.startsWith(`/${currentLang}/`)) {
-    return `/${nextLang}${pathname.slice(currentLang.length + 1)}`;
-  }
-
-  return `/${nextLang}`;
 }
 
 function normalizeRoutePath(pathname: string) {
@@ -636,7 +620,12 @@ export function DocsSidebar({
                   if (nextLang === lang) {
                     return;
                   }
-                  router.push(buildLanguageHref(pathname, lang, nextLang));
+                  const referenceHref = buildReferenceLanguageHref(pathname, nextLang);
+                  if (referenceHref) {
+                    router.push(referenceHref);
+                    return;
+                  }
+                  void resolveReaderLanguageHref(pathname, lang, nextLang, searchIndexHref).then((href) => router.push(href));
                 }}
               >
                 <SelectTrigger

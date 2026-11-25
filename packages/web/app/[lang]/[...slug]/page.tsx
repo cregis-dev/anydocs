@@ -23,7 +23,8 @@ import {
   isDocsReaderAvailable,
   resolveRequestDocsSource,
 } from "@/lib/docs/data";
-import { normalizeSlug } from "@/lib/docs/fs";
+import { loadStudioProjectContract, normalizeSlug } from "@/lib/docs/fs";
+import { loadReaderImages } from "@/lib/docs/reader-images";
 import {
   buildPreviewRobotsMetadata,
   buildPublishedAbsoluteUrl,
@@ -277,6 +278,12 @@ export default async function Page({
     stripLeadingTitleHeading(page.render?.markdown ?? "", page.title),
   );
   const docContent = getRenderableDocContent(page.content, page.title);
+  const readerImages = docContent?.blocks.some((block) => block.type === "image")
+    ? await loadReaderImages(
+        (await loadStudioProjectContract(source.projectId, source.customPath)).paths.projectRoot,
+        docContent,
+      )
+    : undefined;
   const hasUnsupportedLegacyContent = !docContent && Boolean(page.content);
   const toc = docContent ? extractTocFromDocContent(docContent) : extractTocFromMarkdown(markdown);
   const effectiveToc = toc;
@@ -507,6 +514,7 @@ export default async function Page({
                   <div className="pt-8">
                     <DocContentView
                       docContent={docContent}
+                      readerImages={readerImages}
                       markdown={markdown}
                       hasUnsupportedLegacyContent={hasUnsupportedLegacyContent}
                       markdownClassName="prose-p:my-3 prose-p:text-[16px] prose-p:leading-7 prose-li:text-[16px] prose-li:leading-7 prose-h2:mb-4 prose-h2:mt-10 prose-h3:mb-3 prose-h3:mt-8 prose-table:mt-6"
@@ -604,6 +612,7 @@ export default async function Page({
 
           <DocContentView
             docContent={docContent}
+            readerImages={readerImages}
             markdown={markdown}
             hasUnsupportedLegacyContent={hasUnsupportedLegacyContent}
             markdownClassName={cn(
